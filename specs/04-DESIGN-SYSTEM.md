@@ -101,7 +101,7 @@ graph TD
 ```
 
 ### 5.1 Reglas de Espaciado, Efectos de Firma y Arquitectura *Mobile-First*
-*(Ver especificación exhaustiva en [`estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`](../estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md))*
+*(Ver especificación exhaustiva en [`.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`](.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md))*
 - **Filosofía *Mobile-First*:** Toda pantalla se diseña primero para móvil (`< 768px`, targets táctiles $\ge 44\times 44\text{px}$, `<AdaptiveDataView />` que muestra tarjetas en móvil y tablas en desktop, `<ResponsiveDialog />` con `vaul` en móvil y `Dialog` en desktop, más `BottomNav` y `useSwipeNavigation`).
 - **Efectos de Firma de Legacy Preservados:** Clases `.glass` / `.glass-card`, bordes animados `.animate-blink-orange`, `.animate-blink-red`, `.animate-blink-green`, `.animate-perimeter-glow`, paleta de 42 colores `PRESET_COLORS` y 49 íconos gastronómicos `CATEGORIZED_ICONS`.
 - **Margen Exterior de Páginas:** `p-4` en pantallas móviles, escalando a `p-6` o `p-8` en escritorio.

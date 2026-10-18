@@ -2,10 +2,10 @@
 
 - **ID de Agente:** `05-frontend-senior-dev`
 - **Tier de Modelo Asignado:** `Gemini 3.8 Flash`
-- **Especificación Maestra:** `estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`
+- **Especificación Maestra:** `.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`
 
 ## Estrategias Bajo tu Responsabilidad Directa
-- `estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`
+- `.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`
 - `specs/04-DESIGN-SYSTEM.md`
 
 ## Protocolo Operativo Obligatorio

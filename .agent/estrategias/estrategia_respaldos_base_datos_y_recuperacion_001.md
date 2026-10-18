@@ -5,19 +5,19 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
-> - `estrategia_testing_calidad_y_seguridad_001.md`  
-> - `estrategia_entornos_y_despliegue_001.md`  
-> - `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
-> - `estrategia_visualizacion_y_auditoria_archify_001.md`  
-> - `estrategia_openspec_negocio_vs_codigo_001.md`  
-> - `estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
-> - `estrategia_motor_decisiones_jev_system1_001.md`  
-> - `estrategia_internacionalizacion_i18n_multilenguaje_001.md`  
-> - `estrategia_multimoneda_fx_precios_y_cobros_001.md`  
-> - `estrategia_observabilidad_monitoreo_y_analitica_001.md`  
-> - `estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`  
+> - `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`  
+> - `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
+> - `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md`  
+> - `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`  
+> - `.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
+> - `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`  
+> - `.agent/estrategias/estrategia_internacionalizacion_i18n_multilenguaje_001.md`  
+> - `.agent/estrategias/estrategia_multimoneda_fx_precios_y_cobros_001.md`  
+> - `.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md`  
+> - `.agent/estrategias/estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`  
 > **Propósito:** Diseñar desde el Día 1 una arquitectura de respaldos y recuperación ante desastres (DRP) en **4 Capas escalables** para que la pérdida de datos de un cliente sea físicamente imposible, permitiendo operar hoy con costo casi `$0` sobre **Neon + Cloudflare R2 + Servidor Local** y encender la réplica en nube secundaria sin refactorizar una sola línea de código a medida que OppyTec escale a cientos o miles de restaurantes.  
 > **Fecha:** Octubre 2026  
 
@@ -118,7 +118,7 @@ Para no acumular terabytes innecesarios a medida que crezca el número de tenant
 ## 4. "Un Respaldo No Probado No Existe": Verificación Automática de Restauración (*Restore Drill*)
 
 Uno de los errores más graves en la industria es descubrir el día de una emergencia que los backups llevaban meses guardándose corruptos. En OppyTec v2.0 implementamos el **Verificador Automático de Integridad de Respaldos**:
-1. **Validación Inmediata Post-Backup:** Comprueba que el archivo `.sql.zst.age` tenga tamaño `> 0`, calcula su hash `SHA-256` y lo registra en `public.backup_execution_logs`. Si un backup falla o demora más de lo esperado, dispara una alerta inmediata en **Sentry / Grafana** (conectado con `estrategia_observabilidad_monitoreo_y_analitica_001.md`).
+1. **Validación Inmediata Post-Backup:** Comprueba que el archivo `.sql.zst.age` tenga tamaño `> 0`, calcula su hash `SHA-256` y lo registra en `public.backup_execution_logs`. Si un backup falla o demora más de lo esperado, dispara una alerta inmediata en **Sentry / Grafana** (conectado con `.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md`).
 2. **Simulacro Automatizado de Restauración (*Automated Restore Drill*):**
    - Un job de verificación levanta un contenedor PostgreSQL efímero aislado, toma el último respaldo cifrado de un Tenant, lo desencripta, lo restaura y ejecuta una consulta de paridad de tablas y conteo de filas (`COUNT(*)` en `productos`, `registro_stock`, `ventas`), certificando con `Exit Code 0` que el respaldo es **100% restaurable**.
 

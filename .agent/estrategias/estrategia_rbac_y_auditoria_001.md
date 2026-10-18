@@ -2,7 +2,7 @@
 
 > **Documento:** `estrategia_rbac_y_auditoria_001.md`  
 > **Versión:** 001 (Especificación de Diseño, Reglas de Negocio y Gobernanza Pre-Refactorización)  
-> **Base Normativa:** `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`, `propuesta_arquitectura_tree_001.md` y `estrategia_migraciones_alembic_001.md`  
+> **Base Normativa:** `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`, `propuesta_arquitectura_tree_001.md` y `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
 > **Propósito:** Definir la arquitectura definitiva de Control de Acceso Basado en Roles (RBAC), Principio de Mínimo Privilegio, Delegación Jerárquica, Permisos Temporales (JIT), Acceso Transversal entre Tenants de un mismo Holding, Control de Cupos por Plan con Soft-Delete y Auditoría Forense Inmutable para OppyTec v2.0.  
 > **Fecha:** Octubre 2026  
 
@@ -227,7 +227,7 @@ Registra toda acción operativa relevante (crear/editar/borrar productos, movimi
 3. **`role_permissions`**: (`role_id`, `permission_id`, `granted_by_user_id`, `created_at`).
 4. **`user_tenant_roles`**: Qué rol(es) tiene el `client_user_id` dentro de este Tenant específico (`user_id`, `role_id`, `assigned_by_user_id`).
 5. **`user_permission_grants`**: Permisos temporales o excepciones (`ALLOW` / `DENY`) por trabajador en este Tenant (`id`, `user_id`, `permission_id`, `effect`, `granted_by_user_id`, `reason`, `starts_at`, `expires_at`, `max_uses`, `used_count`, `is_revoked`).
-6. **`oppyfy_domains`**, **`oppyfy_subdomains`** y **`oppyfy_permission_grants`**: El árbol RBAC especializado y 100% editable de `OppyFy` por cliente (ver `estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`).
+6. **`oppyfy_domains`**, **`oppyfy_subdomains`** y **`oppyfy_permission_grants`**: El árbol RBAC especializado y 100% editable de `OppyFy` por cliente (ver `.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`).
 7. **`audit_rbac_changes`** y **`audit_activity_log`**: Tablas de auditoría forense inmutable propias del Tenant (visibles para el Propietario y el SuperUser).
 
 ---

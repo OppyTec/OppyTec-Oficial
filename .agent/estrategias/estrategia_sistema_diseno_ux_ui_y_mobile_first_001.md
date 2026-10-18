@@ -6,7 +6,7 @@
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
 > - `specs/04-DESIGN-SYSTEM.md`  
-> - Las **15 Estrategias Maestras (`estrategia_*_001.md`)** de OppyTec v2.0.  
+> - Las **15 Estrategias Maestras (`.agent/estrategias/estrategia_*_001.md`)** de OppyTec v2.0.  
 > **Propósito:** Garantizar que cada vista, botón, modal, tabla, animación y efecto que se construya en `oppytec-frontend` conserve al 100% la identidad visual, paleta cromática, micro-interacciones y fluidez de `OppyTec-Legacy`, aplicando desde la primera línea de CSS/Tailwind la filosofía estricta **"Mobile-First y luego Web (Desktop)"**.  
 > **Fecha:** Octubre 2026  
 

@@ -2,11 +2,11 @@
 
 - **ID de Agente:** `08-environments-and-observability-engineer`
 - **Tier de Modelo Asignado:** `Gemini 3.8 Flash`
-- **Especificación Maestra:** `estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`
+- **Especificación Maestra:** `.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`
 
 ## Estrategias Bajo tu Responsabilidad Directa
-- `estrategia_entornos_y_despliegue_001.md`
-- `estrategia_observabilidad_monitoreo_y_analitica_001.md`
+- `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`
+- `.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md`
 
 ## Protocolo Operativo Obligatorio
 1. Lee tu `knowledge.md` y `handovers/latest_handover.md` antes de actuar.

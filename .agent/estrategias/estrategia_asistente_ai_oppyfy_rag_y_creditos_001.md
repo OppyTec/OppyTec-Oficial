@@ -5,13 +5,13 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
-> - `estrategia_testing_calidad_y_seguridad_001.md`  
-> - `estrategia_entornos_y_despliegue_001.md`  
-> - `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
-> - `estrategia_visualizacion_y_auditoria_archify_001.md`  
-> - `estrategia_openspec_negocio_vs_codigo_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`  
+> - `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`  
+> - `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
+> - `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md`  
+> - `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`  
 > **Propósito:** Definir la arquitectura técnica, de seguridad y de negocio de **`OppyFy`** (evolución de `OppyBot` en Legacy), garantizando cero fuga de arquitectura interna, consultas operativas en código duro sobre la base de datos del cliente, un panel RBAC exclusivo con dominios/sub-dominios editables por cada cliente, paquetes de créditos independientes sin caducidad y acumulables, medidor de porcentaje de contexto anti-alucinación y auditoría financiera estricta en `llm_request_log`.  
 > **Fecha:** Octubre 2026  
 
@@ -66,7 +66,7 @@ flowchart TD
 ```
 
 ### 2.1 Fuente 3.1: Conocimiento Transversal del Funcionamiento de OppyTec (Cero Fuga de Ingeniería)
-- **Fuente Única:** Alimentada exclusivamente por la **Bóveda 1 (`specs/business-domain/*.business.spec.md`)** definida en `estrategia_openspec_negocio_vs_codigo_001.md`, sincronizada por hash `SHA-256` en `public.spec_chunks` con índice vectorial **HNSW (`pgvector`)** y caché semántica de dos niveles (L1 Redis + L2 `pgvector`).
+- **Fuente Única:** Alimentada exclusivamente por la **Bóveda 1 (`specs/business-domain/*.business.spec.md`)** definida en `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`, sincronizada por hash `SHA-256` en `public.spec_chunks` con índice vectorial **HNSW (`pgvector`)** y caché semántica de dos niveles (L1 Redis + L2 `pgvector`).
 - **Transversalidad:** Es idéntica para todos los clientes porque explica cómo usar las pantallas, wizards, fórmulas conceptuales y flujos de OppyTec.
 - **Garantía del Punto 7 (Prohibición Estricta de Entregar Ingeniería/Arquitectura):**
   1. Los archivos de `specs/engineering-code/` y `docs/adr/` **jamás se indexan** en `public.spec_chunks`.
@@ -74,8 +74,8 @@ flowchart TD
 
 ### 2.2 Fuente 3.2: Inteligencia Operativa del Negocio del Cliente (Agente Enrutador con `JEV Sistema 1` + Patrón Minimalista de Tokens `Pi` + Funciones en Código Duro)
 Cuando el cliente pregunta sobre la realidad de su propio negocio:
-1. El **Agente Enrutador de Herramientas (*Tool-Router Agent*) impulsado por `JEV (Sistema 1)`** (ver `estrategia_motor_decisiones_jev_system1_001.md`) clasifica en milisegundos el dominio RBAC del cliente (`Jev.choice`), valida seguridad (`Jev.boolean`) y selecciona qué funciones deterministas en Python (`src/modules/oppy_ai/application/operational_tools/`) debe invocar sobre el esquema `tenant_<slug>` activo.
-2. **Construcción de Contexto Minimalista Estilo `Pi` (Ahorro de 60–80% en Tokens de Entrada):** Siguiendo el patrón de bajo consumo de tokens de entrada por defecto de **`Pi`** (ver `estrategia_internacionalizacion_i18n_multilenguaje_001.md`), `OppyFy` jamás inyecta los 50 esquemas SQL ni las 30 definiciones de herramientas en el prompt; construye un prompt quirúrgico que contiene únicamente el JSON devuelto por la función seleccionada + el idioma activo del selector de banderas (`es` o `en` + idiomas futuros):
+1. El **Agente Enrutador de Herramientas (*Tool-Router Agent*) impulsado por `JEV (Sistema 1)`** (ver `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`) clasifica en milisegundos el dominio RBAC del cliente (`Jev.choice`), valida seguridad (`Jev.boolean`) y selecciona qué funciones deterministas en Python (`src/modules/oppy_ai/application/operational_tools/`) debe invocar sobre el esquema `tenant_<slug>` activo.
+2. **Construcción de Contexto Minimalista Estilo `Pi` (Ahorro de 60–80% en Tokens de Entrada):** Siguiendo el patrón de bajo consumo de tokens de entrada por defecto de **`Pi`** (ver `.agent/estrategias/estrategia_internacionalizacion_i18n_multilenguaje_001.md`), `OppyFy` jamás inyecta los 50 esquemas SQL ni las 30 definiciones de herramientas en el prompt; construye un prompt quirúrgico que contiene únicamente el JSON devuelto por la función seleccionada + el idioma activo del selector de banderas (`es` o `en` + idiomas futuros):
 
 | Categoría Analítica | Funciones en Código Duro que Invoca el Agente Detrás de `OppyFy` | Qué Resuelve y Qué Consejos Entrega al Cliente |
 |---|---|---|

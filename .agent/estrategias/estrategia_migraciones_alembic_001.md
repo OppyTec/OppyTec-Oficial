@@ -363,7 +363,7 @@ Define cómo se inicializa el sistema en limpio apenas terminan de correr las mi
      - Gobernanza exclusiva de **`OppyFy`** y Almacenamiento: `oppyfy_domains`, `oppyfy_subdomains`, `oppyfy_permission_grants`, `oppyfy_worker_credit_wallets`, `oppyfy_prompt_audit_log`, `tenant_documents`, `document_chunks`, `tenant_ai_memories` y `tenant_media_assets` (control de cuota MB en R2).
      - Tablas operativas de los módulos con soporte `*_i18n` JSONB (`bodegas`, `productos`, `producto_bodegas`, `registro_stock`, `recetas`, `compras`, `facturas`, `ventas`, `mermas`, `buffet`, etc.).
 
-3. **Paso 2.5 — Snapshot Automático Pre-Migración (`estrategia_respaldos_base_datos_y_recuperacion_001.md`):**
+3. **Paso 2.5 — Snapshot Automático Pre-Migración (`.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md`):**
    - En `staging` y `production`, antes de aplicar cualquier nueva migración `0003..NNNN`, el motor invoca automáticamente `python scripts/backup_manager.py pre-migration-snapshot` (creando rama PITR en Neon y respaldo cifrado `.sql.zst.age` en R2).
 
 3. **Paso 3 — Bootstrapper Idempotente (`src/core/bootstrap.py`):**

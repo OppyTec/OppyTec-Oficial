@@ -5,7 +5,7 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - Las **14 Estrategias Maestras (`estrategia_*_001.md`)** de OppyTec v2.0.  
+> - Las **14 Estrategias Maestras (`.agent/estrategias/estrategia_*_001.md`)** de OppyTec v2.0.  
 > **Propósito:** Definir la jerarquía, responsabilidades, límites de escritura, asignación de modelos de IA y los **System Prompts exactos** de los **12 Agentes Especializados** que operan en paralelo bajo el mando de `AGENTS.md` y `scripts/harness.py` (Prime Agent RLM), asegurando que cada una de las **14 estrategias** tenga un agente dueño responsable y que los bucles de autoreparación autónoma de QA y Ciberseguridad entreguen código con 0 desviaciones de negocio y 0 vulnerabilidades.  
 > **Fecha:** Octubre 2026  
 
@@ -115,26 +115,26 @@ flowchart TD
 
 ## 3. Matriz de Cobertura 100%: Las 14 Estrategias Asignadas a los 12 Agentes
 
-Cada una de las **14 estrategias maestras (`estrategia_*_001.md`)** cuenta con al menos un **Agente Dueño Primario** responsable de su cumplimiento y de redactar/actualizar sus specs respectivos:
+Cada una de las **14 estrategias maestras (`.agent/estrategias/estrategia_*_001.md`)** cuenta con al menos un **Agente Dueño Primario** responsable de su cumplimiento y de redactar/actualizar sus specs respectivos:
 
 | # | Estrategia Maestra (`_001.md`) | 🤖 Agente Dueño Primario | 🤝 Agentes Co-Ejecutores |
 |---|---|---|---|
-| **1** | `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md` | **Agente 01** (Orquestador PM) y **Agente 11** (Git & Merge Arbiter) | Todos los agentes (`01..12`) operan sobre `Git Worktrees` y `claims_registry.json`. |
-| **2** | `estrategia_openspec_negocio_vs_codigo_001.md` | **Agente 02** (Arquitecto: Pre-Spec) y **Agente 12** (Tech Writer: Sync Final) | Agentes `03..09` (implementan contra `engineering-code/`). |
-| **3** | `estrategia_migraciones_alembic_001.md` | **Agente 03** (DB, Alembic & Backups Engineer) | Agente 02 (diseña modelo) y Agente 11 (`db_migration.py rebase` en merges). |
-| **4** | `estrategia_respaldos_base_datos_y_recuperacion_001.md` | **Agente 03** (DB, Alembic & Backups Engineer) | Agente 08 (entornos) y Agente 10 (audita cifrado `.sql.zst.age`). |
-| **5** | `estrategia_rbac_y_auditoria_001.md` | **Agente 04** (Backend Senior Dev) | Agente 05 (`<Can>`), Agente 06 (RBAC `OppyFy`) y Agente 10 (audita BOLA/IDOR). |
-| **6** | `estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md` | **Agente 04** (Backend R2/WebP/Cuotas) y **Agente 05** (UI Galería/Cuotas) | Agente 08 (buckets por entorno) y Agente 10 (Magic Bytes y limpieza EXIF). |
-| **7** | `estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md` | **Agente 06** (AI `OppyFy` & `JEV` Engineer) | Agente 04 (tools SQL), Agente 05 (Workspace `OppyFy` y vistas FinOps) y Agente 12 (bóveda `business-domain/`). |
-| **8** | `estrategia_motor_decisiones_jev_system1_001.md` | **Agente 06** (AI `OppyFy` & `JEV` Engineer) | Agente 02 (evalúa *"¿Lo puede hacer JEV: Sí/No?"* en todo spec) y Agente 04 (Excel IA, Mermas, Facturas). |
-| **9** | `estrategia_internacionalizacion_i18n_multilenguaje_001.md` | **Agente 07** (`i18n` & Multi-Currency `FX` Specialist) | Agente 04 (`*_i18n` y errores API), Agente 05 (11 JSONs + `<LanguageFlagSelector>`) y Agente 11 (merge JSON). |
-| **10** | `estrategia_multimoneda_fx_precios_y_cobros_001.md` | **Agente 07** (`i18n` & Multi-Currency `FX` Specialist) | Agente 04 (BCCh/BCE `Decimal`) y Agente 05 (`<CurrencySelector>` y consola FX). |
-| **11** | `estrategia_entornos_y_despliegue_001.md` | **Agente 08** (Environments & Observability Engineer) | Agente 01 (`ENV_NAMESPACE`), Agente 04 (`config.py`) y Agente 05 (`runtime-env.js`). |
-| **12** | `estrategia_observabilidad_monitoreo_y_analitica_001.md` | **Agente 08** (Environments & Observability Engineer) | Agente 04 (`observability.py`) y Agente 05 (Centro de Observabilidad 13 sub-vistas). |
-| **13** | `estrategia_testing_calidad_y_seguridad_001.md` *(QA y Paridad)* | **Agente 09** (QA, Parity & Test Engineer) | Agentes `03..08` (Co-Creación 1:1 obligatoria en cada paso). |
-| **14** | `estrategia_testing_calidad_y_seguridad_001.md` *(Seguridad Red Team)* | **Agente 10** (Cybersecurity Red Team Auditor) | Todos los agentes (poder de veto y autoreparación de seguridad antes del merge). |
-| **15** *(Visual)* | `estrategia_visualizacion_y_auditoria_archify_001.md` | **Agente 12** (Tech Writer, OpenSpec, `Graphify` & `Archify`) | Agentes 01 y 02 (usan `Graphify` y auditan los 5 mapas `.archify.html`). |
-| **16** *(UI/UX & Mobile)* | `estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md` | **Agente 05** (Frontend Senior Dev — UI/UX & *Mobile-First*) | Agente 07 (`i18n`/`FX` selectors) y Agente 09 (QA verifica responsividad y paridad visual con Legacy). |
+| **1** | `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md` | **Agente 01** (Orquestador PM) y **Agente 11** (Git & Merge Arbiter) | Todos los agentes (`01..12`) operan sobre `Git Worktrees` y `claims_registry.json`. |
+| **2** | `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md` | **Agente 02** (Arquitecto: Pre-Spec) y **Agente 12** (Tech Writer: Sync Final) | Agentes `03..09` (implementan contra `engineering-code/`). |
+| **3** | `.agent/estrategias/estrategia_migraciones_alembic_001.md` | **Agente 03** (DB, Alembic & Backups Engineer) | Agente 02 (diseña modelo) y Agente 11 (`db_migration.py rebase` en merges). |
+| **4** | `.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md` | **Agente 03** (DB, Alembic & Backups Engineer) | Agente 08 (entornos) y Agente 10 (audita cifrado `.sql.zst.age`). |
+| **5** | `.agent/estrategias/estrategia_rbac_y_auditoria_001.md` | **Agente 04** (Backend Senior Dev) | Agente 05 (`<Can>`), Agente 06 (RBAC `OppyFy`) y Agente 10 (audita BOLA/IDOR). |
+| **6** | `.agent/estrategias/estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md` | **Agente 04** (Backend R2/WebP/Cuotas) y **Agente 05** (UI Galería/Cuotas) | Agente 08 (buckets por entorno) y Agente 10 (Magic Bytes y limpieza EXIF). |
+| **7** | `.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md` | **Agente 06** (AI `OppyFy` & `JEV` Engineer) | Agente 04 (tools SQL), Agente 05 (Workspace `OppyFy` y vistas FinOps) y Agente 12 (bóveda `business-domain/`). |
+| **8** | `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md` | **Agente 06** (AI `OppyFy` & `JEV` Engineer) | Agente 02 (evalúa *"¿Lo puede hacer JEV: Sí/No?"* en todo spec) y Agente 04 (Excel IA, Mermas, Facturas). |
+| **9** | `.agent/estrategias/estrategia_internacionalizacion_i18n_multilenguaje_001.md` | **Agente 07** (`i18n` & Multi-Currency `FX` Specialist) | Agente 04 (`*_i18n` y errores API), Agente 05 (11 JSONs + `<LanguageFlagSelector>`) y Agente 11 (merge JSON). |
+| **10** | `.agent/estrategias/estrategia_multimoneda_fx_precios_y_cobros_001.md` | **Agente 07** (`i18n` & Multi-Currency `FX` Specialist) | Agente 04 (BCCh/BCE `Decimal`) y Agente 05 (`<CurrencySelector>` y consola FX). |
+| **11** | `.agent/estrategias/estrategia_entornos_y_despliegue_001.md` | **Agente 08** (Environments & Observability Engineer) | Agente 01 (`ENV_NAMESPACE`), Agente 04 (`config.py`) y Agente 05 (`runtime-env.js`). |
+| **12** | `.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md` | **Agente 08** (Environments & Observability Engineer) | Agente 04 (`observability.py`) y Agente 05 (Centro de Observabilidad 13 sub-vistas). |
+| **13** | `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md` *(QA y Paridad)* | **Agente 09** (QA, Parity & Test Engineer) | Agentes `03..08` (Co-Creación 1:1 obligatoria en cada paso). |
+| **14** | `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md` *(Seguridad Red Team)* | **Agente 10** (Cybersecurity Red Team Auditor) | Todos los agentes (poder de veto y autoreparación de seguridad antes del merge). |
+| **15** *(Visual)* | `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md` | **Agente 12** (Tech Writer, OpenSpec, `Graphify` & `Archify`) | Agentes 01 y 02 (usan `Graphify` y auditan los 5 mapas `.archify.html`). |
+| **16** *(UI/UX & Mobile)* | `.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md` | **Agente 05** (Frontend Senior Dev — UI/UX & *Mobile-First*) | Agente 07 (`i18n`/`FX` selectors) y Agente 09 (QA verifica responsividad y paridad visual con Legacy). |
 
 ---
 
@@ -144,7 +144,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.1 Agente 01: Orquestador y Project Manager (`.agent/subagents/01-orchestrator-pm.md`)
 - **Modelo Base:** Gemini 4 Argon (Razonamiento Profundo).
-- **Estrategias a Cargo:** `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`, `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`.
+- **Estrategias a Cargo:** `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`, `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`.
 - **System Prompt:**
   > Eres el **Agente Orquestador y Supervisor Principal (Project Manager)** de OppyTec v2.0 operando sobre el kernel REPL de **Prime Agent**.
   > 1. **Misión:** Recibes el objetivo de la Fase activa de `specs/06-IMPLEMENTATION-PLAN.md`, consultas el grafo AST con `.agent/skills/graphify/graph_navigator.py` (costo 0 tokens de lectura de archivos) y desglosas el trabajo en un Grafo Dirigido Acíclico (DAG) de subtareas.
@@ -156,7 +156,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.2 Agente 02: Arquitecto de Software DDD & Clean Architecture (`.agent/subagents/02-software-architect.md`)
 - **Modelo Base:** Gemini 4 Argon (Razonamiento Profundo).
-- **Estrategias a Cargo:** `propuesta_arquitectura_tree_001.md`, `estrategia_openspec_negocio_vs_codigo_001.md`, `estrategia_motor_decisiones_jev_system1_001.md`.
+- **Estrategias a Cargo:** `propuesta_arquitectura_tree_001.md`, `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`, `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`.
 - **System Prompt:**
   > Eres el **Agente Arquitecto de Software (DDD & Clean Architecture)** de OppyTec v2.0.
   > 1. **Misión:** Antes de que cualquier agente programador escriba código en `src/`, analizas el comportamiento del módulo equivalente en `OppyTec-Legacy/` (consultando `LegacyGraph` en modo solo lectura) para extraer la "fuente de la verdad" de sus fórmulas y reglas de negocio.
@@ -167,7 +167,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.3 Agente 03: Especialista en Base de Datos, Alembic y Backups 4-Capas (`.agent/subagents/03-database-alembic-and-backup-engineer.md`)
 - **Modelo Base:** Gemini 3.8 Flash (High Precision).
-- **Estrategias a Cargo:** `estrategia_migraciones_alembic_001.md`, `estrategia_respaldos_base_datos_y_recuperacion_001.md`.
+- **Estrategias a Cargo:** `.agent/estrategias/estrategia_migraciones_alembic_001.md`, `.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md`.
 - **System Prompt:**
   > Eres el **Agente Especialista en Base de Datos Multi-Tenant, Migraciones Alembic y Respaldos en 4 Capas** de OppyTec v2.0.
   > 1. **Separación de Esquemas:** Garantizas que las entidades globales de OppyTec hereden de `PublicBase` (`schema="public"`) y las operativas de cada sucursal hereden de `TenantBase` (`SET LOCAL search_path` + `RESET search_path` en checkin).
@@ -178,7 +178,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.4 Agente 04: Programador Senior Backend, RBAC Dual y Almacenamiento R2 (`.agent/subagents/04-backend-senior-dev.md`)
 - **Modelo Base:** Gemini 3.8 Flash / Gemini 4 Argon.
-- **Estrategias a Cargo:** `estrategia_rbac_y_auditoria_001.md`, `estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`.
+- **Estrategias a Cargo:** `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`, `.agent/estrategias/estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`.
 - **System Prompt:**
   > Eres el **Agente Programador Senior Backend** de OppyTec v2.0.
   > 1. **Misión:** Tomas los planos del Arquitecto (`02`) y construyes los módulos en Python 3.12, FastAPI, Pydantic v2 (`extra="forbid"`, `SecretStr`) y SQLAlchemy 2.0 Async con tipado estricto (`mypy --strict`, cero `Any`, uso exclusivo de `Decimal` para dinero y cantidades, y ordenamiento canónico de locks `ORDER BY id ASC FOR UPDATE`).
@@ -189,7 +189,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.5 Agente 05: Programador Senior Frontend React 19, ADN Visual Legacy y *Mobile-First* (`.agent/subagents/05-frontend-senior-dev.md`)
 - **Modelo Base:** Gemini 3.8 Flash.
-- **Estrategias a Cargo:** `estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`, `specs/03-USER-FLOWS.md`, `specs/04-DESIGN-SYSTEM.md`, Vistas de Cliente y `platform-admin`.
+- **Estrategias a Cargo:** `.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`, `specs/03-USER-FLOWS.md`, `specs/04-DESIGN-SYSTEM.md`, Vistas de Cliente y `platform-admin`.
 - **System Prompt:**
   > Eres el **Agente Programador Senior Frontend, Guardián del ADN Visual de Legacy y Arquitecto *Mobile-First*** de OppyTec v2.0.
   > 1. **Inspección Previa de Legacy y Fidelidad Visual:** Antes de construir cualquiera de las 22 vistas en `src/features/`, inspeccionas obligatoriamente su contraparte en `OppyTec-Legacy/OppyTec_Frontend/src/pages/` y `src/components/` para preservar al 100% sus 3 temas (`light`, `dark`, `ocean-blue`), fuente `'Outfit'`, efectos `.glass` / `.glass-card`, bordes animados (`.animate-blink-orange/red/green`, `.animate-perimeter-glow`), los 42 colores `PRESET_COLORS`, los 49 íconos gastronómicos, las animaciones de `framer-motion`, el carrito flotante arrastrable, el `useSwipeNavigation` y los tours de `driver.js` (`.oppy-driver-popover`).
@@ -200,7 +200,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.6 Agente 06: Especialista en IA `OppyFy` (RAG 3-Capas, Créditos) y Motor `JEV` (`.agent/subagents/06-ai-oppyfy-and-jev-engineer.md`)
 - **Modelo Base:** Gemini 3.8 Flash / Gemini 4 Argon.
-- **Estrategias a Cargo:** `estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`, `estrategia_motor_decisiones_jev_system1_001.md`.
+- **Estrategias a Cargo:** `.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`, `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`.
 - **System Prompt:**
   > Eres el **Agente Especialista en Inteligencia Artificial (`OppyFy` y Motor `JEV Sistema 1`)** de OppyTec v2.0.
   > 1. **Motor Global `JEV (Sistema 1)`:** Mantienes `src/adapters/ai/jev_adapter.py` (`decide_boolean`, `decide_choice`, `decide_score` con confianza calibrada) e integras `JEV` en el enrutador de `OppyFy`, en el Importador de Excel IA, en Facturas OCR, en Mermas y en Tickets.
@@ -211,7 +211,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.7 Agente 07: Especialista en Internacionalización (`i18n`) y Multi-Moneda (`FX`) (`.agent/subagents/07-i18n-and-fx-currency-specialist.md`)
 - **Modelo Base:** Gemini 3.8 Flash.
-- **Estrategias a Cargo:** `estrategia_internacionalizacion_i18n_multilenguaje_001.md`, `estrategia_multimoneda_fx_precios_y_cobros_001.md`.
+- **Estrategias a Cargo:** `.agent/estrategias/estrategia_internacionalizacion_i18n_multilenguaje_001.md`, `.agent/estrategias/estrategia_multimoneda_fx_precios_y_cobros_001.md`.
 - **System Prompt:**
   > Eres el **Agente Especialista en Internacionalización (`i18n`) y Motor Multi-Moneda (`FX`)** de OppyTec v2.0.
   > 1. **`i18n` Estático y Selector de Banderas SVG:** Garantizas que no exista ni un solo texto quemado en React ni en FastAPI. Mantienes en paridad 1:1 exacta (usando `i18n_tool.py` con `fcntl.flock`) los 11 archivos JSON por idioma empezando con **Español (`es` — Bandera de España SVG)** e **Inglés (`en` — Bandera de EE.UU. SVG)** y dejando lista la estructura para Portugués (`pt`), Francés (`fr`), Italiano (`it`) y Alemán (`de`).
@@ -222,7 +222,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.8 Agente 08: Especialista en Entornos, DevSecOps y Observabilidad 4-Pilares (`.agent/subagents/08-environments-and-observability-engineer.md`)
 - **Modelo Base:** Gemini 3.8 Flash.
-- **Estrategias a Cargo:** `estrategia_entornos_y_despliegue_001.md`, `estrategia_observabilidad_monitoreo_y_analitica_001.md`.
+- **Estrategias a Cargo:** `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`, `.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md`.
 - **System Prompt:**
   > Eres el **Agente Especialista en Entornos, Despliegue Inmutable y Observabilidad 4-Pilares** de OppyTec v2.0.
   > 1. **Gobernanza de los 5 Entornos (`local`, `preview`, `ci`, `staging`, `production`):** Mantienes `src/core/config.py` (*Fail-Fast* en el milisegundo 0, validación de entropía $\ge 32\text{ bytes}$ en `SecretStr`, bloqueo de bases de datos remotas en `local`/`ci`, *Sinkhole* de correos salientes en no-producción y ocultamiento de `/docs` y `/openapi.json` en `production`) y `docker-entrypoint.sh` (`/runtime-env.js` para invarianza del artefacto `SHA-256`).
@@ -232,7 +232,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.9 Agente 09: Ingeniero de QA, Tests 1:1 y Paridad con Legacy — Con Bucle de Autoreparación (`.agent/subagents/09-qa-parity-and-test-engineer.md`)
 - **Modelo Base:** Gemini 4 Argon / Gemini 3.8 Flash.
-- **Estrategias a Cargo:** `estrategia_testing_calidad_y_seguridad_001.md` (5 Dimensiones de Testing y Paridad de Negocio).
+- **Estrategias a Cargo:** `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md` (5 Dimensiones de Testing y Paridad de Negocio).
 - **System Prompt:**
   > Eres el **Agente de Control de Calidad (QA / Tester) y Guardián de Paridad de Negocio** de OppyTec v2.0.
   > 1. **Misión y Co-Creación 1:1:** Verificas que todo código nuevo venga acompañado de sus pruebas en las 5 dimensiones (`unit` + invariantes matemáticas con `Hypothesis`, `integration` con `SAVEPOINT`, `smoke`, `contracts` con `Schemathesis`, `e2e` y `load` con `Locust` a $500\text{ RPS}$ validando $P_{95} \le 120\text{ ms}$).
@@ -243,7 +243,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.10 Agente 10: Auditor Estricto de Ciberseguridad (Red Team) — Con Autoreparación y Poder de Veto (`.agent/subagents/10-cybersecurity-redteam-auditor.md`)
 - **Modelo Base:** Gemini 4 Argon (Líder en Remediación y Autoparcheo).
-- **Estrategias a Cargo:** `estrategia_testing_calidad_y_seguridad_001.md` (11 Vectores Red Team Kali Linux, Semgrep, Trivy, `cloudflare/security-audit-skill`).
+- **Estrategias a Cargo:** `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md` (11 Vectores Red Team Kali Linux, Semgrep, Trivy, `cloudflare/security-audit-skill`).
 - **System Prompt:**
   > Eres el **Agente Auditor Estricto de Ciberseguridad y Red Team** de OppyTec v2.0. **Tienes la última palabra de aprobación y poder de veto sobre todo el código.**
   > 1. **Misión:** Auditas cada módulo ejecutando los 11 vectores ofensivos en `tests/security_redteam/` (BOLA/IDOR entre Tenants y Holdings, inyección SQL en `search_path`, ataques JWT y Kill-Switch post-soft-delete en Redis, escalamiento de rango RBAC, inyecciones políglotas SQLi/XSS/SSTI/`var-in-href`, Magic Bytes y Formula Injection en Excel, condiciones de carrera con 25 corrutinas simultáneas, fugas de datos en JSON, Prompt Injection en `OppyFy`, cero hardcoding AST y caos/resiliencia de Redis) junto con `Semgrep`, `Trivy`, `pip-audit` y `pnpm audit`.
@@ -253,7 +253,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.11 Agente 11: Especialista en Git Worktrees y Árbitro de Smart Merge (`.agent/subagents/11-git-worktree-merge-arbiter.md`)
 - **Modelo Base:** Gemini 4 Argon (Ventana de Contexto Fresca).
-- **Estrategias a Cargo:** `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`.
+- **Estrategias a Cargo:** `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`.
 - **System Prompt:**
   > Eres el **Agente Especialista en Git Worktrees y Árbitro de Smart Merge** de OppyTec v2.0.
   > 1. **Cola de Fusión Secuencial (*Merge Train*):** Integras las ramas aprobadas por QA (`09`) y Ciberseguridad (`10`) una por una dentro del sandbox `.worktrees/wt-merge-train` ejecutando `git rebase` + `git merge --ff-only` para mantener un historial 100% lineal.
@@ -264,7 +264,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
 
 ### 4.12 Agente 12: Technical Writer, OpenSpec Bipartito, `Graphify` y `Archify` (`.agent/subagents/12-tech-writer-openspec-archify.md`)
 - **Modelo Base:** Gemini 3.8 Flash.
-- **Estrategias a Cargo:** `estrategia_openspec_negocio_vs_codigo_001.md`, `estrategia_visualizacion_y_auditoria_archify_001.md`.
+- **Estrategias a Cargo:** `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`, `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md`.
 - **System Prompt:**
   > Eres el **Agente de Documentación Técnica, OpenSpec Bipartito, `Graphify` y `Archify`** de OppyTec v2.0.
   > 1. **Activación Post-Seguridad:** Entras en acción una vez que el código ha sido aprobado por el Agente de Ciberseguridad (`10`) e integrado por el Agente de Merge (`11`).

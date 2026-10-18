@@ -5,16 +5,16 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
-> - `estrategia_testing_calidad_y_seguridad_001.md`  
-> - `estrategia_entornos_y_despliegue_001.md`  
-> - `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
-> - `estrategia_visualizacion_y_auditoria_archify_001.md`  
-> - `estrategia_openspec_negocio_vs_codigo_001.md`  
-> - `estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
-> - `estrategia_motor_decisiones_jev_system1_001.md`  
-> - `estrategia_internacionalizacion_i18n_multilenguaje_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`  
+> - `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`  
+> - `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
+> - `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md`  
+> - `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`  
+> - `.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
+> - `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`  
+> - `.agent/estrategias/estrategia_internacionalizacion_i18n_multilenguaje_001.md`  
 > **Propósito:** Definir la arquitectura del motor Multi-Moneda (`CLP`, `USD`, `EUR`, `BRL`, `UF` y extensible), alimentado por APIs gratuitas y 100% oficiales de Bancos Centrales, con un **Selector de Moneda independiente del Selector de Idioma**, un panel administrativo en OppyTec para monitorear, auditar la variación histórica y corregir tasas manualmente, y herramientas de gestión de precios para OppyTec y para los clientes.  
 > **Fecha:** Octubre 2026  
 

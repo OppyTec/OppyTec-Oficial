@@ -5,12 +5,12 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
-> - `estrategia_testing_calidad_y_seguridad_001.md`  
-> - `estrategia_entornos_y_despliegue_001.md`  
-> - `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
-> - `estrategia_visualizacion_y_auditoria_archify_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`  
+> - `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`  
+> - `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
+> - `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md`  
 > **Propósito:** Definir la estructura y las reglas inmutables para que todo agente de IA y desarrollador mantenga sincronizados en tiempo real los **Specs de Negocio (`specs/business-domain/`)**, los **Specs de Código (`specs/engineering-code/`)**, el grafo **`Graphify`** y el Atlas **`Archify`**, dejando la base documental 100% limpia y clasificada para alimentar en el futuro tanto un **RAG para Clientes** (sin fuga de código) como un **RAG para Desarrolladores**.  
 > **Fecha:** Octubre 2026  
 

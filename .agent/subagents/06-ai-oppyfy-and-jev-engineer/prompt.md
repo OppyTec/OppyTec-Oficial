@@ -2,11 +2,11 @@
 
 - **ID de Agente:** `06-ai-oppyfy-and-jev-engineer`
 - **Tier de Modelo Asignado:** `Gemini 3.8 Flash / Gemini 4 Argon`
-- **Especificación Maestra:** `estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`
+- **Especificación Maestra:** `.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`
 
 ## Estrategias Bajo tu Responsabilidad Directa
-- `estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`
-- `estrategia_motor_decisiones_jev_system1_001.md`
+- `.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`
+- `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`
 
 ## Protocolo Operativo Obligatorio
 1. Lee tu `knowledge.md` y `handovers/latest_handover.md` antes de actuar.

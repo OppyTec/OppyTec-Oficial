@@ -174,6 +174,8 @@ Para desacoplar el contexto, no sobrecargar la memoria de trabajo y permitir la 
 
 ```plaintext
 .agent/
+├── estrategias/                                        # [LAS 16 ESTRATEGIAS MAESTRAS DE REFACTORIZACIÓN (_001.md)]
+│   └── estrategia_*_001.md                             # Diseño normativo profundo de cada subsistema de OppyTec v2.0
 ├── rules/                                              # [INMUTABLE POR EL AGENTE - Solo lectura en ejecución normal]
 │   ├── 00-meta-agent-instructions.md                   # Prioridad de lectura, protocolo RLM y límites de autonomía
 │   ├── 01-architecture-boundaries.md                   # Clean Architecture, separación dominio/infra, multi-tenant schemas
@@ -244,22 +246,22 @@ Para desacoplar el contexto, no sobrecargar la memoria de trabajo y permitir la 
 Todas las decisiones arquitectónicas y reglas operativas están detalladas en los siguientes documentos estratégicos en la raíz del monorepo:
 
 1. **[`propuesta_arquitectura_tree_001.md`](propuesta_arquitectura_tree_001.md):** Mapa completo de directorios, subdirectorios y archivos críticos.
-2. **[`estrategia_migraciones_alembic_001.md`](estrategia_migraciones_alembic_001.md):** Migraciones correlativas `0001..NNNN`, separación `public` vs `tenant_*` y Bootstrap Génesis (`oppytec.admin`).
-3. **[`estrategia_rbac_y_auditoria_001.md`](estrategia_rbac_y_auditoria_001.md):** RBAC Dual de 3 niveles, acceso transversal en el Holding, cupos por plan con `soft-delete` y auditoría forense.
-4. **[`estrategia_testing_calidad_y_seguridad_001.md`](estrategia_testing_calidad_y_seguridad_001.md):** Co-Creación 1:1 de tests, 5 dimensiones, Gates estratificados, Cero Hardcoding y 11 vectores Red Team (Kali + Caos).
-5. **[`estrategia_entornos_y_despliegue_001.md`](estrategia_entornos_y_despliegue_001.md):** Los 5 entornos (`local`, `preview`, `ci`, `staging`, `production`), invarianza `SHA-256` y configuración *Fail-Fast*.
-6. **[`estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`](estrategia_orquestacion_git_worktrees_y_smart_merge_001.md):** Orquestación con **Prime Agent RLM**, Git Worktrees, AST Claiming y *Smart Merge Train*.
-7. **[`estrategia_visualizacion_y_auditoria_archify_001.md`](estrategia_visualizacion_y_auditoria_archify_001.md):** Atlas Visual Interactivo HTML (`Archify` alimentado desde `Graphify`).
-8. **[`estrategia_openspec_negocio_vs_codigo_001.md`](estrategia_openspec_negocio_vs_codigo_001.md):** Bipartición de `specs/` (`business-domain/` vs `engineering-code/`) lista para futuro RAG Dual.
-9. **[`estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`](estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md):** Asistente `OppyFy` (RAG 3-Capas, RBAC propio editable, paquetes de créditos sin caducidad y `llm_request_logs`).
-10. **[`estrategia_motor_decisiones_jev_system1_001.md`](estrategia_motor_decisiones_jev_system1_001.md):** Motor global `JEV (Sistema 1)` con los 4 candados automáticos *"¿Lo puede hacer JEV (Sí/No)?"*.
-11. **[`estrategia_internacionalizacion_i18n_multilenguaje_001.md`](estrategia_internacionalizacion_i18n_multilenguaje_001.md):** `i18n` Full-Stack (`es`/`en` + futuros), selector de banderas SVG, traducción dinámica de datos cliente y patrón `Pi`.
-12. **[`estrategia_multimoneda_fx_precios_y_cobros_001.md`](estrategia_multimoneda_fx_precios_y_cobros_001.md):** Motor Multi-Moneda FX (Bancos Centrales BCCh + BCE), selector independiente, consola admin y gestión de precios.
-13. **[`estrategia_observabilidad_monitoreo_y_analitica_001.md`](estrategia_observabilidad_monitoreo_y_analitica_001.md):** Los 4 pilares (`OpenTelemetry`, `Grafana`, `Sentry/GlitchTip`, `Umami`) y Centro de Observabilidad en `platform-admin`.
-14. **[`estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`](estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md):** Almacenamiento Cloudflare R2 aislado por Tenant/Entorno, compresión WebP en 2 capas y cuota de memoria MB por plan.
-15. **[`estrategia_respaldos_base_datos_y_recuperacion_001.md`](estrategia_respaldos_base_datos_y_recuperacion_001.md):** Respaldos en 4 Capas cifrados (`zstd+age`) y restauración quirúrgica de un solo Tenant.
-16. **[`estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`](estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md):** Los **12 Agentes Especializados**, cobertura 100% de las estrategias, System Prompts, asignación Gemini Argon/Flash + JEV y bucles de autoreparación autónoma.
-17. **[`estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`](estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md):** Rescate exhaustivo del ADN visual de `OppyTec-Legacy` (3 temas `light`/`dark`/`ocean-blue`, `.glass`, animaciones, 42 colores, 49 íconos, `framer-motion`, `useSwipeNavigation`) y arquitectura estricta *"Mobile-First, Then Web"*.
+2. **[`.agent/estrategias/estrategia_migraciones_alembic_001.md`](.agent/estrategias/estrategia_migraciones_alembic_001.md):** Migraciones correlativas `0001..NNNN`, separación `public` vs `tenant_*` y Bootstrap Génesis (`oppytec.admin`).
+3. **[`.agent/estrategias/estrategia_rbac_y_auditoria_001.md`](.agent/estrategias/estrategia_rbac_y_auditoria_001.md):** RBAC Dual de 3 niveles, acceso transversal en el Holding, cupos por plan con `soft-delete` y auditoría forense.
+4. **[`.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`](.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md):** Co-Creación 1:1 de tests, 5 dimensiones, Gates estratificados, Cero Hardcoding y 11 vectores Red Team (Kali + Caos).
+5. **[`.agent/estrategias/estrategia_entornos_y_despliegue_001.md`](.agent/estrategias/estrategia_entornos_y_despliegue_001.md):** Los 5 entornos (`local`, `preview`, `ci`, `staging`, `production`), invarianza `SHA-256` y configuración *Fail-Fast*.
+6. **[`.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`](.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md):** Orquestación con **Prime Agent RLM**, Git Worktrees, AST Claiming y *Smart Merge Train*.
+7. **[`.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md`](.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md):** Atlas Visual Interactivo HTML (`Archify` alimentado desde `Graphify`).
+8. **[`.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`](.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md):** Bipartición de `specs/` (`business-domain/` vs `engineering-code/`) lista para futuro RAG Dual.
+9. **[`.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`](.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md):** Asistente `OppyFy` (RAG 3-Capas, RBAC propio editable, paquetes de créditos sin caducidad y `llm_request_logs`).
+10. **[`.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`](.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md):** Motor global `JEV (Sistema 1)` con los 4 candados automáticos *"¿Lo puede hacer JEV (Sí/No)?"*.
+11. **[`.agent/estrategias/estrategia_internacionalizacion_i18n_multilenguaje_001.md`](.agent/estrategias/estrategia_internacionalizacion_i18n_multilenguaje_001.md):** `i18n` Full-Stack (`es`/`en` + futuros), selector de banderas SVG, traducción dinámica de datos cliente y patrón `Pi`.
+12. **[`.agent/estrategias/estrategia_multimoneda_fx_precios_y_cobros_001.md`](.agent/estrategias/estrategia_multimoneda_fx_precios_y_cobros_001.md):** Motor Multi-Moneda FX (Bancos Centrales BCCh + BCE), selector independiente, consola admin y gestión de precios.
+13. **[`.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md`](.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md):** Los 4 pilares (`OpenTelemetry`, `Grafana`, `Sentry/GlitchTip`, `Umami`) y Centro de Observabilidad en `platform-admin`.
+14. **[`.agent/estrategias/estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`](.agent/estrategias/estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md):** Almacenamiento Cloudflare R2 aislado por Tenant/Entorno, compresión WebP en 2 capas y cuota de memoria MB por plan.
+15. **[`.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md`](.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md):** Respaldos en 4 Capas cifrados (`zstd+age`) y restauración quirúrgica de un solo Tenant.
+16. **[`.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`](.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md):** Los **12 Agentes Especializados**, cobertura 100% de las estrategias, System Prompts, asignación Gemini Argon/Flash + JEV y bucles de autoreparación autónoma.
+17. **[`.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`](.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md):** Rescate exhaustivo del ADN visual de `OppyTec-Legacy` (3 temas `light`/`dark`/`ocean-blue`, `.glass`, animaciones, 42 colores, 49 íconos, `framer-motion`, `useSwipeNavigation`) y arquitectura estricta *"Mobile-First, Then Web"*.
 
 ---
 

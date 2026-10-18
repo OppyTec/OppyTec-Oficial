@@ -5,22 +5,22 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `specs/00-INDEX.md` al `specs/06-IMPLEMENTATION-PLAN.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
-> - `estrategia_testing_calidad_y_seguridad_001.md`  
-> - `estrategia_entornos_y_despliegue_001.md`  
-> - `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
-> - `estrategia_visualizacion_y_auditoria_archify_001.md`  
-> - `estrategia_openspec_negocio_vs_codigo_001.md`  
-> - `estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
-> - `estrategia_motor_decisiones_jev_system1_001.md`  
-> - `estrategia_internacionalizacion_i18n_multilenguaje_001.md`  
-> - `estrategia_multimoneda_fx_precios_y_cobros_001.md`  
-> - `estrategia_observabilidad_monitoreo_y_analitica_001.md`  
-> - `estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`  
-> - `estrategia_respaldos_base_datos_y_recuperacion_001.md`  
-> - `estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`  
-> - `estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`  
+> - `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`  
+> - `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
+> - `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md`  
+> - `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`  
+> - `.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
+> - `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`  
+> - `.agent/estrategias/estrategia_internacionalizacion_i18n_multilenguaje_001.md`  
+> - `.agent/estrategias/estrategia_multimoneda_fx_precios_y_cobros_001.md`  
+> - `.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md`  
+> - `.agent/estrategias/estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`  
+> - `.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md`  
+> - `.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`  
+> - `.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`  
 > **Propósito:** Definir el mapa estructural completo de directorios, subdirectorios y archivos críticos para la refactorización paso a paso desde `OppyTec-Legacy` hacia `OppyTec v2.0`.  
 > **Fecha:** Octubre 2026  
 
@@ -51,22 +51,6 @@ OppyTec-Code2/
 ├── AGENTS.md                                           # ★ Punto de entrada cognitivo para cualquier Agente (router de contexto)
 ├── MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md             # ★ Constitución de ingeniería agéntica, RLM y Quality Gates
 ├── propuesta_arquitectura_tree_001.md                  # ★ Mapa maestro de la arquitectura objetivo v2.0 (este archivo)
-├── estrategia_migraciones_alembic_001.md               # ★ Estrategia de migraciones correlativas, schemas y Bootstrap Génesis
-├── estrategia_rbac_y_auditoria_001.md                  # ★ Estrategia de RBAC Dual 3-niveles, cupos por plan, JIT y auditoría
-├── estrategia_testing_calidad_y_seguridad_001.md       # ★ Estrategia Co-Creación 1:1 de Tests, 5 Dimensiones, Semgrep, Trivy y Red Team
-├── estrategia_entornos_y_despliegue_001.md             # ★ Estrategia de 5 Entornos (local, preview/worktree, ci, staging, prod) e ISO 27001
-├── estrategia_orquestacion_git_worktrees_y_smart_merge_001.md # ★ Estrategia Prime Agent RLM, Git Worktrees, AST Claiming y Smart Merge Train
-├── estrategia_visualizacion_y_auditoria_archify_001.md # ★ Estrategia del Atlas Visual Interactivo HTML (Archify + Graphify) para auditoría humana
-├── estrategia_openspec_negocio_vs_codigo_001.md        # ★ Estrategia OpenSpec Bipartito (Negocio vs Código) preparado para futuro RAG Dual
-├── estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md # ★ Estrategia OppyFy (IA), RBAC Propio Editable, Créditos Acumulables y FinOps llm_request_log
-├── estrategia_motor_decisiones_jev_system1_001.md      # ★ Estrategia JEV (Sistema 1): Regla "¿Lo puede hacer JEV: Sí/No?", Enrutador y Telemetría
-├── estrategia_internacionalizacion_i18n_multilenguaje_001.md # ★ Estrategia i18n Full-Stack (ES/EN + futuros), Traducción Dinámica de Datos Cliente y Patrón Pi
-├── estrategia_multimoneda_fx_precios_y_cobros_001.md   # ★ Estrategia Multi-Moneda (BCCh + BCE), Selector Independiente, Consola FX Admin y Precios
-├── estrategia_observabilidad_monitoreo_y_analitica_001.md # ★ Estrategia Observabilidad 4-Pilares (OpenTelemetry, Grafana LGTM, Sentry/GlitchTip y Umami)
-├── estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md  # ★ Estrategia Imágenes R2: Aislamiento Tenant/Env, Compresión WebP 2-capas y Cuota MB por Plan
-├── estrategia_respaldos_base_datos_y_recuperacion_001.md  # ★ Estrategia Backups 4-Capas (Neon PITR, R2 Cifrado, VPS Secundario y Local) + Restore por Tenant
-├── estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md # ★ Estrategia de los 12 Agentes Especializados (Cobertura 100% de las estrategias + Autoreparación)
-├── estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md   # ★ Estrategia UI/UX: Rescate del ADN Visual de Legacy (3 temas, animaciones, 42 colores) y Mobile-First
 ├── README.md                                           # Visión general del monorepo y comandos rápidos
 ├── docker-compose.yml                                  # ★ Orquestación local + `--profile observability` (grafana/otel-lgtm, glitchtip, umami)
 ├── Makefile                                            # ★ Comandos deterministas (make check, make smart-merge, make migration-rebase)
@@ -77,6 +61,23 @@ OppyTec-Code2/
 ├── .gitignore
 │
 ├── .agent/                                             # 🧠 CAPA DE GOBERNANZA AGÉNTICA Y CONTINUAL HARNESS (Prime Agent + Jev)
+│   ├── estrategias/                                    # 📐 [LAS 16 ESTRATEGIAS MAESTRAS DE REFACTORIZACIÓN (`_001.md`)]
+│   │   ├── estrategia_migraciones_alembic_001.md       # ★ Migraciones correlativas `0001..NNNN`, schemas `public`/`tenant_*` y Bootstrap Génesis
+│   │   ├── estrategia_rbac_y_auditoria_001.md          # ★ RBAC Dual 3-niveles, acceso transversal Holding, cupos soft-delete, JIT y auditoría
+│   │   ├── estrategia_testing_calidad_y_seguridad_001.md # ★ Co-Creación 1:1 de Tests, 5 Dimensiones, Gates estratificados y 11 vectores Red Team
+│   │   ├── estrategia_entornos_y_despliegue_001.md     # ★ Los 5 Entornos (`local`, `preview`, `ci`, `staging`, `prod`), SHA-256 y Fail-Fast
+│   │   ├── estrategia_orquestacion_git_worktrees_y_smart_merge_001.md # ★ Prime Agent RLM, Git Worktrees, AST Claiming (`fcntl.flock`) y Merge Train
+│   │   ├── estrategia_visualizacion_y_auditoria_archify_001.md # ★ Atlas Visual Interactivo HTML (`Archify` + `Graphify` a 0 tokens)
+│   │   ├── estrategia_openspec_negocio_vs_codigo_001.md # ★ OpenSpec Bipartito (`business-domain/` vs `engineering-code/`) listo para RAG Dual
+│   │   ├── estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md # ★ Asistente `OppyFy` (RAG 3-Capas, RBAC propio editable, Créditos y `llm_request_logs`)
+│   │   ├── estrategia_motor_decisiones_jev_system1_001.md # ★ Motor Global `JEV (Sistema 1)`: Regla "¿Lo puede hacer JEV: Sí/No?" y Enrutador
+│   │   ├── estrategia_internacionalizacion_i18n_multilenguaje_001.md # ★ i18n Full-Stack (ES/EN + futuros), Datos Dinámicos (`"Pollo King"`) y Patrón `Pi`
+│   │   ├── estrategia_multimoneda_fx_precios_y_cobros_001.md # ★ Multi-Moneda FX (BCCh + BCE), Selector Independiente, Consola FX Admin y Precios
+│   │   ├── estrategia_observabilidad_monitoreo_y_analitica_001.md # ★ Observabilidad 4-Pilares (OTel, Grafana, Sentry, Umami) y Centro Admin 13 Sub-Vistas
+│   │   ├── estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md # ★ Imágenes R2: Aislamiento Tenant/Env, Compresión WebP 2-capas y Cuota MB por Plan
+│   │   ├── estrategia_respaldos_base_datos_y_recuperacion_001.md # ★ Backups 4-Capas (Neon PITR, R2 Cifrado, VPS Secundario y Local) + Restore por Tenant
+│   │   ├── estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md # ★ Los 12 Agentes Especializados, System Prompts y Bucles de Autoreparación
+│   │   └── estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md # ★ Rescate del ADN Visual de Legacy (3 temas, 42 colores, 49 íconos) y Mobile-First
 │   ├── rules/                                          # [INMUTABLE - Solo lectura para agentes]
 │   │   ├── 00-meta-agent-instructions.md               # ★ Protocolo RLM, prohibición de tocar OppyTec-Legacy, flujo en 4 fases
 │   │   ├── 01-architecture-boundaries.md               # ★ Reglas de capas (Domain -> Application -> Infrastructure -> Presentation)
@@ -474,7 +475,7 @@ OppyTec-Code2/
 | Archivo | Rol Crítico en la Refactorización |
 |---|---|
 | **`.agent/rules/00..19-*.md`** | Leyes inmutables que todo agente lee antes de actuar. Prohiben modificar `OppyTec-Legacy`, obligan a usar tipado estricto (`Zero-Any`), migraciones correlativas (`Regla 06`), RBAC de 3 niveles (`Regla 07`), Co-Creación 1:1 + Red Team (`Regla 08`), aislamiento de los 5 entornos (`Regla 09`), orquestación en Git Worktrees + Smart Merge (`Regla 10`), Atlas Visual con Archify (`Regla 11`), sincronización bipartita de OpenSpec (`Regla 12`), gobernanza de `OppyFy` (`Regla 13`), evaluación obligatoria de `JEV Sistema 1` (`Regla 14`), internacionalización `i18n` Full-Stack (`Regla 15`), gobernanza Multi-Moneda FX (`Regla 16`), Observabilidad 4-Pilares (`Regla 17`), Almacenamiento R2 con Cuota (`Regla 18`) y Respaldos en 4 Capas (`Regla 19`). |
-| **`estrategia_*_001.md` (13 documentos maestros)** | Especifican el diseño detallado de Migraciones Alembic, RBAC Dual + Cupos + Auditoría Forense, Testing en 5 Dimensiones + Red Team, Cadena de 5 Entornos DevSecOps, Orquestación RLM con Prime Agent + Smart Merge, Atlas Visual con Archify, OpenSpec Bipartito, el ecosistema `OppyFy`, el motor global `JEV (Sistema 1)`, la Internacionalización `i18n`, el Motor Multi-Moneda FX, la Observabilidad 4-Pilares, el Almacenamiento R2 y los Respaldos de Base de Datos en 4 Capas. |
+| **`.agent/estrategias/estrategia_*_001.md` (13 documentos maestros)** | Especifican el diseño detallado de Migraciones Alembic, RBAC Dual + Cupos + Auditoría Forense, Testing en 5 Dimensiones + Red Team, Cadena de 5 Entornos DevSecOps, Orquestación RLM con Prime Agent + Smart Merge, Atlas Visual con Archify, OpenSpec Bipartito, el ecosistema `OppyFy`, el motor global `JEV (Sistema 1)`, la Internacionalización `i18n`, el Motor Multi-Moneda FX, la Observabilidad 4-Pilares, el Almacenamiento R2 y los Respaldos de Base de Datos en 4 Capas. |
 | **`specs/business-domain/`** y **`specs/engineering-code/`** | Las dos bóvedas espejo de OpenSpec protegidas por `test_openspec_bipartition_and_sync.py`: la primera 100% libre de código técnico (lista para un futuro RAG de Clientes) y la segunda con el detalle técnico exacto (lista para un futuro RAG de Desarrolladores). |
 | **`docs/architecture/atlas/01..05-*.archify.html`** | Los 5 tableros interactivos en HTML autocontenido generados con **Archify** (alimentados a costo `0` desde **Graphify**) para que audites visualmente modelos, schemas, RBAC y rutas con *Route Probe* y *Lenses* al cierre de cada fase. |
 | **`scripts/harness.py`** y **`.agent/skills/git_smart_merge/`** | Orquestador de Git Worktrees, reserva de símbolos AST (`claims_registry.json`), Cola de Fusión Secuencial (*Merge Train*), Agente Árbitro de 4 vías (`merge-arbiter.md`) y bitácora Event-Sourced (`harness_events.jsonl`). |

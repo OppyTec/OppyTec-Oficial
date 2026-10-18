@@ -5,15 +5,15 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
-> - `estrategia_testing_calidad_y_seguridad_001.md`  
-> - `estrategia_entornos_y_despliegue_001.md`  
-> - `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
-> - `estrategia_visualizacion_y_auditoria_archify_001.md`  
-> - `estrategia_openspec_negocio_vs_codigo_001.md`  
-> - `estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
-> - `estrategia_motor_decisiones_jev_system1_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`  
+> - `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`  
+> - `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
+> - `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md`  
+> - `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`  
+> - `.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
+> - `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`  
 > **Propósito:** Establecer la regla inquebrantable de que todo código construido en OppyTec v2.0 nazca 100% internacionalizado (`i18n`), iniciando con **Español (`es` — Bandera de España 🇪🇸)** e **Inglés (`en` — Bandera de Estados Unidos 🇺🇸)** y listo para escalar a **Portugués (`pt`), Francés (`fr`), Italiano (`it`) y Alemán (`de`)**, cubriendo tanto los textos estáticos de la plataforma como la **traducción dinámica inteligente de los datos creados/editados por el cliente** (respetando nombres propios como `"Pollo King"`) con consumo mínimo de tokens estilo **`Pi`**.  
 > **Fecha:** Octubre 2026  
 

@@ -5,11 +5,11 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
-> - `estrategia_testing_calidad_y_seguridad_001.md`  
-> - `estrategia_entornos_y_despliegue_001.md`  
-> - `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`  
+> - `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`  
+> - `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
 > - **Repositorio Base:** `tt-a1i/archify` (v3.1.0+ — *Interactive Source-Backed Architecture Diagrams*).  
 > **Propósito:** Establecer cómo se construye y mantiene el **Atlas Visual Interactivo de OppyTec v2.0 (`docs/architecture/atlas/`)** a medida que avanza la refactorización paso a paso, permitiendo auditar visualmente los modelos, esquemas (`public` vs `tenant_*`), reglas de negocio, jerarquía RBAC y flujos de resiliencia en archivos HTML autocontenidos sin desperdiciar tokens de contexto.  
 > **Fecha:** Octubre 2026  

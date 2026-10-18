@@ -5,9 +5,9 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
-> - `estrategia_testing_calidad_y_seguridad_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`  
 > - Estándares ISO/IEC 27001 (§A.9.4.4, §A.12.1.4, §A.14.2.6, §A.14.3.1, §A.18.1.4), ISO 9001 (§7.5, §8.1, §8.5) y Metodología *The Twelve-Factor App*.  
 > **Propósito:** Establecer la cadena de promoción de **4 entornos permanentes + 1 entorno efímero**, garantizando aislamiento total de datos y red (*Blast Radius Contained*), invarianza de artefactos (*Build Once, Deploy Everywhere*), validación *Fail-Fast* en el milisegundo `0` y soporte nativo para ejecución paralela de sub-agentes en Git Worktrees.  
 > **Fecha:** Octubre 2026  
@@ -132,7 +132,7 @@ Al iniciar cualquier proceso de FastAPI o worker de Alembic, el objeto `Settings
 - La compromisión hipotética de una credencial de `local`, `ci` o `staging` tiene un radio de explosión nulo (**0% de acceso**) sobre `production`.
 
 ### 4.4 Observabilidad 4-Pilares (`OpenTelemetry`, `Grafana`, `Sentry/GlitchTip`, `Umami`) y Redacción Automática de Logs (ISO 27001 §A.12.4.1)
-- **Alineación por Entorno (ver `estrategia_observabilidad_monitoreo_y_analitica_001.md`):**
+- **Alineación por Entorno (ver `.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md`):**
   - En `local`: Logs legibles en consola; `OTEL_EXPORTER="none"`, `SENTRY_DSN=None` y `UMAMI_ENABLED=False` por defecto (`0 MB` de RAM extra). Se encienden bajo demanda con `docker compose --profile observability up -d` (`grafana/otel-lgtm` + `glitchtip` + `umami`).
   - En `preview`: Etiqueta cada traza y error con `service.namespace = ENV_NAMESPACE` (`wt_01`, `pr_142`) y mantiene `UMAMI_ENABLED=False`.
   - En `ci`: Usa obligatoriamente `OTEL_EXPORTER="memory"` (`InMemorySpanExporter`, cero tráfico a internet) y valida el filtro de redacción PII.

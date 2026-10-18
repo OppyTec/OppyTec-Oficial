@@ -51,4 +51,4 @@ Al iniciar cualquier tarea en el repositorio o dentro de un `Git Worktree` (`.wo
 
 - **Reglas Inmutables:** `.agent/rules/00-meta-agent-instructions.md` al `.agent/rules/21-design-system-legacy-dna-and-mobile-first.md`.
 - **Mapa Arquitectónico:** `propuesta_arquitectura_tree_001.md`.
-- **16 Estrategias Maestras:** `estrategia_*_001.md` en la raíz del repositorio.
+- **16 Estrategias Maestras:** `.agent/estrategias/estrategia_*_001.md` en la raíz del repositorio.

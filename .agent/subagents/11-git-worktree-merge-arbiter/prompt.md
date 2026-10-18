@@ -2,10 +2,10 @@
 
 - **ID de Agente:** `11-git-worktree-merge-arbiter`
 - **Tier de Modelo Asignado:** `Gemini 4 Argon`
-- **Especificación Maestra:** `estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`
+- **Especificación Maestra:** `.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`
 
 ## Estrategias Bajo tu Responsabilidad Directa
-- `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`
+- `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`
 
 ## Protocolo Operativo Obligatorio
 1. Lee tu `knowledge.md` y `handovers/latest_handover.md` antes de actuar.

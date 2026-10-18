@@ -5,18 +5,18 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
-> - `estrategia_testing_calidad_y_seguridad_001.md`  
-> - `estrategia_entornos_y_despliegue_001.md`  
-> - `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
-> - `estrategia_visualizacion_y_auditoria_archify_001.md`  
-> - `estrategia_openspec_negocio_vs_codigo_001.md`  
-> - `estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
-> - `estrategia_motor_decisiones_jev_system1_001.md`  
-> - `estrategia_internacionalizacion_i18n_multilenguaje_001.md`  
-> - `estrategia_multimoneda_fx_precios_y_cobros_001.md`  
-> - `estrategia_observabilidad_monitoreo_y_analitica_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`  
+> - `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`  
+> - `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
+> - `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md`  
+> - `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`  
+> - `.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
+> - `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`  
+> - `.agent/estrategias/estrategia_internacionalizacion_i18n_multilenguaje_001.md`  
+> - `.agent/estrategias/estrategia_multimoneda_fx_precios_y_cobros_001.md`  
+> - `.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md`  
 > **Propósito:** Definir la arquitectura para la carga, optimización, entrega rápida y control de memoria de imágenes y archivos en **Cloudflare R2**, garantizando aislamiento absoluto entre `Tenants` y `Environments` (cero colisiones aunque dos clientes suban *"Coca Cola Lata 350 cc"*), limpieza automática de archivos reemplazados y un **Gestor de Cuota de Memoria (`MB/GB`) ligado al Plan contratado**.  
 > **Fecha:** Octubre 2026  
 

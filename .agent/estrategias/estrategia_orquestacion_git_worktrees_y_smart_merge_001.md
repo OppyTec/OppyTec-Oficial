@@ -5,10 +5,10 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
-> - `estrategia_testing_calidad_y_seguridad_001.md`  
-> - `estrategia_entornos_y_despliegue_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`  
+> - `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`  
 > - **Prime Agent (`PrimeIntellect-ai/prime-agent`):** *A Self-Improving RLM Harness* (arXiv:2608.23552) + Arquitectura de Grafos de Fusión Determinista.  
 > **Propósito:** Definir la arquitectura de `harness.py` y el motor de **Smart Merge** para que múltiples programadores humanos y múltiples agentes de IA trabajen simultáneamente sobre el mismo código (incluso el mismo archivo) usando **Git Worktrees**, reserva de nodos AST, colas de fusión secuenciales (*Merge Train*) y resolución semántica verificada por *Quality Gates* sin sobrescribir ni romper jamás el proyecto.  
 > **Fecha:** Octubre 2026  
@@ -86,7 +86,7 @@ Cuando **5 agentes de IA** (o varios programadores) deben trabajar en paralelo s
      ```bash
      git worktree add .worktrees/wt-<id> -b agent/<id>-<slug>
      ```
-   - Cada worktree se asocia a su propio `ENV_NAMESPACE="wt_<id>"` (definido en `estrategia_entornos_y_despliegue_001.md`), aislando su esquema de base de datos y prefijo de Redis.
+   - Cada worktree se asocia a su propio `ENV_NAMESPACE="wt_<id>"` (definido en `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`), aislando su esquema de base de datos y prefijo de Redis.
 2. **Reserva de Regiones/Símbolos AST en Código (`claims_registry.json`) con Bloqueo Atómico (`fcntl.flock`):**
    - Antes de que cualquier sub-agente escriba una sola línea en un archivo compartido (ej. `src/modules/inventory/application/stock_service.py`), debe reclamar el símbolo AST que va a crear o modificar:
      ```json

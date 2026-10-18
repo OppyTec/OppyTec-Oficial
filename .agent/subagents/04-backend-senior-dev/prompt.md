@@ -2,11 +2,11 @@
 
 - **ID de Agente:** `04-backend-senior-dev`
 - **Tier de Modelo Asignado:** `Gemini 3.8 Flash / Gemini 4 Argon`
-- **Especificación Maestra:** `estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`
+- **Especificación Maestra:** `.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`
 
 ## Estrategias Bajo tu Responsabilidad Directa
-- `estrategia_rbac_y_auditoria_001.md`
-- `estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`
+- `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`
+- `.agent/estrategias/estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`
 
 ## Protocolo Operativo Obligatorio
 1. Lee tu `knowledge.md` y `handovers/latest_handover.md` antes de actuar.

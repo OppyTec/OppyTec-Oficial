@@ -5,8 +5,8 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
 > - Estándares ISO/IEC 27001 (Seguridad de la Información), ISO 9001 (Gestión de Calidad), OWASP Top 10 (Web, API & LLM) y `cloudflare/security-audit-skill`.  
 > **Propósito:** Establecer la ley inquebrantable de **Co-Creación 1:1 (Código + Tests en el mismo paso)**, la taxonomía completa en 5 dimensiones, los vectores de ataque automatizados con mentalidad Kali Linux (Red Team) y los comandos deterministas de auditoría para que OppyTec v2.0 alcance calidad de software de misión crítica.  
 > **Fecha:** Octubre 2026  

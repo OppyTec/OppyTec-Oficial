@@ -5,17 +5,17 @@
 > **Base Normativa:**  
 > - `MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`  
 > - `propuesta_arquitectura_tree_001.md`  
-> - `estrategia_migraciones_alembic_001.md`  
-> - `estrategia_rbac_y_auditoria_001.md`  
-> - `estrategia_testing_calidad_y_seguridad_001.md`  
-> - `estrategia_entornos_y_despliegue_001.md`  
-> - `estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
-> - `estrategia_visualizacion_y_auditoria_archify_001.md`  
-> - `estrategia_openspec_negocio_vs_codigo_001.md`  
-> - `estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
-> - `estrategia_motor_decisiones_jev_system1_001.md`  
-> - `estrategia_internacionalizacion_i18n_multilenguaje_001.md`  
-> - `estrategia_multimoneda_fx_precios_y_cobros_001.md`  
+> - `.agent/estrategias/estrategia_migraciones_alembic_001.md`  
+> - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`  
+> - `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`  
+> - `.agent/estrategias/estrategia_entornos_y_despliegue_001.md`  
+> - `.agent/estrategias/estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`  
+> - `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md`  
+> - `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`  
+> - `.agent/estrategias/estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`  
+> - `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`  
+> - `.agent/estrategias/estrategia_internacionalizacion_i18n_multilenguaje_001.md`  
+> - `.agent/estrategias/estrategia_multimoneda_fx_precios_y_cobros_001.md`  
 > **Propósito:** Definir cómo se instrumentan desde el Día 1 las cuatro herramientas complementarias de monitoreo (**`OpenTelemetry`**, **`Grafana LGTM`**, **`Sentry / GlitchTip`** y **`Umami`**) en un punto central del Backend y del Frontend, sin sobrecargar la estación de desarrollo local y garantizando detección inmediata de errores, cuellos de botella de rendimiento ($P_{95} \le 120\text{ ms}$) y métricas de uso en Staging y Producción.  
 > **Fecha:** Octubre 2026  
 
@@ -71,7 +71,7 @@ flowchart LR
 
 ---
 
-## 3. Alineación Estricta con los 5 Entornos (`estrategia_entornos_y_despliegue_001.md`)
+## 3. Alineación Estricta con los 5 Entornos (`.agent/estrategias/estrategia_entornos_y_despliegue_001.md`)
 
 El comportamiento de las 4 herramientas está gobernado directamente por la variable `ENVIRONMENT` en `src/core/config.py` y por `/runtime-env.js` en el Frontend (preservando la invarianza del artefacto `SHA-256`):
 
