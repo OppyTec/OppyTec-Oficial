@@ -1,0 +1,37 @@
+schema: spec-driven
+version: "2.0.0"
+
+context: |
+  Language: es
+  Monorepo: OppyTec v2.0
+  All specifications are strictly partitioned into two vaults:
+  1. specs/business-domain/*.business.spec.md (Audience: Clients, Product, Support & OppyFy Layer 3A RAG - 0% SQL, 0% internal code paths).
+  2. specs/engineering-code/*.code.spec.md (Audience: Developers, Architects & AI Agents - DDL, API contracts, RBAC 3-level codes, JEV System 1 evaluation, locks, and tests).
+
+vaults:
+  business_domain:
+    path: "specs/business-domain"
+    suffix: ".business.spec.md"
+    audience: "business_client"
+    forbidden_patterns:
+      - "CREATE TABLE"
+      - "ALTER TABLE"
+      - "SELECT "
+      - "SET LOCAL search_path"
+      - "sqlalchemy"
+      - "FastAPI"
+      - "mapped_column"
+      - ".tsx"
+      - ".py"
+  engineering_code:
+    path: "specs/engineering-code"
+    suffix: ".code.spec.md"
+    audience: "engineering_internal"
+    required_frontmatter_keys:
+      - "spec_id"
+      - "title"
+      - "audience"
+      - "domain_module"
+      - "paired_spec"
+      - "jev_system1_evaluation"
+      - "last_verified_phase"

@@ -1,0 +1,25 @@
+# SHA-256 Integrity Manifest — Inmutable Anti-Reward-Hacking Lock
+340e525b5b1ef07960d69ce77fff2f545d28c92f59eae7da9c1051be125dc9df  .agent/rules/00-meta-agent-instructions.md
+4d565e945a0b2968a8f83bb487ad4d06415d4d9c99cdc113b5f22935a03777cc  .agent/rules/01-architecture-boundaries.md
+369bae685c45fd6b1b5e71be651bdca483f4433fa36e7f3a473260416ee3ac6f  .agent/rules/02-backend-standards.md
+6bdd6557b2265751d98afd5b4e1a100a97301f30cb082d9cb0ead0f88fe470c4  .agent/rules/03-frontend-standards.md
+dba7da017d39df3496c06cd5651d8c4753f51f7c9cddeeb2cc37c3c86c07edaf  .agent/rules/04-security-guardrails.md
+f9ee0b3740bcbecb42cb6865b165e99a301171feb29c0722a0f0bfe0291412aa  .agent/rules/05-testing-and-dod.md
+b6284da326da32b48539623d90f780820fa983669420f58a10956bc7b2a20b31  .agent/rules/06-alembic-and-schema-governance.md
+6f9bc072bfee51f870e2f51eee7f4c2566a45e671dbb7ac0767dc3982ef7e562  .agent/rules/07-rbac-least-privilege-and-audit.md
+2a416ab97bded7d701c0a532a97f70e406b719afebe3845c17204adf38108ebd  .agent/rules/08-offensive-security-and-qa-gates.md
+58c294a7dda3ad8859ae6b16f4b6b0f8bff13242e462d5e56f6129d5dd1ef6bf  .agent/rules/09-environments-and-deployment-governance.md
+d3c1badfbd31ae2670c49e6569445e57ad1f8e019fdee4ce7207029e7809acf8  .agent/rules/10-git-worktrees-and-smart-merge.md
+97ce100378faa289008c42f0135aade91c90af129d70233cdf0bef29aa62c7a1  .agent/rules/11-visual-architecture-and-archify-atlas.md
+ebec5148b1a4b394c5a641e5325f5ca5464d14af1726b06f1a95c7cc33d022d2  .agent/rules/12-openspec-bipartition-and-sync.md
+f0526d24f1576541a6fc1ec0903c0fc05281c5609eb0cc3f4b58ecf419cd5510  .agent/rules/13-oppyfy-ai-governance-and-telemetry.md
+3dcba55a6ce2f3e971af373a7bd92cee28342eb0cc835bc729c4ac1a8ca6e6b6  .agent/rules/14-jev-system1-mandatory-gate.md
+1fa2c71f13b6f125ec3f324b639cbfa62c02939406d14711577f532c0648513b  .agent/rules/15-i18n-multilanguage-and-dynamic-translation.md
+15cfef23b23d694f7204301d32118abe50d6a59e09571ddfcab4274b2147b3bf  .agent/rules/16-multi-currency-fx-and-pricing-governance.md
+27ffdcc722eb7bd32805a29613d77a17dec68be0ff17f7b6dfcc915ea7d9fa68  .agent/rules/17-observability-opentelemetry-sentry-and-umami.md
+68e93bc515044afc6e44802148219d1bb85c7e38bca751436d0a1864b2629e1d  .agent/rules/18-media-storage-r2-and-quota-governance.md
+c5eb867d86775d8f606066b1456611c754c70a929c9db8781bf1474fd08a6da4  .agent/rules/19-database-backups-and-disaster-recovery.md
+426d40642e13b980273acc000b5964aecd06647bc3a38ab9859205501c425ad7  .agent/rules/20-multiagent-squad-and-self-healing-loops.md
+d89098d8ddc699be7447f37ee62e30237fa0b8526e23b1d3b9832b48291d1094  .agent/rules/21-design-system-legacy-dna-and-mobile-first.md
+b9c995525b0085eea89d19e741aa8efd4dbf00746fb81495aa933549c3fd83f0  .agent/evals/rubric_10_criteria.yaml
+3fafc9bcb098475f47408ac41ad43b2a3141ac1c43995063da57483dd6b92a8a  .agent/guardrails/jev_policies.yaml

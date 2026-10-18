@@ -1,0 +1,28 @@
+# .agent/guardrails/jev_policies.yaml
+# Políticas Sistema 1 (JEV) para interceptar y validar acciones de agentes antes de mutar el disco
+version: "2.0.0"
+mode: "enforcing"
+
+immutable_read_only_paths:
+  - "OppyTec-Legacy/**"
+  - ".agent/rules/**"
+  - ".agent/evals/**"
+  - ".agent/guardrails/**"
+  - "oppytec-backend/tests/architecture/**"
+
+forbidden_shell_patterns:
+  - "rm -rf /"
+  - "git push --force"
+  - "alembic merge"
+  - "chmod 777"
+
+mandatory_triage_rules:
+  - id: "JEV-POLICY-001"
+    trigger: "file_write_or_edit"
+    check: "Verify target path is not in immutable_read_only_paths and AST symbol is claimed in claims_registry.json if shared."
+  - id: "JEV-POLICY-002"
+    trigger: "alembic_migration_create"
+    check: "Enforce execution via scripts/db_migration.py new --scope [public|tenant]."
+  - id: "JEV-POLICY-003"
+    trigger: "merge_train_entry"
+    check: "Require QA Parity approval (Agent 09) and Cybersecurity Veto approval (Agent 10)."

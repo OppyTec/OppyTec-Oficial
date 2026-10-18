@@ -1,0 +1,48 @@
+# .agent/evals/rubric_10_criteria.yaml
+# BÓVEDA INMUTABLE DE EVALUACIÓN (100% SOLO LECTURA PARA AGENTES CONSTRUCTORES)
+# Ningún agente constructor puede editar este archivo (verificado por SHA-256 en scripts/harness.py).
+version: "2.0.0"
+minimum_passing_score: 10
+total_criteria: 10
+
+criteria:
+  - id: 1
+    code: "SPEC_BIPARTITION_AND_JEV_GATE"
+    description: "Existe el par espejo en specs/business-domain/ (0% SQL/código) y specs/engineering-code/ con jev_system1_evaluation completado."
+    validator: "test_openspec_bipartition_and_sync.py"
+  - id: 2
+    code: "CLEAN_ARCHITECTURE_BOUNDARIES"
+    description: "Cero importaciones prohibidas desde domain/ hacia infrastructure/ o presentation/ (FastAPI/SQLAlchemy)."
+    validator: "test_clean_architecture.py"
+  - id: 3
+    code: "ZERO_ANY_AND_STRICT_TYPING"
+    description: "mypy --strict y tsc --noEmit devuelven Exit Code 0 con cero uso de Any/any y Decimal obligatorio en finanzas/stock."
+    validator: "mypy_and_tsc"
+  - id: 4
+    code: "ZERO_HARDCODING_AND_SECRETSTR"
+    description: "Cero credenciales, URLs o puertos hardcodeados; uso exclusivo de SecretStr en Settings y lectura desde .env / Secret Manager."
+    validator: "test_09_zero_hardcoding_and_secrets_guard.py"
+  - id: 5
+    code: "ALEMBIC_LINEAR_CORRELATIVE"
+    description: "Migraciones bajo formato NNNN_(public|tenant)_slug.py, 1 solo Head, cero merge_heads y downgrade() reversible."
+    validator: "test_alembic_integrity.py"
+  - id: 6
+    code: "RBAC_THREE_LEVEL_AND_AUDIT"
+    description: "100% de endpoints protegidos con permisos <modulo>.<submodulo>.<funcion>, cupos con soft-delete y registro en AuditService."
+    validator: "test_rbac_and_audit_coverage.py"
+  - id: 7
+    code: "CO_CREATION_1_TO_1_TESTS_AND_LEGACY_PARITY"
+    description: "Todo módulo/servicio tiene sus tests unitarios (Hypothesis), de integración y paridad matemática 100% con OppyTec-Legacy."
+    validator: "test_module_test_parity.py"
+  - id: 8
+    code: "I18N_AND_MULTI_CURRENCY_FX"
+    description: "Cero strings quemados en UI/API, paridad 1:1 en JSONs es/en, protección de nombres propios ('Pollo King') y soporte Multi-Moneda."
+    validator: "test_i18n_keys_parity_and_no_hardcoded_strings.py"
+  - id: 9
+    code: "OPPYFY_JEV_TELEMETRY_AND_R2_QUOTAS"
+    description: "Toda llamada IA pasa por llm_request_logs, herramientas OppyFy validan su RBAC propio y archivos R2 respetan {env}/{holding}/{tenant}/."
+    validator: "test_oppyfy_telemetry_and_isolation.py"
+  - id: 10
+    code: "OFFENSIVE_SECURITY_AND_MOBILE_FIRST_DNA"
+    description: "0 hallazgos críticos en Semgrep/Trivy/Gitleaks/RedTeam y preservación de los 3 temas (light/dark/ocean-blue) con diseño Mobile-First."
+    validator: "test_ui_design_tokens_and_mobile_first.py"
