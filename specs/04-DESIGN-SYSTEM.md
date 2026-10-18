@@ -31,24 +31,24 @@ graph LR
     end
 ```
 
-### 2.1 Especificación de Tokens
+### 2.1 Especificación de Tokens en los 3 Temas Oficiales (`light`, `dark`, `ocean-blue`)
 
-| Token CSS | Modo Claro (Light) | Modo Oscuro (Dark) | Uso Semántico |
-|---|---|---|---|
-| `--background` | `hsl(220 33% 98%)` | `hsl(224 71% 4%)` | Lienzo principal de la aplicación. |
-| `--foreground` | `hsl(224 71% 4%)` | `hsl(210 20% 98%)` | Color de texto principal de alto contraste. |
-| `--card` | `hsl(0 0% 100%)` | `hsl(224 71% 7%)` | Superficies elevadas (Cards, Paneles, Modales). |
-| `--card-foreground` | `hsl(224 71% 4%)` | `hsl(210 20% 98%)` | Texto sobre superficies elevadas. |
-| `--primary` | `hsl(161 72% 38%)` | `hsl(161 72% 44%)` | Acciones principales, botones primarios, acentos de marca. |
-| `--primary-foreground`| `hsl(210 20% 98%)` | `hsl(224 71% 4%)` | Texto sobre elementos de color primario. |
-| `--secondary` | `hsl(220 14% 96%)` | `hsl(215 28% 17%)` | Botones secundarios, tags auxiliares. |
-| `--muted` | `hsl(220 14% 96%)` | `hsl(215 28% 17%)` | Fondos desactivados o sutiles. |
-| `--muted-foreground` | `hsl(220 9% 46%)` | `hsl(218 11% 65%)` | Subtítulos, metadatos, timestamps y placeholders. |
-| `--destructive` | `hsl(0 84% 60%)` | `hsl(0 63% 31%)` | Eliminaciones, registro de mermas, alertas de quiebre. |
-| `--warning` | `hsl(38 92% 50%)` | `hsl(38 92% 50%)` | Advertencias de stock bajo, vencimiento próximo. |
-| `--success` | `hsl(161 72% 38%)` | `hsl(161 72% 38%)` | Confirmación de transacciones, stock saludable. |
-| `--border` | `hsl(220 13% 91%)` | `hsl(215 28% 17%)` | Delimitadores de tabla, bordes de inputs y divisores. |
-| `--ring` | `hsl(161 72% 38%)` | `hsl(161 72% 44%)` | Indicador de foco accesible (Focus Ring). |
+| Token CSS | ☀️ Modo Claro (`light`) | 🌙 Modo Oscuro (`dark`) | 🌊 Tema `ocean-blue` (`.ocean-blue`) | Uso Semántico |
+|---|---|---|---|---|
+| `--background` | `hsl(220 33% 98%)` | `hsl(224 71% 4%)` | `hsl(222 47% 7%)` | Lienzo principal de la aplicación con gradientes radiales. |
+| `--foreground` | `hsl(224 71% 4%)` | `hsl(210 20% 98%)` | `hsl(210 100% 92%)` | Color de texto principal de alto contraste. |
+| `--card` | `hsl(0 0% 100%)` | `hsl(224 71% 6%)` | `hsl(220 40% 10%)` | Superficies elevadas (Cards, Paneles, Modales). |
+| `--card-foreground` | `hsl(224 71% 4%)` | `hsl(210 20% 98%)` | `hsl(210 100% 92%)` | Texto sobre superficies elevadas. |
+| `--primary` | `hsl(161 72% 38%)` | `hsl(161 72% 45%)` | `hsl(186 100% 50%)` | Acciones principales, botones primarios, acentos de marca. |
+| `--primary-foreground`| `hsl(210 20% 98%)` | `hsl(224 71% 4%)` | `hsl(222 47% 7%)` | Texto sobre elementos de color primario. |
+| `--secondary` | `hsl(220 14% 96%)` | `hsl(215 28% 17%)` | `hsl(220 35% 16%)` | Botones secundarios, tags auxiliares. |
+| `--muted` | `hsl(220 14% 96%)` | `hsl(215 28% 17%)` | `hsl(220 35% 14%)` | Fondos desactivados o sutiles. |
+| `--muted-foreground` | `hsl(220 9% 46%)` | `hsl(215 20% 65%)` | `hsl(213 50% 65%)` | Subtítulos, metadatos, timestamps y placeholders. |
+| `--destructive` | `hsl(0 84% 60%)` | `hsl(0 62% 30%)` | `hsl(0 80% 55%)` | Eliminaciones, registro de mermas, alertas de quiebre. |
+| `--warning` | `hsl(38 92% 50%)` | `hsl(38 92% 50%)` | `hsl(42 100% 58%)` | Advertencias de stock bajo, vencimiento próximo. |
+| `--success` | `hsl(161 72% 38%)` | `hsl(161 72% 38%)` | `hsl(152 80% 50%)` | Confirmación de transacciones, stock saludable. |
+| `--border` | `hsl(220 13% 91%)` | `hsl(215 28% 17%)` | `hsl(220 40% 18%)` | Delimitadores de tabla, bordes de inputs y divisores. |
+| `--ring` | `hsl(161 72% 38%)` | `hsl(161 72% 45%)` | `hsl(186 100% 50%)` | Indicador de foco accesible (Focus Ring). |
 
 ---
 
@@ -100,7 +100,10 @@ graph TD
     end
 ```
 
-### 5.1 Reglas de Espaciado (Grid & Spacing Scale)
+### 5.1 Reglas de Espaciado, Efectos de Firma y Arquitectura *Mobile-First*
+*(Ver especificación exhaustiva en [`estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`](../estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md))*
+- **Filosofía *Mobile-First*:** Toda pantalla se diseña primero para móvil (`< 768px`, targets táctiles $\ge 44\times 44\text{px}$, `<AdaptiveDataView />` que muestra tarjetas en móvil y tablas en desktop, `<ResponsiveDialog />` con `vaul` en móvil y `Dialog` en desktop, más `BottomNav` y `useSwipeNavigation`).
+- **Efectos de Firma de Legacy Preservados:** Clases `.glass` / `.glass-card`, bordes animados `.animate-blink-orange`, `.animate-blink-red`, `.animate-blink-green`, `.animate-perimeter-glow`, paleta de 42 colores `PRESET_COLORS` y 49 íconos gastronómicos `CATEGORIZED_ICONS`.
 - **Margen Exterior de Páginas:** `p-4` en pantallas móviles, escalando a `p-6` o `p-8` en escritorio.
 - **Separación entre Tarjetas / Secciones:** `gap-4` ($16\text{px}$) o `gap-6` ($24\text{px}$).
 - **Radio de Borde (Border Radius):**

@@ -69,3 +69,5 @@ htmlcov/
 *.swo
 .DS_Store
 Thumbs.db
+
+notas.md

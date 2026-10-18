@@ -5,23 +5,29 @@
 
 ---
 
-## 🏛️ Estructura del Proyecto
+## 🏛️ Documentación Maestra y Estrategias Normativas
 
-```plaintext
-.
-├── specs/                               # Fuente de verdad: especificaciones técnicas y de producto v2.0
-│   ├── 00-INDEX.md                      # Índice maestro y glosario
-│   ├── 01-PRD.md                        # Product Requirements Document
-│   ├── 02-TRD.md                        # Technical Requirements Document
-│   ├── 03-USER-FLOWS.md                 # Flujos de usuario y rutas
-│   ├── 04-DESIGN-SYSTEM.md              # Sistema de diseño y tokens
-│   ├── 05-DATABASE-SCHEMA.md            # Esquemas PostgreSQL (public vs tenant_*)
-│   └── 06-IMPLEMENTATION-PLAN.md        # Plan de refactorización por fases
-├── oppytec-backend/                     # API RESTful (Python 3.12, FastAPI, SQLAlchemy 2 Async, Alembic)
-├── oppytec-frontend/                    # SPA (React 19, TypeScript, Vite, Tailwind CSS, TanStack Query)
-├── MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md # Marco normativo para agentes de IA y quality gates
-└── .gitignore                           # Exclusión de dependencias, entornos y legacy local
-```
+Antes de modificar cualquier línea de código, todo desarrollador y agente de IA debe regirse por el marco normativo del monorepo:
+
+- **[`MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md`](MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md):** Constitución de Ingeniería Agéntica, RLM Harness (**Prime Agent**), **JEV** y Quality Gates.
+- **[`propuesta_arquitectura_tree_001.md`](propuesta_arquitectura_tree_001.md):** Árbol completo (`tree`) de directorios, subdirectorios y archivos críticos de OppyTec v2.0.
+- **Las 13 Estrategias Maestras de Refactorización (`_001.md`):**
+  1. [`estrategia_migraciones_alembic_001.md`](estrategia_migraciones_alembic_001.md) — Migraciones correlativas `0001..NNNN`, esquemas `public` vs `tenant_*` y Bootstrap Génesis (`oppytec.admin`).
+  2. [`estrategia_rbac_y_auditoria_001.md`](estrategia_rbac_y_auditoria_001.md) — RBAC Dual de 3 niveles (`<modulo>.<submodulo>.<funcion>`), acceso transversal en el Holding, cupos con `soft-delete` y auditoría forense.
+  3. [`estrategia_testing_calidad_y_seguridad_001.md`](estrategia_testing_calidad_y_seguridad_001.md) — Co-Creación 1:1 de tests, 5 dimensiones, Gates estratificados, Cero Hardcoding y 11 vectores Red Team (Kali + Caos).
+  4. [`estrategia_entornos_y_despliegue_001.md`](estrategia_entornos_y_despliegue_001.md) — Los 5 entornos (`local`, `preview`, `ci`, `staging`, `production`), invarianza `SHA-256` (`runtime-env.js`) y configuración *Fail-Fast*.
+  5. [`estrategia_orquestacion_git_worktrees_y_smart_merge_001.md`](estrategia_orquestacion_git_worktrees_y_smart_merge_001.md) — Orquestación paralela con **Prime Agent (`rlm.spawn`)**, Git Worktrees, AST Claiming (`fcntl.flock`) y *Smart Merge Train*.
+  6. [`estrategia_visualizacion_y_auditoria_archify_001.md`](estrategia_visualizacion_y_auditoria_archify_001.md) — Atlas Visual Interactivo HTML (`Archify` alimentado desde `Graphify` a costo 0 de tokens).
+  7. [`estrategia_openspec_negocio_vs_codigo_001.md`](estrategia_openspec_negocio_vs_codigo_001.md) — Bipartición de `specs/` (`business-domain/` para clientes/futuro RAG clientes vs `engineering-code/` para devs/futuro RAG ingeniería).
+  8. [`estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`](estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md) — Asistente **`OppyFy`** (marca configurable), RAG de 3 capas, RBAC propio editable por cliente, paquetes de créditos acumulables sin caducidad, medidor `% contexto` y FinOps `llm_request_logs`.
+  9. [`estrategia_motor_decisiones_jev_system1_001.md`](estrategia_motor_decisiones_jev_system1_001.md) — Motor global **JEV (Sistema 1)** con los 4 candados automáticos *"¿Lo puede hacer JEV (Sí/No)?"*.
+  10. [`estrategia_internacionalizacion_i18n_multilenguaje_001.md`](estrategia_internacionalizacion_i18n_multilenguaje_001.md) — `i18n` Full-Stack (`es` 🇪🇸 / `en` 🇺🇸 + futuros), selector de banderas SVG, traducción dinámica de datos cliente protegiendo nombres propios (`Pollo King`) y patrón minimalista `Pi`.
+  11. [`estrategia_multimoneda_fx_precios_y_cobros_001.md`](estrategia_multimoneda_fx_precios_y_cobros_001.md) — Motor Multi-Moneda FX (Bancos Centrales BCCh + BCE), selector independiente del idioma, consola admin con override manual y gestión de precios.
+  12. [`estrategia_observabilidad_monitoreo_y_analitica_001.md`](estrategia_observabilidad_monitoreo_y_analitica_001.md) — Los 4 pilares (`OpenTelemetry`, `Grafana LGTM`, `Sentry/GlitchTip`, `Umami`) y Centro de Observabilidad con 13 sub-vistas y filtro por `Environment` en `platform-admin`.
+  13. [`estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`](estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md) — Almacenamiento Cloudflare R2 aislado por Tenant/Entorno, compresión WebP en 2 capas y cuota de memoria MB por plan.
+  14. [`estrategia_respaldos_base_datos_y_recuperacion_001.md`](estrategia_respaldos_base_datos_y_recuperacion_001.md) — Respaldos en 4 Capas cifrados (`zstd+age` en Neon PITR, R2 Vault, VPS Secundario y Servidor Local) con restauración quirúrgica de un solo Tenant.
+  15. [`estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`](estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md) — Los **12 Agentes Especializados**, System Prompts, jerarquía Gemini Argon/Flash + JEV y bucles de autoreparación en QA y Ciberseguridad.
+  16. [`estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`](estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md) — Rescate exhaustivo del ADN visual de `OppyTec-Legacy` (3 temas `light`/`dark`/`ocean-blue`, animaciones, 42 colores, 49 íconos, gestos) y filosofía *"Mobile-First, Then Web"*.
 
 ---
 
@@ -30,7 +36,7 @@
 - **Backend:** Python 3.12, FastAPI, SQLAlchemy 2.0 (Async con `asyncpg`), Pydantic v2, Alembic, Redis 7.
 - **Frontend:** React 19, TypeScript 5.x, Vite 6, Tailwind CSS, Radix UI, TanStack React Query v5.
 - **Base de Datos:** PostgreSQL 16 con aislamiento Multi-Tenant por esquemas dinámicos y extensión `pgvector`.
-- **Gobernanza Agéntica:** OpenSpec (Spec-Driven Development), Jev (Guardrails Sistema 1), Linters estrictos (`ruff`, `mypy`, `eslint`, `tsc`).
+- **Gobernanza Agéntica:** OpenSpec (Spec-Driven Development), **Prime Agent** (Self-Improving RLM Harness), Jev (Guardrails Sistema 1), Linters estrictos (`ruff`, `mypy`, `eslint`, `tsc`).
 
 ---
 
