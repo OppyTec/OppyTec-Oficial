@@ -1,190 +1,177 @@
-# 03-USER-FLOWS.md — App Flow & State Transitions
+# 03-USER-FLOWS.md — App Flow, Complete Route Tree & State Transitions
 
-> **Documento:** Mapa de Navegación, Flujos de Interacción y Estados UI  
-> **Proyecto:** OppyTec SaaS  
-> **Versión:** 2.0  
+> **Documento:** Mapa Completo de Navegación (Cliente + Admin OppyTec), Flujos de Interacción *Mobile-First* y Estados UI  
+> **Proyecto:** OppyTec SaaS v2.0  
+> **Estado:** Actualizado y Sincronizado con las 16 Estrategias Maestras (`.agent/estrategias/`)  
 > **Fecha:** Octubre 2026  
 
 ---
 
-## 1. Mapa del Sitio y Árbol de Rutas
+## 1. Mapa del Sitio y Árbol Completo de Rutas (Cliente `tenant_*` + Admin Global `public`)
 
-La aplicación está diseñada como una Single Page Application (SPA) con navegación estructurada según el nivel de privilegio del usuario:
+La aplicación SPA en React 19 se divide en dos shells principales protegidos por el motor RBAC de 3 niveles (`<Can perform="modulo.submodulo.funcion">`) y equipados en su barra superior con los selectores globales: **`<LanguageFlagSelector />`** (Bandera SVG `🇺🇸 EN` / `🇪🇸 ES` + idiomas futuros), **`<CurrencySelector />`** (`CLP`, `USD`, `EUR`, `BRL` + insignia de tasa activa), **`<HoldingTenantSwitcher />`** (acceso transversal entre sucursales del mismo Holding), **`<BodegaSelector />`** y el selector de los **3 Temas (`light` / `dark` / `ocean-blue`)**.
 
 ```mermaid
 graph TD
-    Root["/ (Entrada Pública)"] --> Login["/login (Autenticación)"]
-    Root --> Register["/registro (Onboarding)"]
-    Root --> Recovery["/recuperar-password"]
+    Root["/ (Entrada)"] --> Login["/login (Auth + OAuth + Selector Idioma)"]
+    Login --> SelectTenant["/select-tenant (Conmutador de Sucursales del Holding)"]
+    Login --> AdminShell["/admin/* (AdminLayout - Trabajadores Globales OppyTec en 'public')"]
+    SelectTenant --> ClientShell["AppLayout (Shell Operativo del Cliente en 'tenant_*' + Swipe 29 Vistas)"]
 
-    Login --> Shell["AppLayout (Shell Autenticado - PrivateRoute)"]
-
-    subgraph Operaciones
-        Shell --> StockHome["/ (StockRegistro - Monitor General)"]
-        Shell --> Consumo["/registro-de-consumo"]
-        Shell --> Merma["/gestionar-merma"]
-        Shell --> Conteo["/contar-inventario"]
-        Shell --> Eventos["/eventos"]
+    subgraph ClientRoutes["🏪 RUTAS OPERATIVAS DEL CLIENTE (Gobernadas por Plan + RBAC 3-Niveles)"]
+        ClientShell --> Home["/ (HomeDashboard)"]
+        ClientShell --> Consumo["/registro-de-consumo & /consumo/manos-libres (Voz VAD)"]
+        ClientShell --> Inv["/inventario/stock, /contar-inventario, /recuentos"]
+        ClientShell --> Gestion["/gestion?tab=productos|recetas|combos|grupos-opciones|pedidos|proveedores|mermas"]
+        ClientShell --> Merma["/gestionar-merma (KPIs, Heatmap 7x24, Aprobaciones)"]
+        ClientShell --> Compras["/compras, /proveedores, /contabilidad/facturas"]
+        ClientShell --> Eventos["/eventos (Salones, Banquetes y Estaciones de Buffet)"]
+        ClientShell --> Reportes["/reportes/resumen-general|resumen-ejecutivo|control-perdidas|eficiencia-operacional|vision-financiera"]
+        ClientShell --> ProyHist["/proyeccion, /historial, /notificaciones, /alertas"]
+        ClientShell --> Activ["/actividades/notas|tareas|horarios|usuarios (RBAC, Cupos Plan, Soft-Delete, JIT)"]
+        ClientShell --> OppyFy["/oppyfy (Workspace OppyFy: Chat, Contexto %, Canvas, RBAC Editable, Créditos y Log de Prompts)"]
+        ClientShell --> Config["/configuracion (Bodegas, Áreas, Memoria R2 MB) & /perfil"]
     end
 
-    subgraph ComprasLogistica["Compras y Cadena de Suministro"]
-        Shell --> Compras["/compras (Órdenes de Compra)"]
-        Shell --> Proveedores["/proveedores (Directorio)"]
-        Shell --> Facturas["/facturas (Recepción)"]
-        Facturas --> FacturaDetalle["/facturas/:id (Detalle de Factura)"]
-    end
-
-    subgraph ProduccionVentas["Producción y Ventas"]
-        Shell --> Recetas["/recetas (Fichas Técnicas)"]
-        Shell --> POS["/ventas (Punto de Venta Simple)"]
-    end
-
-    subgraph AnaliticaInteligencia["Inteligencia de Negocios"]
-        Shell --> Alertas["/alertas (Stock Crítico / Vencimientos)"]
-        Shell --> ResumenGen["/reportes/resumen-general"]
-        Shell --> PanelEjecutivo["/reportes/panel-ejecutivo"]
-        Shell --> Perdidas["/reportes/control-perdidas"]
-        Shell --> Eficiencia["/reportes/eficiencia-operacional"]
-        Shell --> Financiera["/reportes/vision-financiera"]
-        Shell --> Historial["/historial (Kardex de Movimientos)"]
-        Shell --> Proyeccion["/proyeccion"]
-    end
-
-    subgraph GestionConfiguracion["Colaboración y Configuración"]
-        Shell --> Notas["/actividades/notas"]
-        Shell --> Tareas["/actividades/tareas"]
-        Shell --> Config["/configuracion (Parámetros y Usuarios)"]
+    subgraph GlobalAdminRoutes["🌐 RUTAS DE ADMINISTRACIÓN GLOBAL OPPYTEC (/admin - Esquema 'public')"]
+        AdminShell --> AdmTenancy["/admin/holdings-tenants (Holdings, Entidad Legal 1:1, Tenants, Módulos)"]
+        AdminShell --> AdmPlans["/admin/plans-and-quotas (Planes: max_active_users, max_storage_mb, Paquetes Créditos)"]
+        AdminShell --> AdmStaff["/admin/global-staff-rbac (Usuarios y Roles Globales de OppyTec)"]
+        AdminShell --> AdmFinOps["/admin/ai-finops-models & /admin/ai-finops-tenants (2 Vistas FinOps llm_request_logs)"]
+        AdminShell --> AdmFX["/admin/fx-currency-console (Tasas BCCh/BCE, Historial y Override Manual)"]
+        AdminShell --> AdmBackups["/admin/r2-storage-and-backups (Memoria R2 y Consola de Respaldos 4-Capas + Restore por Tenant)"]
+        AdminShell --> AdmObs["/admin/observability-center (13 Sub-Vistas: OTel, Grafana, Sentry y Umami + Filtro por Environment)"]
     end
 ```
 
 ---
 
-## 2. Recorridos de Usuario Paso a Paso (User Journeys)
+## 2. Recorridos de Usuario Paso a Paso (User Journeys Críticos)
 
-### 2.1 Flujo 1: Declaración y Aprobación de una Merma
+### 2.1 Flujo 1: Declaración, Evaluación `JEV` y Aprobación de una Merma
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Operador as Operador / Cocinero
-    participant UI as Vista /gestionar-merma
-    participant ClientHook as useMutation(registrarMerma)
-    participant API as Backend FastAPI
-    participant DB as PostgreSQL (Tenant Schema)
+    participant UI as Vista /gestionar-merma (Mobile Drawer / Desktop Dialog)
+    participant API as FastAPI + Guard RBAC (inventory.mermas.create)
+    participant JEV as JEV (Sistema 1)
+    participant DB as PostgreSQL (tenant_*) + AuditLog
 
-    Operador->>UI: Accede a "/gestionar-merma"
-    UI->>Operador: Muestra selector de Bodega, Producto y Motivo
-    Operador->>UI: Selecciona "Bodega Cocina", "Carne Vacuno (2.5 kg)", Motivo: "Caducidad"
-    Operador->>UI: Hace clic en "Confirmar Merma"
-    UI->>ClientHook: Dispara mutación asíncrona
-    Note over UI: Botón pasa a estado "Cargando..." (Deshabilitado)
-    ClientHook->>API: POST /operations/mermas con Payload JSON
-    API->>API: Valida pertenencia al Tenant y Permisos de Rol
-    API->>DB: Inicia Transacción: Inserta RegistroStock (tipo='merma') y actualiza ProductoBodega
-    DB-->>API: Confirmación de inserción (Commit)
-    API-->>ClientHook: HTTP 201 Created con objeto Merma creado
-    ClientHook->>UI: Invalida query ['stock', 'mermas'] en TanStack Query
-    UI-->>Operador: Muestra Toast de éxito ("Merma registrada exitosamente") y limpia formulario
+    Operador->>UI: Selecciona Bodega, Producto, Cantidad y escribe Motivo
+    UI->>API: POST /api/v1/inventory/mermas (con Accept-Language y X-Tenant-ID)
+    API->>JEV: Jev.score (Evalúa coherencia/urgencia del motivo declarado)
+    JEV-->>API: Score + Confianza (registrado en public.llm_request_logs)
+    alt Supera el umbral gerencial configurado para su rol
+        API->>DB: Crea SolicitudAprobacion (estado='pendiente') + notifica al Supervisor/Admin
+        API-->>UI: HTTP 202 Accepted ("Merma enviada a aprobación gerencial")
+    else Dentro del umbral permitido o rol con permiso inventory.mermas.approve
+        API->>DB: Bloqueo canónico FOR UPDATE -> Descuenta en ProductoBodega + inserta en RegistroStock
+        API->>DB: Registra en audit_activity_log con authorization_lineage
+        API-->>UI: HTTP 201 Created
+    end
 ```
 
 ---
 
-### 2.2 Flujo 2: Recepción y Cotejo de Factura de Proveedor
+### 2.2 Flujo 2: Subida de Imagen / Factura en Cloudflare R2 con Validación de Cuota (`max_storage_mb`)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Admin as Administradora
-    participant UI as Vista /facturas
-    participant Scanner as Componente Escáner / Cámara
-    participant API as Backend FastAPI
-    participant S3 as Storage R2
-    participant DB as PostgreSQL (Tenant Schema)
+    actor Admin as Administradora de Local
+    participant UI as Wizard Producto / Vista /contabilidad/facturas
+    participant API as FastAPI Storage & Quota Service
+    participant R2 as Cloudflare R2 ({env}/{holding}/{tenant}/)
+    participant DB as PostgreSQL (tenant_media_assets)
 
-    Admin->>UI: Clic en "Nueva Factura"
-    UI->>Scanner: Abre modal con opción: Subir PDF o Tomar Foto
-    Admin->>Scanner: Captura o sube comprobante tributario
-    Scanner->>API: POST /invoices/upload (Multipart/form-data)
-    Note over Scanner: Barra de progreso de carga activa
-    API->>API: Inspecciona Magic Bytes binarios (anti-malware)
-    API->>S3: Guarda archivo en bucket privado
-    API-->>UI: Retorna URL segura del archivo
-    Admin->>UI: Ingresa N° Factura, Proveedor, Fecha y detalle de ítems
-    Admin->>UI: Clic en "Guardar y Actualizar Stock"
-    UI->>API: POST /invoices/process con detalle de compra
-    API->>DB: Incrementa existencias en bodega elegida y actualiza costo de compra
-    API-->>UI: HTTP 200 OK
-    UI-->>Admin: Redirige a "/facturas/:id" con resumen y etiqueta "Ingresada"
+    Admin->>UI: Sube foto de "Coca Cola Lata 350 cc" (6.5 MB) o PDF de factura
+    UI->>API: POST /api/v1/storage/upload (Multipart)
+    API->>API: 1. Valida Magic Bytes reales + Limpia metadatos EXIF/GPS
+    API->>API: 2. Optimiza imagen a thumb.webp (15 KB) y display.webp (90 KB) + calcula SHA-256
+    API->>DB: 3. SELECT ... FOR UPDATE Verifica cuota del plan (used_bytes + 105 KB <= max_storage_mb)
+    API->>R2: 4. Sube a {env}/{holding_id}/{tenant_id}/products/{sha256_16}_{variant}.webp
+    Note over API,R2: Si reemplazó una foto anterior sin más referencias, la borra de R2 y libera sus bytes
+    API->>DB: 5. Actualiza tenant_media_assets y traducción dinámica *_i18n (respetando marcas propias)
+    API-->>UI: HTTP 201 Created { thumb_url, display_url, storage_used_mb }
 ```
 
 ---
 
-### 2.3 Flujo 3: Venta en POS y Descuento Automático de Insumos
+### 2.3 Flujo 3: Venta / Consumo de Receta con Ordenamiento Canónico de Locks Anti-Deadlock
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Cajero as Cajero
-    participant POSUI as Vista /ventas
-    participant API as Backend FastAPI
-    participant DB as PostgreSQL (Tenant Schema)
+    actor Cajero as Cajero / Operador
+    participant POS as Vista /registro-de-consumo (Mobile Card / Desktop Grid)
+    participant API as FastAPI Operations Service
+    participant DB as PostgreSQL (tenant_*)
 
-    Cajero->>POSUI: Añade 2 unidades de "Hamburguesa Clásica"
-    POSUI->>Cajero: Muestra resumen de orden, total y desglose de impuestos
-    Cajero->>POSUI: Clic en "Cobrar y Finalizar"
-    POSUI->>API: POST /sales/transactions con RecetaID y Cantidad
-    API->>DB: Consulta ingredientes de la Receta (Pan x2, Carne x2, Queso x2)
-    API->>DB: Descuenta stock en ProductoBodega correspondiente
-    API->>DB: Inserta Venta y registros de salida en RegistroStock
-    API-->>POSUI: HTTP 200 OK con Ticket ID
-    POSUI-->>Cajero: Emite sonido de éxito, imprime ticket y resetea canasta
+    Cajero->>POS: Confirma consumo/venta de Receta o Combo
+    POS->>API: POST /api/v1/operations/sales
+    API->>DB: Obtiene ingredientes del escandallo (ej. IDs [50, 12, 8])
+    Note over API,DB: Regla Anti-Deadlock a 500 RPS: Ordena IDs ascendentemente [8, 12, 50]
+    API->>DB: SELECT ... FROM producto_bodegas WHERE producto_id IN (8, 12, 50) ORDER BY producto_id ASC FOR UPDATE
+    API->>DB: Descuenta cantidades con precisión Decimal e inserta asientos en registro_stock
+    API->>DB: Registra evento en audit_activity_log con authorization_lineage
+    API-->>POS: HTTP 201 Created + invalida caché ['stock', tenantId, bodegaId]
 ```
 
 ---
 
-## 3. Disparadores y Consecuencias (Triggers & Side-Effects)
-
-| Disparador UI | Acción del Usuario | Llamada Asíncrona | Estado de Carga (Loading UI) | Consecuencia / Redirección |
-|---|---|---|---|---|
-| **Botón "Iniciar Sesión"** en `/login` | Submit de formulario con email y contraseña válida. | `POST /auth/login` | Spinner dentro del botón primario; inputs congelados. | Almacena JWT en memoria / Cookie; redirige a `/` con carga de tenants disponibles. |
-| **Cambio de Bodega en Navbar** | Selecciona otra bodega en el dropdown superior. | Invalida query cache en cliente (`queryClient.invalidateQueries`). | Skeleton en tablas de stock durante la recarga de datos. | La UI sincroniza todos los listados de productos y alertas a la bodega seleccionada. |
-| **Botón "Registrar Consumo"** | Envío de formulario de insumo consumido. | `POST /operations/movements/` con `tipo='consumo'`. | Botón deshabilitado con micro-spinner; modal bloqueado. | Cierra modal, toast verde de notificación y resta en vivo del stock en tabla. |
-| **Botón "Aprobar Orden de Compra"** | Clic en estado de orden en `/compras`. | `PATCH /purchases/orders/:id/approve` | Indicador de carga pulsante sobre la fila de la tabla. | Estado cambia a badge azul "Aprobada"; dispara notificación al proveedor. |
-| **Botón "Finalizar Conteo Físico"** | Clic al culminar conteo de estantería. | `POST /operations/counts/:id/finalize` | Modal bloqueante con barra de progreso ("Calculando discrepancias..."). | Redirige al informe de diferencias de stock (Sobrantes / Faltantes). |
-
----
-
-## 4. Matriz de Manejo Visual de Estados UI
-
-Toda vista del sistema debe implementar de forma estandarizada los cuatro estados de ciclo de vida de interfaz:
+### 2.4 Flujo 4: Consulta en `OppyFy` con RBAC Propio Editable, `JEV`, Código Duro, `% Contexto` y Créditos
 
 ```mermaid
-stateDiagram-v2
-    [*] --> Cargando: Navegación o Fetch Inicial
-    Cargando --> Vacio: Datos recibidos == [] (Array vacío)
-    Cargando --> Exito: Datos recibidos con registros
-    Cargando --> Fallo: Error de Red (500, 403, Timeout)
+sequenceDiagram
+    autonumber
+    actor User as Trabajador Cliente
+    participant UI as Workspace /oppyfy (Chat + Contexto % + Split-View Canvas)
+    participant API as OppyFy Orchestrator
+    participant JEV as JEV (Sistema 1)
+    participant Tools as Funciones Código Duro (DB Tenant)
+    participant Logs as public.llm_request_logs + oppyfy_prompt_audit_log
 
-    Vacio --> Cargando: Acción del usuario (Nuevo registro / Filtro)
-    Fallo --> Cargando: Clic en botón "Reintentar"
-    Exito --> Cargando: Paginación / Mutación
+    User->>UI: "¿Me alcanza el stock para el evento de 150 personas del sábado?"
+    UI->>API: POST /api/v1/oppyfy/chat (SSE Stream)
+    API->>API: 1. Verifica que el hilo tenga Contexto % < 85% y el trabajador tenga créditos > 0
+    API->>JEV: 2. Jev.boolean (¿Seguridad OK?) + Jev.choice (¿Dominio/Sub-dominio RBAC de OppyFy?)
+    alt Trabajador NO tiene permiso en ese Sub-dominio de OppyFy
+        API->>Logs: Registra BLOCKED_UNAUTHORIZED_PROMPT para alerta del Propietario
+        API-->>UI: Mensaje cortés de restricción de acceso (0 datos filtrados)
+    else Trabajador SÍ tiene permiso (permanente o temporal vigente)
+        API->>JEV: 3. Jev.choice (Selecciona función analyze_event_supply_feasibility + Artefacto Canvas)
+        API->>Tools: 4. Ejecuta cálculo exacto en código duro + redacta costos si no tiene sub-permiso de costos
+        API->>API: 5. Construye prompt minimalista estilo Pi (en el idioma activo ES/EN y moneda activa)
+        API->>Logs: 6. Registra tokens, modelo y costo en public.llm_request_logs + descuenta créditos atómicamente
+        API-->>UI: 7. Stream de respuesta + Tabla/Gráfico en Canvas + nuevo Contexto %
+    end
 ```
 
-### 4.1 Estado Cargando (Loading State)
-- **Principio:** No utilizar spinners a pantalla completa que bloqueen la visibilidad general.
-- **Implementación:** Componentes `Skeleton` con animación de pulso sutil (`animate-pulse`) replicando exactamente la estructura de las tablas, cards o métricas esperadas.
+---
 
-### 4.2 Estado Vacío (Empty State)
-- **Principio:** Un estado vacío jamás debe ser una página en blanco. Debe orientar e incitar a la acción.
-- **Elementos requeridos:**
-  1. Ilustración o icono semántico en color muted (gris suave o primario translúcido).
-  2. Título claro (p.ej. *"Aún no tienes proveedores registrados"*).
-  3. Texto descriptivo breve explicando el beneficio del módulo.
-  4. Botón de Llamado a la Acción (CTA) directo (p.ej. *"Crear Primer Proveedor"*).
+## 3. Disparadores Globales, Gestos *Mobile-First* y Consecuencias
 
-### 4.3 Estado Éxito (Success State)
-- **Implementación:** Notificaciones tipo Toast mediante la librería `Sonner` ancladas en la esquina inferior derecha (`position="bottom-right"`), con duración de 3.5 segundos, icono de check verde y texto conciso. Si la acción fue destructiva o reversible, debe incluir un botón de "Deshacer" (`action={{ label: 'Deshacer', onClick: () => undo() }}`).
+| Disparador en la Interfaz | Acción / Comportamiento Técnico | Efecto Visual en UI (*Mobile-First* y Desktop) |
+|---|---|---|
+| **Cambio de Bandera en `<LanguageFlagSelector />`** (`🇺🇸 EN` $\leftrightarrow$ `🇪🇸 ES`) | Cambia el locale activo en `i18next`, actualiza cabecera `Accept-Language` y preferencia del usuario. | Traduce en `0 ms` todos los menús/botones (11 JSONs) y conmuta los nombres dinámicos (`*_i18n`) de productos, categorías y cargos (manteniendo inmutables marcas y proveedores como `"Pollo King"`). |
+| **Cambio de Divisa en `<CurrencySelector />`** (`CLP`, `USD`, `EUR`, `BRL`) | Aplica la tasa oficial vigente del Banco Central (`BCCh` / `BCE`) desde `CurrencyContext`. | Recalcula en pantalla todos los precios, costos y gráficos con `Decimal` y actualiza la insignia visible (`Vista en: USD · 1 USD = $948,50 CLP`) sin alterar la moneda base contable en DB. |
+| **Conmutación de Sucursal en `<HoldingTenantSwitcher />`** | Cambia `X-Tenant-ID`, limpia caché de sucursal previa y recarga permisos RBAC del usuario en ese local. | Un administrador que trabaja en el *Hotel* y en el *Restaurante* del mismo Holding cambia de negocio en 1 clic sin cerrar sesión. |
+| **Gesto Swipe Horizontal en Móvil / Touchpad (`useSwipeNavigation`)** | Detecta desplazamiento horizontal sobre cabeceras/títulos y navega a la vista anterior/siguiente de `SWIPE_SECTIONS`. | Transición fluida con `framer-motion` y barra inferior de pulgar (`BottomNav`) en pantallas `< 768px`. |
+| **Apertura de Formulario o Detalle (`<ResponsiveDialog />`)** | Evalúa `useIsMobile()`. | En celular se despliega como **Bottom Drawer táctil (`vaul`)** con ajuste de teclado `dvh`; en escritorio se abre como **Modal centrado `.glass` (`Radix Dialog`)** con `CLS = 0`. |
 
-### 4.4 Estado Fallo (Error State)
-- **Fallo a Nivel de Componente:** Bloque con fondo de alerta suave (`bg-destructive/10 text-destructive`), mensaje legible sin volcar stack traces técnicos, y botón interactivo "Reintentar solicitud".
-- **Fallo Crítico de Aplicación:** `ErrorBoundary` global de React en la raíz, ofreciendo volver a la pantalla principal o refrescar la sesión sin pérdida de datos persistidos.
+---
+
+## 4. Matriz de Manejo Visual de los 4 Estados Canónicos de UI
+
+Toda vista en `oppytec-frontend` debe implementar obligatoriamente los 4 estados del ciclo de vida en los **3 temas (`light`, `dark`, `ocean-blue`)**:
+
+1. **Estado Cargando (`PageSkeleton` / `CardSkeleton`):**
+   - Prohibido usar spinners de pantalla completa. Se renderizan esqueletos con la silueta exacta de las tarjetas móviles (`< md`) o filas de tabla (`>= md`).
+2. **Estado Vacío (`EmptyState`):**
+   - Ícono semántico de `lucide-react`, título y descripción traducidos por `i18n`, y botón CTA con `.animate-perimeter-glow` (visible solo si `<Can>` confirma que el rol tiene permiso para crear el recurso).
+3. **Estado Éxito (`Sonner Toast` + Animación Semántica):**
+   - Toast flotante traducido en el idioma activo, acompañado de borde `.animate-blink-green` en el registro recién creado o actualizado y opción de *Deshacer (`useUndoRedo`)* cuando aplique.
+4. **Estado Fallo (`ErrorBoundary` + `X-Trace-ID`):**
+   - Alerta limpia sin exponer stack traces técnicos, botón *"Reintentar"* y visualización discreta del código `X-Trace-ID` para que en el **Centro de Observabilidad de `platform-admin`** se pueda inspeccionar la traza exacta en OpenTelemetry y Sentry.

@@ -101,12 +101,34 @@ graph TD
 ```
 
 ### 5.1 Reglas de Espaciado, Efectos de Firma y Arquitectura *Mobile-First*
-*(Ver especificación exhaustiva en [`.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`](.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md))*
+*(Ver especificación exhaustiva en [`.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`](../.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md))*
 - **Filosofía *Mobile-First*:** Toda pantalla se diseña primero para móvil (`< 768px`, targets táctiles $\ge 44\times 44\text{px}$, `<AdaptiveDataView />` que muestra tarjetas en móvil y tablas en desktop, `<ResponsiveDialog />` con `vaul` en móvil y `Dialog` en desktop, más `BottomNav` y `useSwipeNavigation`).
-- **Efectos de Firma de Legacy Preservados:** Clases `.glass` / `.glass-card`, bordes animados `.animate-blink-orange`, `.animate-blink-red`, `.animate-blink-green`, `.animate-perimeter-glow`, paleta de 42 colores `PRESET_COLORS` y 49 íconos gastronómicos `CATEGORIZED_ICONS`.
+- **Efectos de Firma de Legacy Preservados:**
+  - `.glass` y `.glass-card` (con override marino luminoso en `.ocean-blue`).
+  - Bordes animados semánticos: `.animate-blink-orange` (`2.0s`), `.animate-blink-red` (`2.0s`), `.animate-blink-green` (`2.5s`) y `.animate-perimeter-glow` (`1.8s`).
+  - Prevención de saltos de pantalla (`CLS = 0` en modales Radix UI): `scrollbar-gutter: stable !important` y `html > body[data-scroll-locked]` con especificidad `0,1,0,2`.
 - **Margen Exterior de Páginas:** `p-4` en pantallas móviles, escalando a `p-6` o `p-8` en escritorio.
 - **Separación entre Tarjetas / Secciones:** `gap-4` ($16\text{px}$) o `gap-6` ($24\text{px}$).
 - **Radio de Borde (Border Radius):**
   - Botones e Inputs: `rounded-md` ($6\text{px}$).
   - Cards y Paneles: `rounded-lg` ($8\text{px}$) o `rounded-xl` ($12\text{px}$).
   - Badges y Avatares: `rounded-full`.
+
+---
+
+## 6. Paleta Gastronómica de 42 Colores (`PRESET_COLORS`) y 49 Íconos (`CATEGORIZED_ICONS`)
+
+Para mantener la coherencia visual de Bodegas, Áreas Operativas, Categorías y Cargos RBAC heredada de `OppyTec-Legacy`:
+
+1. **Matriz de 42 Colores Predefinidos (Grilla `6 x 7` con navegación por teclado `useColorKeyboardNav`):**
+   - **Fila 1 (Rojos y Rosados):** `#EF4444`, `#DC2626`, `#B91C1C`, `#F43F5E`, `#E11D48`, `#EC4899`, `#DB2777`
+   - **Fila 2 (Naranjas y Amarillos):** `#F97316`, `#EA580C`, `#D97706`, `#F59E0B`, `#EAB308`, `#FACC15`, `#CA8A04`
+   - **Fila 3 (Verdes y Limas):** `#84CC16`, `#65A30D`, `#22C55E`, `#16A34A`, `#15803D`, `#10B981`, `#059669`
+   - **Fila 4 (Turquesas, Cians y Azules):** `#14B8A6`, `#06B6D4`, `#0891B2`, `#0EA5E9`, `#0284C7`, `#3B82F6`, `#2563EB`
+   - **Fila 5 (Índigos, Púrpuras y Violetas):** `#6366F1`, `#4F46E5`, `#A855F7`, `#9333EA`, `#8B5CF6`, `#7C3AED`, `#C026D3`
+   - **Fila 6 (Grises y Neutros):** `#94A3B8`, `#64748B`, `#475569`, `#78716C`, `#57534E`, `#525252`, `#334155`
+2. **Las 5 Familias de Íconos (`lucide-react` con navegación `useIconKeyboardNav`):**
+   - `🍽️ Alimentos` (21 íconos), `🥤 Bebidas` (8 íconos), `🧼 Operación y limpieza` (8 íconos), `🌱 Especiales` (4 íconos) y `General / UI` (8 íconos).
+3. **Selectores Globales en el `Navbar`:**
+   - `<LanguageFlagSelector />`: Banderas en **SVG vectorial** (`FlagUS.tsx`, `FlagES.tsx` + futuros idiomas `PT`, `FR`, `IT`, `DE`) para evitar que en Windows se muestren letras en vez de banderas.
+   - `<CurrencySelector />`: Selector de divisa (`CLP`, `USD`, `EUR`, `BRL`) independiente del idioma, acompañado siempre de `<MoneyBadge />` que informa la moneda y tasa activa del Banco Central.
