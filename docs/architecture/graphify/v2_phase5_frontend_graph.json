@@ -1,0 +1,286 @@
+{
+  "graph_id": "v2_phase5_frontend_graph",
+  "phase": "Fase 5",
+  "generated_at": "2026-10-19T19:20:00Z",
+  "generator": "12-tech-writer-openspec-archify",
+  "invariants": [
+    "Zero Cross-Feature Imports: features/* modules NEVER import directly from other features/* modules",
+    "Strict Unidirectional Dependency Flow: app/* -> features/* -> shared/*",
+    "Legacy Visual DNA Parity: 3 themes (light, dark, ocean-blue), 42 design tokens, 49 SVG icons, Mobile-First responsive layout",
+    "Zero-Polling Realtime Synchronization: WebSockets (/api/v1/ws/realtime) + Redis Pub/Sub + TanStack Query v5 cache invalidation",
+    "100% i18n Coverage across 11 JSON namespaces (es/en) with SVG Flag Selector and Proper Noun Protection (Pollo King)",
+    "Multi-Currency FX Display & Conversion (CLP, USD, EUR, BRL) backed by Decimal precision (BCCh + BCE Frankfurter)",
+    "Declarative 3-Level RBAC Guard (<Can perform='modulo.submodulo.funcion'>) and Multi-Branch Switcher (<HoldingTenantSwitcher />)"
+  ],
+  "nodes": [
+    {
+      "id": "app:providers_and_router",
+      "type": "app_shell",
+      "path": "oppytec-frontend/src/app/",
+      "symbols": [
+        "AppProviders",
+        "AppRouter",
+        "ThemeProvider",
+        "QueryClientProvider",
+        "HoldingTenantSwitcher"
+      ]
+    },
+    {
+      "id": "shared:i18n_11_namespaces",
+      "type": "shared_kernel",
+      "path": "oppytec-frontend/src/shared/i18n/",
+      "symbols": [
+        "i18nConfig",
+        "useAppTranslation",
+        "LanguageFlagSelector",
+        "translateDynamicEntity"
+      ],
+      "namespaces": [
+        "common",
+        "auth",
+        "rbac_audit",
+        "catalog",
+        "inventory",
+        "recipes",
+        "procurement",
+        "operations",
+        "analytics",
+        "oppyfy",
+        "platform_admin"
+      ]
+    },
+    {
+      "id": "shared:fx_currency",
+      "type": "shared_kernel",
+      "path": "oppytec-frontend/src/shared/currency/",
+      "symbols": [
+        "CurrencyProvider",
+        "CurrencySelector",
+        "useCurrencyFormatter",
+        "formatDecimalMoney",
+        "FxRateBadge"
+      ],
+      "supported_currencies": ["CLP", "USD", "EUR", "BRL"]
+    },
+    {
+      "id": "shared:rbac_can_and_permissions",
+      "type": "shared_kernel",
+      "path": "oppytec-frontend/src/shared/auth/",
+      "symbols": [
+        "Can",
+        "usePermissions",
+        "RequirePermissionRoute",
+        "HoldingContextProvider"
+      ]
+    },
+    {
+      "id": "shared:realtime_websockets",
+      "type": "shared_kernel",
+      "path": "oppytec-frontend/src/shared/realtime/",
+      "symbols": [
+        "useRealtimeSync",
+        "RealtimeWebSocketClient",
+        "RealtimeConnectionIndicator",
+        "NotificationCenterDrawer"
+      ],
+      "zero_polling": true
+    },
+    {
+      "id": "shared:ui_legacy_dna_3_themes",
+      "type": "shared_kernel",
+      "path": "oppytec-frontend/src/shared/components/",
+      "symbols": [
+        "ThemeSwitcher",
+        "MobileBottomNav",
+        "ResponsiveDataTable",
+        "GlassCard",
+        "LegacyIcon"
+      ],
+      "themes": ["light", "dark", "ocean-blue"]
+    },
+    {
+      "id": "feature:auth",
+      "type": "feature_module",
+      "path": "oppytec-frontend/src/features/auth/",
+      "symbols": ["LoginPage", "MfaVerificationModal", "SessionRecoveryBanner"]
+    },
+    {
+      "id": "feature:rbac-and-audit",
+      "type": "feature_module",
+      "path": "oppytec-frontend/src/features/rbac-and-audit/",
+      "symbols": [
+        "RoleMatrixEditor",
+        "PlanQuotaProgressCard",
+        "JitTemporaryPermissionModal",
+        "DualAuditLogExplorer"
+      ]
+    },
+    {
+      "id": "feature:catalog",
+      "type": "feature_module",
+      "path": "oppytec-frontend/src/features/catalog/",
+      "symbols": [
+        "CatalogWorkspace",
+        "ProductFormModal",
+        "UnitConversionMatrixView",
+        "R2WebpImageUploader"
+      ]
+    },
+    {
+      "id": "feature:inventory",
+      "type": "feature_module",
+      "path": "oppytec-frontend/src/features/inventory/",
+      "symbols": [
+        "KardexLedgerView",
+        "StockSemaphoreGrid",
+        "WarehouseTransferModal",
+        "InventoryPhysicalCountView"
+      ]
+    },
+    {
+      "id": "feature:recipes",
+      "type": "feature_module",
+      "path": "oppytec-frontend/src/features/recipes/",
+      "symbols": [
+        "RecipeEscandalloBuilder",
+        "SubRecipeTreeInspector",
+        "ShrinkageAndYieldCalculator",
+        "RecipeCostMarginCard"
+      ]
+    },
+    {
+      "id": "feature:procurement",
+      "type": "feature_module",
+      "path": "oppytec-frontend/src/features/procurement/",
+      "symbols": [
+        "PurchaseOrderWorkspace",
+        "ThreeWayInvoiceMatchView",
+        "SupplierCatalogPriceComparator",
+        "GoodsReceiptNoteForm"
+      ]
+    },
+    {
+      "id": "feature:operations",
+      "type": "feature_module",
+      "path": "oppytec-frontend/src/features/operations/",
+      "symbols": [
+        "MobilePosTouchTerminal",
+        "BuffetConsumptionTracker",
+        "KitchenWasteRegistrationQuickPad",
+        "ShiftProductionPlanner"
+      ]
+    },
+    {
+      "id": "feature:analytics",
+      "type": "feature_module",
+      "path": "oppytec-frontend/src/features/analytics/",
+      "symbols": [
+        "ExecutiveMarginDashboard",
+        "HoldingConsolidatedKpiView",
+        "MenuEngineeringKasavanaMatrix",
+        "FoodCostVarianceChart"
+      ]
+    },
+    {
+      "id": "feature:oppyfy",
+      "type": "feature_module",
+      "path": "oppytec-frontend/src/features/oppyfy/",
+      "symbols": [
+        "OppyFyAssistantWorkspace",
+        "OppyFyRbacSubdomainConfig",
+        "CreditWalletTopupView",
+        "JevSystem1ConfidenceBadge"
+      ]
+    },
+    {
+      "id": "feature:platform-admin",
+      "type": "feature_module",
+      "path": "oppytec-frontend/src/features/platform-admin/",
+      "symbols": [
+        "SuperUserHoldingConsole",
+        "Observability13SubViewsHub",
+        "FxCentralBankConsole",
+        "Backup4LayerVaultRestorePanel",
+        "FinOpsLlmTelemetryView"
+      ],
+      "observability_subviews": 13
+    }
+  ],
+  "edges": [
+    { "source": "app:providers_and_router", "target": "feature:auth", "type": "routes_to" },
+    { "source": "app:providers_and_router", "target": "feature:rbac-and-audit", "type": "routes_to" },
+    { "source": "app:providers_and_router", "target": "feature:catalog", "type": "routes_to" },
+    { "source": "app:providers_and_router", "target": "feature:inventory", "type": "routes_to" },
+    { "source": "app:providers_and_router", "target": "feature:recipes", "type": "routes_to" },
+    { "source": "app:providers_and_router", "target": "feature:procurement", "type": "routes_to" },
+    { "source": "app:providers_and_router", "target": "feature:operations", "type": "routes_to" },
+    { "source": "app:providers_and_router", "target": "feature:analytics", "type": "routes_to" },
+    { "source": "app:providers_and_router", "target": "feature:oppyfy", "type": "routes_to" },
+    { "source": "app:providers_and_router", "target": "feature:platform-admin", "type": "routes_to" },
+
+    { "source": "feature:auth", "target": "shared:i18n_11_namespaces", "type": "imports_shared" },
+    { "source": "feature:auth", "target": "shared:rbac_can_and_permissions", "type": "imports_shared" },
+    { "source": "feature:auth", "target": "shared:ui_legacy_dna_3_themes", "type": "imports_shared" },
+
+    { "source": "feature:rbac-and-audit", "target": "shared:i18n_11_namespaces", "type": "imports_shared" },
+    { "source": "feature:rbac-and-audit", "target": "shared:rbac_can_and_permissions", "type": "imports_shared" },
+    { "source": "feature:rbac-and-audit", "target": "shared:realtime_websockets", "type": "imports_shared" },
+    { "source": "feature:rbac-and-audit", "target": "shared:ui_legacy_dna_3_themes", "type": "imports_shared" },
+
+    { "source": "feature:catalog", "target": "shared:i18n_11_namespaces", "type": "imports_shared" },
+    { "source": "feature:catalog", "target": "shared:fx_currency", "type": "imports_shared" },
+    { "source": "feature:catalog", "target": "shared:rbac_can_and_permissions", "type": "imports_shared" },
+    { "source": "feature:catalog", "target": "shared:realtime_websockets", "type": "imports_shared" },
+    { "source": "feature:catalog", "target": "shared:ui_legacy_dna_3_themes", "type": "imports_shared" },
+
+    { "source": "feature:inventory", "target": "shared:i18n_11_namespaces", "type": "imports_shared" },
+    { "source": "feature:inventory", "target": "shared:fx_currency", "type": "imports_shared" },
+    { "source": "feature:inventory", "target": "shared:rbac_can_and_permissions", "type": "imports_shared" },
+    { "source": "feature:inventory", "target": "shared:realtime_websockets", "type": "imports_shared" },
+    { "source": "feature:inventory", "target": "shared:ui_legacy_dna_3_themes", "type": "imports_shared" },
+
+    { "source": "feature:recipes", "target": "shared:i18n_11_namespaces", "type": "imports_shared" },
+    { "source": "feature:recipes", "target": "shared:fx_currency", "type": "imports_shared" },
+    { "source": "feature:recipes", "target": "shared:rbac_can_and_permissions", "type": "imports_shared" },
+    { "source": "feature:recipes", "target": "shared:realtime_websockets", "type": "imports_shared" },
+    { "source": "feature:recipes", "target": "shared:ui_legacy_dna_3_themes", "type": "imports_shared" },
+
+    { "source": "feature:procurement", "target": "shared:i18n_11_namespaces", "type": "imports_shared" },
+    { "source": "feature:procurement", "target": "shared:fx_currency", "type": "imports_shared" },
+    { "source": "feature:procurement", "target": "shared:rbac_can_and_permissions", "type": "imports_shared" },
+    { "source": "feature:procurement", "target": "shared:realtime_websockets", "type": "imports_shared" },
+    { "source": "feature:procurement", "target": "shared:ui_legacy_dna_3_themes", "type": "imports_shared" },
+
+    { "source": "feature:operations", "target": "shared:i18n_11_namespaces", "type": "imports_shared" },
+    { "source": "feature:operations", "target": "shared:fx_currency", "type": "imports_shared" },
+    { "source": "feature:operations", "target": "shared:rbac_can_and_permissions", "type": "imports_shared" },
+    { "source": "feature:operations", "target": "shared:realtime_websockets", "type": "imports_shared" },
+    { "source": "feature:operations", "target": "shared:ui_legacy_dna_3_themes", "type": "imports_shared" },
+
+    { "source": "feature:analytics", "target": "shared:i18n_11_namespaces", "type": "imports_shared" },
+    { "source": "feature:analytics", "target": "shared:fx_currency", "type": "imports_shared" },
+    { "source": "feature:analytics", "target": "shared:rbac_can_and_permissions", "type": "imports_shared" },
+    { "source": "feature:analytics", "target": "shared:realtime_websockets", "type": "imports_shared" },
+    { "source": "feature:analytics", "target": "shared:ui_legacy_dna_3_themes", "type": "imports_shared" },
+
+    { "source": "feature:oppyfy", "target": "shared:i18n_11_namespaces", "type": "imports_shared" },
+    { "source": "feature:oppyfy", "target": "shared:fx_currency", "type": "imports_shared" },
+    { "source": "feature:oppyfy", "target": "shared:rbac_can_and_permissions", "type": "imports_shared" },
+    { "source": "feature:oppyfy", "target": "shared:realtime_websockets", "type": "imports_shared" },
+    { "source": "feature:oppyfy", "target": "shared:ui_legacy_dna_3_themes", "type": "imports_shared" },
+
+    { "source": "feature:platform-admin", "target": "shared:i18n_11_namespaces", "type": "imports_shared" },
+    { "source": "feature:platform-admin", "target": "shared:fx_currency", "type": "imports_shared" },
+    { "source": "feature:platform-admin", "target": "shared:rbac_can_and_permissions", "type": "imports_shared" },
+    { "source": "feature:platform-admin", "target": "shared:realtime_websockets", "type": "imports_shared" },
+    { "source": "feature:platform-admin", "target": "shared:ui_legacy_dna_3_themes", "type": "imports_shared" }
+  ],
+  "metrics": {
+    "feature_modules": 10,
+    "shared_kernels": 5,
+    "cross_feature_imports": 0,
+    "i18n_namespaces": 11,
+    "legacy_themes": 3,
+    "observability_admin_subviews": 13
+  }
+}
