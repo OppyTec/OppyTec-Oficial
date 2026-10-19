@@ -1,4 +1,33 @@
 {
   "version": "2.0.0",
-  "active_claims": []
+  "active_claims": [
+    {
+      "file": "oppytec-backend/src/core/security.py,oppytec-backend/src/core/exceptions.py,oppytec-backend/src/adapters/storage/,oppytec-backend/src/adapters/email/,oppytec-backend/src/modules/identity/,oppytec-backend/src/modules/tenancy/,oppytec-backend/src/modules/audit/,oppytec-backend/src/modules/catalog/,oppytec-backend/src/modules/inventory/,oppytec-backend/src/modules/recipes/,oppytec-backend/src/modules/procurement/,oppytec-backend/src/modules/operations/,oppytec-backend/src/modules/analytics/,oppytec-backend/tests/unit/domain/",
+      "symbol_path": "phase3.core_modules_domain_app_storage_email",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Fase 3: Implementar domain/ y application/ de 9 modulos core, RBAC Dual, cupos, R2 storage WebP, email y tests Hypothesis",
+      "claimed_at": "2026-10-19T14:30:55.840082+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/adapters/ai/,oppytec-backend/src/modules/oppy_ai/domain/,oppytec-backend/src/modules/oppy_ai/application/,oppytec-backend/tests/unit/modules/test_oppy_ai_services.py",
+      "symbol_path": "phase3.ai_adapters_jev_and_oppyfy_module",
+      "claimed_by": "06-ai-oppyfy-and-jev-engineer",
+      "intent": "Fase 3: Implementar adaptadores JEV Sistema 1 y Gemini, y capas domain/ y application/ de oppy_ai (OppyFy RAG 3-Capas, RBAC propio editable, creditos y llm_request_logs)",
+      "claimed_at": "2026-10-19T14:30:55.915425+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/core/i18n/,oppytec-backend/src/core/fx/,oppytec-backend/src/core/realtime/,oppytec-backend/tests/unit/test_i18n_fx_and_realtime.py",
+      "symbol_path": "phase3.i18n_fx_and_realtime_websockets",
+      "claimed_by": "07-i18n-and-fx-currency-specialist",
+      "intent": "Fase 3: Implementar motor i18n estatico/dinamico (filtro Pollo King + patron Pi + locales es/en), motor FX (BCCh + BCE Decimal + anomaly guard >8%) y motor WebSockets realtime",
+      "claimed_at": "2026-10-19T14:30:55.992696+00:00"
+    },
+    {
+      "file": "specs/business-domain/,specs/engineering-code/,docs/architecture/atlas/02-rbac-quotas-and-audit.archify.html,docs/architecture/atlas/03-clean-architecture-and-domain.archify.html,docs/architecture/graphify/,docs/bitacora/",
+      "symbol_path": "phase3.openspec_vaults_and_archify_maps_2_3",
+      "claimed_by": "12-tech-writer-openspec-archify",
+      "intent": "Fase 3: Crear los 13 specs business-domain y 14 specs engineering-code, Mapas 2 y 3 de Archify, Graphify Fase 3 y bitacora Fase 3",
+      "claimed_at": "2026-10-19T14:30:56.069526+00:00"
+    }
+  ]
 }
