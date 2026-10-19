@@ -1,0 +1,36 @@
+{
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "search": "Buscar",
+    "export": "Exportar",
+    "refresh": "Actualizar"
+  },
+  "navigation": {
+    "dashboard": "Panel Principal",
+    "catalog": "Catálogo",
+    "inventory": "Inventario y Bodegas",
+    "recipes": "Recetas y Escandallos",
+    "procurement": "Compras y Proveedores",
+    "operations": "Operaciones y Ventas",
+    "analytics": "Analítica y Reportes",
+    "oppyfy": "Asistente {{brandName}}",
+    "platform_admin": "Administración Plataforma"
+  },
+  "status": {
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "pending_approval": "Pendiente de Aprobación",
+    "SyncCompleted": "Sincronización completada para {{tenantName}}"
+  },
+  "currency": {
+    "active_badge": "Moneda activa: {{currencyCode}} ({{symbol}})",
+    "converted_badge": "Convertido a: {{currencyCode}} ({{symbol}} · 1 {{baseCurrency}} = {{exchangeRate}} {{quoteCurrency}})"
+  },
+  "greetings": {
+    "welcome_user": "Hola, {{userName}} ({{roleName}})"
+  }
+}

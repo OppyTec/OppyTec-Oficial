@@ -1,13 +1,14 @@
-# Reporte de Traspaso (`Handover`) — Agente 07: Especialista en Internacionalización (i18n) y Multi-Moneda (FX)
+# Handover — Agente 07 (i18n + FX + Realtime) — Fase 3
 
-- **Fecha UTC:** 2026-10-18T21:01:56.305067+00:00
-- **Fase:** Paso 0 -> Fase 1
+## Completed
+- `core/i18n`: traductor estático (es/en, fallback es, `{{var}}`), `dynamic_field_sync` (filtro de nombres propios, dedupe SHA-256, prompt Pi minimalista), locales `common`/`errors` en paridad 1:1.
+- `core/fx`: providers BCCh/BCE (Decimal), triangulación CLP/USD/EUR/BRL/UF, `anomaly_guard` (>0.08), override manual auditado.
+- `core/realtime`: envelope, manager aislado por canal con RBAC de 3 niveles, publisher Pub/Sub+Stream con catch-up, router WS `/api/v1/ws/realtime` con JWT.
+- Tests: `tests/unit/test_i18n_fx_and_realtime.py` (10 tests). ruff, mypy --strict y pytest pasan.
 
-## 1. Completed (Qué se hizo)
-- Estructura de gobernanza `.agent/subagents/07-i18n-and-fx-currency-specialist/` inicializada.
+## Friction & Failures
+- El agente previo se cortó por cuota; se revisó y validó su trabajo sin cambios de fondo.
+- Encadenar uv run en un solo comando se colgó; ejecutar cada check por separado.
 
-## 2. Friction & Failures (Qué salió mal / Qué cuidar)
-- Ninguna fricción en Paso 0.
-
-## 3. Next Exact Action (Siguiente paso exacto)
-- Ejecutar las tareas correspondientes a la **Fase 1** de `specs/06-IMPLEMENTATION-PLAN.md`.
+## Next Exact Action
+- Merge Train (Agente 11); conectar i18n/FX/realtime a los routers de dominio en fases posteriores.

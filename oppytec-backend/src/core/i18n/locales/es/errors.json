@@ -1,0 +1,21 @@
+{
+  "auth": {
+    "invalid_credentials": "Las credenciales ingresadas no son válidas.",
+    "token_expired": "La sesión ha expirado. Por favor inicia sesión nuevamente.",
+    "session_revoked": "Tu sesión en {{tenantName}} fue revocada por un administrador.",
+    "tenant_access_denied": "No tienes acceso autorizado a la sucursal {{tenantId}}."
+  },
+  "rbac": {
+    "permission_denied": "Permiso denegado: se requiere '{{requiredPermission}}' para ejecutar esta acción.",
+    "seat_quota_exceeded": "Límite de usuarios activos alcanzado ({{activeUsers}}/{{maxUsers}})."
+  },
+  "fx": {
+    "unsupported_currency": "La moneda '{{currencyCode}}' no está soportada por el motor cambiario.",
+    "anomaly_quarantined": "Variación cambiaria anómala detectada en {{currencyPair}} ({{variationPct}}%). Se conserva la tasa previa {{previousRate}}.",
+    "manual_reason_required": "Debe especificar un motivo auditable de al menos {{minChars}} caracteres para el override manual."
+  },
+  "validation": {
+    "field_required": "El campo '{{fieldName}}' es obligatorio.",
+    "invalid_decimal": "El monto ingresado para '{{fieldName}}' no es un valor decimal válido."
+  }
+}

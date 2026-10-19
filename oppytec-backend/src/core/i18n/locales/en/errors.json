@@ -1,0 +1,21 @@
+{
+  "auth": {
+    "invalid_credentials": "The provided credentials are invalid.",
+    "token_expired": "Your session has expired. Please sign in again.",
+    "session_revoked": "Your session in {{tenantName}} was revoked by an administrator.",
+    "tenant_access_denied": "You do not have authorized access to branch {{tenantId}}."
+  },
+  "rbac": {
+    "permission_denied": "Permission denied: '{{requiredPermission}}' is required to perform this action.",
+    "seat_quota_exceeded": "Active user seat limit reached ({{activeUsers}}/{{maxUsers}})."
+  },
+  "fx": {
+    "unsupported_currency": "Currency '{{currencyCode}}' is not supported by the FX engine.",
+    "anomaly_quarantined": "Anomalous FX rate drift detected for {{currencyPair}} ({{variationPct}}%). Previous rate {{previousRate}} preserved.",
+    "manual_reason_required": "You must provide an auditable reason of at least {{minChars}} characters for manual FX override."
+  },
+  "validation": {
+    "field_required": "Field '{{fieldName}}' is required.",
+    "invalid_decimal": "The amount provided for '{{fieldName}}' is not a valid decimal value."
+  }
+}
