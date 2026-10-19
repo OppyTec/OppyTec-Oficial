@@ -1,0 +1,530 @@
+{
+  "archify_version": "3.1.0",
+  "map_id": "02-rbac-quotas-and-audit",
+  "title": "Mapa 2: RBAC Dual de 3 Niveles, Jerarquía hierarchy_rank, Cupos de Usuarios, RBAC Editable de OppyFy y Doble Libro de Auditoría Forense",
+  "subtitle": "OppyTec SaaS v2.0 — Atlas Visual Interactivo (Fase 3)",
+  "phase": "Fase 3",
+  "updated_at": "2026-10-19T15:50:00Z",
+  "author_agent": "12-tech-writer-openspec-archify",
+  "lenses": [
+    {
+      "id": "all",
+      "label": "Vista Completa",
+      "description": "Autorización, jerarquía, cupos, RBAC de OppyFy y auditoría."
+    },
+    {
+      "id": "equation",
+      "label": "Ecuación de Permisos",
+      "description": "M_Plan ∩ ((P_Rol ∪ P_Temp) \\ P_Deny) resuelta en cada request."
+    },
+    {
+      "id": "hierarchy",
+      "label": "3 Leyes de Jerarquía",
+      "description": "hierarchy_rank: menor número = mayor poder; protección contra escalada."
+    },
+    {
+      "id": "quotas",
+      "label": "Cupos y Kill-Switch",
+      "description": "max_active_users con soft-delete y kill-switch en Redis."
+    },
+    {
+      "id": "oppyfy",
+      "label": "RBAC de OppyFy",
+      "description": "Permisos propios del asistente, editables por el cliente."
+    },
+    {
+      "id": "audit",
+      "label": "Doble Auditoría",
+      "description": "Libro global (public) y libro del tenant, forenses e inmutables."
+    }
+  ],
+  "trust_boundaries": [
+    {
+      "id": "tb_authz",
+      "label": "Zona 1: Decisión de autorización (determinista)",
+      "lens": "equation"
+    },
+    {
+      "id": "tb_quota",
+      "label": "Zona 2: Cupos y corte de acceso",
+      "lens": "quotas"
+    },
+    {
+      "id": "tb_ai",
+      "label": "Zona 3: Asistente IA con RBAC propio",
+      "lens": "oppyfy"
+    },
+    {
+      "id": "tb_audit",
+      "label": "Zona 4: Evidencia forense",
+      "lens": "audit"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "plan_modules",
+      "label": "M_Plan: módulos del plan",
+      "category": "equation",
+      "boundary": "tb_authz",
+      "badge": "Conjunto plan",
+      "summary": "Conjunto de módulos habilitados por el plan del tenant; es la cota superior de cualquier permiso.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/tenancy/domain/plan.py",
+        "lines": "1-80",
+        "invariants": [
+          "Un permiso fuera de M_Plan se deniega aunque el rol lo tenga.",
+          "Cambio de plan invalida caché de permisos."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "role_perms",
+      "label": "P_Rol: permisos del rol",
+      "category": "equation",
+      "boundary": "tb_authz",
+      "badge": "Conjunto rol",
+      "summary": "Permisos con código <modulo>.<submodulo>.<funcion> asignados al rol.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/identity/domain/permissions.py",
+        "lines": "1-120",
+        "invariants": [
+          "Códigos de 3 niveles validados por regex.",
+          "Roles globales y de tenant son catálogos separados."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "temp_perms",
+      "label": "P_Temp: permisos temporales",
+      "category": "equation",
+      "boundary": "tb_authz",
+      "badge": "Conjunto temporal",
+      "summary": "Permisos otorgados con vencimiento; se ignoran al expirar.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/identity/domain/temporary_grants.py",
+        "lines": "1-70",
+        "invariants": [
+          "Siempre con expires_at.",
+          "Quedan auditados al otorgar y al expirar."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "deny_perms",
+      "label": "P_Deny: negaciones explícitas",
+      "category": "equation",
+      "boundary": "tb_authz",
+      "badge": "Conjunto deny",
+      "summary": "Denegaciones por usuario que restan del resultado y siempre ganan.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/identity/domain/permissions.py",
+        "lines": "121-170",
+        "invariants": [
+          "Deny prevalece sobre cualquier grant."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "resolver",
+      "label": "Resolvedor de permisos efectivos",
+      "category": "equation",
+      "boundary": "tb_authz",
+      "badge": "M_Plan ∩ ((P_Rol ∪ P_Temp) \\ P_Deny)",
+      "summary": "Calcula el conjunto efectivo con la ecuación maestra; es función pura sin I/O.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/identity/application/resolve_permissions.py",
+        "lines": "1-90",
+        "invariants": [
+          "Función pura y determinista.",
+          "JEV no participa en la decisión de acceso."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py",
+          "oppytec-backend/tests/unit/test_permission_equation.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "require_dep",
+      "label": "Dependencia require_permission",
+      "category": "equation",
+      "boundary": "tb_authz",
+      "badge": "Guardia de endpoint",
+      "summary": "Dependencia de la capa de presentación que exige el código de permiso en cada ruta.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/identity/presentation/dependencies.py",
+        "lines": "1-60",
+        "invariants": [
+          "Todo endpoint mutante declara permiso.",
+          "Fallo → 403 con auditoría."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "law1",
+      "label": "Ley 1: no operar sobre rank <= propio",
+      "category": "hierarchy",
+      "boundary": "tb_authz",
+      "badge": "hierarchy_rank",
+      "summary": "Un usuario solo administra usuarios de rango estrictamente mayor (número más alto).",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/identity/domain/hierarchy.py",
+        "lines": "1-50",
+        "invariants": [
+          "Superuser=0, admin=10, supervisor=20, developer=30, custom>30."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_hierarchy_laws.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "law2",
+      "label": "Ley 2: no otorgar más de lo propio",
+      "category": "hierarchy",
+      "boundary": "tb_authz",
+      "badge": "hierarchy_rank",
+      "summary": "Nadie asigna permisos o roles que él mismo no posee o de rango superior al suyo.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/identity/domain/hierarchy.py",
+        "lines": "51-95",
+        "invariants": [
+          "Previene escalada de privilegios."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_hierarchy_laws.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "law3",
+      "label": "Ley 3: último superior inamovible",
+      "category": "hierarchy",
+      "boundary": "tb_authz",
+      "badge": "hierarchy_rank",
+      "summary": "No se puede eliminar ni degradar al último usuario del rango más alto de un tenant.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/identity/domain/hierarchy.py",
+        "lines": "96-140",
+        "invariants": [
+          "Siempre queda al menos un administrador raíz."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_hierarchy_laws.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "quota_check",
+      "label": "Cupo max_active_users",
+      "category": "quotas",
+      "boundary": "tb_quota",
+      "badge": "Cupo del plan",
+      "summary": "Verifica usuarios activos contra el cupo del plan antes de crear o reactivar.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/tenancy/application/quota.py",
+        "lines": "1-70",
+        "invariants": [
+          "Solo cuentan usuarios con deleted_at NULL.",
+          "Cupo ilimitado solo para trabajadores globales."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_user_quota.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "soft_delete",
+      "label": "Soft-delete libera cupo",
+      "category": "quotas",
+      "boundary": "tb_quota",
+      "badge": "deleted_at",
+      "summary": "Eliminar un usuario marca deleted_at, libera cupo y conserva la auditoría.",
+      "card": {
+        "file_path": "oppytec-backend/src/shared/mixins.py",
+        "lines": "1-60",
+        "invariants": [
+          "Nunca DELETE físico de usuarios.",
+          "Auditoría referencia usuario eliminado."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_models_and_mixins.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "kill_switch",
+      "label": "Kill-switch Redis",
+      "category": "quotas",
+      "boundary": "tb_quota",
+      "badge": "Redis flag",
+      "summary": "Bandera por tenant/usuario en Redis que corta el acceso al instante.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/security/kill_switch.py",
+        "lines": "1-55",
+        "invariants": [
+          "Consultado en cada request antes de resolver permisos.",
+          "Fail-closed si Redis no responde para tenants marcados."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_kill_switch.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "oppy_rbac",
+      "label": "RBAC propio de OppyFy",
+      "category": "oppyfy",
+      "boundary": "tb_ai",
+      "badge": "Roles de IA",
+      "summary": "Catálogo de permisos del asistente (ej. oppy.inventory.read) editable por el cliente.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/oppy_ai/domain/oppy_rbac.py",
+        "lines": "1-90",
+        "invariants": [
+          "Intersección con permisos del usuario humano: nunca amplía.",
+          "Cambios auditados."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_oppyfy_rbac_and_credits.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "oppy_editor",
+      "label": "Editor de permisos de OppyFy",
+      "category": "oppyfy",
+      "boundary": "tb_ai",
+      "badge": "UI cliente",
+      "summary": "Pantalla donde el administrador del cliente activa o desactiva capacidades del asistente.",
+      "card": {
+        "file_path": "oppytec-frontend/src/modules/oppy_ai/presentation/OppyPermissionsEditor.tsx",
+        "lines": "1-120",
+        "invariants": [
+          "Envuelta en <Can> con permiso de edición.",
+          "Textos i18n es/en."
+        ],
+        "tests": [
+          "oppytec-frontend/tests/oppy-permissions-editor.test.tsx"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "jev_gate",
+      "label": "JEV como pre-filtro de OppyFy",
+      "category": "oppyfy",
+      "boundary": "tb_ai",
+      "badge": "Jev.choice",
+      "summary": "JEV clasifica intención y modera antes del LLM; no concede permisos.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/oppy_ai/application/jev_router.py",
+        "lines": "1-80",
+        "invariants": [
+          "Umbral 0.75; bajo umbral → respuesta segura."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_jev_system1_enforcement.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "audit_global",
+      "label": "Libro global de auditoría",
+      "category": "audit",
+      "boundary": "tb_audit",
+      "badge": "public.global_audit_log",
+      "summary": "Eventos de trabajadores OppyTec y operaciones transversales (alta de tenants, planes).",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/audit/infrastructure/global_audit.py",
+        "lines": "1-80",
+        "invariants": [
+          "Append-only.",
+          "Incluye IP, user-agent y diff antes/después."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "audit_tenant",
+      "label": "Libro de auditoría del tenant",
+      "category": "audit",
+      "boundary": "tb_audit",
+      "badge": "tenant_<slug>.audit_log",
+      "summary": "Eventos de usuarios del cliente dentro de su esquema aislado.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/audit/infrastructure/tenant_audit.py",
+        "lines": "1-80",
+        "invariants": [
+          "Escritura en la misma transacción del cambio.",
+          "Sin UPDATE ni DELETE."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "audit_writer",
+      "label": "Escritor de auditoría transaccional",
+      "category": "audit",
+      "boundary": "tb_audit",
+      "badge": "Application service",
+      "summary": "Registra quién, cuándo, qué y por qué en el libro correcto según el contexto.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/audit/application/audit_writer.py",
+        "lines": "1-75",
+        "invariants": [
+          "Todo comando mutante pasa por el escritor."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "plan_modules",
+      "target": "resolver",
+      "label": "aporta cota superior",
+      "protocol": "in-process"
+    },
+    {
+      "source": "role_perms",
+      "target": "resolver",
+      "label": "aporta grants",
+      "protocol": "in-process"
+    },
+    {
+      "source": "temp_perms",
+      "target": "resolver",
+      "label": "aporta grants temporales",
+      "protocol": "in-process"
+    },
+    {
+      "source": "deny_perms",
+      "target": "resolver",
+      "label": "resta negaciones",
+      "protocol": "in-process"
+    },
+    {
+      "source": "resolver",
+      "target": "require_dep",
+      "label": "entrega permisos efectivos",
+      "protocol": "in-process"
+    },
+    {
+      "source": "require_dep",
+      "target": "audit_writer",
+      "label": "registra denegaciones",
+      "protocol": "in-process"
+    },
+    {
+      "source": "law1",
+      "target": "require_dep",
+      "label": "valida jerarquía",
+      "protocol": "in-process"
+    },
+    {
+      "source": "law2",
+      "target": "require_dep",
+      "label": "valida delegación",
+      "protocol": "in-process"
+    },
+    {
+      "source": "law3",
+      "target": "soft_delete",
+      "label": "protege último superior",
+      "protocol": "in-process"
+    },
+    {
+      "source": "quota_check",
+      "target": "soft_delete",
+      "label": "cuenta solo activos",
+      "protocol": "in-process"
+    },
+    {
+      "source": "kill_switch",
+      "target": "require_dep",
+      "label": "corta antes de resolver",
+      "protocol": "in-process"
+    },
+    {
+      "source": "oppy_rbac",
+      "target": "resolver",
+      "label": "intersecta con permisos humanos",
+      "protocol": "in-process"
+    },
+    {
+      "source": "oppy_editor",
+      "target": "oppy_rbac",
+      "label": "edita",
+      "protocol": "in-process"
+    },
+    {
+      "source": "jev_gate",
+      "target": "oppy_rbac",
+      "label": "precede",
+      "protocol": "in-process"
+    },
+    {
+      "source": "audit_writer",
+      "target": "audit_global",
+      "label": "escribe global",
+      "protocol": "in-process"
+    },
+    {
+      "source": "audit_writer",
+      "target": "audit_tenant",
+      "label": "escribe tenant",
+      "protocol": "in-process"
+    },
+    {
+      "source": "oppy_editor",
+      "target": "audit_writer",
+      "label": "audita cambios",
+      "protocol": "in-process"
+    },
+    {
+      "source": "quota_check",
+      "target": "audit_writer",
+      "label": "audita rechazos",
+      "protocol": "in-process"
+    }
+  ]
+}

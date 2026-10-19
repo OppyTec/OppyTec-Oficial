@@ -1,0 +1,205 @@
+{
+  "graph_id": "v2_phase3_domain_graph",
+  "phase": "Fase 3",
+  "generated_at": "2026-10-19T15:50:00Z",
+  "generator": "12-tech-writer-openspec-archify",
+  "nodes": [
+    {
+      "id": "module:identity",
+      "type": "module",
+      "path": "oppytec-backend/src/modules/identity/",
+      "layers": [
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation"
+      ]
+    },
+    {
+      "id": "module:tenancy",
+      "type": "module",
+      "path": "oppytec-backend/src/modules/tenancy/",
+      "layers": [
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation"
+      ]
+    },
+    {
+      "id": "module:audit",
+      "type": "module",
+      "path": "oppytec-backend/src/modules/audit/",
+      "layers": [
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation"
+      ]
+    },
+    {
+      "id": "module:catalog",
+      "type": "module",
+      "path": "oppytec-backend/src/modules/catalog/",
+      "layers": [
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation"
+      ]
+    },
+    {
+      "id": "module:inventory",
+      "type": "module",
+      "path": "oppytec-backend/src/modules/inventory/",
+      "layers": [
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation"
+      ]
+    },
+    {
+      "id": "module:recipes",
+      "type": "module",
+      "path": "oppytec-backend/src/modules/recipes/",
+      "layers": [
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation"
+      ]
+    },
+    {
+      "id": "module:procurement",
+      "type": "module",
+      "path": "oppytec-backend/src/modules/procurement/",
+      "layers": [
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation"
+      ]
+    },
+    {
+      "id": "module:operations",
+      "type": "module",
+      "path": "oppytec-backend/src/modules/operations/",
+      "layers": [
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation"
+      ]
+    },
+    {
+      "id": "module:analytics",
+      "type": "module",
+      "path": "oppytec-backend/src/modules/analytics/",
+      "layers": [
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation"
+      ]
+    },
+    {
+      "id": "module:oppy_ai",
+      "type": "module",
+      "path": "oppytec-backend/src/modules/oppy_ai/",
+      "layers": [
+        "domain",
+        "application",
+        "infrastructure",
+        "presentation"
+      ]
+    },
+    {
+      "id": "core:jev",
+      "type": "service",
+      "path": "oppytec-backend/src/core/jev/"
+    },
+    {
+      "id": "core:fx",
+      "type": "service",
+      "path": "oppytec-backend/src/core/fx/"
+    },
+    {
+      "id": "core:storage",
+      "type": "service",
+      "path": "oppytec-backend/src/core/storage/"
+    },
+    {
+      "id": "shared:i18n",
+      "type": "service",
+      "path": "oppytec-backend/src/shared/i18n.py"
+    },
+    {
+      "id": "shared:units",
+      "type": "service",
+      "path": "oppytec-backend/src/shared/units.py"
+    }
+  ],
+  "edges": [
+    {
+      "source": "module:recipes",
+      "target": "module:catalog",
+      "type": "depends_on"
+    },
+    {
+      "source": "module:inventory",
+      "target": "module:catalog",
+      "type": "depends_on"
+    },
+    {
+      "source": "module:procurement",
+      "target": "module:inventory",
+      "type": "depends_on"
+    },
+    {
+      "source": "module:operations",
+      "target": "module:recipes",
+      "type": "depends_on"
+    },
+    {
+      "source": "module:operations",
+      "target": "module:inventory",
+      "type": "depends_on"
+    },
+    {
+      "source": "module:analytics",
+      "target": "module:inventory",
+      "type": "depends_on"
+    },
+    {
+      "source": "module:oppy_ai",
+      "target": "module:analytics",
+      "type": "depends_on"
+    },
+    {
+      "source": "module:catalog",
+      "target": "module:tenancy",
+      "type": "depends_on"
+    },
+    {
+      "source": "module:inventory",
+      "target": "module:audit",
+      "type": "depends_on"
+    },
+    {
+      "source": "module:oppy_ai",
+      "target": "module:identity",
+      "type": "depends_on"
+    }
+  ],
+  "specs": {
+    "business_domain": 13,
+    "engineering_code": 15
+  },
+  "atlas_maps": [
+    "01-tenancy-and-schemas",
+    "02-rbac-quotas-and-audit",
+    "03-clean-architecture-and-domain",
+    "05-environments-and-agentic-harness"
+  ]
+}

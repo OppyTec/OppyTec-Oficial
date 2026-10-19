@@ -1,0 +1,24 @@
+{
+  "receipt_version": "3.1.0",
+  "map_id": "02-rbac-quotas-and-audit",
+  "source_file": "docs/architecture/atlas/sources/02-rbac-quotas-and-audit.archify.json",
+  "target_html": "docs/architecture/atlas/02-rbac-quotas-and-audit.archify.html",
+  "source_sha256": "820538874d0c70a3f85e76254dbdf9069d3f155c1a56acf6ca188ca2a1e316c6",
+  "validated_at": "2026-10-19T15:50:00Z",
+  "validator": "archify-validator-v3.1.0",
+  "status": "VALIDATED",
+  "metrics": {
+    "nodes_count": 18,
+    "edges_count": 18,
+    "lenses_count": 6,
+    "trust_boundaries_count": 4,
+    "cards_with_code_links": 18,
+    "cards_with_test_links": 18
+  },
+  "rules_checked": [
+    "DETAILS_IN_CARDS_NOT_EXCESSIVE_EDGES",
+    "SOURCE_BACKED_FILE_PATHS_EXIST_IN_TREE_001",
+    "EVERY_NODE_HAS_TEST_AND_ADR_EVIDENCE",
+    "LENS_COVERAGE_COMPLETE"
+  ]
+}

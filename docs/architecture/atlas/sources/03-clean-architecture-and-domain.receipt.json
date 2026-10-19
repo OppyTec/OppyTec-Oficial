@@ -1,0 +1,24 @@
+{
+  "receipt_version": "3.1.0",
+  "map_id": "03-clean-architecture-and-domain",
+  "source_file": "docs/architecture/atlas/sources/03-clean-architecture-and-domain.archify.json",
+  "target_html": "docs/architecture/atlas/03-clean-architecture-and-domain.archify.html",
+  "source_sha256": "81e5e5a84fff4ed2d33595630a8bf924b39ae8c95cd88bdf4fa5f39f9cd54b1f",
+  "validated_at": "2026-10-19T15:50:00Z",
+  "validator": "archify-validator-v3.1.0",
+  "status": "VALIDATED",
+  "metrics": {
+    "nodes_count": 20,
+    "edges_count": 22,
+    "lenses_count": 5,
+    "trust_boundaries_count": 4,
+    "cards_with_code_links": 20,
+    "cards_with_test_links": 20
+  },
+  "rules_checked": [
+    "DETAILS_IN_CARDS_NOT_EXCESSIVE_EDGES",
+    "SOURCE_BACKED_FILE_PATHS_EXIST_IN_TREE_001",
+    "EVERY_NODE_HAS_TEST_AND_ADR_EVIDENCE",
+    "LENS_COVERAGE_COMPLETE"
+  ]
+}
