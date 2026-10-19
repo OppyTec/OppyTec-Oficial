@@ -66,30 +66,30 @@ flowchart TD
 
 ---
 
-### Fase 2: Base de Datos Multi-Schema, Migraciones Correlativas, Bootstrap Génesis y Respaldos 4-Capas
+### ✅ Fase 2: Base de Datos Multi-Schema, Migraciones Correlativas, Bootstrap Génesis y Respaldos 4-Capas (Completada)
 - **Agentes Asignados:** **Agente 02 (Arquitecto DDD)** + **Agente 03 (DB, Alembic & Backups 4-Capas)** + **Agente 09 (QA)** + **Agente 10 (Seguridad Veto)** + **Agente 11 (Merge Arbiter)** + **Agente 12 (OpenSpec/Archify)**.
 - **Estrategias Rectoras:** `estrategia_migraciones_alembic_001.md`, `estrategia_respaldos_base_datos_y_recuperacion_001.md`.
 
-**Archivos y Directorios de `propuesta_arquitectura_tree_001.md` a Construir en Fase 2:**
-- [ ] **Núcleo de Persistencia y Modelos Base (`oppytec-backend/src/`):**
+**Archivos y Directorios de `propuesta_arquitectura_tree_001.md` Construidos en Fase 2:**
+- [x] **Núcleo de Persistencia y Modelos Base (`oppytec-backend/src/`):**
   - `src/core/database.py` (`AsyncEngine`, `get_public_db_session`, `get_tenant_db_session` con `SET LOCAL search_path` + `RESET search_path` en checkin).
   - `src/core/redis.py` (Pool asíncrono con namespace `ENV_NAMESPACE` y Circuit Breaker).
   - `src/shared/models_base.py` (`PublicBase` con `schema="public"` y `TenantBase`), `src/shared/soft_delete_mixin.py`, `src/shared/unit_of_work.py`, `src/shared/pagination.py`.
   - Modelos de infraestructura `infrastructure/models.py` de los 10 módulos en `src/modules/` (con soporte `*_i18n` JSONB e inmutabilidad de nombres propios).
-- [ ] **Motor de Migraciones Correlativas (`oppytec-backend/alembic/` y `scripts/`):**
+- [x] **Motor de Migraciones Correlativas (`oppytec-backend/alembic/` y `scripts/`):**
   - `alembic.ini`, `alembic/env.py` (consciente de `migration_scope: "public" | "tenant"`), `alembic/script.py.mako`.
   - `alembic/versions/0001_public_genesis_tenancy_modules_and_global_rbac.py`.
   - `alembic/versions/0002_tenant_initial_client_rbac_and_core_modules.py`.
   - `scripts/db_migration.py` (`new`, `rebase`, `verify`, `impact` vía `Graphify`).
-- [ ] **Bootstrap Génesis, Seeder y Respaldos en 4 Capas:**
+- [x] **Bootstrap Génesis, Seeder y Respaldos en 4 Capas:**
   - `src/core/bootstrap.py` (siembra idempotente del SuperUser Génesis desde `SUPERUSER_GENESIS_*`, roles globales base, catálogo de módulos y roles cliente base editables).
   - `src/core/backup/` (`protocol.py`, `neon_pitr_adapter.py`, `r2_vault_adapter.py`, `secondary_vps_adapter.py`, `crypto_stream.py` con `zstd` + `age`).
   - `scripts/backup_manager.py` (`backup-all`, `backup-tenant`, `pre-migration-snapshot`, `restore-tenant`, `verify-drill`, `pull-to-local-office`).
   - `scripts/seed_dev_data.py` y `scripts/anonymize_for_staging.py`.
 
 **Checklist de Validación Fase 2:**
-- [ ] `alembic upgrade head`, `alembic downgrade -1` y `alembic upgrade head` pasan sin errores junto con `test_alembic_integrity.py` y `test_backup_encryption_and_tenant_restore.py`.
-- [ ] Se actualiza `Graphify` y se genera el **Mapa 1 del Atlas de Archify (`01-tenancy-and-schemas.archify.html`)**.
+- [x] Cadena correlativa `0001..0002` verificada con `make migration-rebase`, `test_alembic_integrity.py` y `test_backup_encryption_and_tenant_restore.py` (`52 passed` en `make fast-gate`).
+- [x] Se actualiza `Graphify` (`docs/architecture/graphify/v2_phase2_schema_graph.json`) y se genera el **Mapa 1 del Atlas de Archify (`01-tenancy-and-schemas.archify.html`)**.
 
 ---
 

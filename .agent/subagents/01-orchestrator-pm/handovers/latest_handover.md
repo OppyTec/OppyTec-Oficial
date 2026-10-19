@@ -1,14 +1,13 @@
-# Handover: Agente 01 (`01-orchestrator-pm`) — Cierre Fase 1
+# Handover: Agente 01 (`01-orchestrator-pm`) — Cierre Fase 2
 
 ## Completed
-- Ejecutado `python3 scripts/harness.py prepare-phase --phase 1` y reservas atómicas `claim-ast` en `.agent/memory/claims_registry.json`.
-- Orquestados en paralelo 4 `Git Worktrees` aislados (`phase1-08`, `phase1-04`, `phase1-05`, `phase1-12`).
-- Ejecutado el *Smart Merge Train* (`git rebase master` + `git merge --ff-only`) de las 4 ramas hacia `master` con 0 conflictos y limpieza de worktrees.
-- Ejecutado bucle de autoreparación QA/Seguridad sobre `master` unificado: añadido `pydantic[email]>=2.9.0`, `[dependency-groups] dev` y `mypy_path = "."` en `pyproject.toml`, y pulido tipado `Mapping[str, object]` sin `Any`.
-- Certificado `make fast-gate` (`ruff check`, `mypy --strict` sobre 28 archivos, `36 passed` en `pytest` en `0.32s` y `verify-evals` al 100%).
+- Ejecutado `python3 scripts/harness.py prepare-phase --phase 2` y reservas atómicas `claim-ast` en `.agent/memory/claims_registry.json`.
+- Orquestados en paralelo 2 `Git Worktrees` aislados (`phase2-03-database-alembic-and-backup-engineer` y `phase2-12-tech-writer-openspec-archify`).
+- Ejecutado el *Smart Merge Train* (`git rebase master` + `git merge --ff-only`) hacia `master` con 0 conflictos y limpieza de worktrees.
+- Certificado `make fast-gate` (`52 passed` en `pytest`, `ruff check` 0 errores, `mypy --strict` 0 errores en 84 archivos, `verify-evals` 100% OK) y `make migration-rebase` (`Alembic correlative migration chain verified OK`).
 
 ## Friction & Failures
-- Al unificar `src/core/config.py` (Agente 08) con `pyproject.toml` (Agente 04), `EmailStr` requirió el extra `pydantic[email]` y `uv run` requirió `[dependency-groups] dev`. Corregido inmediatamente en el bucle de autoreparación post-merge.
+- `make migration-rebase` invocaba `python3` del sistema sin el `sys.path` del paquete `oppytec-backend`. Se actualizó `Makefile` para usar `$(UV) --directory oppytec-backend run python scripts/db_migration.py verify` y se añadió resolución de `_BACKEND_DIR` en `scripts/db_migration.py`.
 
 ## Next Exact Action
-- Iniciar **Fase 2 (Base de Datos Multi-Schema, Migraciones Correlativas Alembic `0001..0002`, Bootstrap Génesis y Respaldos Cifrados en 4 Capas)** con el Agente 02 (Arquitecto) y Agente 03 (DB/Alembic/Backups).
+- Iniciar **Fase 3 (Servicios Core Clean Architecture, RBAC Dual, `JEV`, `OppyFy`, `i18n`, `FX`, `R2 Quotas` y WebSockets)** con los Agentes `02`, `04`, `06`, `07` y `12`.

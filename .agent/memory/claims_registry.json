@@ -1,19 +1,4 @@
 {
   "version": "2.0.0",
-  "active_claims": [
-    {
-      "file": "oppytec-backend/src/core/database.py,oppytec-backend/src/core/redis.py,oppytec-backend/src/core/bootstrap.py,oppytec-backend/src/core/backup/,oppytec-backend/src/shared/,oppytec-backend/src/modules/,oppytec-backend/alembic/,oppytec-backend/scripts/",
-      "symbol_path": "phase2.database_alembic_bootstrap_backups",
-      "claimed_by": "03-database-alembic-and-backup-engineer",
-      "intent": "Fase 2: Construir persistencia Multi-Schema, modelos de los 10 modulos, Alembic 0001..0002, db_migration.py, bootstrap.py y Backups 4-Capas (.sql.zst.age)",
-      "claimed_at": "2026-10-19T13:40:27.700224+00:00"
-    },
-    {
-      "file": "docs/architecture/atlas/01-tenancy-and-schemas.archify.html,docs/architecture/graphify/,docs/bitacora/,specs/business-domain/,specs/engineering-code/",
-      "symbol_path": "phase2.openspec_graphify_archify_map1",
-      "claimed_by": "12-tech-writer-openspec-archify",
-      "intent": "Fase 2: Sincronizar specs de tenancy/backups, Graphify, Mapa 1 de Archify y bitacora Fase 2",
-      "claimed_at": "2026-10-19T13:40:27.782845+00:00"
-    }
-  ]
+  "active_claims": []
 }

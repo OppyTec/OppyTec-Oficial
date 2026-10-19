@@ -29,7 +29,7 @@ smart-merge: verify-evals
 	@$(PYTHON) scripts/harness.py status
 
 migration-rebase:
-	@$(PYTHON) oppytec-backend/scripts/db_migration.py verify
+	@$(UV) --directory oppytec-backend run python scripts/db_migration.py verify
 
 up:
 	docker compose up -d

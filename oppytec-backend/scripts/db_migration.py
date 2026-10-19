@@ -15,7 +15,11 @@ import sys
 from pathlib import Path
 from typing import Literal
 
-from src.core.database import validate_tenant_schema_name
+_BACKEND_DIR = Path(__file__).resolve().parents[1]
+if str(_BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_DIR))
+
+from src.core.database import validate_tenant_schema_name  # noqa: E402
 
 MIGRATION_FILE_REGEX: re.Pattern[str] = re.compile(r"^(\d{4})_(public|tenant)_([a-z0-9_]+)\.py$")
 SLUG_CLEAN_REGEX: re.Pattern[str] = re.compile(r"[^a-z0-9_]+")
