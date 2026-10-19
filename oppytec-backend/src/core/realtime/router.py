@@ -24,17 +24,30 @@ from src.core.realtime.publisher import RealtimePublisher
 
 router = APIRouter(tags=["realtime"])
 
-_default_manager = RealtimeConnectionManager(default_env_ns=get_settings().ENV_NAMESPACE)
-_default_publisher = RealtimePublisher(_default_manager, env_ns=get_settings().ENV_NAMESPACE)
+_default_manager: RealtimeConnectionManager | None = None
+_default_publisher: RealtimePublisher | None = None
 
 
 def get_realtime_manager() -> RealtimeConnectionManager:
     """Devuelve la instancia singleton de `RealtimeConnectionManager`."""
+    global _default_manager
+    env_ns = get_settings().ENV_NAMESPACE
+    if _default_manager is None or _default_manager._default_env_ns != env_ns:
+        _default_manager = RealtimeConnectionManager(default_env_ns=env_ns)
     return _default_manager
 
 
 def get_realtime_publisher() -> RealtimePublisher:
     """Devuelve la instancia singleton de `RealtimePublisher`."""
+    global _default_publisher
+    env_ns = get_settings().ENV_NAMESPACE
+    manager = get_realtime_manager()
+    if (
+        _default_publisher is None
+        or _default_publisher._env_ns != env_ns
+        or _default_publisher._manager is not manager
+    ):
+        _default_publisher = RealtimePublisher(manager, env_ns=env_ns)
     return _default_publisher
 
 
