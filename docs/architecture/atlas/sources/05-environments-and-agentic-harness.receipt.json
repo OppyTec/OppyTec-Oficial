@@ -1,0 +1,24 @@
+{
+  "receipt_version": "3.1.0",
+  "map_id": "05-environments-and-agentic-harness",
+  "source_file": "docs/architecture/atlas/sources/05-environments-and-agentic-harness.archify.json",
+  "target_html": "docs/architecture/atlas/05-environments-and-agentic-harness.archify.html",
+  "source_sha256": "6eee1078ab50f84438e9c0f131da8ca6e4d3595143e78c52cd6e629d6d24d463",
+  "validated_at": "2026-10-19T13:16:25Z",
+  "validator": "archify-validator-v3.1.0",
+  "status": "VALIDATED",
+  "metrics": {
+    "nodes_count": 16,
+    "edges_count": 19,
+    "lenses_count": 5,
+    "trust_boundaries_count": 4,
+    "cards_with_code_links": 16,
+    "cards_with_test_links": 16
+  },
+  "rules_checked": [
+    "DETAILS_IN_CARDS_NOT_EXCESSIVE_EDGES",
+    "SOURCE_BACKED_FILE_PATHS_EXIST_IN_TREE_001",
+    "EVERY_NODE_HAS_TEST_AND_ADR_EVIDENCE",
+    "LENS_COVERAGE_COMPLETE"
+  ]
+}

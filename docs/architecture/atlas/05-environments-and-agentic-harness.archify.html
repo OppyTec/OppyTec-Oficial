@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="ocean-blue">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mapa 5: Gobernanza Agéntica RLM, 5 Entornos y Observabilidad 4-Pilares — OppyTec v2.0 Archify Atlas</title>
+  <style>
+    :root, [data-theme="ocean-blue"] {
+      --bg-primary: #07192f;
+      --bg-secondary: #0c2544;
+      --bg-card: rgba(15, 41, 74, 0.88);
+      --bg-card-hover: rgba(22, 58, 102, 0.96);
+      --text-primary: #f0f7ff;
+      --text-secondary: #9ec2e6;
+      --accent-primary: #00d2ff;
+      --accent-secondary: #38bdf8;
+      --accent-success: #10b981;
+      --accent-warning: #f59e0b;
+      --accent-danger: #f43f5e;
+      --border-color: rgba(56, 189, 248, 0.28);
+      --shadow-glow: 0 8px 30px rgba(0, 210, 255, 0.14);
+    }
+    [data-theme="dark"] {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: rgba(30, 41, 59, 0.92);
+      --bg-card-hover: rgba(51, 65, 85, 0.98);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent-primary: #6366f1;
+      --accent-secondary: #818cf8;
+      --accent-success: #22c55e;
+      --accent-warning: #eab308;
+      --accent-danger: #ef4444;
+      --border-color: rgba(148, 163, 184, 0.24);
+      --shadow-glow: 0 8px 28px rgba(99, 102, 241, 0.15);
+    }
+    [data-theme="light"] {
+      --bg-primary: #f1f5f9;
+      --bg-secondary: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f8fafc;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --accent-primary: #0284c7;
+      --accent-secondary: #0369a1;
+      --accent-success: #059669;
+      --accent-warning: #d97706;
+      --accent-danger: #e11d48;
+      --border-color: #cbd5e1;
+      --shadow-glow: 0 6px 20px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand-title {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .brand-title h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent-primary);
+    }
+    .brand-title p {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    .lens-bar {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.65rem 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .lens-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+    button, select, input {
+      font-family: inherit;
+      font-size: 0.82rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      padding: 0.45rem 0.8rem;
+      transition: all 0.15s ease;
+    }
+    button { cursor: pointer; font-weight: 600; }
+    button:hover, button.active {
+      background: var(--accent-primary);
+      color: #041326;
+      border-color: var(--accent-primary);
+    }
+    input[type="search"] {
+      min-width: 240px;
+    }
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 410px;
+      gap: 1.25rem;
+      padding: 1.25rem 1.5rem;
+      flex: 1;
+    }
+    @media (max-width: 1024px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+    .canvas-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+    .boundary-box {
+      border: 1px solid var(--border-color);
+      border-radius: 0.85rem;
+      background: rgba(12, 37, 68, 0.32);
+      padding: 1rem;
+      box-shadow: var(--shadow-glow);
+    }
+    .boundary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.45rem;
+      border-bottom: 1px dashed var(--border-color);
+    }
+    .boundary-header h2 {
+      font-size: 0.95rem;
+      color: var(--accent-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .nodes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+      gap: 0.85rem;
+    }
+    .node-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.7rem;
+      padding: 0.85rem;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.2s ease;
+      position: relative;
+    }
+    .node-card:hover {
+      transform: translateY(-2px);
+      background: var(--bg-card-hover);
+      border-color: var(--accent-primary);
+    }
+    .node-card.selected {
+      border: 2px solid var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.22);
+    }
+    .node-card.dimmed {
+      opacity: 0.25;
+    }
+    .node-card.upstream-highlight {
+      border-color: var(--accent-warning);
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+    }
+    .node-card.downstream-highlight {
+      border-color: var(--accent-success);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+    }
+    .node-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.18rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(0, 210, 255, 0.16);
+      color: var(--accent-primary);
+      margin-bottom: 0.45rem;
+    }
+    .node-card h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.35rem;
+    }
+    .node-card p {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    .inspector-panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 0.85rem;
+      padding: 1.15rem;
+      position: sticky;
+      top: 5.2rem;
+      max-height: calc(100vh - 6.5rem);
+      overflow-y: auto;
+      box-shadow: var(--shadow-glow);
+    }
+    .inspector-section {
+      margin-top: 1rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .inspector-section h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-secondary);
+      margin-bottom: 0.5rem;
+    }
+    .code-pill {
+      display: block;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.76rem;
+      background: rgba(0, 0, 0, 0.28);
+      padding: 0.45rem 0.65rem;
+      border-radius: 0.45rem;
+      border-left: 3px solid var(--accent-primary);
+      margin-bottom: 0.4rem;
+      word-break: break-all;
+    }
+    ul.invariant-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    ul.invariant-list li {
+      font-size: 0.8rem;
+      line-height: 1.42;
+      padding-left: 1rem;
+      position: relative;
+    }
+    ul.invariant-list li::before {
+      content: "✔";
+      position: absolute;
+      left: 0;
+      color: var(--accent-success);
+      font-weight: bold;
+    }
+    .edge-item {
+      font-size: 0.78rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 0.4rem;
+      background: rgba(0, 210, 255, 0.08);
+      margin-bottom: 0.35rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .receipt-footer {
+      margin-top: auto;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-title">
+      <h1>🏛️ OppyTec v2.0 — Archify Interactive Atlas (Mapa 5/5)</h1>
+      <p>Gobernanza Agéntica RLM, Git Worktrees (`fcntl.flock`), 5 Entornos (`SHA-256`), Quality Gates y Observabilidad 4-Pilares</p>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="searchInput" placeholder="🔍 Buscar nodo, archivo, test o invariante..." aria-label="Buscar nodos en el mapa" />
+      <select id="reachMode" aria-label="Modo de alcance de dependencias">
+        <option value="all">Alcance: Todos los conectados</option>
+        <option value="downstream">Alcance: Aguas Abajo (Downstream)</option>
+        <option value="upstream">Alcance: Aguas Arriba (Upstream)</option>
+      </select>
+      <select id="themeSelector" aria-label="Selector de tema visual">
+        <option value="ocean-blue">🌊 Tema: Ocean-Blue (Legacy DNA)</option>
+        <option value="dark">🌙 Tema: Dark</option>
+        <option value="light">☀️ Tema: Light</option>
+      </select>
+    </div>
+  </header>
+
+  <nav class="lens-bar" aria-label="Filtros por lente arquitectónica">
+    <div class="lens-buttons" id="lensContainer">
+      <button class="active" data-lens="all">Vista Completa (16 Nodos)</button>
+      <button data-lens="five_environments">5 Entornos</button>
+      <button data-lens="rlm_harness">RLM Harness &amp; Worktrees</button>
+      <button data-lens="observability_4pillars">Observabilidad 4-Pilares</button>
+      <button data-lens="quality_gates">Quality Gates</button>
+    </div>
+    <div id="activeLensDescription" style="font-size:0.8rem;color:var(--text-secondary);">
+      Haz clic en cualquier nodo para inspeccionar su tarjeta de evidencia, rutas de código y tests asociados.
+    </div>
+  </nav>
+
+  <main class="workspace">
+    <section class="canvas-column" id="canvasContainer" aria-label="Lienzo de nodos por frontera de confianza"></section>
+    <aside class="inspector-panel" id="inspectorPanel" aria-label="Inspector de evidencia de nodo"></aside>
+  </main>
+
+  <footer class="receipt-footer">
+    <span><strong>Archify Engine:</strong> v3.1.0 (Source-Backed Interactive HTML) | <strong>Fase:</strong> Fase 1</span>
+    <span><strong>Fuente Tipada:</strong> <code>docs/architecture/atlas/sources/05-environments-and-agentic-harness.archify.json</code></span>
+    <span><strong>SHA-256 Receipt:</strong> <code>6eee1078ab50f84438e9c0f131da8ca6e4d3595143e78c52cd6e629d6d24d463</code></span>
+  </footer>
+
+  <script id="archify-data" type="application/json">
+{
+  "archify_version": "3.1.0",
+  "map_id": "05-environments-and-agentic-harness",
+  "source_sha256": "6eee1078ab50f84438e9c0f131da8ca6e4d3595143e78c52cd6e629d6d24d463",
+  "trust_boundaries": [
+    { "id": "tb_agentic_workspace", "label": "Zona 1: Plano de Ingeniería Agéntica (RLM Harness & Worktrees)", "lens": "rlm_harness" },
+    { "id": "tb_verification_gates", "label": "Zona 2: Compuertas Deterministas y Anti-Reward-Hacking (Quality Gates)", "lens": "quality_gates" },
+    { "id": "tb_environment_pipeline", "label": "Zona 3: Cadena de los 5 Entornos con Invarianza SHA-256", "lens": "five_environments" },
+    { "id": "tb_observability_center", "label": "Zona 4: Centro de Mando de Observabilidad 4-Pilares", "lens": "observability_4pillars" }
+  ],
+  "nodes": [
+    {
+      "id": "prime_orchestrator",
+      "label": "Orquestador RLM (harness.py)",
+      "category": "rlm_harness",
+      "boundary": "tb_agentic_workspace",
+      "badge": "Agente 01 / RLM",
+      "summary": "Orquestador determinista que prepara fases, verifica hashes anti-trampa SHA-256 y coordina el escuadrón de 12 agentes.",
+      "card": {
+        "file_path": "scripts/harness.py",
+        "lines": "1-255",
+        "invariants": [
+          "Bloquea la ejecución si .agent/evals/eval_hashes.sha256 presenta discrepancias (Anti-Reward-Hacking).",
+          "Registra eventos inmutables en .agent/memory/harness_events.jsonl con git_sha y timestamp UTC.",
+          "Asigna ENV_NAMESPACE aislado (wt_p<N>_<idx>) a cada agente constructor."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py",
+          "oppytec-backend/tests/architecture/test_subagent_strategy_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-009-prime-agent-rlm-worktrees-and-smart-merge.md"
+      }
+    },
+    {
+      "id": "graphify_engine",
+      "label": "Motor AST Graphify (0 Tokens)",
+      "category": "rlm_harness",
+      "boundary": "tb_agentic_workspace",
+      "badge": "AST Indexer",
+      "summary": "Navegador determinista del grafo AST (LegacyGraph solo lectura + V2Graph vivo) para análisis de impacto 1-hop sin gastar tokens.",
+      "card": {
+        "file_path": ".agent/skills/graphify/graph_navigator.py",
+        "lines": "1-120",
+        "invariants": [
+          "OppyTec-Legacy se consulta en modo 100% solo lectura para paridad de fórmulas.",
+          "Calcula el radio de impacto (1-hop) en milisegundos para alimentar el Main Gate y Archify."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py"
+        ],
+        "adr_ref": "docs/adr/ADR-010-interactive-architecture-atlas-with-archify.md"
+      }
+    },
+    {
+      "id": "git_worktrees",
+      "label": "Git Worktrees Aislados",
+      "category": "rlm_harness",
+      "boundary": "tb_agentic_workspace",
+      "badge": "Worktree Isolation",
+      "summary": "Árboles de trabajo físicos independientes (.worktrees/phase<N>-<agent>) con ramas dedicadas agent/phase<N>-<agent>.",
+      "card": {
+        "file_path": "scripts/harness.py",
+        "lines": "152-205",
+        "invariants": [
+          "Prohibido que los agentes constructores editen directamente la rama master.",
+          "Cada worktree genera su propio MISSION_PROMPT.md con prompt.md, knowledge.md y latest_handover.md."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py"
+        ],
+        "adr_ref": "docs/adr/ADR-009-prime-agent-rlm-worktrees-and-smart-merge.md"
+      }
+    },
+    {
+      "id": "ast_claiming_flock",
+      "label": "Reserva AST (fcntl.flock)",
+      "category": "rlm_harness",
+      "boundary": "tb_agentic_workspace",
+      "badge": "Kernel Lock",
+      "summary": "Candado exclusivo a nivel de kernel Linux (fcntl.LOCK_EX) sobre .agent/memory/claims_registry.json con escritura atómica os.replace.",
+      "card": {
+        "file_path": "scripts/harness.py",
+        "lines": "85-124",
+        "invariants": [
+          "Impide que dos agentes reclamen simultáneamente el mismo symbol_path en un archivo compartido.",
+          "Escritura atómica mediante tempfile.mkstemp + os.replace para evitar corrupción de JSON."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py"
+        ],
+        "adr_ref": "docs/adr/ADR-009-prime-agent-rlm-worktrees-and-smart-merge.md"
+      }
+    },
+    {
+      "id": "smart_merge_train",
+      "label": "Smart Merge Train & Árbitro 4-Vías",
+      "category": "rlm_harness",
+      "boundary": "tb_agentic_workspace",
+      "badge": "Agente 11 / FIFO",
+      "summary": "Cola secuencial FIFO que ejecuta git rebase master, renumera migraciones Alembic, valida gates y fusiona con git merge --ff-only.",
+      "card": {
+        "file_path": "scripts/harness.py",
+        "lines": "208-255",
+        "invariants": [
+          "Historia de Git 100% lineal (--ff-only) sin commits de merge sucios.",
+          "Ante conflicto semántico invoca al Agente 11 (Árbitro Fresco) con BASE, OURS, THEIRS y OpenSpec."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py",
+          "oppytec-backend/tests/architecture/test_alembic_integrity.py"
+        ],
+        "adr_ref": "docs/adr/ADR-009-prime-agent-rlm-worktrees-and-smart-merge.md"
+      }
+    },
+    {
+      "id": "fast_gate",
+      "label": "Fast Gate (< 15s)",
+      "category": "quality_gates",
+      "boundary": "tb_verification_gates",
+      "badge": "Gate Nivel 1",
+      "summary": "Validación instantánea por micro-commit: verify-evals SHA-256, ruff, mypy --strict, eslint, tsc --noEmit, knip, tests/architecture/ y smoke/.",
+      "card": {
+        "file_path": "Makefile",
+        "lines": "1-65",
+        "invariants": [
+          "Cero uso de Any/any en Python y TypeScript.",
+          "Ejecuta las 15 pruebas de Caja Blanca en oppytec-backend/tests/architecture/ en menos de 15 segundos.",
+          "Verifica la rúbrica inmutable .agent/evals/rubric_10_criteria.yaml."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_clean_architecture.py",
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py"
+        ],
+        "adr_ref": "docs/adr/ADR-007-co-creation-testing-and-offensive-security-gates.md"
+      }
+    },
+    {
+      "id": "main_gate",
+      "label": "Main Gate (< 3 min)",
+      "category": "quality_gates",
+      "boundary": "tb_verification_gates",
+      "badge": "Gate Nivel 2",
+      "summary": "Pruebas unitarias Hypothesis, paridad matemática con OppyTec-Legacy, integración Testcontainers y reversibilidad Alembic upgrade/downgrade.",
+      "card": {
+        "file_path": "Makefile",
+        "lines": "66-110",
+        "invariants": [
+          "Co-creación 1:1 obligatoria verificada por test_module_test_parity.py.",
+          "Bucle de autoreparación liderado por el Agente 09 (QA) hasta alcanzar 100% de paridad con Legacy."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_module_test_parity.py",
+          "oppytec-backend/tests/architecture/test_alembic_integrity.py"
+        ],
+        "adr_ref": "docs/adr/ADR-007-co-creation-testing-and-offensive-security-gates.md"
+      }
+    },
+    {
+      "id": "deep_gate_veto",
+      "label": "Deep Gate & Veto Red Team (< 12 min)",
+      "category": "quality_gates",
+      "boundary": "tb_verification_gates",
+      "badge": "Agente 10 / Veto",
+      "summary": "Auditoría ofensiva SAST/SCA/DAST (Semgrep, Trivy, Gitleaks, Schemathesis), 11 vectores Red Team, Locust (500 RPS) y Poder de Veto Final.",
+      "card": {
+        "file_path": ".agent/skills/security-audit/SKILL.md",
+        "lines": "1-60",
+        "invariants": [
+          "El Agente 10 (Ciberseguridad) posee Poder de Veto Absoluto (SECURITY_VETO vs SECURITY_APPROVED).",
+          "Cero secretos hardcodeados (SecretStr obligatorio) y P95 <= 120ms bajo 500 RPS."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-019-twelve-agent-squad-model-tiering-and-self-healing.md"
+      }
+    },
+    {
+      "id": "env_local_preview",
+      "label": "Entornos: local & preview",
+      "category": "five_environments",
+      "boundary": "tb_environment_pipeline",
+      "badge": "Tier 1 & 2",
+      "summary": "Entornos de desarrollo y PR/Worktree aislados con PostgreSQL 16 + pgvector, Redis 7, Mailpit, AsyncAdaptedQueuePool y ENV_NAMESPACE.",
+      "card": {
+        "file_path": "docker-compose.yml",
+        "lines": "1-140",
+        "invariants": [
+          "Validación Fail-Fast en el milisegundo 0 mediante Pydantic Settings v2 en src/core/config.py.",
+          "Aislamiento de claves Redis y esquemas mediante ENV_NAMESPACE (local, pr_<id>, wt_p<N>_<idx>)."
+        ],
+        "tests": [
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "env_ci_artifact",
+      "label": "Entorno: ci & Artefacto SHA-256",
+      "category": "five_environments",
+      "boundary": "tb_environment_pipeline",
+      "badge": "Tier 3 / Build Once",
+      "summary": "Ejecución limpia en Testcontainers y construcción única de imágenes Docker (Backend non-root y Frontend con /runtime-env.js) selladas con SHA-256.",
+      "card": {
+        "file_path": "oppytec-frontend/docker-entrypoint.sh",
+        "lines": "1-45",
+        "invariants": [
+          "Build Once, Promote Everywhere: la imagen nunca se recompila para staging ni production.",
+          "docker-entrypoint.sh inyecta window.__OPPYTEC_ENV__ en /runtime-env.js al arrancar el contenedor."
+        ],
+        "tests": [
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "env_staging",
+      "label": "Entorno: staging (Pre-Prod)",
+      "category": "five_environments",
+      "boundary": "tb_environment_pipeline",
+      "badge": "Tier 4 / Mirror",
+      "summary": "Espejo exacto de producción con NullPool detrás de PgBouncer, datos anonimizados (anonymize_for_staging.py) y simulacro de backup pre-migración.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/config.py",
+        "lines": "1-120",
+        "invariants": [
+          "Usa DB_POOL_CLASS=NullPool cuando opera detrás de pooler transaccional externo.",
+          "Prohibido copiar datos PII reales de producción sin pasar por anonymize_for_staging.py."
+        ],
+        "tests": [
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py",
+          "oppytec-backend/tests/architecture/test_backup_encryption_and_tenant_restore.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "env_production",
+      "label": "Entorno: production (Blindado)",
+      "category": "five_environments",
+      "boundary": "tb_environment_pipeline",
+      "badge": "Tier 5 / Prod",
+      "summary": "Entorno productivo promovido por digest SHA-256 con OpenAPI/Swagger desactivado (docs_url=None), HSTS estricto y respaldos cifrados en 4 capas.",
+      "card": {
+        "file_path": "oppytec-backend/src/main.py",
+        "lines": "1-95",
+        "invariants": [
+          "En APP_ENV=production: docs_url=None, redoc_url=None y openapi_url=None (HTTP 404).",
+          "SecretStr oculta el 100% de credenciales en memoria, trazas y volcados de error.",
+          "Respaldos automáticos en 4 capas (.sql.zst.age): Neon PITR + R2 WORM + VPS Secundario + Servidor Local."
+        ],
+        "tests": [
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py",
+          "oppytec-backend/tests/architecture/test_backup_encryption_and_tenant_restore.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "otel_structlog",
+      "label": "Pilar 1: OpenTelemetry + structlog",
+      "category": "observability_4pillars",
+      "boundary": "tb_observability_center",
+      "badge": "Traces & Logs",
+      "summary": "Instrumentación distribuida W3C (X-Trace-ID), logs JSON estructurados y filtro recursivo de redacción PII scrub_telemetry_payload().",
+      "card": {
+        "file_path": "oppytec-backend/src/core/observability.py",
+        "lines": "1-150",
+        "invariants": [
+          "Toda respuesta HTTP inyecta el encabezado X-Trace-ID correlacionado con spans de SQL y Redis.",
+          "scrub_telemetry_payload() reemplaza recursivamente password, secret, token, api_key, rut y credit_card por '[REDACTED]'.",
+          "Prohibido el uso de print() o console.log() en código de producción."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_observability_pii_redaction_and_spans.py",
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py"
+        ],
+        "adr_ref": "docs/adr/ADR-016-four-pillar-observability-otel-grafana-sentry-umami.md"
+      }
+    },
+    {
+      "id": "grafana_lgtm",
+      "label": "Pilar 2: Grafana LGTM Stack",
+      "category": "observability_4pillars",
+      "boundary": "tb_observability_center",
+      "badge": "APM & Metrics",
+      "summary": "Colección y visualización unificada de Logs (Loki), Dashboards (Grafana), Trazas distribuidas (Tempo) y Métricas RED/USE (Mimir/Prometheus).",
+      "card": {
+        "file_path": "docker-compose.yml",
+        "lines": "75-135",
+        "invariants": [
+          "Se activa localmente mediante docker compose --profile observability up -d.",
+          "Monitorea latencias P50/P95/P99 por módulo, saturación de pools y consumo de créditos IA (llm_request_logs)."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_observability_pii_redaction_and_spans.py"
+        ],
+        "adr_ref": "docs/adr/ADR-016-four-pillar-observability-otel-grafana-sentry-umami.md"
+      }
+    },
+    {
+      "id": "sentry_glitchtip",
+      "label": "Pilar 3: Sentry SDK / GlitchTip",
+      "category": "observability_4pillars",
+      "boundary": "tb_observability_center",
+      "badge": "Error Tracking",
+      "summary": "Rastreo de excepciones en tiempo real en FastAPI y Error Boundaries de React 19 compatible con GlitchTip auto-alojado.",
+      "card": {
+        "file_path": "oppytec-frontend/src/shared/telemetry/sentry.ts",
+        "lines": "1-60",
+        "invariants": [
+          "Adjunta automáticamente tenant_slug, env y X-Trace-ID sin incluir payloads PII.",
+          "Opera en modo no-op seguro cuando SENTRY_DSN está vacío en entornos locales o de test."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_observability_pii_redaction_and_spans.py"
+        ],
+        "adr_ref": "docs/adr/ADR-016-four-pillar-observability-otel-grafana-sentry-umami.md"
+      }
+    },
+    {
+      "id": "umami_analytics",
+      "label": "Pilar 4: Umami & Centro SuperAdmin",
+      "category": "observability_4pillars",
+      "boundary": "tb_observability_center",
+      "badge": "Product Analytics",
+      "summary": "Analítica ética de uso de producto sin cookies (GDPR/LGPD) integrada con las 13 Sub-Vistas de Observabilidad en el Panel SuperAdmin.",
+      "card": {
+        "file_path": "oppytec-frontend/src/shared/telemetry/umami.ts",
+        "lines": "1-55",
+        "invariants": [
+          "Cero cookies de rastreo de terceros; respeta Do-Not-Track y anonimiza IPs.",
+          "Alimenta los KPIs de adopción de módulos y flujos en el Centro de Mando del SuperUser Génesis."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_observability_pii_redaction_and_spans.py"
+        ],
+        "adr_ref": "docs/adr/ADR-016-four-pillar-observability-otel-grafana-sentry-umami.md"
+      }
+    }
+  ],
+  "edges": [
+    { "source": "prime_orchestrator", "target": "graphify_engine", "label": "Consulta AST 0-tokens", "protocol": "Python REPL / CLI" },
+    { "source": "prime_orchestrator", "target": "git_worktrees", "label": "prepare-phase --phase N", "protocol": "git worktree add" },
+    { "source": "git_worktrees", "target": "ast_claiming_flock", "label": "Reserva símbolo AST", "protocol": "fcntl.flock(LOCK_EX)" },
+    { "source": "ast_claiming_flock", "target": "fast_gate", "label": "Valida micro-commit", "protocol": "make fast-gate (< 15s)" },
+    { "source": "fast_gate", "target": "smart_merge_train", "label": "Ingresa a cola FIFO", "protocol": "rebase + --ff-only" },
+    { "source": "graphify_engine", "target": "main_gate", "label": "Calcula impacto 1-hop", "protocol": "Test Impact Analysis" },
+    { "source": "smart_merge_train", "target": "main_gate", "label": "Ejecuta suite rebasada", "protocol": "make main-gate (< 3m)" },
+    { "source": "main_gate", "target": "deep_gate_veto", "label": "Certificación de Fase", "protocol": "make deep-gate (< 12m)" },
+    { "source": "git_worktrees", "target": "env_local_preview", "label": "Despliega namespace aislado", "protocol": "ENV_NAMESPACE" },
+    { "source": "deep_gate_veto", "target": "env_ci_artifact", "label": "SECURITY_APPROVED", "protocol": "Build Digest sha256" },
+    { "source": "env_local_preview", "target": "env_ci_artifact", "label": "Promoción a CI", "protocol": "Git PR / Merge Train" },
+    { "source": "env_ci_artifact", "target": "env_staging", "label": "Promueve imagen inmutable", "protocol": "sha256 + /runtime-env.js" },
+    { "source": "env_staging", "target": "env_production", "label": "Promoción tras Drill OK", "protocol": "Zero-Rebuild Promotion" },
+    { "source": "env_local_preview", "target": "otel_structlog", "label": "Emite telemetría dev", "protocol": "OTLP / X-Trace-ID" },
+    { "source": "env_staging", "target": "otel_structlog", "label": "Emite telemetría pre-prod", "protocol": "OTLP Scrubbed" },
+    { "source": "env_production", "target": "otel_structlog", "label": "Emite telemetría prod", "protocol": "OTLP Scrubbed (0% PII)" },
+    { "source": "otel_structlog", "target": "grafana_lgtm", "label": "Exporta Spans, Logs y Métricas", "protocol": "OTLP HTTP/gRPC" },
+    { "source": "otel_structlog", "target": "sentry_glitchtip", "label": "Reporta Excepciones con Trace-ID", "protocol": "Sentry Envelope" },
+    { "source": "env_production", "target": "umami_analytics", "label": "Eventos de UI sin cookies", "protocol": "Umami Beacon" }
+  ]
+}
+  </script>
+
+  <script>
+    (function () {
+      const data = JSON.parse(document.getElementById('archify-data').textContent);
+      let activeLens = 'all';
+      let searchQuery = '';
+      let selectedNodeId = data.nodes[0].id;
+      let reachMode = 'all';
+
+      const canvasContainer = document.getElementById('canvasContainer');
+      const inspectorPanel = document.getElementById('inspectorPanel');
+      const searchInput = document.getElementById('searchInput');
+      const reachSelect = document.getElementById('reachMode');
+      const themeSelector = document.getElementById('themeSelector');
+      const lensButtons = document.querySelectorAll('#lensContainer button');
+
+      function getConnectedSets(nodeId) {
+        const upstream = new Set();
+        const downstream = new Set();
+        data.edges.forEach(edge => {
+          if (edge.target === nodeId) upstream.add(edge.source);
+          if (edge.source === nodeId) downstream.add(edge.target);
+        });
+        return { upstream, downstream };
+      }
+
+      function matchesSearch(node) {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        const haystack = [
+          node.label,
+          node.badge,
+          node.summary,
+          node.card.file_path,
+          node.card.adr_ref,
+          ...(node.card.invariants || []),
+          ...(node.card.tests || [])
+        ].join(' ').toLowerCase();
+        return haystack.includes(q);
+      }
+
+      function renderCanvas() {
+        canvasContainer.innerHTML = '';
+        const { upstream, downstream } = getConnectedSets(selectedNodeId);
+
+        data.trust_boundaries.forEach(boundary => {
+          if (activeLens !== 'all' && boundary.lens !== activeLens) return;
+
+          const boundaryNodes = data.nodes.filter(n => n.boundary === boundary.id && matchesSearch(n));
+          if (boundaryNodes.length === 0) return;
+
+          const box = document.createElement('div');
+          box.className = 'boundary-box';
+
+          const header = document.createElement('div');
+          header.className = 'boundary-header';
+          header.innerHTML = `<h2>${boundary.label}</h2><span style="font-size:0.75rem;color:var(--text-secondary)">${boundaryNodes.length} nodos</span>`;
+          box.appendChild(header);
+
+          const grid = document.createElement('div');
+          grid.className = 'nodes-grid';
+
+          boundaryNodes.forEach(node => {
+            const card = document.createElement('article');
+            card.className = 'node-card';
+            if (node.id === selectedNodeId) {
+              card.classList.add('selected');
+            } else if (reachMode === 'upstream') {
+              if (upstream.has(node.id)) card.classList.add('upstream-highlight');
+              else card.classList.add('dimmed');
+            } else if (reachMode === 'downstream') {
+              if (downstream.has(node.id)) card.classList.add('downstream-highlight');
+              else card.classList.add('dimmed');
+            } else {
+              if (upstream.has(node.id)) card.classList.add('upstream-highlight');
+              if (downstream.has(node.id)) card.classList.add('downstream-highlight');
+            }
+
+            card.innerHTML = `
+              <span class="node-badge">${node.badge}</span>
+              <h3>${node.label}</h3>
+              <p>${node.summary}</p>
+            `;
+            card.addEventListener('click', () => {
+              selectedNodeId = node.id;
+              renderCanvas();
+              renderInspector();
+            });
+            grid.appendChild(card);
+          });
+
+          box.appendChild(grid);
+          canvasContainer.appendChild(box);
+        });
+      }
+
+      function renderInspector() {
+        const node = data.nodes.find(n => n.id === selectedNodeId) || data.nodes[0];
+        const incoming = data.edges.filter(e => e.target === node.id);
+        const outgoing = data.edges.filter(e => e.source === node.id);
+
+        inspectorPanel.innerHTML = `
+          <span class="node-badge">${node.badge}</span>
+          <h2 style="font-size:1.15rem;margin-bottom:0.4rem;">${node.label}</h2>
+          <p style="font-size:0.84rem;color:var(--text-secondary);line-height:1.45;">${node.summary}</p>
+
+          <div class="inspector-section">
+            <h4>📂 Evidencia en Código Fuente (Graphify AST)</h4>
+            <code class="code-pill">${node.card.file_path} (Líneas ${node.card.lines})</code>
+            <code class="code-pill">ADR: ${node.card.adr_ref}</code>
+          </div>
+
+          <div class="inspector-section">
+            <h4>🛡️ Invariantes Arquitectónicas y de Negocio</h4>
+            <ul class="invariant-list">
+              ${node.card.invariants.map(inv => `<li>${inv}</li>`).join('')}
+            </ul>
+          </div>
+
+          <div class="inspector-section">
+            <h4>🧪 Tests Deterministas Asociados (Co-Creación 1:1)</h4>
+            ${node.card.tests.map(t => `<code class="code-pill">${t}</code>`).join('')}
+          </div>
+
+          <div class="inspector-section">
+            <h4>🔗 Conexiones Aguas Arriba (${incoming.length}) &amp; Aguas Abajo (${outgoing.length})</h4>
+            ${incoming.map(e => `<div class="edge-item"><span>⬅️ <strong>${e.source}</strong>: ${e.label}</span><code>${e.protocol}</code></div>`).join('')}
+            ${outgoing.map(e => `<div class="edge-item"><span>➡️ <strong>${e.target}</strong>: ${e.label}</span><code>${e.protocol}</code></div>`).join('')}
+          </div>
+        `;
+      }
+
+      lensButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          lensButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeLens = btn.getAttribute('data-lens');
+          renderCanvas();
+        });
+      });
+
+      searchInput.addEventListener('input', e => {
+        searchQuery = e.target.value.trim();
+        renderCanvas();
+      });
+
+      reachSelect.addEventListener('change', e => {
+        reachMode = e.target.value;
+        renderCanvas();
+      });
+
+      themeSelector.addEventListener('change', e => {
+        document.documentElement.setAttribute('data-theme', e.target.value);
+      });
+
+      renderCanvas();
+      renderInspector();
+    })();
+  </script>
+</body>
+</html>

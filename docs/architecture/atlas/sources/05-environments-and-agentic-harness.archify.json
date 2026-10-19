@@ -1,0 +1,507 @@
+{
+  "archify_version": "3.1.0",
+  "map_id": "05-environments-and-agentic-harness",
+  "title": "Mapa 5: Gobernanza Agéntica RLM, 5 Entornos Inmutables, Quality Gates y Observabilidad 4-Pilares",
+  "subtitle": "OppyTec SaaS v2.0 — Atlas Visual Interactivo (Fase 1)",
+  "phase": "Fase 1",
+  "updated_at": "2026-10-19T13:15:00Z",
+  "author_agent": "12-tech-writer-openspec-archify",
+  "lenses": [
+    {
+      "id": "all",
+      "label": "Vista Completa (16 Nodos)",
+      "description": "Topología integral de extremo a extremo desde los Git Worktrees hasta Producción y Observabilidad."
+    },
+    {
+      "id": "rlm_harness",
+      "label": "RLM Harness & Worktrees",
+      "description": "Orquestador scripts/harness.py, Git Worktrees, reserva atómica fcntl.flock, Graphify y Smart Merge Train."
+    },
+    {
+      "id": "quality_gates",
+      "label": "Quality Gates",
+      "description": "Compuertas deterministas Fast Gate (< 15s), Main Gate (< 3m), Deep Gate (< 12m) y Poder de Veto del Agente 10."
+    },
+    {
+      "id": "five_environments",
+      "label": "5 Entornos",
+      "description": "Cadena de promoción inmutable (local -> preview -> ci -> staging -> production) con digest SHA-256 y /runtime-env.js."
+    },
+    {
+      "id": "observability_4pillars",
+      "label": "Observabilidad 4-Pilares",
+      "description": "OpenTelemetry + structlog (con redacción PII), Grafana LGTM, Sentry/GlitchTip y Umami Analytics."
+    }
+  ],
+  "trust_boundaries": [
+    {
+      "id": "tb_agentic_workspace",
+      "label": "Zona 1: Plano de Ingeniería Agéntica (RLM Harness & Worktrees)",
+      "lens": "rlm_harness"
+    },
+    {
+      "id": "tb_verification_gates",
+      "label": "Zona 2: Compuertas Deterministas y Anti-Reward-Hacking (Quality Gates)",
+      "lens": "quality_gates"
+    },
+    {
+      "id": "tb_environment_pipeline",
+      "label": "Zona 3: Cadena de los 5 Entornos con Invarianza SHA-256",
+      "lens": "five_environments"
+    },
+    {
+      "id": "tb_observability_center",
+      "label": "Zona 4: Centro de Mando de Observabilidad 4-Pilares",
+      "lens": "observability_4pillars"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "prime_orchestrator",
+      "label": "Orquestador RLM (harness.py)",
+      "category": "rlm_harness",
+      "boundary": "tb_agentic_workspace",
+      "badge": "Agente 01 / RLM",
+      "summary": "Orquestador determinista que prepara fases, verifica hashes anti-trampa SHA-256 y coordina el escuadrón de 12 agentes.",
+      "card": {
+        "file_path": "scripts/harness.py",
+        "lines": "1-255",
+        "invariants": [
+          "Bloquea la ejecución si .agent/evals/eval_hashes.sha256 presenta discrepancias (Anti-Reward-Hacking).",
+          "Registra eventos inmutables en .agent/memory/harness_events.jsonl con git_sha y timestamp UTC.",
+          "Asigna ENV_NAMESPACE aislado (wt_p<N>_<idx>) a cada agente constructor."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py",
+          "oppytec-backend/tests/architecture/test_subagent_strategy_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-009-prime-agent-rlm-worktrees-and-smart-merge.md"
+      }
+    },
+    {
+      "id": "graphify_engine",
+      "label": "Motor AST Graphify (0 Tokens)",
+      "category": "rlm_harness",
+      "boundary": "tb_agentic_workspace",
+      "badge": "AST Indexer",
+      "summary": "Navegador determinista del grafo AST (LegacyGraph solo lectura + V2Graph vivo) para análisis de impacto 1-hop sin gastar tokens.",
+      "card": {
+        "file_path": ".agent/skills/graphify/graph_navigator.py",
+        "lines": "1-120",
+        "invariants": [
+          "OppyTec-Legacy se consulta en modo 100% solo lectura para paridad de fórmulas.",
+          "Calcula el radio de impacto (1-hop) en milisegundos para alimentar el Main Gate y Archify."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py"
+        ],
+        "adr_ref": "docs/adr/ADR-010-interactive-architecture-atlas-with-archify.md"
+      }
+    },
+    {
+      "id": "git_worktrees",
+      "label": "Git Worktrees Aislados",
+      "category": "rlm_harness",
+      "boundary": "tb_agentic_workspace",
+      "badge": "Worktree Isolation",
+      "summary": "Árboles de trabajo físicos independientes (.worktrees/phase<N>-<agent>) con ramas dedicadas agent/phase<N>-<agent>.",
+      "card": {
+        "file_path": "scripts/harness.py",
+        "lines": "152-205",
+        "invariants": [
+          "Prohibido que los agentes constructores editen directamente la rama master.",
+          "Cada worktree genera su propio MISSION_PROMPT.md con prompt.md, knowledge.md y latest_handover.md."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py"
+        ],
+        "adr_ref": "docs/adr/ADR-009-prime-agent-rlm-worktrees-and-smart-merge.md"
+      }
+    },
+    {
+      "id": "ast_claiming_flock",
+      "label": "Reserva AST (fcntl.flock)",
+      "category": "rlm_harness",
+      "boundary": "tb_agentic_workspace",
+      "badge": "Kernel Lock",
+      "summary": "Candado exclusivo a nivel de kernel Linux (fcntl.LOCK_EX) sobre .agent/memory/claims_registry.json con escritura atómica os.replace.",
+      "card": {
+        "file_path": "scripts/harness.py",
+        "lines": "85-124",
+        "invariants": [
+          "Impide que dos agentes reclamen simultáneamente el mismo symbol_path en un archivo compartido.",
+          "Escritura atómica mediante tempfile.mkstemp + os.replace para evitar corrupción de JSON."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py"
+        ],
+        "adr_ref": "docs/adr/ADR-009-prime-agent-rlm-worktrees-and-smart-merge.md"
+      }
+    },
+    {
+      "id": "smart_merge_train",
+      "label": "Smart Merge Train & Árbitro 4-Vías",
+      "category": "rlm_harness",
+      "boundary": "tb_agentic_workspace",
+      "badge": "Agente 11 / FIFO",
+      "summary": "Cola secuencial FIFO que ejecuta git rebase master, renumera migraciones Alembic, valida gates y fusiona con git merge --ff-only.",
+      "card": {
+        "file_path": "scripts/harness.py",
+        "lines": "208-255",
+        "invariants": [
+          "Historia de Git 100% lineal (--ff-only) sin commits de merge sucios.",
+          "Ante conflicto semántico invoca al Agente 11 (Árbitro Fresco) con BASE, OURS, THEIRS y OpenSpec."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py",
+          "oppytec-backend/tests/architecture/test_alembic_integrity.py"
+        ],
+        "adr_ref": "docs/adr/ADR-009-prime-agent-rlm-worktrees-and-smart-merge.md"
+      }
+    },
+    {
+      "id": "fast_gate",
+      "label": "Fast Gate (< 15s)",
+      "category": "quality_gates",
+      "boundary": "tb_verification_gates",
+      "badge": "Gate Nivel 1",
+      "summary": "Validación instantánea por micro-commit: verify-evals SHA-256, ruff, mypy --strict, eslint, tsc --noEmit, knip, tests/architecture/ y smoke/.",
+      "card": {
+        "file_path": "Makefile",
+        "lines": "1-65",
+        "invariants": [
+          "Cero uso de Any/any en Python y TypeScript.",
+          "Ejecuta las 15 pruebas de Caja Blanca en oppytec-backend/tests/architecture/ en menos de 15 segundos.",
+          "Verifica la rúbrica inmutable .agent/evals/rubric_10_criteria.yaml."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_clean_architecture.py",
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py"
+        ],
+        "adr_ref": "docs/adr/ADR-007-co-creation-testing-and-offensive-security-gates.md"
+      }
+    },
+    {
+      "id": "main_gate",
+      "label": "Main Gate (< 3 min)",
+      "category": "quality_gates",
+      "boundary": "tb_verification_gates",
+      "badge": "Gate Nivel 2",
+      "summary": "Pruebas unitarias Hypothesis, paridad matemática con OppyTec-Legacy, integración Testcontainers y reversibilidad Alembic upgrade/downgrade.",
+      "card": {
+        "file_path": "Makefile",
+        "lines": "66-110",
+        "invariants": [
+          "Co-creación 1:1 obligatoria verificada por test_module_test_parity.py.",
+          "Bucle de autoreparación liderado por el Agente 09 (QA) hasta alcanzar 100% de paridad con Legacy."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_module_test_parity.py",
+          "oppytec-backend/tests/architecture/test_alembic_integrity.py"
+        ],
+        "adr_ref": "docs/adr/ADR-007-co-creation-testing-and-offensive-security-gates.md"
+      }
+    },
+    {
+      "id": "deep_gate_veto",
+      "label": "Deep Gate & Veto Red Team (< 12 min)",
+      "category": "quality_gates",
+      "boundary": "tb_verification_gates",
+      "badge": "Agente 10 / Veto",
+      "summary": "Auditoría ofensiva SAST/SCA/DAST (Semgrep, Trivy, Gitleaks, Schemathesis), 11 vectores Red Team, Locust (500 RPS) y Poder de Veto Final.",
+      "card": {
+        "file_path": ".agent/skills/security-audit/SKILL.md",
+        "lines": "1-60",
+        "invariants": [
+          "El Agente 10 (Ciberseguridad) posee Poder de Veto Absoluto (SECURITY_VETO vs SECURITY_APPROVED).",
+          "Cero secretos hardcodeados (SecretStr obligatorio) y P95 <= 120ms bajo 500 RPS."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-019-twelve-agent-squad-model-tiering-and-self-healing.md"
+      }
+    },
+    {
+      "id": "env_local_preview",
+      "label": "Entornos: local & preview",
+      "category": "five_environments",
+      "boundary": "tb_environment_pipeline",
+      "badge": "Tier 1 & 2",
+      "summary": "Entornos de desarrollo y PR/Worktree aislados con PostgreSQL 16 + pgvector, Redis 7, Mailpit, AsyncAdaptedQueuePool y ENV_NAMESPACE.",
+      "card": {
+        "file_path": "docker-compose.yml",
+        "lines": "1-140",
+        "invariants": [
+          "Validación Fail-Fast en el milisegundo 0 mediante Pydantic Settings v2 en src/core/config.py.",
+          "Aislamiento de claves Redis y esquemas mediante ENV_NAMESPACE (local, pr_<id>, wt_p<N>_<idx>)."
+        ],
+        "tests": [
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "env_ci_artifact",
+      "label": "Entorno: ci & Artefacto SHA-256",
+      "category": "five_environments",
+      "boundary": "tb_environment_pipeline",
+      "badge": "Tier 3 / Build Once",
+      "summary": "Ejecución limpia en Testcontainers y construcción única de imágenes Docker (Backend non-root y Frontend con /runtime-env.js) selladas con SHA-256.",
+      "card": {
+        "file_path": "oppytec-frontend/docker-entrypoint.sh",
+        "lines": "1-45",
+        "invariants": [
+          "Build Once, Promote Everywhere: la imagen nunca se recompila para staging ni production.",
+          "docker-entrypoint.sh inyecta window.__OPPYTEC_ENV__ en /runtime-env.js al arrancar el contenedor."
+        ],
+        "tests": [
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "env_staging",
+      "label": "Entorno: staging (Pre-Prod)",
+      "category": "five_environments",
+      "boundary": "tb_environment_pipeline",
+      "badge": "Tier 4 / Mirror",
+      "summary": "Espejo exacto de producción con NullPool detrás de PgBouncer, datos anonimizados (anonymize_for_staging.py) y simulacro de backup pre-migración.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/config.py",
+        "lines": "1-120",
+        "invariants": [
+          "Usa DB_POOL_CLASS=NullPool cuando opera detrás de pooler transaccional externo.",
+          "Prohibido copiar datos PII reales de producción sin pasar por anonymize_for_staging.py."
+        ],
+        "tests": [
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py",
+          "oppytec-backend/tests/architecture/test_backup_encryption_and_tenant_restore.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "env_production",
+      "label": "Entorno: production (Blindado)",
+      "category": "five_environments",
+      "boundary": "tb_environment_pipeline",
+      "badge": "Tier 5 / Prod",
+      "summary": "Entorno productivo promovido por digest SHA-256 con OpenAPI/Swagger desactivado (docs_url=None), HSTS estricto y respaldos cifrados en 4 capas.",
+      "card": {
+        "file_path": "oppytec-backend/src/main.py",
+        "lines": "1-95",
+        "invariants": [
+          "En APP_ENV=production: docs_url=None, redoc_url=None y openapi_url=None (HTTP 404).",
+          "SecretStr oculta el 100% de credenciales en memoria, trazas y volcados de error.",
+          "Respaldos automáticos en 4 capas (.sql.zst.age): Neon PITR + R2 WORM + VPS Secundario + Servidor Local."
+        ],
+        "tests": [
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py",
+          "oppytec-backend/tests/architecture/test_backup_encryption_and_tenant_restore.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "otel_structlog",
+      "label": "Pilar 1: OpenTelemetry + structlog",
+      "category": "observability_4pillars",
+      "boundary": "tb_observability_center",
+      "badge": "Traces & Logs",
+      "summary": "Instrumentación distribuida W3C (X-Trace-ID), logs JSON estructurados y filtro recursivo de redacción PII scrub_telemetry_payload().",
+      "card": {
+        "file_path": "oppytec-backend/src/core/observability.py",
+        "lines": "1-150",
+        "invariants": [
+          "Toda respuesta HTTP inyecta el encabezado X-Trace-ID correlacionado con spans de SQL y Redis.",
+          "scrub_telemetry_payload() reemplaza recursivamente password, secret, token, api_key, rut y credit_card por '[REDACTED]'.",
+          "Prohibido el uso de print() o console.log() en código de producción."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_observability_pii_redaction_and_spans.py",
+          "oppytec-backend/tests/smoke/test_system_boot_and_health.py"
+        ],
+        "adr_ref": "docs/adr/ADR-016-four-pillar-observability-otel-grafana-sentry-umami.md"
+      }
+    },
+    {
+      "id": "grafana_lgtm",
+      "label": "Pilar 2: Grafana LGTM Stack",
+      "category": "observability_4pillars",
+      "boundary": "tb_observability_center",
+      "badge": "APM & Metrics",
+      "summary": "Colección y visualización unificada de Logs (Loki), Dashboards (Grafana), Trazas distribuidas (Tempo) y Métricas RED/USE (Mimir/Prometheus).",
+      "card": {
+        "file_path": "docker-compose.yml",
+        "lines": "75-135",
+        "invariants": [
+          "Se activa localmente mediante docker compose --profile observability up -d.",
+          "Monitorea latencias P50/P95/P99 por módulo, saturación de pools y consumo de créditos IA (llm_request_logs)."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_observability_pii_redaction_and_spans.py"
+        ],
+        "adr_ref": "docs/adr/ADR-016-four-pillar-observability-otel-grafana-sentry-umami.md"
+      }
+    },
+    {
+      "id": "sentry_glitchtip",
+      "label": "Pilar 3: Sentry SDK / GlitchTip",
+      "category": "observability_4pillars",
+      "boundary": "tb_observability_center",
+      "badge": "Error Tracking",
+      "summary": "Rastreo de excepciones en tiempo real en FastAPI y Error Boundaries de React 19 compatible con GlitchTip auto-alojado.",
+      "card": {
+        "file_path": "oppytec-frontend/src/shared/telemetry/sentry.ts",
+        "lines": "1-60",
+        "invariants": [
+          "Adjunta automáticamente tenant_slug, env y X-Trace-ID sin incluir payloads PII.",
+          "Opera en modo no-op seguro cuando SENTRY_DSN está vacío en entornos locales o de test."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_observability_pii_redaction_and_spans.py"
+        ],
+        "adr_ref": "docs/adr/ADR-016-four-pillar-observability-otel-grafana-sentry-umami.md"
+      }
+    },
+    {
+      "id": "umami_analytics",
+      "label": "Pilar 4: Umami & Centro SuperAdmin",
+      "category": "observability_4pillars",
+      "boundary": "tb_observability_center",
+      "badge": "Product Analytics",
+      "summary": "Analítica ética de uso de producto sin cookies (GDPR/LGPD) integrada con las 13 Sub-Vistas de Observabilidad en el Panel SuperAdmin.",
+      "card": {
+        "file_path": "oppytec-frontend/src/shared/telemetry/umami.ts",
+        "lines": "1-55",
+        "invariants": [
+          "Cero cookies de rastreo de terceros; respeta Do-Not-Track y anonimiza IPs.",
+          "Alimenta los KPIs de adopción de módulos y flujos en el Centro de Mando del SuperUser Génesis."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_observability_pii_redaction_and_spans.py"
+        ],
+        "adr_ref": "docs/adr/ADR-016-four-pillar-observability-otel-grafana-sentry-umami.md"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "prime_orchestrator",
+      "target": "graphify_engine",
+      "label": "Consulta AST 0-tokens",
+      "protocol": "Python REPL / CLI"
+    },
+    {
+      "source": "prime_orchestrator",
+      "target": "git_worktrees",
+      "label": "prepare-phase --phase N",
+      "protocol": "git worktree add"
+    },
+    {
+      "source": "git_worktrees",
+      "target": "ast_claiming_flock",
+      "label": "Reserva símbolo AST",
+      "protocol": "fcntl.flock(LOCK_EX)"
+    },
+    {
+      "source": "ast_claiming_flock",
+      "target": "fast_gate",
+      "label": "Valida micro-commit",
+      "protocol": "make fast-gate (< 15s)"
+    },
+    {
+      "source": "fast_gate",
+      "target": "smart_merge_train",
+      "label": "Ingresa a cola FIFO",
+      "protocol": "rebase + --ff-only"
+    },
+    {
+      "source": "graphify_engine",
+      "target": "main_gate",
+      "label": "Calcula impacto 1-hop",
+      "protocol": "Test Impact Analysis"
+    },
+    {
+      "source": "smart_merge_train",
+      "target": "main_gate",
+      "label": "Ejecuta suite rebasada",
+      "protocol": "make main-gate (< 3m)"
+    },
+    {
+      "source": "main_gate",
+      "target": "deep_gate_veto",
+      "label": "Certificación de Fase",
+      "protocol": "make deep-gate (< 12m)"
+    },
+    {
+      "source": "git_worktrees",
+      "target": "env_local_preview",
+      "label": "Despliega namespace aislado",
+      "protocol": "ENV_NAMESPACE"
+    },
+    {
+      "source": "deep_gate_veto",
+      "target": "env_ci_artifact",
+      "label": "SECURITY_APPROVED",
+      "protocol": "Build Digest sha256"
+    },
+    {
+      "source": "env_local_preview",
+      "target": "env_ci_artifact",
+      "label": "Promoción a CI",
+      "protocol": "Git PR / Merge Train"
+    },
+    {
+      "source": "env_ci_artifact",
+      "target": "env_staging",
+      "label": "Promueve imagen inmutable",
+      "protocol": "sha256 + /runtime-env.js"
+    },
+    {
+      "source": "env_staging",
+      "target": "env_production",
+      "label": "Promoción tras Drill OK",
+      "protocol": "Zero-Rebuild Promotion"
+    },
+    {
+      "source": "env_local_preview",
+      "target": "otel_structlog",
+      "label": "Emite telemetría dev",
+      "protocol": "OTLP / X-Trace-ID"
+    },
+    {
+      "source": "env_staging",
+      "target": "otel_structlog",
+      "label": "Emite telemetría pre-prod",
+      "protocol": "OTLP Scrubbed"
+    },
+    {
+      "source": "env_production",
+      "target": "otel_structlog",
+      "label": "Emite telemetría prod",
+      "protocol": "OTLP Scrubbed (0% PII)"
+    },
+    {
+      "source": "otel_structlog",
+      "target": "grafana_lgtm",
+      "label": "Exporta Spans, Logs y Métricas",
+      "protocol": "OTLP HTTP/gRPC"
+    },
+    {
+      "source": "otel_structlog",
+      "target": "sentry_glitchtip",
+      "label": "Reporta Excepciones con Trace-ID",
+      "protocol": "Sentry Envelope"
+    },
+    {
+      "source": "env_production",
+      "target": "umami_analytics",
+      "label": "Eventos de UI sin cookies",
+      "protocol": "Umami Beacon"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ tags:
   - segundo-cerebro
   - arquitectura
   - bitacora
-updated: "2026-10-18"
+updated: "2026-10-19"
 ---
 
 # 🧠 Segundo Cerebro de OppyTec v2.0 — Mapa Maestro para Humanos (Obsidian Ready)
@@ -20,14 +20,18 @@ updated: "2026-10-18"
 Aquí el **Agente 12 (`12-tech-writer-openspec-archify`)** documenta en lenguaje claro para personas qué se ha hecho en cada etapa, qué hizo cada agente, qué problemas surgieron y cómo se resolvieron:
 
 - **[[00-Paso-0-Arquitectura-y-Gobernanza|Bitácora Paso 0: Diseño de las 17 Estrategias, Escuadrón de 12 Agentes y Arnés RLM]]** ✅ *(Completado)*
-- *Próxima entrada:* `01-Fase-1-Setup-Entornos-y-Observabilidad.md` *(Se generará al cerrar la Fase 1)*
+- **[[01-Fase-1-Setup-Entornos-Observabilidad-y-Andamiaje|Bitácora Fase 1: Setup de los 5 Entornos, Observabilidad 4-Pilares, Andamiaje Full-Stack, 21 ADRs y Mapa 5 de Archify]]** ✅ *(Completado)*
+- *Próxima entrada:* `02-Fase-2-Base-de-Datos-Multi-Schema-Alembic-y-Backups-4-Capas.md` *(Se generará al cerrar la Fase 2)*
 
 ---
 
-## 🏛️ 2. Planos Fundacionales del Proyecto
+## 🏛️ 2. Planos Fundacionales, 21 ADRs y Atlas Visual Interactivo (`Archify`)
 - **[AGENTS.md](../../AGENTS.md):** Punto de entrada cognitivo para todos los agentes.
 - **[MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md](../../MASTER-AGENTIC-ENGINEERING-FRAMEWORK.md):** Constitución de Ingeniería Agéntica.
 - **[propuesta_arquitectura_tree_001.md](../../propuesta_arquitectura_tree_001.md):** El árbol (`tree`) completo de carpetas y archivos del proyecto.
+- **Decisiones de Arquitectura Inmutables (`docs/adr/ADR-001..021`):** Colección completa desde [ADR-001 (Clean Architecture)](../adr/ADR-001-clean-architecture-modular-monolith.md) hasta [ADR-021 (WebSockets Redis Pub/Sub Zero-Polling)](../adr/ADR-021-redis-pubsub-websockets-rbac-filtered-and-zero-polling.md).
+- **Atlas Visual Interactivo (`docs/architecture/atlas/`):**
+  - **[Mapa 5 — Gobernanza Agéntica, 5 Entornos y Observabilidad 4-Pilares](../architecture/atlas/05-environments-and-agentic-harness.archify.html)** ✅ *(Disponible para abrir en navegador)*
 
 ---
 
