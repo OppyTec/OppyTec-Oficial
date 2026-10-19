@@ -212,7 +212,11 @@ OppyTec-Code2/
 │       ├── data-security-and-backups.code.spec.md      # ★ Espejo técnico: Backups 4-Capas (`zstd` + `age`), restore quirúrgico por `tenant_*` y drills
 │       └── multi-agent-git-harness.code.spec.md        # ★ Contrato interno de ingeniería: Git Worktrees, AST Claiming y Merge Train
 │
-├── docs/                                               # 🏛️ MEMORIA ARQUITECTÓNICA Y TOPOLOGÍA
+├── docs/                                               # 🏛️ MEMORIA ARQUITECTÓNICA, SEGUNDO CEREBRO (OBSIDIAN) Y TOPOLOGÍA
+│   ├── bitacora/                                       # ★ SEGUNDO CEREBRO PARA HUMANOS (Compatible con Obsidian - mantenido por Agente 12)
+│   │   ├── 00-MAPA-SEGUNDO-CEREBRO.md                  # Índice maestro (MOC) con enlaces a estrategias, specs y agentes
+│   │   └── diario-escuadron/                           # Bitácora cronológica en lenguaje claro de qué hizo cada agente en cada Fase
+│   │       └── 00-Paso-0-Arquitectura-y-Gobernanza.md
 │   ├── adr/                                            # Architecture Decision Records (Inmutables una vez aprobados)
 │   │   ├── ADR-001-clean-architecture-modular-monolith.md
 │   │   ├── ADR-002-multi-tenant-postgres-schema-isolation.md

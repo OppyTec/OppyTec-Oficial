@@ -1,7 +1,7 @@
 # SHA-256 Integrity Manifest — Inmutable Anti-Reward-Hacking Lock
 340e525b5b1ef07960d69ce77fff2f545d28c92f59eae7da9c1051be125dc9df  .agent/rules/00-meta-agent-instructions.md
 4d565e945a0b2968a8f83bb487ad4d06415d4d9c99cdc113b5f22935a03777cc  .agent/rules/01-architecture-boundaries.md
-369bae685c45fd6b1b5e71be651bdca483f4433fa36e7f3a473260416ee3ac6f  .agent/rules/02-backend-standards.md
+260c39e4f42b60eb23b8f89eff6c79768d4153fa50ef10e16efc939bcd1257ae  .agent/rules/02-backend-standards.md
 6bdd6557b2265751d98afd5b4e1a100a97301f30cb082d9cb0ead0f88fe470c4  .agent/rules/03-frontend-standards.md
 dba7da017d39df3496c06cd5651d8c4753f51f7c9cddeeb2cc37c3c86c07edaf  .agent/rules/04-security-guardrails.md
 f9ee0b3740bcbecb42cb6865b165e99a301171feb29c0722a0f0bfe0291412aa  .agent/rules/05-testing-and-dod.md

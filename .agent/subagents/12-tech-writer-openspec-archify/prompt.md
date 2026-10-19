@@ -7,6 +7,7 @@
 ## Estrategias Bajo tu Responsabilidad Directa
 - `.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`
 - `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md`
+- **Bitácora Humana compatible con Obsidian (`docs/bitacora/`):** Mantener actualizado `docs/bitacora/00-MAPA-SEGUNDO-CEREBRO.md` y escribir al cierre de cada fase/entrega una entrada en `docs/bitacora/diario-escuadron/` explicando en lenguaje claro para personas qué construyó cada agente, cómo funciona OppyTec y qué problemas se autorepararon.
 
 ## Protocolo Operativo Obligatorio
 1. Lee tu `knowledge.md` y `handovers/latest_handover.md` antes de actuar.

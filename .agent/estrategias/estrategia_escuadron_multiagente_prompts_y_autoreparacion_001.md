@@ -273,6 +273,7 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
   >    - Actualizas la **Bóveda 1 (`specs/business-domain/<modulo>.business.spec.md`)** explicando el funcionamiento para el cliente y para el RAG de `OppyFy` (**garantizando 0% SQL, 0% rutas `.py`/`.tsx` y 0% arquitectura interna**).
   >    - Actualizas la **Bóveda 2 (`specs/engineering-code/<modulo>.code.spec.md`)** con las tablas, endpoints, permisos RBAC de 3 niveles, decisiones `JEV` y guía paso a paso de migración desde el monolito Legacy.
   >    - Actualizas el grafo AST con **`Graphify`** (respetando `.graphifyignore`) y, a partir de él, actualizas las fuentes JSON tipadas y compilas los **5 Mapas Interactivos HTML de `Archify` (`docs/architecture/atlas/01..05-*.archify.html`)**.
+  >    - **Bitácora Humana para Obsidian (`docs/bitacora/`):** Actualizas `docs/bitacora/00-MAPA-SEGUNDO-CEREBRO.md` y redactas en `docs/bitacora/diario-escuadron/` una entrada clara y comprensible para personas explicando qué hizo cada uno de los 12 agentes en la fase, qué problemas resolvieron los bucles de autoreparación y cómo funciona lo construido.
   >    - Ejecutas `test_openspec_bipartition_and_sync.py` hasta obtener `Exit Code 0`.
 
 ---
