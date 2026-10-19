@@ -1,0 +1,424 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Centered date input (Chrome/Edge — Rescatado de OppyTec-Legacy) ─────── */
+input[type="date"].centered-date-input {
+  text-align: center !important;
+  text-align-last: center !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+input[type="date"].centered-date-input::-webkit-datetime-edit {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  text-align: center !important;
+  padding: 0 !important;
+}
+input[type="date"].centered-date-input::-webkit-datetime-edit-fields-wrapper {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+input[type="date"].centered-date-input::-webkit-datetime-edit-text,
+input[type="date"].centered-date-input::-webkit-datetime-edit-month-field,
+input[type="date"].centered-date-input::-webkit-datetime-edit-day-field,
+input[type="date"].centered-date-input::-webkit-datetime-edit-year-field {
+  text-align: center !important;
+}
+input[type="date"].centered-date-input::-webkit-calendar-picker-indicator,
+input[type="date"].centered-date-input::-webkit-inner-spin-button,
+input[type="date"].centered-date-input::-webkit-clear-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+/* Remove number input spin buttons globally */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* ─── Los 3 Temas Oficiales del ADN Visual de OppyTec (light, dark, ocean-blue) ─── */
+@layer base {
+  :root,
+  [data-theme="light"] {
+    --background: 220 33% 98%;
+    --foreground: 224 71% 4%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
+
+    --primary: 161 72% 38%; /* Emerald/Teal premium */
+    --primary-foreground: 210 20% 98%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 224 71% 4%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 220 14% 96%;
+    --accent-foreground: 224 71% 4%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
+
+    --success: 161 72% 38%;
+    --success-foreground: 210 20% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 20% 98%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 161 72% 38%;
+
+    --radius: 0.75rem;
+
+    /* Paleta Gastronómica de 42 Colores Predefinidos (PRESET_COLORS 6x7) */
+    --preset-01: #EF4444; --preset-02: #DC2626; --preset-03: #B91C1C; --preset-04: #F43F5E; --preset-05: #E11D48; --preset-06: #EC4899; --preset-07: #DB2777;
+    --preset-08: #F97316; --preset-09: #EA580C; --preset-10: #D97706; --preset-11: #F59E0B; --preset-12: #EAB308; --preset-13: #FACC15; --preset-14: #CA8A04;
+    --preset-15: #84CC16; --preset-16: #65A30D; --preset-17: #22C55E; --preset-18: #16A34A; --preset-19: #15803D; --preset-20: #10B981; --preset-21: #059669;
+    --preset-22: #14B8A6; --preset-23: #06B6D4; --preset-24: #0891B2; --preset-25: #0EA5E9; --preset-26: #0284C7; --preset-27: #3B82F6; --preset-28: #2563EB;
+    --preset-29: #6366F1; --preset-30: #4F46E5; --preset-31: #A855F7; --preset-32: #9333EA; --preset-33: #8B5CF6; --preset-34: #7C3AED; --preset-35: #C026D3;
+    --preset-36: #94A3B8; --preset-37: #64748B; --preset-38: #475569; --preset-39: #78716C; --preset-40: #57534E; --preset-41: #525252; --preset-42: #334155;
+  }
+
+  .dark,
+  [data-theme="dark"] {
+    --background: 224 71% 4%;
+    --foreground: 210 20% 98%;
+
+    --card: 224 71% 6%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 224 71% 6%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 161 72% 45%;
+    --primary-foreground: 224 71% 4%;
+
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 215 28% 17%;
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 20% 98%;
+
+    --success: 161 72% 38%;
+    --success-foreground: 210 20% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 20% 98%;
+
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 161 72% 45%;
+
+    --radius: 0.75rem;
+  }
+
+  /* ─── Ocean Blue Theme (.ocean-blue / [data-theme="ocean-blue"]) ───────── */
+  .ocean-blue,
+  [data-theme="ocean-blue"] {
+    --background: 222 47% 7%;
+    --foreground: 210 100% 92%;
+
+    --card: 220 40% 10%;
+    --card-foreground: 210 100% 92%;
+
+    --popover: 220 40% 10%;
+    --popover-foreground: 210 100% 92%;
+
+    /* Cyan/teal primary — the "ocean glow" */
+    --primary: 186 100% 50%;
+    --primary-foreground: 222 47% 7%;
+
+    --secondary: 220 35% 16%;
+    --secondary-foreground: 210 100% 92%;
+
+    --muted: 220 35% 14%;
+    --muted-foreground: 213 50% 65%;
+
+    --accent: 220 35% 16%;
+    --accent-foreground: 186 100% 70%;
+
+    --destructive: 0 80% 55%;
+    --destructive-foreground: 210 100% 95%;
+
+    --success: 152 80% 50%;
+    --success-foreground: 222 47% 7%;
+
+    --warning: 42 100% 58%;
+    --warning-foreground: 222 47% 7%;
+
+    --border: 220 40% 18%;
+    --input: 220 40% 18%;
+    --ring: 186 100% 50%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  html {
+    scrollbar-gutter: stable;
+    overflow-y: scroll;
+  }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-['Outfit',_sans-serif] antialiased;
+    background-image: radial-gradient(at 0% 0%, hsla(161, 72%, 38%, 0.05) 0, transparent 50%),
+                      radial-gradient(at 100% 100%, hsla(224, 71%, 4%, 0.05) 0, transparent 50%);
+  }
+
+  .dark body,
+  [data-theme="dark"] body {
+    background-image: radial-gradient(at 0% 0%, hsla(161, 72%, 38%, 0.1) 0, transparent 50%),
+                      radial-gradient(at 100% 0%, hsla(224, 71%, 4%, 0.1) 0, transparent 50%);
+  }
+
+  /* Ocean Blue: animated marine background layers */
+  .ocean-blue body,
+  [data-theme="ocean-blue"] body {
+    background-image:
+      radial-gradient(ellipse at 10% 20%, hsla(186, 100%, 50%, 0.10) 0, transparent 45%),
+      radial-gradient(ellipse at 85% 10%, hsla(258, 80%, 60%, 0.10) 0, transparent 40%),
+      radial-gradient(ellipse at 50% 90%, hsla(152, 80%, 50%, 0.07) 0, transparent 45%),
+      radial-gradient(ellipse at 90% 70%, hsla(186, 100%, 50%, 0.06) 0, transparent 35%);
+  }
+}
+
+/* ─── Regla Mobile-First: Ergonomía Táctil >= 44x44px ─────────────────────── */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* ─── Glassmorphism Adaptativo (.glass & .glass-card) ─────────────────────── */
+.glass {
+  @apply bg-white/70 dark:bg-black/40 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-xl;
+}
+
+.ocean-blue .glass,
+[data-theme="ocean-blue"] .glass {
+  background: hsla(220, 40%, 10%, 0.75);
+  border: 1px solid hsla(186, 100%, 50%, 0.14);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 4px 32px hsla(186, 100%, 50%, 0.07),
+              0 1px 0 hsla(186, 100%, 80%, 0.05) inset;
+}
+
+.glass-card {
+  @apply glass hover:bg-white/80 dark:hover:bg-black/50 transition-all duration-300;
+}
+
+:root,
+[data-theme="light"] {
+  --blink-rest: #ffffff;
+}
+
+.dark,
+[data-theme="dark"] {
+  --blink-rest: hsl(224, 71%, 4%);
+}
+
+.ocean-blue,
+[data-theme="ocean-blue"] {
+  --blink-rest: hsl(222, 47%, 7%);
+}
+
+/* ─── Animaciones Semánticas de Estado y Atención ─────────────────────────── */
+@keyframes blink-orange {
+  0%, 100% { border-color: var(--blink-rest); }
+  50% { border-color: hsl(38, 92%, 50%); box-shadow: 0 0 8px hsla(38, 92%, 50%, 0.4); }
+}
+
+@keyframes blink-red {
+  0%, 100% { border-color: var(--blink-rest); }
+  50% { border-color: hsl(0, 84%, 60%); box-shadow: 0 0 10px hsla(0, 84%, 60%, 0.5); }
+}
+
+@keyframes blink-green {
+  0%, 100% { border-color: var(--blink-rest); box-shadow: none; }
+  50% { border-color: hsl(161, 72%, 45%); box-shadow: 0 0 12px hsla(161, 72%, 45%, 0.4); }
+}
+
+.animate-blink-orange {
+  animation: blink-orange 2.0s ease-in-out infinite;
+  border-width: 2px !important;
+}
+
+.animate-blink-red {
+  animation: blink-red 2.0s ease-in-out infinite;
+  border-width: 2px !important;
+}
+
+.animate-blink-green {
+  animation: blink-green 2.5s ease-in-out infinite;
+  border-width: 2px !important;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; background-color: rgba(239, 68, 68, 0.15); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* ─── Ocean Blue Keyframes ────────────────────────────────────────────────── */
+@keyframes ocean-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 6px hsla(186, 100%, 50%, 0.3),
+                0 0 16px hsla(186, 100%, 50%, 0.12);
+  }
+  50% {
+    box-shadow: 0 0 14px hsla(186, 100%, 50%, 0.55),
+                0 0 32px hsla(186, 100%, 50%, 0.22),
+                0 0 56px hsla(186, 100%, 50%, 0.10);
+  }
+}
+
+@keyframes ocean-star-twinkle {
+  0%, 100% { opacity: 1;   transform: scale(1);    }
+  40%       { opacity: 0.4; transform: scale(0.75); }
+  70%       { opacity: 0.9; transform: scale(1.15); }
+}
+
+@keyframes ocean-aurora-shimmer {
+  0%   { border-color: hsla(186, 100%, 50%, 0.30); }
+  33%  { border-color: hsla(258, 80%, 70%, 0.25);  }
+  66%  { border-color: hsla(152, 80%, 55%, 0.25);  }
+  100% { border-color: hsla(186, 100%, 50%, 0.30); }
+}
+
+.ocean-blue a.bg-primary,
+[data-theme="ocean-blue"] a.bg-primary {
+  animation: ocean-glow-pulse 3s ease-in-out infinite;
+}
+
+.ocean-blue .ocean-star,
+[data-theme="ocean-blue"] .ocean-star {
+  animation: ocean-star-twinkle 2.8s ease-in-out infinite;
+}
+
+.ocean-blue .glass:hover,
+.ocean-blue .glass-card:hover,
+[data-theme="ocean-blue"] .glass:hover,
+[data-theme="ocean-blue"] .glass-card:hover {
+  animation: ocean-aurora-shimmer 4s linear infinite;
+}
+
+/* ─── Perimeter Breathing Glow Animation (Attention Buttons) ──────────────── */
+@keyframes perimeter-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 1.5px hsl(var(--primary)), 0 0 8px 1px hsl(var(--primary) / 0.5);
+    border-color: hsl(var(--primary));
+  }
+  50% {
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 0 2px 0 transparent;
+    border-color: hsl(var(--primary) / 0.4);
+  }
+}
+
+.animate-perimeter-glow {
+  animation: perimeter-glow 1.8s ease-in-out infinite;
+}
+
+/* ─── Radix UI / react-remove-scroll CLS=0 Layout-Shift Prevention ────────── */
+:root {
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+html {
+  scrollbar-gutter: stable !important;
+  overflow-y: scroll !important;
+  padding-right: 0px !important;
+  margin-right: 0px !important;
+}
+
+html > body[data-scroll-locked] {
+  overflow: visible !important;
+  overscroll-behavior: auto !important;
+  position: static !important;
+  padding-right: 0px !important;
+  padding-left: 0px !important;
+  margin-right: 0px !important;
+  margin-left: 0px !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+html .with-scroll-bars-hidden {
+  overflow: visible !important;
+  padding-right: 0px !important;
+}
+
+html .width-before-scroll-bar {
+  margin-right: 0px !important;
+}
+html .right-scroll-bar-position {
+  right: 0 !important;
+}
+
+/* ─── Custom Scrollbars ───────────────────────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+.ocean-blue .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsla(186, 100%, 50%, 0.2);
+}
+
+.custom-table-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+}
+.custom-table-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+
+/* ─── Driver.js OppyTec Themed Popover ────────────────────────────────────── */
+.oppy-driver-popover.driver-popover {
+  background-color: hsl(var(--card)) !important;
+  color: hsl(var(--card-foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(12px) !important;
+  padding: 1.25rem !important;
+  max-width: 360px !important;
+  font-family: inherit !important;
+}
