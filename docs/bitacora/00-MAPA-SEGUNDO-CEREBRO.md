@@ -23,7 +23,8 @@ Aquí el **Agente 12 (`12-tech-writer-openspec-archify`)** documenta en lenguaje
 - **[[01-Fase-1-Setup-Entornos-Observabilidad-y-Andamiaje|Bitácora Fase 1: Setup de los 5 Entornos, Observabilidad 4-Pilares, Andamiaje Full-Stack, 21 ADRs y Mapa 5 de Archify]]** ✅ *(Completado)*
 - **[[02-Fase-2-Base-de-Datos-Multi-Schema-Alembic-y-Backups-4-Capas|Bitácora Fase 2: Base de Datos Multi-Schema, Migraciones Correlativas Alembic 0001..N, Bootstrap Génesis y Respaldos en 4 Capas]]** ✅ *(Completado)*
 - **[[03-Fase-3-Clean-Architecture-RBAC-OppyFy-JEV-i18n-FX-y-R2|Bitácora Fase 3: Clean Architecture, RBAC Dual, OppyFy, JEV, i18n, FX y R2]]** ✅ *(Completado: bóvedas OpenSpec espejo y Mapas 2 y 3)*
-- *Próxima entrada:* `03-Fase-3-Servicios-Core-RBAC-OppyFy-JEV-i18n-FX-y-R2.md` *(Se generará al cerrar la Fase 3)*
+- **[[04-Fase-4-Endpoints-API-Guardias-RBAC-y-Red-Team|Bitácora Fase 4: Endpoints API REST FastAPI, 4 Guardias HTTP Deterministas, Resiliencia y 11 Vectores Red Team + Schemathesis]]** ✅ *(Completado: Mapa 4 de Archify con Route Probe)*
+- *Próxima entrada:* `05-Fase-5-Frontend-React-19-ADN-Visual-Legacy-Mobile-First-y-WebSockets.md` *(Se generará al cerrar la Fase 5)*
 
 ---
 
@@ -36,6 +37,7 @@ Aquí el **Agente 12 (`12-tech-writer-openspec-archify`)** documenta en lenguaje
   - **[Mapa 1 — Persistencia Multi-Schema (`PublicBase` vs `TenantBase`), Jerarquía `1:1`, Alembic Lineal `0001..N` y Backups 4-Capas](../architecture/atlas/01-tenancy-and-schemas.archify.html)** ✅ *(Disponible para abrir en navegador)*
   - **[Mapa 2 — RBAC Dual 3 Niveles, Jerarquía, Cupos y Doble Auditoría](../architecture/atlas/02-rbac-quotas-and-audit.archify.html)** ✅ *(Disponible para abrir en navegador)*
   - **[Mapa 3 — Clean Architecture, 10 Módulos, Decimal, Kardex, JEV, i18n, FX y R2](../architecture/atlas/03-clean-architecture-and-domain.archify.html)** ✅ *(Disponible para abrir en navegador)*
+  - **[Mapa 4 — Flujos Críticos E2E en Runtime, 4 Guardias HTTP Deterministas, Resiliencia/Caos y 11 Vectores Red Team + Schemathesis](../architecture/atlas/04-critical-runtime-flows-and-resilience.archify.html)** ✅ *(Disponible para abrir en navegador)*
   - **[Snapshot AST Graphify Fase 3 (`v2_phase3_domain_graph.json`)](../architecture/graphify/v2_phase3_domain_graph.json)** ✅ *(Grafo determinista a costo 0 tokens)*
   - **Bóvedas OpenSpec:** `specs/business-domain/` (13 specs de negocio) y `specs/engineering-code/` (15 specs de ingeniería con `jev_system1_evaluation`).
   - **[Mapa 5 — Gobernanza Agéntica, 5 Entornos y Observabilidad 4-Pilares](../architecture/atlas/05-environments-and-agentic-harness.archify.html)** ✅ *(Disponible para abrir en navegador)*

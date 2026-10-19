@@ -1,0 +1,25 @@
+{
+  "receipt_version": "3.1.0",
+  "map_id": "04-critical-runtime-flows-and-resilience",
+  "source_file": "docs/architecture/atlas/sources/04-critical-runtime-flows-and-resilience.archify.json",
+  "target_html": "docs/architecture/atlas/04-critical-runtime-flows-and-resilience.archify.html",
+  "source_sha256": "bb2d0394fcdb2f24db4243a65154b4dc10621f6ef84ade8619e509150b542556",
+  "validated_at": "2026-10-19T17:35:00Z",
+  "validator": "archify-validator-v3.1.0",
+  "status": "VALIDATED",
+  "metrics": {
+    "nodes_count": 20,
+    "edges_count": 23,
+    "lenses_count": 5,
+    "trust_boundaries_count": 4,
+    "cards_with_code_links": 20,
+    "cards_with_test_links": 20
+  },
+  "rules_checked": [
+    "DETAILS_IN_CARDS_NOT_EXCESSIVE_EDGES",
+    "SOURCE_BACKED_FILE_PATHS_EXIST_IN_TREE_001",
+    "EVERY_NODE_HAS_TEST_AND_ADR_EVIDENCE",
+    "LENS_COVERAGE_COMPLETE",
+    "ROUTE_PROBE_ENABLED"
+  ]
+}

@@ -1,0 +1,630 @@
+{
+  "archify_version": "3.1.0",
+  "map_id": "04-critical-runtime-flows-and-resilience",
+  "title": "Mapa 4: Flujos Críticos E2E en Runtime, 4 Guardias HTTP Deterministas, Arquitectura de Resiliencia/Caos y 11 Vectores Ofensivos Red Team + Schemathesis",
+  "subtitle": "OppyTec SaaS v2.0 — Atlas Visual Interactivo (Fase 4)",
+  "phase": "Fase 4",
+  "updated_at": "2026-10-19T17:35:00Z",
+  "author_agent": "12-tech-writer-openspec-archify",
+  "lenses": [
+    {
+      "id": "all",
+      "label": "Vista Completa (20 Nodos)",
+      "description": "Recorrido E2E completo desde Auth/HTTP hasta PostgreSQL Multi-Schema, WebSockets, Guardias Deterministas, Resiliencia y Red Team."
+    },
+    {
+      "id": "e2e_flows",
+      "label": "Flujos Críticos E2E Runtime",
+      "description": "Auth -> JWT + X-Tenant-ID -> SET LOCAL search_path -> Domain/Application -> RESET search_path -> WebSocket Realtime Broadcast."
+    },
+    {
+      "id": "http_guards",
+      "label": "4 Guardias HTTP Deterministas",
+      "description": "RequireGlobalPermission / RequireTenantPermission, file_magic_guard, xss_sanitizer y rate_limiter."
+    },
+    {
+      "id": "resilience_chaos",
+      "label": "Resiliencia y Caos",
+      "description": "RedisCircuitBreaker (< 50ms fallback), Canonical Lock Ordering (ORDER BY id ASC FOR UPDATE), FX Anomaly (> 8%) y Sinkhole Mailpit."
+    },
+    {
+      "id": "redteam_offensive",
+      "label": "11 Vectores Red Team + Schemathesis",
+      "description": "Suite ofensiva test_01..11 (IDOR, JWT, RBAC, Polyglot SQLi/XSS, File Magic, Race Conditions, Headers, AI RAG, Zero-Secrets, Chaos, Env) y Schemathesis."
+    }
+  ],
+  "trust_boundaries": [
+    {
+      "id": "tb_e2e_runtime",
+      "label": "Zona 1: Flujo Crítico E2E en Runtime (Auth -> JWT + X-Tenant-ID -> SET LOCAL search_path -> Domain/App -> RESET search_path -> WS Broadcast)",
+      "lens": "e2e_flows"
+    },
+    {
+      "id": "tb_http_guards",
+      "label": "Zona 2: Los 4 Guardias de Seguridad HTTP Deterministas (src/core/guards/)",
+      "lens": "http_guards"
+    },
+    {
+      "id": "tb_resilience_chaos",
+      "label": "Zona 3: Arquitectura de Resiliencia, Concurrencia sin Deadlocks y Degradación Elegante",
+      "lens": "resilience_chaos"
+    },
+    {
+      "id": "tb_redteam_schemathesis",
+      "label": "Zona 4: Auditoría Ofensiva Red Team (11 Vectores Kali test_01..11) y Fuzzing OpenAPI Schemathesis",
+      "lens": "redteam_offensive"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "e2e_auth_jwt_entry",
+      "label": "1. Auth, JWT PyJWT & X-Tenant-ID Header",
+      "category": "e2e_flows",
+      "boundary": "tb_e2e_runtime",
+      "badge": "Ingress Auth / JWT",
+      "summary": "Autenticación Argon2id, emisión de JWT firmado con claims de Holding/Rol y validación de cabecera X-Tenant-ID más X-Trace-ID.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/security.py",
+        "lines": "1-145",
+        "invariants": [
+          "Rechaza alg=none, tokens expirados, firmas inválidas o JWT de otro entorno (ENV_NAMESPACE).",
+          "Verifica en Redis que el jti/user_id no haya sido revocado por el Session Kill-Switch tras un soft-delete.",
+          "Exige X-Tenant-ID válido perteneciente al holding_id del token antes de abrir sesión de base de datos."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_02_jwt_cryptographic_and_session_attacks.py",
+          "oppytec-backend/tests/smoke/test_app_boot_and_genesis.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "e2e_tenant_search_path_in",
+      "label": "2. get_tenant_db_session (SET LOCAL search_path)",
+      "category": "e2e_flows",
+      "boundary": "tb_e2e_runtime",
+      "badge": "SET LOCAL search_path",
+      "summary": "Valida el slug con regex estricta y ejecuta SET LOCAL search_path TO \"tenant_<slug>\", public al iniciar la transacción AsyncSession.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/database.py",
+        "lines": "1-165",
+        "invariants": [
+          "validate_tenant_schema_name bloquea cualquier intento de SQLi en el nombre del esquema (^tenant_[a-z0-9_]{1,48}$).",
+          "SET LOCAL garantiza que el search_path viva únicamente durante la transacción actual.",
+          "Impide que una consulta de un restaurante lea o muta filas de otro tenant_<slug>."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_01_cross_tenant_and_holding_isolation_idor.py",
+          "oppytec-backend/tests/integration/test_multi_schema_and_alembic.py"
+        ],
+        "adr_ref": "docs/adr/ADR-003-async-sqlalchemy-and-search-path.md"
+      }
+    },
+    {
+      "id": "e2e_presentation_to_domain",
+      "label": "3. Presentation Routers -> Application & Domain",
+      "category": "e2e_flows",
+      "boundary": "tb_e2e_runtime",
+      "badge": "Clean Execution",
+      "summary": "Los routers FastAPI de los 10 módulos traducen DTOs Pydantic v2 a comandos de aplicación con aritmética 100% Decimal y auditoría forense.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/inventory/presentation/router.py",
+        "lines": "1-180",
+        "invariants": [
+          "La capa presentation nunca importa modelos de infrastructure directamente; delega en casos de uso.",
+          "Toda mutación crítica registra su asiento inmutable en audit_service con authorization_lineage.",
+          "Los errores de negocio se traducen a respuestas deterministas con i18n_key."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_clean_architecture.py",
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py"
+        ],
+        "adr_ref": "docs/adr/ADR-001-clean-architecture-modular-monolith.md"
+      }
+    },
+    {
+      "id": "e2e_reset_search_path_out",
+      "label": "4. Pool Checkin & RESET search_path",
+      "category": "e2e_flows",
+      "boundary": "tb_e2e_runtime",
+      "badge": "Pool Sanitization",
+      "summary": "En el bloque finally y en el listener de checkin del pool SQLAlchemy, ejecuta RESET search_path antes de reciclar la conexión.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/database.py",
+        "lines": "95-175",
+        "invariants": [
+          "Incluso ante excepciones no controladas o cancelación de corrutina, el bloque finally restablece search_path a public.",
+          "Elimina al 100% el riesgo de contaminación cruzada de esquemas en conexiones reutilizadas del pool."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_10_resilience_chaos_and_circuit_breakers.py",
+          "oppytec-backend/tests/security_redteam/test_01_cross_tenant_and_holding_isolation_idor.py"
+        ],
+        "adr_ref": "docs/adr/ADR-003-async-sqlalchemy-and-search-path.md"
+      }
+    },
+    {
+      "id": "e2e_ws_realtime_broadcast",
+      "label": "5. WebSocket Realtime Broadcast & Catch-Up",
+      "category": "e2e_flows",
+      "boundary": "tb_e2e_runtime",
+      "badge": "Zero-Polling WS",
+      "summary": "Publica el evento post-commit en Redis Pub/Sub + Stream circular y lo difunde por /api/v1/ws/realtime filtrando RBAC por socket.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/realtime/ws_manager.py",
+        "lines": "1-190",
+        "invariants": [
+          "Ningún socket recibe un evento si su usuario no posee el permiso de 3 niveles required_permission del evento.",
+          "Soporta reconexión móvil con last_event_id leyendo el buffer circular en Redis Streams.",
+          "Invalida automáticamente las queryKeys de TanStack Query v5 sin usar setInterval ni polling HTTP."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_websocket_auth_tenant_isolation_and_rbac.py",
+          "oppytec-backend/tests/unit/test_realtime_websocket_hub.py"
+        ],
+        "adr_ref": "docs/adr/ADR-021-redis-pubsub-websockets-rbac-filtered-and-zero-polling.md"
+      }
+    },
+    {
+      "id": "guard_rbac_dependencies",
+      "label": "Guardia 1: RequireGlobalPermission & RequireTenantPermission",
+      "category": "http_guards",
+      "boundary": "tb_http_guards",
+      "badge": "RBAC 3-Niveles",
+      "summary": "Dependencias FastAPI que imponen permisos <modulo>.<submodulo>.<funcion>, intersección con el Plan contratado y jerarquía de rango.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/guards/rbac_dependencies.py",
+        "lines": "1-160",
+        "invariants": [
+          "Evalúa M_Plan ∩ ((P_Rol ∪ P_Temp) \\ P_Deny) en cada request antes de entrar al endpoint.",
+          "Valida que un permiso temporal JIT no haya expirado (expires_at > now_utc).",
+          "Audita test_rbac_and_audit_coverage.py: 0 endpoints desprotegidos en todo el backend."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py",
+          "oppytec-backend/tests/security_redteam/test_03_rbac_privilege_escalation_and_delegation.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "guard_file_magic",
+      "label": "Guardia 2: file_magic_guard (Magic Bytes & Anti-ZipBomb)",
+      "category": "http_guards",
+      "boundary": "tb_http_guards",
+      "badge": "Binary Magic Guard",
+      "summary": "Inspecciona los primeros bytes binarios reales (PDF, PNG, JPEG, WebP, XLSX), bloquea ejecutables/SVG/macros y limpia metadatos EXIF.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/guards/file_magic_guard.py",
+        "lines": "1-140",
+        "invariants": [
+          "Ignora la extensión declarada o el Content-Type del cliente; verifica firmas binarias reales (Magic Bytes).",
+          "Bloquea archivos .svg con scripts, ejecutables ELF/PE renombrados, Zip Bombs y fórmulas DDE/CSV injection en Excel.",
+          "Verifica cuota MB disponible en R2 antes de procesar y convertir imágenes a thumb.webp + display.webp."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_05_malicious_file_uploads_and_excel_exploits.py",
+          "oppytec-backend/tests/architecture/test_media_storage_isolation_and_quotas.py"
+        ],
+        "adr_ref": "docs/adr/ADR-017-multi-tenant-r2-media-storage-webp-and-plan-quotas.md"
+      }
+    },
+    {
+      "id": "guard_xss_sanitizer",
+      "label": "Guardia 3: xss_sanitizer (Sanitización Políglota)",
+      "category": "http_guards",
+      "boundary": "tb_http_guards",
+      "badge": "XSS / SSTI Sanitizer",
+      "summary": "Neutraliza payloads XSS, event handlers inline, javascript: URIs, SSTI ({{7*7}}) y Path Traversal en inputs de texto y notas.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/guards/xss_sanitizer.py",
+        "lines": "1-125",
+        "invariants": [
+          "Elimina etiquetas <script>, <iframe>, <object>, onload/onerror y esquemas javascript:/data: maliciosos.",
+          "Bloquea secuencias de Server-Side Template Injection y Path Traversal (../, %2e%2e%2f).",
+          "Preserva intactos los caracteres internacionales UTF-8 y nombres comerciales (ej. \"Pollo King\")."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_04_polyglot_injections_sqli_xss_ssti_lfi.py"
+        ],
+        "adr_ref": "docs/adr/ADR-007-co-creation-testing-and-offensive-security-gates.md"
+      }
+    },
+    {
+      "id": "guard_rate_limiter",
+      "label": "Guardia 4: rate_limiter (Sliding Window por Canal)",
+      "category": "http_guards",
+      "boundary": "tb_http_guards",
+      "badge": "Sliding Window",
+      "summary": "Limitador de tasa por ventana deslizante aislado por ENV_NAMESPACE y Tenant (Auth: 5/min, API: 120/min, AI OppyFy: 20/min).",
+      "card": {
+        "file_path": "oppytec-backend/src/core/guards/rate_limiter.py",
+        "lines": "1-135",
+        "invariants": [
+          "Aplica cuotas diferenciadas por sensibilidad del canal: Auth (5 req/min), API estándar (120 req/min) e IA OppyFy (20 req/min).",
+          "Devuelve HTTP 429 Too Many Requests con cabecera Retry-After e i18n_key cuando se excede el umbral.",
+          "Si Redis cae, conmuta en < 50ms al fallback en memoria local vía RedisCircuitBreaker sin tumbar la API."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_02_jwt_cryptographic_and_session_attacks.py",
+          "oppytec-backend/tests/security_redteam/test_10_resilience_chaos_and_circuit_breakers.py"
+        ],
+        "adr_ref": "docs/adr/ADR-007-co-creation-testing-and-offensive-security-gates.md"
+      }
+    },
+    {
+      "id": "res_redis_circuit_breaker",
+      "label": "RedisCircuitBreaker (< 50ms Fallback)",
+      "category": "resilience_chaos",
+      "boundary": "tb_resilience_chaos",
+      "badge": "Circuit Breaker < 50ms",
+      "summary": "Envuelve operaciones de Redis con estados CLOSED/OPEN/HALF_OPEN y fallback determinista en < 50ms ante caídas de red o broker.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/redis.py",
+        "lines": "1-160",
+        "invariants": [
+          "Detecta fallos de conexión en < 50ms y abre el circuito sin bloquear el event loop asíncrono.",
+          "Permite degradación controlada en caché/rate-limit y fail-closed seguro en operaciones críticas de revocación.",
+          "Aísla todas las claves con el prefijo ENV_NAMESPACE para evitar colisiones entre worktrees."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_10_resilience_chaos_and_circuit_breakers.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "res_canonical_lock_ordering",
+      "label": "Ordenamiento Canónico de Locks (ORDER BY id ASC FOR UPDATE)",
+      "category": "resilience_chaos",
+      "boundary": "tb_resilience_chaos",
+      "badge": "Zero Deadlocks",
+      "summary": "Adquiere locks pesimistas en Kardex, recetas y billeteras de créditos ordenando siempre por id ASC antes de descontar saldos.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/inventory/application/services.py",
+        "lines": "1-175",
+        "invariants": [
+          "Cuando una venta o producción descuenta múltiples insumos, ordena sus UUIDs/IDs en forma ascendente canónica antes del SELECT ... FOR UPDATE.",
+          "Elimina matemáticamente los ciclos de espera circular (deadlocks AB-BA) bajo ráfagas concurrentes.",
+          "Impide saldos negativos o doble gasto (double-spend) en Kardex, cupos de usuarios y créditos OppyFy."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_06_concurrency_race_conditions_double_spend.py",
+          "oppytec-backend/tests/security_redteam/test_10_resilience_chaos_and_circuit_breakers.py"
+        ],
+        "adr_ref": "docs/adr/ADR-004-three-layer-units-and-weighted-costing.md"
+      }
+    },
+    {
+      "id": "res_fx_anomaly_breaker",
+      "label": "Escudo Anti-Anomalías FX (> 8% Variance Breaker)",
+      "category": "resilience_chaos",
+      "boundary": "tb_resilience_chaos",
+      "badge": "FX Guard > 8%",
+      "summary": "Rechaza automáticamente actualizaciones de tipo de cambio BCCh/BCE que varíen más de un 8% intradía sin confirmación del SuperUser.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/fx/service.py",
+        "lines": "1-165",
+        "invariants": [
+          "Compara cada nueva tasa entrante contra la última tasa oficial con precisión Decimal(18, 8).",
+          "Si |nueva - actual| / actual > 0.08, abre el circuit breaker cambiario, conserva la última tasa segura y emite alerta.",
+          "Si falla la API primaria del BCCh, conmuta automáticamente al proveedor secundario BCE Frankfurter."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_fx_currency_precision_and_governance.py",
+          "oppytec-backend/tests/security_redteam/test_10_resilience_chaos_and_circuit_breakers.py"
+        ],
+        "adr_ref": "docs/adr/ADR-015-central-bank-fx-engine-and-multi-currency-pricing.md"
+      }
+    },
+    {
+      "id": "res_sinkhole_mailpit",
+      "label": "Sinkhole de Salida en No-Prod (Mailpit & Outbound Guard)",
+      "category": "resilience_chaos",
+      "boundary": "tb_resilience_chaos",
+      "badge": "Non-Prod Sinkhole",
+      "summary": "En entornos local, preview, ci y staging intercepta el 100% de correos y webhooks hacia un Sinkhole local (Mailpit) evitando fugas a clientes reales.",
+      "card": {
+        "file_path": "oppytec-backend/src/adapters/email/sinkhole_mailpit_adapter.py",
+        "lines": "1-110",
+        "invariants": [
+          "Prohíbe el despacho de correos SMTP/Resend reales fuera de APP_ENV=production.",
+          "Captura plantillas i18n renderizadas en memoria/Mailpit para inspección determinista en tests.",
+          "Combina con config.py Fail-Fast para impedir que un entorno de prueba apunte a servicios productivos."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_11_environment_boundary_and_failfast.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "rt_vectors_01_02_03",
+      "label": "Vectores Red Team 01, 02 y 03: IDOR, JWT & Escalada RBAC",
+      "category": "redteam_offensive",
+      "boundary": "tb_redteam_schemathesis",
+      "badge": "Vectors 01..03",
+      "summary": "Ataques automatizados de aislamiento cruzado entre Tenants/Holdings (IDOR), falsificación criptográfica JWT y escalada de privilegios RBAC.",
+      "card": {
+        "file_path": "oppytec-backend/tests/security_redteam/test_01_cross_tenant_and_holding_isolation_idor.py",
+        "lines": "1-140",
+        "invariants": [
+          "test_01: Verifica que un token válido de tenant_a jamás pueda leer o mutar recursos de tenant_b ni de otro Holding.",
+          "test_02: Verifica rechazo de JWT con alg=none, clave truncada, expirado o revocado por soft-delete.",
+          "test_03: Verifica las 3 leyes de hierarchy_rank (nadie otorga un rango superior o permiso que no posee) y caducidad JIT."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_01_cross_tenant_and_holding_isolation_idor.py",
+          "oppytec-backend/tests/security_redteam/test_02_jwt_cryptographic_and_session_attacks.py",
+          "oppytec-backend/tests/security_redteam/test_03_rbac_privilege_escalation_and_delegation.py"
+        ],
+        "adr_ref": "docs/adr/ADR-007-co-creation-testing-and-offensive-security-gates.md"
+      }
+    },
+    {
+      "id": "rt_vectors_04_05",
+      "label": "Vectores Red Team 04 y 05: Inyecciones Políglotas & Archivos Maliciosos",
+      "category": "redteam_offensive",
+      "boundary": "tb_redteam_schemathesis",
+      "badge": "Vectors 04..05",
+      "summary": "Bombardeo con payloads políglotas SQLi/XSS/SSTI/LFI y subida de binarios falsificados, SVG con XSS, Zip Bombs y exploits de Excel.",
+      "card": {
+        "file_path": "oppytec-backend/tests/security_redteam/test_04_polyglot_injections_sqli_xss_ssti_lfi.py",
+        "lines": "1-140",
+        "invariants": [
+          "test_04: Verifica neutralización de SQLi en filtros/esquemas, XSS en notas/catálogo, SSTI y Path Traversal.",
+          "test_05: Verifica rechazo por Magic Bytes de ejecutables disfrazados de imagen/PDF y sanitización de fórmulas maliciosas (=CMD|) en importación Excel."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_04_polyglot_injections_sqli_xss_ssti_lfi.py",
+          "oppytec-backend/tests/security_redteam/test_05_malicious_file_uploads_and_excel_exploits.py"
+        ],
+        "adr_ref": "docs/adr/ADR-007-co-creation-testing-and-offensive-security-gates.md"
+      }
+    },
+    {
+      "id": "rt_vectors_06_07",
+      "label": "Vectores Red Team 06 y 07: Race Conditions & Fuga de Información",
+      "category": "redteam_offensive",
+      "boundary": "tb_redteam_schemathesis",
+      "badge": "Vectors 06..07",
+      "summary": "Pruebas de ráfagas concurrentes (double-spend en Kardex, cupos de plan y créditos IA) y auditoría de cabeceras de seguridad y redacción PII.",
+      "card": {
+        "file_path": "oppytec-backend/tests/security_redteam/test_06_concurrency_race_conditions_double_spend.py",
+        "lines": "1-140",
+        "invariants": [
+          "test_06: Dispara corrutinas simultáneas contra un mismo saldo de stock, cupo de plan y billetera de créditos verificando 0 sobregiros.",
+          "test_07: Verifica que errores 4xx/5xx jamás filtren stacktraces, SQL ni secretos, e incluyan cabeceras CSP, HSTS, X-Frame-Options y X-Trace-ID."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_06_concurrency_race_conditions_double_spend.py",
+          "oppytec-backend/tests/security_redteam/test_07_information_disclosure_and_headers.py"
+        ],
+        "adr_ref": "docs/adr/ADR-007-co-creation-testing-and-offensive-security-gates.md"
+      }
+    },
+    {
+      "id": "rt_vector_08_ai_rag",
+      "label": "Vector Red Team 08: Prompt Injection & Aislamiento RAG OppyFy",
+      "category": "redteam_offensive",
+      "boundary": "tb_redteam_schemathesis",
+      "badge": "Vector 08 / AI Guard",
+      "summary": "Intenta vulnerar OppyFy mediante Prompt Injection directo/indirecto para extraer código interno (engineering-code/) o costos sin permiso.",
+      "card": {
+        "file_path": "oppytec-backend/tests/security_redteam/test_08_ai_prompt_injection_and_rag_isolation.py",
+        "lines": "1-145",
+        "invariants": [
+          "Verifica que spec_chunks indexe 0% de archivos de specs/engineering-code/ (solo specs/business-domain/).",
+          "Bloquea intentos de jailbreak que pidan revelar system prompts, nombres de tablas SQL o datos de otro Tenant.",
+          "Enmascara campos financieros sensibles si el usuario no posee el sub-dominio RBAC de OppyFy correspondiente."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_08_ai_prompt_injection_and_rag_isolation.py",
+          "oppytec-backend/tests/architecture/test_oppyfy_telemetry_and_isolation.py"
+        ],
+        "adr_ref": "docs/adr/ADR-012-oppyfy-dual-rag-custom-rbac-and-credit-ledger.md"
+      }
+    },
+    {
+      "id": "rt_vector_09_zero_secrets",
+      "label": "Vector Red Team 09: Escáner AST de Cero Hardcoding y SecretStr",
+      "category": "redteam_offensive",
+      "boundary": "tb_redteam_schemathesis",
+      "badge": "Vector 09 / Zero-Secrets",
+      "summary": "Inspecciona el AST de todo el código fuente verificando ausencia total de secretos quemados, tokens JWT, DSNs o contraseñas fuera de SecretStr.",
+      "card": {
+        "file_path": "oppytec-backend/tests/security_redteam/test_09_zero_hardcoding_and_secrets_guard.py",
+        "lines": "1-140",
+        "invariants": [
+          "Verifica que todo campo sensible en Settings (config.py) declare el tipo SecretStr de Pydantic.",
+          "Escanea literales en src/ para bloquear llaves API, credenciales de SuperUser Génesis o URLs de producción quemadas."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_09_zero_hardcoding_and_secrets_guard.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "rt_vectors_10_11_chaos_env",
+      "label": "Vectores Red Team 10 y 11: Caos/Resiliencia & Frontera de 5 Entornos",
+      "category": "redteam_offensive",
+      "boundary": "tb_redteam_schemathesis",
+      "badge": "Vectors 10..11",
+      "summary": "Simula caída súbita de Redis, anomalías cambiarias > 8%, contaminación de pool y cruces prohibidos entre entornos local/ci y staging/prod.",
+      "card": {
+        "file_path": "oppytec-backend/tests/security_redteam/test_10_resilience_chaos_and_circuit_breakers.py",
+        "lines": "1-150",
+        "invariants": [
+          "test_10: Certifica RedisCircuitBreaker (< 50ms), RESET search_path tras fallo y bloqueo de variación FX > 8%.",
+          "test_11: Certifica que staging/production rechacen secretos débiles (< 32 chars), oculten /docs y /openapi.json en producción y bloqueen DSNs cruzados."
+        ],
+        "tests": [
+          "oppytec-backend/tests/security_redteam/test_10_resilience_chaos_and_circuit_breakers.py",
+          "oppytec-backend/tests/security_redteam/test_11_environment_boundary_and_failfast.py"
+        ],
+        "adr_ref": "docs/adr/ADR-008-five-tier-environments-and-artifact-invariance.md"
+      }
+    },
+    {
+      "id": "rt_schemathesis_fuzzer",
+      "label": "Fuzzing de Contratos OpenAPI con Schemathesis",
+      "category": "redteam_offensive",
+      "boundary": "tb_redteam_schemathesis",
+      "badge": "Schemathesis Grey-Box",
+      "summary": "Genera casos de prueba basados en propiedades contra el esquema /openapi.json de los 10 módulos verificando 0 errores HTTP 500.",
+      "card": {
+        "file_path": "oppytec-backend/tests/contracts/test_openapi_schemathesis.py",
+        "lines": "1-145",
+        "invariants": [
+          "Valida que el contrato OpenAPI 3.1 compilado desde FastAPI sea 100% válido y coherente con los schemas Pydantic v2.",
+          "Bombardea rutas públicas y protegidas con payloads bordes, tipos extremos y cabeceras malformadas exigiendo respuestas 2xx/4xx tipadas y nunca HTTP 500."
+        ],
+        "tests": [
+          "oppytec-backend/tests/contracts/test_openapi_schemathesis.py"
+        ],
+        "adr_ref": "docs/adr/ADR-007-co-creation-testing-and-offensive-security-gates.md"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "e2e_auth_jwt_entry",
+      "target": "guard_rate_limiter",
+      "label": "1. Verifica cuota Sliding Window por canal",
+      "protocol": "FastAPI Guard"
+    },
+    {
+      "source": "guard_rate_limiter",
+      "target": "guard_rbac_dependencies",
+      "label": "2. Evalúa permiso 3-niveles y Plan",
+      "protocol": "Depends(RequirePermission)"
+    },
+    {
+      "source": "guard_rbac_dependencies",
+      "target": "guard_xss_sanitizer",
+      "label": "3. Sanitiza textos de entrada (XSS/SSTI)",
+      "protocol": "Input Guard"
+    },
+    {
+      "source": "guard_rbac_dependencies",
+      "target": "guard_file_magic",
+      "label": "3b. Valida Magic Bytes y cuota R2 en uploads",
+      "protocol": "Binary Guard"
+    },
+    {
+      "source": "guard_xss_sanitizer",
+      "target": "e2e_tenant_search_path_in",
+      "label": "4. Abre transacción aislada por Tenant",
+      "protocol": "SET LOCAL search_path"
+    },
+    {
+      "source": "guard_file_magic",
+      "target": "e2e_tenant_search_path_in",
+      "label": "4b. Persiste metadatos de asset en Tenant",
+      "protocol": "SET LOCAL search_path"
+    },
+    {
+      "source": "e2e_tenant_search_path_in",
+      "target": "e2e_presentation_to_domain",
+      "label": "5. Ejecuta caso de uso con Decimal estricto",
+      "protocol": "Clean Architecture"
+    },
+    {
+      "source": "e2e_presentation_to_domain",
+      "target": "res_canonical_lock_ordering",
+      "label": "6. Serializa escrituras concurrentes",
+      "protocol": "ORDER BY id ASC FOR UPDATE"
+    },
+    {
+      "source": "e2e_presentation_to_domain",
+      "target": "res_fx_anomaly_breaker",
+      "label": "6b. Consulta conversión FX protegida",
+      "protocol": "Decimal(18,8)"
+    },
+    {
+      "source": "e2e_presentation_to_domain",
+      "target": "res_sinkhole_mailpit",
+      "label": "6c. Enruta correos en no-prod a Sinkhole",
+      "protocol": "EmailPort"
+    },
+    {
+      "source": "res_canonical_lock_ordering",
+      "target": "e2e_reset_search_path_out",
+      "label": "7. Finaliza transacción y limpia conexión",
+      "protocol": "RESET search_path"
+    },
+    {
+      "source": "e2e_reset_search_path_out",
+      "target": "e2e_ws_realtime_broadcast",
+      "label": "8. Emite evento post-commit filtrado por RBAC",
+      "protocol": "Redis Pub/Sub + WS"
+    },
+    {
+      "source": "guard_rate_limiter",
+      "target": "res_redis_circuit_breaker",
+      "label": "Degrada a memoria en < 50ms si Redis cae",
+      "protocol": "Circuit Breaker"
+    },
+    {
+      "source": "e2e_ws_realtime_broadcast",
+      "target": "res_redis_circuit_breaker",
+      "label": "Protege canal Pub/Sub y catch-up Stream",
+      "protocol": "Circuit Breaker"
+    },
+    {
+      "source": "rt_vectors_01_02_03",
+      "target": "e2e_auth_jwt_entry",
+      "label": "Audita ataques JWT, sesiones y X-Tenant-ID",
+      "protocol": "Red Team Vector 01..02"
+    },
+    {
+      "source": "rt_vectors_01_02_03",
+      "target": "guard_rbac_dependencies",
+      "label": "Audita escalada de rango y expiración JIT",
+      "protocol": "Red Team Vector 03"
+    },
+    {
+      "source": "rt_vectors_04_05",
+      "target": "guard_xss_sanitizer",
+      "label": "Audita inyecciones SQLi/XSS/SSTI/LFI",
+      "protocol": "Red Team Vector 04"
+    },
+    {
+      "source": "rt_vectors_04_05",
+      "target": "guard_file_magic",
+      "label": "Audita binarios falsos, ZipBomb y Excel DDE",
+      "protocol": "Red Team Vector 05"
+    },
+    {
+      "source": "rt_vectors_06_07",
+      "target": "res_canonical_lock_ordering",
+      "label": "Audita ráfagas anti-deadlock y double-spend",
+      "protocol": "Red Team Vector 06"
+    },
+    {
+      "source": "rt_vector_08_ai_rag",
+      "target": "e2e_presentation_to_domain",
+      "label": "Audita aislamiento RAG business-domain y PII",
+      "protocol": "Red Team Vector 08"
+    },
+    {
+      "source": "rt_vector_09_zero_secrets",
+      "target": "e2e_auth_jwt_entry",
+      "label": "Audita AST por 0 secretos quemados y SecretStr",
+      "protocol": "Red Team Vector 09"
+    },
+    {
+      "source": "rt_vectors_10_11_chaos_env",
+      "target": "res_redis_circuit_breaker",
+      "label": "Audita caída de Redis, FX > 8% y RESET pool",
+      "protocol": "Red Team Vector 10..11"
+    },
+    {
+      "source": "rt_schemathesis_fuzzer",
+      "target": "e2e_presentation_to_domain",
+      "label": "Fuzzing OpenAPI multi-rol (0 errores HTTP 500)",
+      "protocol": "Schemathesis"
+    }
+  ]
+}

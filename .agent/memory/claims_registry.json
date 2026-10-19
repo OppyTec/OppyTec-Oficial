@@ -1,4 +1,12 @@
 {
   "version": "2.0.0",
-  "active_claims": []
+  "active_claims": [
+    {
+      "file": "docs/architecture/atlas/04-critical-runtime-flows-and-resilience.archify.html",
+      "symbol_path": "map_04_critical_runtime_flows",
+      "claimed_by": "12-tech-writer-openspec-archify",
+      "intent": "Generate Mapa 4 of Interactive Archify Atlas + Bitacora Phase 4",
+      "claimed_at": "2026-10-19T17:31:03.585874+00:00"
+    }
+  ]
 }
