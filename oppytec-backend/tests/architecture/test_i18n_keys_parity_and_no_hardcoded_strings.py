@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -19,21 +19,22 @@ pytestmark = pytest.mark.architecture
 INTERPOLATION_VAR_REGEX = re.compile(r"\{\{\s*([a-zA-Z0-9_]+)\s*\}\}")
 
 
-def flatten_i18n_dict(data: dict[str, Any], prefix: str = "") -> dict[str, str]:
+def flatten_i18n_dict(data: Mapping[str, object], prefix: str = "") -> dict[str, str]:
     """Flattens a nested i18n JSON object into dot-separated key paths."""
     flat: dict[str, str] = {}
     for key, value in data.items():
         full_key = f"{prefix}.{key}" if prefix else key
-        if isinstance(value, dict):
-            flat.update(flatten_i18n_dict(value, full_key))
+        if isinstance(value, Mapping):
+            nested = {str(k): v for k, v in value.items()}
+            flat.update(flatten_i18n_dict(nested, full_key))
         else:
             flat[full_key] = str(value)
     return flat
 
 
 def compare_locale_catalogs(
-    es_catalog: dict[str, Any],
-    en_catalog: dict[str, Any],
+    es_catalog: Mapping[str, object],
+    en_catalog: Mapping[str, object],
     namespace: str,
 ) -> list[str]:
     """Checks 1:1 key parity and `{{var}}` placeholder parity between `es` and `en`."""

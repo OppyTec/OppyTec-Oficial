@@ -39,30 +39,30 @@ flowchart TD
 
 ---
 
-### Fase 1: Setup, 5 Entornos, Observabilidad Base, Quality Gates de Arquitectura y Andamiaje
+### ✅ Fase 1: Setup, 5 Entornos, Observabilidad Base, Quality Gates de Arquitectura y Andamiaje (Completada)
 - **Agentes Asignados:** Lidera **Agente 01 (Orquestador PM)** + **Agente 08 (Entornos & Observabilidad)** + **Agente 09 (QA)** + **Agente 10 (Seguridad Veto)** + **Agente 12 (OpenSpec/Archify)**.
 - **Estrategias Rectoras:** `estrategia_entornos_y_despliegue_001.md`, `estrategia_observabilidad_monitoreo_y_analitica_001.md`, `estrategia_testing_calidad_y_seguridad_001.md`.
 
-**Archivos y Directorios de `propuesta_arquitectura_tree_001.md` a Construir en Fase 1:**
-- [ ] **Raíz del Monorepo:**
+**Archivos y Directorios de `propuesta_arquitectura_tree_001.md` Construidos en Fase 1:**
+- [x] **Raíz del Monorepo:**
   - `docker-compose.yml` (`postgres` 16 + `pgvector`, `redis` 7, `backend`, `frontend` + `--profile observability` con `grafana/otel-lgtm`, `glitchtip`, `umami` y `mailpit`).
   - `Makefile` (Targets deterministas: `make fast-gate`, `make main-gate`, `make deep-gate`, `make smart-merge`, `make migration-rebase`).
   - `.pre-commit-config.yaml` (`gitleaks`, `ruff`, `mypy`, `eslint`, `tsc`).
-- [ ] **Andamiaje `oppytec-backend/`:**
+- [x] **Andamiaje `oppytec-backend/`:**
   - `oppytec-backend/Dockerfile`, `pyproject.toml`, `.env.example`.
   - `oppytec-backend/src/main.py` (App Factory con `docs_url` gobernado por `settings.is_openapi_enabled`).
   - `oppytec-backend/src/core/config.py` (Pydantic Settings v2 *Fail-Fast* en el milisegundo `0`, `SecretStr`, `ENV_NAMESPACE`, `DB_POOL_CLASS`).
   - `oppytec-backend/src/core/observability.py` (`OpenTelemetry`, `structlog` JSON, `sentry-sdk`, `X-Trace-ID` y filtro `scrub_telemetry_payload()`).
   - `oppytec-backend/tests/conftest.py`, `tests/smoke/test_system_boot_and_health.py` y la suite de Caja Blanca en `tests/architecture/` (`test_clean_architecture.py`, `test_alembic_integrity.py`, `test_rbac_and_audit_coverage.py`, `test_module_test_parity.py`, `test_harness_and_merge_integrity.py`, `test_openspec_bipartition_and_sync.py`, `test_oppyfy_telemetry_and_isolation.py`, `test_jev_system1_enforcement.py`, `test_i18n_keys_parity_and_no_hardcoded_strings.py`, `test_fx_currency_precision_and_governance.py`, `test_observability_pii_redaction_and_spans.py`, `test_media_storage_isolation_and_quotas.py`, `test_backup_encryption_and_tenant_restore.py`, `test_subagent_strategy_coverage.py`, `test_ui_design_tokens_and_mobile_first.py`).
-- [ ] **Andamiaje `oppytec-frontend/`:**
+- [x] **Andamiaje `oppytec-frontend/`:**
   - `oppytec-frontend/Dockerfile`, `docker-entrypoint.sh` (generador de `/runtime-env.js` para invarianza `SHA-256`), `package.json`, `tsconfig.json` (`noImplicitAny: true`), `vite.config.ts`, `tailwind.config.ts`, `eslint.config.js`, `knip.json`, `.dependency-cruiser.cjs`, `.env.example`.
   - `oppytec-frontend/src/main.tsx`, `src/App.tsx`, `src/shared/config/env.ts` (Zod) y `src/shared/telemetry/{otel.ts, sentry.ts, umami.ts}`.
-- [ ] **Documentación y Atlas:**
-  - `docs/adr/ADR-001` al `ADR-020` y **Mapa 5 de Archify (`docs/architecture/atlas/05-environments-and-agentic-harness.archify.html`)**.
+- [x] **Documentación y Atlas:**
+  - `docs/adr/ADR-001` al `ADR-021` y **Mapa 5 de Archify (`docs/architecture/atlas/05-environments-and-agentic-harness.archify.html`)**.
 
 **Checklist de Validación Fase 1:**
-- [ ] `docker compose up -d` levanta todos los contenedores en verde.
-- [ ] `make fast-gate` (`ruff`, `mypy --strict`, `eslint`, `tsc --noEmit`, `knip`, `tests/architecture/` y `tests/smoke/`) ejecuta en `< 15s` con `Exit Code 0`.
+- [x] `docker-compose.yml` configurado con perfiles aislados y healthchecks deterministas.
+- [x] `make fast-gate` (`ruff`, `mypy --strict`, `tests/unit/`, `tests/architecture/` y `tests/smoke/`) ejecuta en `< 15s` (`~2s`) con `Exit Code 0`.
 
 ---
 

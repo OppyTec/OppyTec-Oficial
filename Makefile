@@ -4,20 +4,24 @@
 PYTHON ?= python3
 PYTEST ?= $(PYTHON) -m pytest
 
+UV ?= uv
+
 verify-evals:
 	@$(PYTHON) scripts/harness.py verify-evals
 
 fast-gate: verify-evals
-	@echo "⚡ Ejecutando Fast Gate (< 15s): Integridad Evals + Tests Unitarios y de Arquitectura..."
-	@cd oppytec-backend && $(PYTEST) tests/unit tests/architecture -q
+	@echo "⚡ Ejecutando Fast Gate (< 15s): Integridad Evals + Ruff + Mypy Strict + Tests Unit/Arch/Smoke..."
+	@$(UV) --directory oppytec-backend run ruff check .
+	@$(UV) --directory oppytec-backend run mypy --strict src/ tests/
+	@$(UV) --directory oppytec-backend run pytest tests/unit tests/architecture tests/smoke -q
 
 main-gate: fast-gate
 	@echo "🛡️  Ejecutando Main Gate (< 3m): Smoke + Integración + Vectores Red Team 01..11..."
-	@cd oppytec-backend && $(PYTEST) tests/smoke tests/integration tests/security_redteam -q
+	@$(UV) --directory oppytec-backend run pytest tests/smoke tests/integration tests/security_redteam -q
 
 deep-gate: main-gate
 	@echo "🔥 Ejecutando Deep Gate: Contratos Schemathesis + E2E + Auditoría..."
-	@cd oppytec-backend && $(PYTEST) tests/contracts tests/e2e -q
+	@$(UV) --directory oppytec-backend run pytest tests/contracts tests/e2e -q
 
 check: fast-gate
 

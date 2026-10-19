@@ -38,7 +38,7 @@ def calculate_shannon_entropy(value: str) -> float:
     return -sum((count / length) * math.log2(count / length) for count in counts.values())
 
 
-class Settings(BaseSettings):
+class Settings(BaseSettings):  # type: ignore[explicit-any]
     """Configuración central tipada y validada en el milisegundo 0 (cero uso de Any)."""
 
     model_config = SettingsConfigDict(
@@ -162,14 +162,14 @@ class Settings(BaseSettings):
         )
 
         # 2. Guardia de Frontera Cross-Environment: local / preview / ci jamás tocan staging o prod
-        if self.ENVIRONMENT in ("local", "preview", "ci"):
-            if any(m in db_url_plain for m in forbidden_remote_markers) or any(
-                m in redis_url_plain for m in forbidden_remote_markers
-            ):
-                raise ValueError(
-                    f"CrossEnvironmentViolation: El entorno '{self.ENVIRONMENT}' tiene prohibido "
-                    "conectarse a hosts o bases de datos de 'staging' o 'production'."
-                )
+        if self.ENVIRONMENT in ("local", "preview", "ci") and (
+            any(m in db_url_plain for m in forbidden_remote_markers)
+            or any(m in redis_url_plain for m in forbidden_remote_markers)
+        ):
+            raise ValueError(
+                f"CrossEnvironmentViolation: El entorno '{self.ENVIRONMENT}' tiene prohibido "
+                "conectarse a hosts o bases de datos de 'staging' o 'production'."
+            )
 
         if self.ENVIRONMENT in ("local", "ci"):
             allowed_local_db_hosts = {"localhost", "127.0.0.1", "postgres", "db", "test-db"}
@@ -185,12 +185,11 @@ class Settings(BaseSettings):
                     f"debe pertenecer a {sorted(allowed_local_redis_hosts)}."
                 )
 
-        if self.ENVIRONMENT == "ci":
-            if self.OTEL_EXPORTER == "otlp" or self.UMAMI_ENABLED:
-                raise ValueError(
-                    "SecurityBoundaryViolation: En 'ci', OTEL_EXPORTER debe ser 'memory' o 'none' "
-                    "y UMAMI_ENABLED debe ser False (cero tráfico externo)."
-                )
+        if self.ENVIRONMENT == "ci" and (self.OTEL_EXPORTER == "otlp" or self.UMAMI_ENABLED):
+            raise ValueError(
+                "SecurityBoundaryViolation: En 'ci', OTEL_EXPORTER debe ser 'memory' o 'none' "
+                "y UMAMI_ENABLED debe ser False (cero tráfico externo)."
+            )
 
         # 3. Reglas de Correo y Sinkhole por Entorno
         if self.ENVIRONMENT in ("local", "preview", "ci", "staging"):
@@ -226,12 +225,14 @@ class Settings(BaseSettings):
                     f"SecurityBoundaryViolation: En '{self.ENVIRONMENT}', STORAGE_PROVIDER no puede ser 'local'."
                 )
 
-        if self.ENVIRONMENT == "production":
-            if self.EMAIL_PROVIDER in ("console_mock", "mailpit"):
-                raise ValueError(
-                    "SecurityBoundaryViolation: En 'production', EMAIL_PROVIDER no puede ser "
-                    "'console_mock' ni 'mailpit'."
-                )
+        if self.ENVIRONMENT == "production" and self.EMAIL_PROVIDER in (
+            "console_mock",
+            "mailpit",
+        ):
+            raise ValueError(
+                "SecurityBoundaryViolation: En 'production', EMAIL_PROVIDER no puede ser "
+                "'console_mock' ni 'mailpit'."
+            )
 
         return self
 

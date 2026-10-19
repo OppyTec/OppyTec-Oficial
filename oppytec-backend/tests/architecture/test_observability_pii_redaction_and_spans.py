@@ -8,10 +8,11 @@ Enforces `.agent/rules/17-observability-opentelemetry-sentry-and-umami.md`:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import httpx
 import pytest
+
+from src.core.observability import scrub_telemetry_payload
 
 pytestmark = pytest.mark.architecture
 
@@ -32,14 +33,15 @@ SENSITIVE_KEYS: frozenset[str] = frozenset(
 REDACTED_MASK = "[REDACTED]"
 
 
-def reference_scrub_telemetry_payload(payload: dict[str, Any]) -> dict[str, Any]:
+def reference_scrub_telemetry_payload(payload: dict[str, object]) -> dict[str, object]:
     """Reference recursive PII scrubber matching Rule 17."""
-    scrubbed: dict[str, Any] = {}
+    scrubbed: dict[str, object] = {}
     for key, val in payload.items():
         if any(s in key.lower() for s in SENSITIVE_KEYS):
             scrubbed[key] = REDACTED_MASK
         elif isinstance(val, dict):
-            scrubbed[key] = reference_scrub_telemetry_payload(val)
+            nested = {str(k): v for k, v in val.items()}
+            scrubbed[key] = reference_scrub_telemetry_payload(nested)
         else:
             scrubbed[key] = val
     return scrubbed
@@ -64,7 +66,7 @@ async def test_observability_trace_id_and_pii_redaction(
     assert resp.status_code == 200
     assert "X-Trace-ID" in resp.headers
 
-    raw_event: dict[str, Any] = {
+    raw_event: dict[str, object] = {
         "user": "oppytec.admin",
         "password": "SuperSecretPassword123!",
         "headers": {
@@ -73,16 +75,6 @@ async def test_observability_trace_id_and_pii_redaction(
         },
     }
 
-    scrubber = reference_scrub_telemetry_payload
-    try:
-        from src.core import observability as core_obs  # type: ignore[attr-defined]
-
-        candidate = getattr(core_obs, "scrub_telemetry_payload", None)
-        if callable(candidate):
-            scrubber = candidate
-    except ImportError:
-        scrubber = reference_scrub_telemetry_payload
-
-    cleaned = scrubber(raw_event)
+    cleaned = scrub_telemetry_payload(raw_event)
     assert "SuperSecretPassword123!" not in str(cleaned)
     assert "eyJhbGciOiJIUzI1NiJ9" not in str(cleaned)

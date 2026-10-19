@@ -30,8 +30,9 @@ from src.core.observability import (
 )
 
 
-def test_default_local_settings_and_secretstr_enforcement() -> None:
+def test_default_local_settings_and_secretstr_enforcement(monkeypatch: pytest.MonkeyPatch) -> None:
     """Verifica que Settings cargue valores seguros en local y que todos los secretos sean SecretStr."""
+    monkeypatch.delenv("ENV_NAMESPACE", raising=False)
     settings = Settings()
     assert settings.ENVIRONMENT == "local"
     assert settings.ENV_NAMESPACE == "default"

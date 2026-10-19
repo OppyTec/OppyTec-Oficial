@@ -15,7 +15,7 @@ import uuid
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from contextvars import ContextVar, Token
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pydantic import SecretStr
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -227,7 +227,7 @@ def format_structured_log(
     ctx = get_tenant_telemetry_context()
     safe_payload = scrub_telemetry_payload(payload or {})
     record: dict[str, object] = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "level": level.upper(),
         "event": event,
         "trace_id": ctx.trace_id,

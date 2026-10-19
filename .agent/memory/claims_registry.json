@@ -1,33 +1,4 @@
 {
   "version": "2.0.0",
-  "active_claims": [
-    {
-      "file": "docker-compose.yml,Makefile,.pre-commit-config.yaml,oppytec-backend/src/core/config.py,oppytec-backend/src/core/observability.py",
-      "symbol_path": "phase1.environments_and_observability",
-      "claimed_by": "08-environments-and-observability-engineer",
-      "intent": "Fase 1: Configurar 5 entornos, docker-compose, Makefile, pre-commit, config.py (Fail-Fast SecretStr) y observability.py (OTel/Sentry/structlog PII)",
-      "claimed_at": "2026-10-19T13:05:56.504437+00:00"
-    },
-    {
-      "file": "oppytec-backend/Dockerfile,oppytec-backend/pyproject.toml,oppytec-backend/.env.example,oppytec-backend/src/main.py,oppytec-backend/tests/",
-      "symbol_path": "phase1.backend_scaffold_and_arch_tests",
-      "claimed_by": "04-backend-senior-dev",
-      "intent": "Fase 1: Construir andamiaje oppytec-backend, main.py, smoke tests y los 16 tests/architecture/",
-      "claimed_at": "2026-10-19T13:05:56.577292+00:00"
-    },
-    {
-      "file": "oppytec-frontend/",
-      "symbol_path": "phase1.frontend_scaffold_and_telemetry",
-      "claimed_by": "05-frontend-senior-dev",
-      "intent": "Fase 1: Construir andamiaje oppytec-frontend, runtime-env.js, env.ts (Zod) y shared/telemetry/",
-      "claimed_at": "2026-10-19T13:05:56.658525+00:00"
-    },
-    {
-      "file": "docs/adr/,docs/architecture/atlas/,docs/bitacora/",
-      "symbol_path": "phase1.adrs_and_archify_map5",
-      "claimed_by": "12-tech-writer-openspec-archify",
-      "intent": "Fase 1: Crear ADR-001..021, Mapa 5 de Archify y bitácora de Fase 1",
-      "claimed_at": "2026-10-19T13:05:56.730033+00:00"
-    }
-  ]
+  "active_claims": []
 }
