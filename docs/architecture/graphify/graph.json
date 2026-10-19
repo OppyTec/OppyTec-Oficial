@@ -1,0 +1,441 @@
+{
+  "graph_id": "v2_phase6_master_graph",
+  "phase": "Fase 6 (Certificación Final 10/10)",
+  "generated_at": "2026-10-19T20:55:00Z",
+  "generator": "12-tech-writer-openspec-archify",
+  "invariants": [
+    "Clean Architecture & Strict DDD: domain/ and application/ layers have 0 framework imports and use Decimal exclusively for financial and inventory math",
+    "Multi-Schema Physical Isolation: PublicBase (public) vs TenantBase (tenant_<slug>) enforced via SET LOCAL search_path and RESET search_path on checkin, with strict 1:1 LegalEntity-to-Tenant mapping",
+    "Linear Correlative Alembic Migrations: 0001_public_* -> 0002_tenant_* with zero merge_heads, governed by scripts/db_migration.py",
+    "4-Layer Encrypted Backups (.sql.zst.age): Neon PITR + Cloudflare R2 + Secondary VPS + Local Pull, with surgical tenant restoration (restore-tenant) and verified Restore Drill",
+    "Dual 3-Level RBAC (<modulo>.<submodulo>.<funcion>): Rank hierarchy (0..30+), commercial seat quotas with soft-delete awareness, Redis kill-switch, and immutable Dual Audit",
+    "4 Deterministic HTTP Security Guards: RequireRateLimit, RequireGlobalPermission/RequireTenantPermission, sanitize_text_input (XSS/Path Traversal), and RequireSafeFileUpload (Magic Bytes + CSV/Excel Formula Sanitization)",
+    "Zero-Polling Realtime WebSockets (/api/v1/ws/realtime): Redis Pub/Sub + Streams (XADD/XRANGE) with server-side 3-level RBAC filtering and TanStack Query v5 surgical invalidation",
+    "JEV System 1 Fast Decision Engine (< 15ms) & OppyFy 3-Layer RAG: Strictly isolated to specs/business-domain/ (0% source code access), client-editable RBAC subdomains, non-expiring credit packages, and llm_request_logs FinOps telemetry",
+    "100% i18n Coverage (11 JSON namespaces es/en + SVG flags + Pollo King proper noun protection) and Multi-Currency FX Engine (BCCh + BCE Frankfurter with Decimal(18,8) and >8% anomaly guard)",
+    "React 19 Feature-Driven Frontend: 10 features -> 5 shared kernels with 0 cross-feature imports, Legacy Visual DNA (light, dark, ocean-blue, 42 tokens, 49 icons, CLS=0), Mobile-First ergonomics, and 13 Observability Admin Sub-Views",
+    "Full Verification & Deep Gate Certification (10/10): Unit, Architecture, Smoke, Integration, 11 Red Team Vectors, Schemathesis OpenAPI Fuzzing, E2E 01..05, UAT Business Scenarios, and 500 RPS Load Profile (P95 <= 120ms)"
+  ],
+  "nodes": [
+    {
+      "id": "app:backend_main",
+      "label": "FastAPI Application Entrypoint & RFC 7807 Exception Handlers",
+      "type": "backend_app",
+      "path": "oppytec-backend/src/main.py"
+    },
+    {
+      "id": "core:database",
+      "label": "AsyncDatabaseSessionManager (PublicBase & TenantBase SET LOCAL / RESET search_path)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/database.py"
+    },
+    {
+      "id": "core:redis",
+      "label": "RedisClientPool (ENV_NAMESPACE Isolation & <50ms Circuit Breaker)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/redis.py"
+    },
+    {
+      "id": "core:bootstrap",
+      "label": "GenesisBootstrapper (Idempotent SuperUser, Global Roles & Default Tenant Seeding)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/bootstrap.py"
+    },
+    {
+      "id": "core:backup_4layers",
+      "label": "FourLayerBackupEngine & SurgicalTenantRestoreEngine (.sql.zst.age)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/backup/protocol.py"
+    },
+    {
+      "id": "core:jev_system1",
+      "label": "JEV System 1 Fast Decision Engine (Boolean, Choice, Score <15ms)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/jev/"
+    },
+    {
+      "id": "core:i18n_engine",
+      "label": "Static & Dynamic i18n Engine (11 Namespaces es/en, Pollo King Guard & Pi Prompt)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/i18n/"
+    },
+    {
+      "id": "core:fx_currency",
+      "label": "Multi-Currency FX Engine (BCCh + BCE Frankfurter Decimal(18,8) & >8% Anomaly Guard)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/fx/"
+    },
+    {
+      "id": "core:realtime_ws",
+      "label": "WebSocket Realtime Hub (/api/v1/ws/realtime, Redis Pub/Sub + Streams & RBAC Filter)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/realtime/router.py"
+    },
+    {
+      "id": "core:r2_storage",
+      "label": "Cloudflare R2 Multi-Tenant Storage Adapter (Dual WebP thumb/display & MB Quota)",
+      "type": "backend_adapter",
+      "path": "oppytec-backend/src/adapters/storage/"
+    },
+    {
+      "id": "guard:rbac_dependencies",
+      "label": "Deterministic 3-Level RBAC HTTP Guard (RequireGlobalPermission & RequireTenantPermission)",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/rbac_dependencies.py"
+    },
+    {
+      "id": "guard:file_magic_guard",
+      "label": "Magic Bytes File Upload & Spreadsheet Formula Injection Guard",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/file_magic_guard.py"
+    },
+    {
+      "id": "guard:xss_sanitizer",
+      "label": "XSS HTML/SVG Sanitizer & Path Traversal Guard",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/xss_sanitizer.py"
+    },
+    {
+      "id": "guard:rate_limiter",
+      "label": "Sliding Window Rate Limiter Guard (Redis + In-Memory Fallback)",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/rate_limiter.py"
+    },
+    {
+      "id": "module:identity",
+      "label": "Identity Module (Dual 3-Level RBAC, Rank Hierarchy 0..30+, JIT Grants & Kill-Switch)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/identity/"
+    },
+    {
+      "id": "module:tenancy",
+      "label": "Tenancy Module (Holding, 1:1 LegalEntity/Tenant, SystemPlan Seat & R2 MB Quotas)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/tenancy/"
+    },
+    {
+      "id": "module:audit",
+      "label": "Audit Module (Append-Only Global & Tenant RBAC/Activity Logs with Authorization Lineage)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/audit/"
+    },
+    {
+      "id": "module:catalog",
+      "label": "Catalog Module (3-Layer Units Decimal, Families, Proper Noun i18n & Excel Importer)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/catalog/"
+    },
+    {
+      "id": "module:inventory",
+      "label": "Inventory Module (Append-Only Kardex, Canonical Lock ORDER BY id ASC FOR UPDATE, Counts & Waste)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/inventory/"
+    },
+    {
+      "id": "module:recipes",
+      "label": "Recipes Module (Recursive Escandallos, Yield/Shrinkage Decimal Math, Combos & Option Groups)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/recipes/"
+    },
+    {
+      "id": "module:procurement",
+      "label": "Procurement Module (Suppliers, Purchase Orders, 3-Way Invoice Match & OCR JEV)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/procurement/"
+    },
+    {
+      "id": "module:operations",
+      "label": "Operations Module (POS Consumption, Hands-Free Voice, Buffet, Events, Shifts & Tasks)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/operations/"
+    },
+    {
+      "id": "module:analytics",
+      "label": "Analytics Module (Executive Margins, Kasavana Menu Engineering, Loss Control & Projections)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/analytics/"
+    },
+    {
+      "id": "module:oppy_ai",
+      "label": "OppyFy AI Module (3-Layer Business RAG, Client-Editable RBAC, Non-Expiring Credits & FinOps Logs)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/oppy_ai/"
+    },
+    {
+      "id": "frontend:app_shell",
+      "label": "React 19 App Shell (AppProviders, AppRouter, HoldingTenantSwitcher & ThemeProvider)",
+      "type": "frontend_shell",
+      "path": "oppytec-frontend/src/app/"
+    },
+    {
+      "id": "frontend:shared_i18n",
+      "label": "Frontend Shared i18n Kernel (11 JSON Namespaces es/en, SVG Flags & Pollo King Guard)",
+      "type": "frontend_shared",
+      "path": "oppytec-frontend/src/shared/i18n/"
+    },
+    {
+      "id": "frontend:shared_fx_currency",
+      "label": "Frontend Shared FX Currency Kernel (CLP/USD/EUR/BRL BigInt 10^8 Formatter & >8% Alert)",
+      "type": "frontend_shared",
+      "path": "oppytec-frontend/src/shared/currency/"
+    },
+    {
+      "id": "frontend:shared_rbac_can",
+      "label": "Frontend Shared RBAC Guard (<Can perform='modulo.submodulo.funcion'> & usePermissions)",
+      "type": "frontend_shared",
+      "path": "oppytec-frontend/src/shared/auth/"
+    },
+    {
+      "id": "frontend:shared_realtime_ws",
+      "label": "Frontend Shared Realtime WebSocket Kernel (useRealtimeSync Zero-Polling & TanStack Query v5)",
+      "type": "frontend_shared",
+      "path": "oppytec-frontend/src/shared/realtime/"
+    },
+    {
+      "id": "frontend:shared_ui_legacy_dna",
+      "label": "Frontend Shared UI Design System (3 Themes light/dark/ocean-blue, 42 Colors, 49 Icons, Mobile-First)",
+      "type": "frontend_shared",
+      "path": "oppytec-frontend/src/shared/components/"
+    },
+    {
+      "id": "frontend:feature_auth",
+      "label": "Frontend Feature Auth (Login, SelectTenant & ImpersonationBanner)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/auth/"
+    },
+    {
+      "id": "frontend:feature_rbac_and_audit",
+      "label": "Frontend Feature RBAC & Audit (3-Level Matrix, JIT Grants, Plan Quotas & Forensic Audit)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/rbac-and-audit/"
+    },
+    {
+      "id": "frontend:feature_catalog",
+      "label": "Frontend Feature Catalog (4-Step Product Wizard, 3-Layer Units, Excel AI Importer & R2 Quota)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/catalog/"
+    },
+    {
+      "id": "frontend:feature_inventory",
+      "label": "Frontend Feature Inventory (Kardex Ledger, Stock Semaphores, Physical Counts & 7x24 Waste Heatmap)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/inventory/"
+    },
+    {
+      "id": "frontend:feature_recipes",
+      "label": "Frontend Feature Recipes (Recursive Escandallo Builder, Margin Simulator, Combos & Options)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/recipes/"
+    },
+    {
+      "id": "frontend:feature_procurement",
+      "label": "Frontend Feature Procurement (Purchase Orders, Suppliers & 3-Way OCR Invoice Matching)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/procurement/"
+    },
+    {
+      "id": "frontend:feature_operations",
+      "label": "Frontend Feature Operations (Mobile POS, Hands-Free Voice, Buffet, Events, Shifts & Alerts)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/operations/"
+    },
+    {
+      "id": "frontend:feature_analytics",
+      "label": "Frontend Feature Analytics (Executive Dashboard, Demand Projections & 5 Report Panels)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/analytics/"
+    },
+    {
+      "id": "frontend:feature_oppyfy",
+      "label": "Frontend Feature OppyFy (Streaming AI Workspace, % Context Meter, Client RBAC & Credit Wallet)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/oppyfy/"
+    },
+    {
+      "id": "frontend:feature_platform_admin",
+      "label": "Frontend Feature Platform Admin (Holdings, FinOps LLM, FX Console, 4-Layer Backups & 13 Observability Views)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/platform-admin/"
+    },
+    {
+      "id": "suite:unit",
+      "label": "Unit & Property-Based Test Suite (10 Modules 1:1 Co-Creation + Hypothesis Math/RBAC/Quotas)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/"
+    },
+    {
+      "id": "suite:architecture",
+      "label": "White-Box Architecture Test Suite (15 Immutable Governance & Parity Gates)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/architecture/"
+    },
+    {
+      "id": "suite:smoke",
+      "label": "System Boot, Health & Readiness Smoke Suite (<2s Fast Gate)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/smoke/"
+    },
+    {
+      "id": "suite:integration",
+      "label": "Multi-Tenant Schema Isolation, Redis Kill-Switch & Legacy Math Parity Integration Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/integration/"
+    },
+    {
+      "id": "suite:security_redteam_01_11",
+      "label": "Offensive Security Red Team Suite (Vectors 01..11 Kali Linux + Chaos/Resilience)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/security_redteam/"
+    },
+    {
+      "id": "suite:contracts_schemathesis",
+      "label": "OpenAPI 3.1 Contract & Schemathesis Property Fuzzing Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/contracts/test_openapi_schemathesis.py"
+    },
+    {
+      "id": "suite:e2e_01_05",
+      "label": "End-to-End Critical Business Flows Suite (test_e2e_01..05 Full Lifecycle)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/e2e/"
+    },
+    {
+      "id": "suite:uat_business_scenarios",
+      "label": "User Acceptance Testing Suite (Gastronomic Holding, Buffet, Escandallos, i18n, FX & OppyFy)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/uat/test_uat_business_scenarios.py"
+    },
+    {
+      "id": "suite:load_locust_500rps",
+      "label": "High-Concurrency Load & Stress Suite (500 RPS Sustained, P95 <= 120ms SLA)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/load/locustfile.py"
+    },
+    {
+      "id": "atlas:01_tenancy_and_schemas",
+      "label": "Archify Map 01: Multi-Schema Tenancy, 1:1 LegalEntity, Linear Alembic & 4-Layer Backups",
+      "type": "archify_atlas_map",
+      "path": "docs/architecture/atlas/01-tenancy-and-schemas.archify.html"
+    },
+    {
+      "id": "atlas:02_rbac_quotas_and_audit",
+      "label": "Archify Map 02: Dual 3-Level RBAC, Rank Hierarchy, Seat Quotas & Forensic Audit",
+      "type": "archify_atlas_map",
+      "path": "docs/architecture/atlas/02-rbac-quotas-and-audit.archify.html"
+    },
+    {
+      "id": "atlas:03_clean_architecture_and_domain",
+      "label": "Archify Map 03: Clean Architecture 10 Modules, Decimal Math, Kardex, JEV, i18n, FX & R2",
+      "type": "archify_atlas_map",
+      "path": "docs/architecture/atlas/03-clean-architecture-and-domain.archify.html"
+    },
+    {
+      "id": "atlas:04_critical_runtime_flows_and_resilience",
+      "label": "Archify Map 04: E2E Runtime Flows, Route Probe, 4 HTTP Guards & 11 Red Team Vectors",
+      "type": "archify_atlas_map",
+      "path": "docs/architecture/atlas/04-critical-runtime-flows-and-resilience.archify.html"
+    },
+    {
+      "id": "atlas:05_environments_and_agentic_harness",
+      "label": "Archify Map 05: 5 Environments (SHA-256), 4-Pillar Observability & 12-Agent RLM Harness",
+      "type": "archify_atlas_map",
+      "path": "docs/architecture/atlas/05-environments-and-agentic-harness.archify.html"
+    },
+    {
+      "id": "openspec:business_domain_vault",
+      "label": "OpenSpec Business Domain Vault (13 Specs, 0% SQL/Code, RAG Layer 1 Source)",
+      "type": "openspec_vault",
+      "path": "specs/business-domain/"
+    },
+    {
+      "id": "openspec:engineering_code_vault",
+      "label": "OpenSpec Engineering Code Vault (15 Specs with JEV System 1 Evaluation & Test Links)",
+      "type": "openspec_vault",
+      "path": "specs/engineering-code/"
+    }
+  ],
+  "edges": [
+    { "source": "app:backend_main", "target": "module:identity", "relation": "mounts_router" },
+    { "source": "app:backend_main", "target": "module:tenancy", "relation": "mounts_router" },
+    { "source": "app:backend_main", "target": "module:audit", "relation": "mounts_router" },
+    { "source": "app:backend_main", "target": "module:catalog", "relation": "mounts_router" },
+    { "source": "app:backend_main", "target": "module:inventory", "relation": "mounts_router" },
+    { "source": "app:backend_main", "target": "module:recipes", "relation": "mounts_router" },
+    { "source": "app:backend_main", "target": "module:procurement", "relation": "mounts_router" },
+    { "source": "app:backend_main", "target": "module:operations", "relation": "mounts_router" },
+    { "source": "app:backend_main", "target": "module:analytics", "relation": "mounts_router" },
+    { "source": "app:backend_main", "target": "module:oppy_ai", "relation": "mounts_router" },
+    { "source": "app:backend_main", "target": "core:realtime_ws", "relation": "mounts_websocket_hub" },
+
+    { "source": "module:recipes", "target": "module:catalog", "relation": "depends_on_domain_units_and_costs" },
+    { "source": "module:recipes", "target": "core:fx_currency", "relation": "converts_recipe_margins_decimal" },
+    { "source": "module:recipes", "target": "core:i18n_engine", "relation": "translates_recipe_names_preserving_proper_nouns" },
+    { "source": "module:inventory", "target": "module:catalog", "relation": "tracks_3_layer_unit_stock" },
+    { "source": "module:inventory", "target": "module:audit", "relation": "records_kardex_and_waste_audit" },
+    { "source": "module:procurement", "target": "module:inventory", "relation": "commits_goods_receipt_to_kardex" },
+    { "source": "module:procurement", "target": "core:jev_system1", "relation": "classifies_ocr_invoices" },
+    { "source": "module:operations", "target": "module:recipes", "relation": "deducts_recursive_escandallo_ingredients" },
+    { "source": "module:operations", "target": "module:inventory", "relation": "commits_pos_and_buffet_consumption" },
+    { "source": "module:analytics", "target": "module:inventory", "relation": "aggregates_kardex_and_waste_metrics" },
+    { "source": "module:analytics", "target": "module:recipes", "relation": "computes_kasavana_menu_engineering_matrix" },
+    { "source": "module:oppy_ai", "target": "core:jev_system1", "relation": "routes_intent_and_moderates_prompts" },
+    { "source": "module:oppy_ai", "target": "openspec:business_domain_vault", "relation": "ingests_rag_layer1_business_specs_only" },
+    { "source": "module:catalog", "target": "core:r2_storage", "relation": "stores_dual_webp_within_tenant_mb_quota" },
+    { "source": "module:tenancy", "target": "core:database", "relation": "provisions_isolated_tenant_schema" },
+    { "source": "module:tenancy", "target": "core:backup_4layers", "relation": "enables_surgical_tenant_backup_and_restore" },
+    { "source": "module:identity", "target": "guard:rbac_dependencies", "relation": "provides_3_level_rbac_evaluation" },
+
+    { "source": "frontend:app_shell", "target": "frontend:feature_auth", "relation": "routes_to_feature" },
+    { "source": "frontend:app_shell", "target": "frontend:feature_rbac_and_audit", "relation": "routes_to_feature" },
+    { "source": "frontend:app_shell", "target": "frontend:feature_catalog", "relation": "routes_to_feature" },
+    { "source": "frontend:app_shell", "target": "frontend:feature_inventory", "relation": "routes_to_feature" },
+    { "source": "frontend:app_shell", "target": "frontend:feature_recipes", "relation": "routes_to_feature" },
+    { "source": "frontend:app_shell", "target": "frontend:feature_procurement", "relation": "routes_to_feature" },
+    { "source": "frontend:app_shell", "target": "frontend:feature_operations", "relation": "routes_to_feature" },
+    { "source": "frontend:app_shell", "target": "frontend:feature_analytics", "relation": "routes_to_feature" },
+    { "source": "frontend:app_shell", "target": "frontend:feature_oppyfy", "relation": "routes_to_feature" },
+    { "source": "frontend:app_shell", "target": "frontend:feature_platform_admin", "relation": "routes_to_feature" },
+
+    { "source": "frontend:feature_recipes", "target": "frontend:shared_fx_currency", "relation": "formats_multi_currency_escandallo_costs" },
+    { "source": "frontend:feature_recipes", "target": "frontend:shared_i18n", "relation": "translates_recipes_namespace" },
+    { "source": "frontend:feature_recipes", "target": "frontend:shared_rbac_can", "relation": "guards_recipe_mutations_via_can" },
+    { "source": "frontend:feature_recipes", "target": "frontend:shared_realtime_ws", "relation": "subscribes_live_cost_updates" },
+    { "source": "frontend:feature_recipes", "target": "frontend:shared_ui_legacy_dna", "relation": "renders_3_themes_mobile_first" },
+    { "source": "frontend:feature_recipes", "target": "module:recipes", "relation": "consumes_rest_api" },
+
+    { "source": "frontend:shared_realtime_ws", "target": "core:realtime_ws", "relation": "connects_zero_polling_websocket" },
+    { "source": "openspec:business_domain_vault", "target": "openspec:engineering_code_vault", "relation": "pairs_1_to_1_bipartite_contracts" },
+
+    { "source": "suite:unit", "target": "module:recipes", "relation": "verifies_legacy_math_parity_and_domain" },
+    { "source": "suite:architecture", "target": "app:backend_main", "relation": "enforces_clean_architecture_and_10_criteria" },
+    { "source": "suite:integration", "target": "core:database", "relation": "verifies_multi_tenant_search_path_isolation" },
+    { "source": "suite:security_redteam_01_11", "target": "app:backend_main", "relation": "audits_11_offensive_redteam_vectors" },
+    { "source": "suite:contracts_schemathesis", "target": "app:backend_main", "relation": "fuzzes_openapi_schemas" },
+    { "source": "suite:e2e_01_05", "target": "app:backend_main", "relation": "certifies_end_to_end_lifecycle_flows" },
+    { "source": "suite:e2e_01_05", "target": "module:recipes", "relation": "certifies_e2e_recipe_escandallo_to_pos_deduction" },
+    { "source": "suite:uat_business_scenarios", "target": "module:recipes", "relation": "validates_uat_gastronomic_margins_and_Yields" },
+    { "source": "suite:load_locust_500rps", "target": "app:backend_main", "relation": "stresses_500_rps_p95_under_120ms" },
+
+    { "source": "atlas:01_tenancy_and_schemas", "target": "core:database", "relation": "visualizes_and_seals_sha256" },
+    { "source": "atlas:02_rbac_quotas_and_audit", "target": "module:identity", "relation": "visualizes_and_seals_sha256" },
+    { "source": "atlas:03_clean_architecture_and_domain", "target": "module:recipes", "relation": "visualizes_and_seals_sha256" },
+    { "source": "atlas:04_critical_runtime_flows_and_resilience", "target": "guard:rbac_dependencies", "relation": "visualizes_and_seals_sha256" },
+    { "source": "atlas:05_environments_and_agentic_harness", "target": "suite:architecture", "relation": "visualizes_and_seals_sha256" }
+  ],
+  "metrics": {
+    "backend_modules": 10,
+    "http_security_guards": 4,
+    "frontend_features": 10,
+    "frontend_shared_kernels": 5,
+    "cross_feature_imports": 0,
+    "verification_suites": 9,
+    "redteam_vectors": 11,
+    "e2e_flows": 5,
+    "archify_atlas_maps": 5,
+    "openspec_business_specs": 13,
+    "openspec_engineering_specs": 15,
+    "load_test_target_rps": 500,
+    "load_test_p95_budget_ms": 120,
+    "rubric_score": "10/10"
+  }
+}
