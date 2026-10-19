@@ -93,14 +93,14 @@ flowchart TD
 
 ---
 
-### Fase 3: Servicios Core, RBAC Dual, `JEV`, `OppyFy`, `i18n`, `FX` y R2 Quotas (Clean Architecture)
+### ✅ Fase 3: Servicios Core, RBAC Dual, `JEV`, `OppyFy`, `i18n`, `FX` y R2 Quotas (Clean Architecture — Completada)
 - **Agentes Asignados:** **Agente 02 (Arquitecto)** + **Agente 04 (Backend Senior)** + **Agente 06 (IA `OppyFy` & `JEV`)** + **Agente 07 (`i18n` & `FX`)** + **Agente 09 (QA Paridad Legacy con Autoreparación)** + **Agente 10 (Seguridad con Autoparcheo y Veto)** + **Agente 11 (Merge)** + **Agente 12 (OpenSpec/Archify)**.
 - **Estrategias Rectoras:** `estrategia_rbac_y_auditoria_001.md`, `estrategia_asistente_ai_oppyfy_rag_y_creditos_001.md`, `estrategia_motor_decisiones_jev_system1_001.md`, `estrategia_internacionalizacion_i18n_multilenguaje_001.md`, `estrategia_multimoneda_fx_precios_y_cobros_001.md`, `estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`, `estrategia_openspec_negocio_vs_codigo_001.md`.
 
-**Archivos y Directorios de `propuesta_arquitectura_tree_001.md` a Construir en Fase 3:**
-- [ ] **Las 2 Bóvedas Espejo de OpenSpec (`specs/`):**
+**Archivos y Directorios de `propuesta_arquitectura_tree_001.md` Construidos en Fase 3:**
+- [x] **Las 2 Bóvedas Espejo de OpenSpec (`specs/`):**
   - Los 13 archivos `specs/business-domain/*.business.spec.md` (0% SQL/código) y los 14 archivos `specs/engineering-code/*.code.spec.md` (con `jev_system1_evaluation` completado).
-- [ ] **Motores Transversales y Adaptadores (`oppytec-backend/src/`):**
+- [x] **Motores Transversales y Adaptadores (`oppytec-backend/src/`):**
   - `src/core/security.py`, `src/core/exceptions.py`.
   - `src/core/i18n/` (`translator.py`, `dynamic_field_sync.py`, `locales/{es,en}/`, memoria global `i18n_translation_memory`, filtro `"Pollo King"` y micro-prompt estilo `Pi`).
   - `src/core/fx/` (`providers.py` BCCh + BCE Frankfurter, `fx_service.py` `Decimal(18, 8)`, `anomaly_guard.py` `> 8%`).
@@ -108,7 +108,7 @@ flowchart TD
   - `src/adapters/storage/` (`protocol.py`, `image_optimizer.py` `thumb.webp` + `display.webp`, `r2_storage.py`, `local_storage.py`).
   - `src/adapters/ai/` (`protocol.py`, `gemini_adapter.py`, `jev_protocol.py`, `jev_adapter.py` registrados en `public.llm_request_logs`).
   - `src/adapters/email/` (`protocol.py`, `resend_smtp_adapter.py`, `sinkhole_mailpit_adapter.py`).
-- [ ] **Capas `domain/`, `application/` e `infrastructure/` de los 10 Módulos de Negocio (`oppytec-backend/src/modules/`):**
+- [x] **Capas `domain/`, `application/` e `infrastructure/` de los 10 Módulos de Negocio (`oppytec-backend/src/modules/`):**
   1. `modules/identity/` (`rbac_evaluator.py`, `delegation_service.py`, `session_killswitch.py`).
   2. `modules/tenancy/` (`schema_provisioner.py`, `quota_service.py` cupos usuarios + `soft-delete`, `storage_quota_service.py` cuota MB R2).
   3. `modules/audit/` (`audit_service.py` *Append-Only* con `authorization_lineage`).
@@ -119,31 +119,31 @@ flowchart TD
   8. `modules/operations/` (Ventas/consumo, manos libres, buffet, eventos, salones, turnos, notas y tareas).
   9. `modules/analytics/` (Reportes ejecutivos, control de pérdidas, eficiencia, visión financiera y proyecciones).
   10. `modules/oppy_ai/` (Asistente **`OppyFy`** con RAG en 3 Capas, Agente Enrutador `JEV` + funciones en código duro, RBAC propio editable por cliente, paquetes de créditos acumulables sin caducidad, medidor `% contexto` y telemetría `llm_request_logs`).
-- [ ] **Pruebas en Co-Creación 1:1 (`oppytec-backend/tests/`):**
+- [x] **Pruebas en Co-Creación 1:1 (`oppytec-backend/tests/`):**
   - `tests/unit/domain/{test_math_properties.py, test_rbac_evaluator.py, test_plan_seat_quotas.py}` (`Hypothesis`) y `tests/unit/modules/test_*_services.py`.
 
 **Checklist de Validación Fase 3:**
-- [ ] Cobertura de ramas $\ge 90\%$ en dominio, paridad matemática 100% con `OppyTec-Legacy` certificada por el **Agente 09** y `0` violaciones en `tests/architecture/`.
-- [ ] Se actualizan `Graphify` y los **Mapas 2 y 3 del Atlas de Archify (`02-rbac-quotas-and-audit.archify.html` y `03-clean-architecture-and-domain.archify.html`)**.
+- [x] Cobertura de ramas $\ge 90\%$ en dominio, paridad matemática 100% con `OppyTec-Legacy` certificada por el **Agente 09** y `0` violaciones en `tests/architecture/`.
+- [x] Se actualizan `Graphify` y los **Mapas 2 y 3 del Atlas de Archify (`02-rbac-quotas-and-audit.archify.html` y `03-clean-architecture-and-domain.archify.html`)**.
 
 ---
 
-### Fase 4: Endpoints API, Guardias RBAC de 3 Niveles y Suite Red Team (FastAPI)
+### ✅ Fase 4: Endpoints API, Guardias RBAC de 3 Niveles y Suite Red Team (FastAPI — Completada)
 - **Agentes Asignados:** **Agente 04 (Backend Senior)** + **Agente 06 (`OppyFy` & `JEV`)** + **Agente 07 (`i18n` & `FX`)** + **Agente 09 (QA)** + **Agente 10 (Seguridad Red Team Veto)** + **Agente 11 (Merge)** + **Agente 12 (OpenSpec/Archify)**.
 
-**Archivos y Directorios de `propuesta_arquitectura_tree_001.md` a Construir en Fase 4:**
-- [ ] **Guardias de Seguridad (`oppytec-backend/src/core/guards/`):**
+**Archivos y Directorios de `propuesta_arquitectura_tree_001.md` Construidos en Fase 4:**
+- [x] **Guardias de Seguridad (`oppytec-backend/src/core/guards/`):**
   - `rbac_dependencies.py` (`RequireGlobalPermission` y `RequireTenantPermission` con 3 niveles `<modulo>.<submodulo>.<funcion>`).
   - `file_magic_guard.py`, `xss_sanitizer.py`, `rate_limiter.py`.
-- [ ] **Capas `presentation/` (`router.py` y `schemas.py` con `extra="forbid"`) de los 10 Módulos (`src/modules/*/`).**
-- [ ] **Suite de Integración y Red Team (`oppytec-backend/tests/`):**
+- [x] **Capas `presentation/` (`router.py` y `schemas.py` con `extra="forbid"`) de los 10 Módulos (`src/modules/*/`).**
+- [x] **Suite de Integración y Red Team (`oppytec-backend/tests/`):**
   - `tests/integration/` (`test_multi_tenant_schema_isolation.py`, `test_soft_delete_and_redis_killswitch.py`, `test_cross_tenant_holding_access.py`, `modules/`).
   - `tests/security_redteam/test_01..11_*.py` (los 11 vectores ofensivos Kali Linux + Resiliencia/Caos).
   - `tests/contracts/test_openapi_schemathesis.py`.
 
 **Checklist de Validación Fase 4:**
-- [ ] `test_rbac_and_audit_coverage.py`, `test_openspec_bipartition_and_sync.py`, `tests/integration/` y `tests/security_redteam/` (`test_01..11`) pasan al 100% con el sello `SECURITY_APPROVED` del **Agente 10**.
-- [ ] Se actualiza `Graphify` y se genera el **Mapa 4 del Atlas de Archify (`04-critical-runtime-flows-and-resilience.archify.html`)**.
+- [x] `test_rbac_and_audit_coverage.py`, `test_openspec_bipartition_and_sync.py`, `tests/integration/` y `tests/security_redteam/` (`test_01..11`) pasan al 100% con el sello `SECURITY_APPROVED` del **Agente 10**.
+- [x] Se actualiza `Graphify` y se genera el **Mapa 4 del Atlas de Archify (`04-critical-runtime-flows-and-resilience.archify.html`)**.
 
 ---
 

@@ -1,33 +1,4 @@
 {
   "version": "2.0.0",
-  "active_claims": [
-    {
-      "file": "oppytec-backend/src/core/guards/,oppytec-backend/src/modules/*/presentation/,oppytec-backend/src/main.py",
-      "symbol_path": "phase4.guards_and_module_presentation_routers",
-      "claimed_by": "04-backend-senior-dev",
-      "intent": "Implementar guards de seguridad HTTP y capas presentation/ (router.py, schemas.py) de los 10 modulos",
-      "claimed_at": "2026-10-19T17:27:15.554383+00:00"
-    },
-    {
-      "file": "oppytec-backend/tests/integration/",
-      "symbol_path": "phase4.integration_tests_and_legacy_parity",
-      "claimed_by": "09-qa-parity-and-test-engineer",
-      "intent": "Implementar tests/integration/ (multi-tenant isolation, soft-delete kill-switch, cross-tenant holding, modules) y paridad Legacy",
-      "claimed_at": "2026-10-19T17:27:15.622688+00:00"
-    },
-    {
-      "file": "oppytec-backend/tests/security_redteam/,oppytec-backend/tests/contracts/",
-      "symbol_path": "phase4.security_redteam_and_schemathesis",
-      "claimed_by": "10-cybersecurity-redteam-auditor",
-      "intent": "Implementar y certificar los 11 vectores Red Team test_01..11 y test_openapi_schemathesis.py",
-      "claimed_at": "2026-10-19T17:27:15.690670+00:00"
-    },
-    {
-      "file": "docs/architecture/atlas/04-critical-runtime-flows-and-resilience.archify.html,docs/architecture/graphify/,docs/bitacora/",
-      "symbol_path": "phase4.archify_map4_and_bitacora",
-      "claimed_by": "12-tech-writer-openspec-archify",
-      "intent": "Generar Mapa 4 de Archify, recibos JSON, snapshot Graphify Fase 4 y Bitacora Fase 4",
-      "claimed_at": "2026-10-19T17:27:15.759531+00:00"
-    }
-  ]
+  "active_claims": []
 }

@@ -1,0 +1,138 @@
+{
+  "graph_id": "v2_phase4_api_and_security_graph",
+  "phase": "Fase 4",
+  "generated_at": "2026-10-19T18:35:00Z",
+  "generator": "12-tech-writer-openspec-archify",
+  "nodes": [
+    {
+      "id": "app:main",
+      "type": "fastapi_app",
+      "path": "oppytec-backend/src/main.py"
+    },
+    {
+      "id": "guard:rbac_dependencies",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/rbac_dependencies.py",
+      "symbols": ["RequireGlobalPermission", "RequireTenantPermission", "AuthenticatedPrincipal"]
+    },
+    {
+      "id": "guard:file_magic_guard",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/file_magic_guard.py",
+      "symbols": ["validate_file_magic_bytes", "sanitize_spreadsheet_cell", "RequireSafeFileUpload"]
+    },
+    {
+      "id": "guard:xss_sanitizer",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/xss_sanitizer.py",
+      "symbols": ["sanitize_text_input", "validate_no_path_traversal"]
+    },
+    {
+      "id": "guard:rate_limiter",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/rate_limiter.py",
+      "symbols": ["SlidingWindowRateLimiter", "RequireRateLimit"]
+    },
+    {
+      "id": "router:identity",
+      "type": "presentation_router",
+      "path": "oppytec-backend/src/modules/identity/presentation/router.py"
+    },
+    {
+      "id": "router:tenancy",
+      "type": "presentation_router",
+      "path": "oppytec-backend/src/modules/tenancy/presentation/router.py"
+    },
+    {
+      "id": "router:audit",
+      "type": "presentation_router",
+      "path": "oppytec-backend/src/modules/audit/presentation/router.py"
+    },
+    {
+      "id": "router:catalog",
+      "type": "presentation_router",
+      "path": "oppytec-backend/src/modules/catalog/presentation/router.py"
+    },
+    {
+      "id": "router:inventory",
+      "type": "presentation_router",
+      "path": "oppytec-backend/src/modules/inventory/presentation/router.py"
+    },
+    {
+      "id": "router:recipes",
+      "type": "presentation_router",
+      "path": "oppytec-backend/src/modules/recipes/presentation/router.py"
+    },
+    {
+      "id": "router:procurement",
+      "type": "presentation_router",
+      "path": "oppytec-backend/src/modules/procurement/presentation/router.py"
+    },
+    {
+      "id": "router:operations",
+      "type": "presentation_router",
+      "path": "oppytec-backend/src/modules/operations/presentation/router.py"
+    },
+    {
+      "id": "router:analytics",
+      "type": "presentation_router",
+      "path": "oppytec-backend/src/modules/analytics/presentation/router.py"
+    },
+    {
+      "id": "router:oppy_ai",
+      "type": "presentation_router",
+      "path": "oppytec-backend/src/modules/oppy_ai/presentation/router.py"
+    },
+    {
+      "id": "router:realtime_ws",
+      "type": "websocket_router",
+      "path": "oppytec-backend/src/core/realtime/router.py"
+    },
+    {
+      "id": "suite:integration",
+      "type": "test_suite",
+      "path": "oppytec-backend/tests/integration/"
+    },
+    {
+      "id": "suite:security_redteam",
+      "type": "test_suite",
+      "path": "oppytec-backend/tests/security_redteam/",
+      "vectors": 11
+    },
+    {
+      "id": "suite:contracts_schemathesis",
+      "type": "test_suite",
+      "path": "oppytec-backend/tests/contracts/test_openapi_schemathesis.py"
+    }
+  ],
+  "edges": [
+    { "source": "app:main", "target": "router:identity", "type": "mounts" },
+    { "source": "app:main", "target": "router:tenancy", "type": "mounts" },
+    { "source": "app:main", "target": "router:audit", "type": "mounts" },
+    { "source": "app:main", "target": "router:catalog", "type": "mounts" },
+    { "source": "app:main", "target": "router:inventory", "type": "mounts" },
+    { "source": "app:main", "target": "router:recipes", "type": "mounts" },
+    { "source": "app:main", "target": "router:procurement", "type": "mounts" },
+    { "source": "app:main", "target": "router:operations", "type": "mounts" },
+    { "source": "app:main", "target": "router:analytics", "type": "mounts" },
+    { "source": "app:main", "target": "router:oppy_ai", "type": "mounts" },
+    { "source": "app:main", "target": "router:realtime_ws", "type": "mounts" },
+    { "source": "router:catalog", "target": "guard:file_magic_guard", "type": "enforces" },
+    { "source": "router:procurement", "target": "guard:file_magic_guard", "type": "enforces" },
+    { "source": "router:identity", "target": "guard:rate_limiter", "type": "enforces" },
+    { "source": "router:oppy_ai", "target": "guard:rate_limiter", "type": "enforces" },
+    { "source": "suite:security_redteam", "target": "app:main", "type": "audits" },
+    { "source": "suite:contracts_schemathesis", "target": "app:main", "type": "fuzzes" }
+  ],
+  "specs": {
+    "business_domain": 13,
+    "engineering_code": 15
+  },
+  "atlas_maps": [
+    "01-tenancy-and-schemas",
+    "02-rbac-quotas-and-audit",
+    "03-clean-architecture-and-domain",
+    "04-critical-runtime-flows-and-resilience",
+    "05-environments-and-agentic-harness"
+  ]
+}
