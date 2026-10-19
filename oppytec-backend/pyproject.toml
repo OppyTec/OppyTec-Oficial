@@ -1,0 +1,113 @@
+[build-system]
+requires = ["hatchling>=1.24.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "oppytec-backend"
+version = "2.0.0"
+description = "OppyTec SaaS v2.0 — Clean Architecture Multi-Tenant Backend (FastAPI + SQLAlchemy 2.0 Async)"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+authors = [
+    { name = "OppyTec Engineering Squad" }
+]
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "alembic>=1.14.0",
+    "redis>=5.2.0",
+    "pyjwt>=2.9.0",
+    "pwdlib[argon2]>=0.2.1",
+    "orjson>=3.10.11",
+    "python-calamine>=0.3.0",
+    "Pillow>=11.0.0",
+    "zstandard>=0.23.0",
+    "structlog>=24.4.0",
+    "httpx>=0.27.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.3",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "hypothesis>=6.118.0",
+    "ruff>=0.7.3",
+    "mypy>=1.13.0",
+    "pyyaml>=6.0.2",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "B",
+    "C4",
+    "UP",
+    "ARG",
+    "SIM",
+    "RUF",
+    "S",
+]
+ignore = [
+    "E501",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S106", "ARG001"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+disallow_any_explicit = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+mypy_path = "src"
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = [
+    "orjson.*",
+    "python_calamine.*",
+    "zstandard.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = [".", "src"]
+addopts = "-ra -q --strict-markers"
+markers = [
+    "smoke: Fast smoke tests (< 3s) verifying system boot, health, and OpenAPI governance",
+    "architecture: White-box AST and repository invariant checks (< 2s)",
+    "unit: Pure domain and application unit tests",
+    "integration: Multi-tenant database and Redis integration tests",
+    "security_redteam: Kali Linux offensive security and chaos resilience vectors",
+]
