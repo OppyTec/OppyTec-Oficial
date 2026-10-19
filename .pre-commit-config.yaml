@@ -1,0 +1,52 @@
+# .pre-commit-config.yaml — Hooks Deterministas de Seguridad, Tipado y Gobernanza (Fast Gate)
+default_stages: [pre-commit]
+fail_fast: true
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        name: "Gitleaks — Detección de Secretos y Credenciales Hardcodeadas"
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        name: "Ruff Linter (oppytec-backend)"
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^oppytec-backend/
+      - id: ruff-format
+        name: "Ruff Formatter (oppytec-backend)"
+        files: ^oppytec-backend/
+
+  - repo: local
+    hooks:
+      - id: verify-evals
+        name: "Anti-Reward-Hacking SHA-256 Guard (scripts/harness.py verify-evals)"
+        entry: python3 scripts/harness.py verify-evals
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: mypy-strict
+        name: "Mypy --strict Zero-Any (oppytec-backend)"
+        entry: bash -c "cd oppytec-backend && mypy --strict src"
+        language: system
+        types: [python]
+        files: ^oppytec-backend/src/
+        pass_filenames: false
+
+      - id: eslint-frontend
+        name: "ESLint Strict (oppytec-frontend)"
+        entry: bash -c "cd oppytec-frontend && pnpm run lint"
+        language: system
+        files: ^oppytec-frontend/src/
+        pass_filenames: false
+
+      - id: tsc-noemit
+        name: "TypeScript tsc --noEmit Zero-Any (oppytec-frontend)"
+        entry: bash -c "cd oppytec-frontend && pnpm exec tsc --noEmit"
+        language: system
+        files: ^oppytec-frontend/src/
+        pass_filenames: false

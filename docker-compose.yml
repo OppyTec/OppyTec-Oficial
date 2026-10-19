@@ -1,0 +1,163 @@
+name: oppytec-v2
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: oppytec-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-db_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-db_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-oppytec_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-db_user} -d ${POSTGRES_DB:-oppytec_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - oppytec_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: oppytec-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - oppytec_net
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: oppytec-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - oppytec_net
+
+  backend:
+    build:
+      context: ./oppytec-backend
+      dockerfile: Dockerfile
+    container_name: oppytec-backend
+    restart: unless-stopped
+    env_file:
+      - path: ./oppytec-backend/.env
+        required: false
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      ENV_NAMESPACE: ${ENV_NAMESPACE:-default}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://db_user:db_pass@postgres:5432/oppytec_dev}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-mailpit}
+      OTEL_EXPORTER: ${OTEL_EXPORTER:-none}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    networks:
+      - oppytec_net
+
+  frontend:
+    build:
+      context: ./oppytec-frontend
+      dockerfile: Dockerfile
+    container_name: oppytec-frontend
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:8000}
+      UMAMI_ENABLED: ${UMAMI_ENABLED:-false}
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      - backend
+    networks:
+      - oppytec_net
+
+  # =========================================================================
+  # PERFIL OPCIONAL DE OBSERVABILIDAD 4-PILARES (--profile observability)
+  # =========================================================================
+  otel-lgtm:
+    image: grafana/otel-lgtm:latest
+    container_name: oppytec-otel-lgtm
+    profiles:
+      - observability
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+      - "${OTLP_GRPC_PORT:-4317}:4317"
+      - "${OTLP_HTTP_PORT:-4318}:4318"
+    networks:
+      - oppytec_net
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: oppytec-umami
+    profiles:
+      - observability
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-db_user}:${POSTGRES_PASSWORD:-db_pass}@postgres:5432/${POSTGRES_DB:-oppytec_dev}
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${UMAMI_APP_SECRET:-oppytec_local_umami_secret_32_chars_min}
+    ports:
+      - "${UMAMI_PORT:-3002}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - oppytec_net
+
+  glitchtip:
+    image: glitchtip/glitchtip:latest
+    container_name: oppytec-glitchtip
+    profiles:
+      - observability
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-db_user}:${POSTGRES_PASSWORD:-db_pass}@postgres:5432/${POSTGRES_DB:-oppytec_dev}
+      REDIS_URL: redis://redis:6379/1
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY:-oppytec_local_glitchtip_secret_key_32_bytes}
+      PORT: "8000"
+    ports:
+      - "${GLITCHTIP_PORT:-3003}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - oppytec_net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  oppytec_net:
+    driver: bridge
