@@ -20,8 +20,9 @@ main-gate: fast-gate
 	@$(UV) --directory oppytec-backend run pytest tests/smoke tests/integration tests/security_redteam -q
 
 deep-gate: main-gate
-	@echo "🔥 Ejecutando Deep Gate: Contratos Schemathesis + E2E + Auditoría..."
-	@$(UV) --directory oppytec-backend run pytest tests/contracts tests/e2e -q
+	@echo "🔥 Ejecutando Deep Gate: Contratos Schemathesis + E2E + UAT + Load (500 RPS) + Simulacro Backup 4-Capas..."
+	@$(UV) --directory oppytec-backend run pytest tests/contracts tests/e2e tests/uat tests/load -q
+	@$(UV) --directory oppytec-backend run python scripts/backup_manager.py verify-drill --schema tenant_pacifico_centro
 
 check: fast-gate
 
