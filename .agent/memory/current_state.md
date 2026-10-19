@@ -1,10 +1,10 @@
 # Estado Actual de la Refactorización — OppyTec v2.0
 
-- **Fase Activa:** `Fase 2 Completada y Certificada -> Listo para iniciar Fase 3 (Servicios Core Clean Architecture, RBAC Dual, JEV, OppyFy, i18n, FX, R2 Quotas y WebSockets)`
-- **Estado del Escuadrón de 12 Agentes:** Operativo (`.agent/subagents/01..12-*/` con handovers actualizados tras Fase 2)
+- **Fase Activa:** `Fase 3 Completada y Certificada -> Listo para iniciar Fase 4 (Endpoints REST Presentation FastAPI, RBAC Guards HTTP, Schemathesis y Frontend React 19)`
+- **Estado del Escuadrón de 12 Agentes:** Operativo (`.agent/subagents/01..12-*/` con handovers actualizados tras Fase 3)
 - **Estado de Reglas Inmutables:** `.agent/rules/00..22-*.md` activas (23 reglas inmutables)
 - **Estado de Evaluaciones Anti-Trampa:** `.agent/evals/rubric_10_criteria.yaml` sellado con `SHA-256` (`verify-evals` 100% OK)
-- **Estado de Quality Gate (`make fast-gate`):** `52 passed` (`tests/unit/`, `tests/architecture/`, `tests/smoke/`), `ruff check` 0 errores, `mypy --strict` 0 errores en 84 archivos (`< 3s`), `make migration-rebase` (`Alembic correlative migration chain verified OK`)
+- **Estado de Quality Gate (`make fast-gate`):** `86 passed` (`tests/unit/`, `tests/architecture/`, `tests/smoke/`), `ruff check` 0 errores, `mypy --strict` 0 errores en 166 archivos (`< 3s`), `make migration-rebase` (`Alembic correlative migration chain verified OK`)
 
 ## Checklist Paso 0 (Gobernanza Base y Arnés RLM)
 - [x] `AGENTS.md` y `.graphifyignore` en la raíz del proyecto
@@ -28,3 +28,16 @@
 - [x] `oppytec-backend/alembic/` (`env.py`, `script.py.mako`, `0001_public_genesis_tenancy_modules_and_global_rbac.py`, `0002_tenant_initial_client_rbac_and_core_modules.py`) + `scripts/db_migration.py`
 - [x] `oppytec-backend/src/core/bootstrap.py`, `src/core/backup/` (4 capas cifradas `.sql.zst.age` + `SurgicalTenantRestoreEngine`), `scripts/backup_manager.py`, `scripts/seed_dev_data.py`, `scripts/anonymize_for_staging.py`
 - [x] Mapa 1 del Atlas de Archify (`docs/architecture/atlas/01-tenancy-and-schemas.archify.html`) + Snapshot Graphify (`v2_phase2_schema_graph.json`) + Bitácora Fase 2
+
+## Checklist Fase 3 (Servicios Core Clean Architecture, RBAC Dual, JEV, OppyFy, i18n, FX, R2 Quotas y WebSockets)
+- [x] Capas `domain/` y `application/` puras de los 9 módulos de negocio core (`src/modules/*`) con cero dependencias a frameworks y 100% `Decimal`.
+- [x] Motor de Evaluación RBAC Dual de 3 Niveles (`<modulo>.<submodulo>.<funcion>`), jerarquía de rangos (Rank 0..30+) y techo comercial por `system_plans` (`tests/unit/domain/test_rbac_evaluator.py`, `test_plan_seat_quotas.py`).
+- [x] Adaptadores Cloudflare R2 con aislamiento Multi-Tenant/Entorno, conversión dual WebP y control estricto de cuota MB (`src/adapters/storage/`).
+- [x] Adaptadores de correo con plantillas transaccionales i18n (`src/adapters/email/`).
+- [x] Motor JEV Sistema 1 con evaluación instantánea (`< 15ms`), adaptadores Gemini y capa de dominio/aplicación del módulo `oppy_ai` (`OppyFy` RAG 3-Capas, RBAC editable, billetera acumulable de créditos y `llm_request_logs`).
+- [x] Motor de Internacionalización `i18n` (11 namespaces JSON `es`/`en`, interpolación `{{var}}`, filtro inviolable `"Pollo King"` y micro-prompt estilo `Pi`).
+- [x] Motor Multi-Moneda `FX` con parsers BCCh y BCE Frankfurter (`Decimal(18, 8)`), triangulación exacta, anomaly guard (`> 8%`) y override manual auditado.
+- [x] Túnel único WebSocket `/api/v1/ws/realtime` con autenticación JWT, aislamiento por Tenant, filtrado RBAC de 3 niveles en servidor y buffer circular Redis Stream para catch-up tras desconexiones móviles.
+- [x] 13 specs en `specs/business-domain/` y 14 specs en `specs/engineering-code/` perfectamente sincronizados y validados por tests de arquitectura.
+- [x] Mapas 2 (`02-rbac-quotas-and-audit.archify.html`) y 3 (`03-clean-architecture-and-domain.archify.html`) del Atlas de Archify + Snapshot `v2_phase3_domain_graph.json` + Bitácora Fase 3.
+- [x] Suite de pruebas unitarias y de propiedades matemáticas (Hypothesis) pasando 86/86 al 100% en `fast-gate` (< 3s).
