@@ -1,4 +1,61 @@
 {
   "version": "2.0.0",
-  "active_claims": []
+  "active_claims": [
+    {
+      "file": "oppytec-backend/tests/e2e/*",
+      "symbol_path": "e2e_test_suite_01_to_05",
+      "claimed_by": "09-qa-parity-and-test-engineer",
+      "intent": "Construir y ejecutar tests/e2e/test_e2e_01..05_*.py",
+      "claimed_at": "2026-10-19T20:52:56.018872+00:00"
+    },
+    {
+      "file": "oppytec-backend/tests/uat/*",
+      "symbol_path": "uat_business_scenarios",
+      "claimed_by": "09-qa-parity-and-test-engineer",
+      "intent": "Construir y ejecutar tests/uat/test_uat_business_scenarios.py",
+      "claimed_at": "2026-10-19T20:52:56.090499+00:00"
+    },
+    {
+      "file": "oppytec-backend/tests/load/*",
+      "symbol_path": "locust_500_rps_load_suite",
+      "claimed_by": "09-qa-parity-and-test-engineer",
+      "intent": "Construir tests/load/locustfile.py y test_load_and_latency_sla.py",
+      "claimed_at": "2026-10-19T20:52:56.161451+00:00"
+    },
+    {
+      "file": "oppytec-backend/pyproject.toml",
+      "symbol_path": "pytest_markers_e2e_uat_load",
+      "claimed_by": "09-qa-parity-and-test-engineer",
+      "intent": "Declarar markers e2e, uat y load en pyproject.toml",
+      "claimed_at": "2026-10-19T20:52:56.236167+00:00"
+    },
+    {
+      "file": "Makefile",
+      "symbol_path": "deep_gate_target",
+      "claimed_by": "10-cybersecurity-redteam-auditor",
+      "intent": "Actualizar target deep-gate con suites e2e, uat, load y restore-drill",
+      "claimed_at": "2026-10-19T20:52:56.308224+00:00"
+    },
+    {
+      "file": "docs/security/CERTIFICACION-FINAL-SEGURIDAD-FASE-6.md",
+      "symbol_path": "security_approved_final_seal",
+      "claimed_by": "10-cybersecurity-redteam-auditor",
+      "intent": "Emitir informe de auditoría Red Team, SAST/SCA, Restore Drill y sello SECURITY_APPROVED",
+      "claimed_at": "2026-10-19T20:52:56.377707+00:00"
+    },
+    {
+      "file": "docs/architecture/graphify/*",
+      "symbol_path": "v2_phase6_master_graph",
+      "claimed_by": "12-tech-writer-openspec-archify",
+      "intent": "Consolidar grafo AST maestro v2.0 (graph.json y v2_phase6_master_graph.json)",
+      "claimed_at": "2026-10-19T20:52:56.448968+00:00"
+    },
+    {
+      "file": "docs/bitacora/*",
+      "symbol_path": "bitacora_fase6_and_moc",
+      "claimed_by": "12-tech-writer-openspec-archify",
+      "intent": "Documentar Bitácora Fase 6 y actualizar 00-MAPA-SEGUNDO-CEREBRO.md",
+      "claimed_at": "2026-10-19T20:52:56.526826+00:00"
+    }
+  ]
 }
