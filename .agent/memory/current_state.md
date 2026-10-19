@@ -1,10 +1,12 @@
 # Estado Actual de la Refactorización — OppyTec v2.0
 
-- **Fase Activa:** `Fase 4 Completada y Certificada (SECURITY_APPROVED) -> Listo para iniciar Fase 5 (UI React 19 Mobile-First con ADN Visual Legacy 3 Temas, i18n, FX, OppyFy y Centro de Observabilidad)`
-- **Estado del Escuadrón de 12 Agentes:** Operativo (`.agent/subagents/01..12-*/` con handovers actualizados tras Fase 4)
+- **Fase Activa:** `Fase 5 Completada y Certificada -> Listo para iniciar Fase 6 (Pruebas Integrales E2E, Deep Gate 500 RPS / Schemathesis y Certificación Final 10/10)`
+- **Estado del Escuadrón de 12 Agentes:** Operativo (`.agent/subagents/01..12-*/` con handovers actualizados tras Fase 5)
 - **Estado de Reglas Inmutables:** `.agent/rules/00..22-*.md` activas (23 reglas inmutables)
 - **Estado de Evaluaciones Anti-Trampa:** `.agent/evals/rubric_10_criteria.yaml` sellado con `SHA-256` (`verify-evals` 100% OK)
-- **Estado de Quality Gate (`make fast-gate` + Suite Completa):** `91 passed` en `fast-gate` (`< 3s`), **`163 passed`** en la suite total (`unit`, `architecture`, `smoke`, `integration`, `security_redteam`, `contracts`), `ruff check` 0 errores, `mypy --strict` 0 errores en 222 archivos, `make migration-rebase` (`Alembic correlative migration chain verified OK`)
+- **Estado de Quality Gate (Backend + Frontend):**
+  - **Backend:** `91 passed` en `make fast-gate` (`< 3s`), **`163 passed`** en la suite total (`unit`, `architecture`, `smoke`, `integration`, `security_redteam`, `contracts`), `ruff check` 0 errores, `mypy --strict` 0 errores en 222 archivos, `make migration-rebase` OK.
+  - **Frontend (`oppytec-frontend`):** `tsc --noEmit` 0 errores, `eslint --max-warnings 0` 0 errores/warnings, `knip` 0 archivos/exports muertos, `depcruise` 0 violaciones en 96 módulos, `vitest` **`23 passed`** (5 suites), `vite build` exitoso (`dist/` generado en `2.90s`).
 
 ## Checklist Paso 0 (Gobernanza Base y Arnés RLM)
 - [x] `AGENTS.md` y `.graphifyignore` en la raíz del proyecto
@@ -40,11 +42,18 @@
 - [x] Túnel único WebSocket `/api/v1/ws/realtime` con autenticación JWT, aislamiento por Tenant, filtrado RBAC de 3 niveles en servidor y buffer circular Redis Stream para catch-up tras desconexiones móviles.
 - [x] 13 specs en `specs/business-domain/` y 15 specs en `specs/engineering-code/` perfectamente sincronizados y validados por tests de arquitectura.
 - [x] Mapas 2 (`02-rbac-quotas-and-audit.archify.html`) y 3 (`03-clean-architecture-and-domain.archify.html`) del Atlas de Archify + Snapshot `v2_phase3_domain_graph.json` + Bitácora Fase 3.
-- [x] Suite de pruebas unitarias y de propiedades matemáticas (Hypothesis) pasando al 100% en `fast-gate`.
 
 ## Checklist Fase 4 (Endpoints API REST, Guardias RBAC de 3 Niveles, Suite de Integración y Red Team)
-- [x] Guardias deterministas HTTP en `oppytec-backend/src/core/guards/`: `rbac_dependencies.py` (`RequireGlobalPermission`, `RequireTenantPermission`, `AuthenticatedPrincipal`), `file_magic_guard.py` (Magic Bytes, anti-Zip Bomb, anti-Excel DDE/formula injection), `xss_sanitizer.py` (anti-XSS/SSTI/SQLi/LFI/null-byte) y `rate_limiter.py` (`SlidingWindowRateLimiter` con perfiles `auth`, `api`, `ai` y `Retry-After`).
-- [x] Capas `presentation/` (`__init__.py`, `schemas.py` con `ConfigDict(extra="forbid")` y `Decimal`, y `router.py` con RBAC de 3 niveles) para los 10 módulos (`identity`, `tenancy`, `audit`, `catalog`, `inventory`, `recipes`, `procurement`, `operations`, `analytics`, `oppy_ai`) montadas en `src/main.py` junto a `realtime_router` y manejadores RFC 7807.
-- [x] Suite de Integración y Paridad Matemática Legacy (`oppytec-backend/tests/integration/`): `test_multi_tenant_schema_isolation.py`, `test_soft_delete_and_redis_killswitch.py`, `test_cross_tenant_holding_access.py` y `modules/test_api_modules_and_legacy_parity.py`.
+- [x] Guardias deterministas HTTP en `oppytec-backend/src/core/guards/`: `rbac_dependencies.py`, `file_magic_guard.py`, `xss_sanitizer.py` y `rate_limiter.py`.
+- [x] Capas `presentation/` (`__init__.py`, `schemas.py` con `ConfigDict(extra="forbid")` y `Decimal`, y `router.py` con RBAC de 3 niveles) para los 10 módulos montadas en `src/main.py` junto a `realtime_router` y manejadores RFC 7807.
+- [x] Suite de Integración y Paridad Matemática Legacy (`oppytec-backend/tests/integration/`).
 - [x] Suite Ofensiva Red Team de 11 Vectores (`oppytec-backend/tests/security_redteam/test_01..11_*.py`) + Contrato/Fuzzing OpenAPI (`oppytec-backend/tests/contracts/test_openapi_schemathesis.py`) certificada con el sello `SECURITY_APPROVED` por el Agente 10.
-- [x] Mapa 4 del Atlas de Archify (`docs/architecture/atlas/04-critical-runtime-flows-and-resilience.archify.html`) + Recibos `SHA-256` + Snapshot `v2_phase4_api_and_security_graph.json` + Bitácora Fase 4 (`docs/bitacora/diario-escuadron/04-Fase-4-Endpoints-API-Guardias-RBAC-y-Red-Team.md`).
+- [x] Mapa 4 del Atlas de Archify (`docs/architecture/atlas/04-critical-runtime-flows-and-resilience.archify.html`) + Recibos `SHA-256` + Snapshot `v2_phase4_api_and_security_graph.json` + Bitácora Fase 4.
+
+## Checklist Fase 5 (UI React 19 Mobile-First con ADN Visual Legacy 3 Temas, i18n, FX, OppyFy y Observabilidad)
+- [x] ADN Visual Legacy en `oppytec-frontend/src/index.css` y `src/shared/components/ui/designTokens.ts` (3 temas `light`, `dark`, `ocean-blue`, 42 colores, 49 íconos gastronómicos, `.glass`, `.animate-blink-critical`, `.animate-perimeter-glow`, `.oppy-driver-popover` y `CLS=0`).
+- [x] Motor `i18n` en `oppytec-frontend/src/shared/i18n/` con los 11 namespaces JSON en paridad 1:1 (`locales/es/*.json` y `locales/en/*.json`), banderas vectoriales SVG (`FlagES`, `FlagUS`), `<LanguageFlagSelector />` y protección de nombres propios (`"Pollo King"`, `"Savory"`).
+- [x] Motor Multi-Moneda FX en `oppytec-frontend/src/shared/currency/` (`CurrencyProvider`, `<CurrencySelector />`, `<MoneyBadge />`, `useCurrencyFormatter` con aritmética exacta `BigInt` $10^8$ y alerta de anomalía `> 8%`).
+- [x] Núcleo compartido en `oppytec-frontend/src/shared/` (`api/httpClient.ts`, `api/queryKeys.ts`, `realtime/RealtimeProvider.tsx` y `useRealtimeSync.ts` con cero polling HTTP, `auth/Can.tsx` y `usePermissions.ts`, `components/{ui,feedback,layout}/` con `<HoldingTenantSwitcher />` y `<BodegaSelector />`, `hooks/` y `lib/`).
+- [x] Las 10 carpetas de `oppytec-frontend/src/features/` (`auth`, `rbac-and-audit`, `catalog`, `inventory`, `recipes`, `procurement`, `operations`, `analytics`, `oppyfy`, `platform-admin` con las **13 sub-vistas del Centro de Observabilidad** y filtro por `Environment`).
+- [x] Snapshot Graphify Fase 5 (`docs/architecture/graphify/v2_phase5_frontend_graph.json`) + Bitácora Fase 5 (`docs/bitacora/diario-escuadron/05-Fase-5-UI-React-19-Mobile-First-i18n-FX-OppyFy-y-Observabilidad.md`).

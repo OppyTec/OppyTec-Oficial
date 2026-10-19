@@ -147,12 +147,12 @@ flowchart TD
 
 ---
 
-### Fase 5: UI React 19 *Mobile-First* (ADN Visual Legacy 3 Temas), `i18n`, `FX`, `OppyFy` y Centro de Observabilidad
+### ✅ Fase 5: UI React 19 *Mobile-First* (ADN Visual Legacy 3 Temas), `i18n`, `FX`, `OppyFy` y Centro de Observabilidad (Completada)
 - **Agentes Asignados:** **Agente 05 (Frontend Senior UI/UX & *Mobile-First*)** + **Agente 07 (`i18n` & `FX`)** + **Agente 08 (Observabilidad)** + **Agente 09 (QA)** + **Agente 10 (Seguridad Frontend)** + **Agente 11 (Merge)** + **Agente 12 (OpenSpec/Archify)**.
 - **Estrategias Rectoras:** `estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`, `estrategia_internacionalizacion_i18n_multilenguaje_001.md`, `estrategia_multimoneda_fx_precios_y_cobros_001.md`.
 
-**Archivos y Directorios de `propuesta_arquitectura_tree_001.md` a Construir en Fase 5:**
-- [ ] **Núcleo y Sistema de Diseño (`oppytec-frontend/src/`):**
+**Archivos y Directorios de `propuesta_arquitectura_tree_001.md` Construidos en Fase 5:**
+- [x] **Núcleo y Sistema de Diseño (`oppytec-frontend/src/`):**
   - `src/index.css` (los 3 temas `light`, `dark`, `ocean-blue`, fuente `'Outfit'`, `.glass`, `.animate-blink-*`, `.animate-perimeter-glow`, fix `CLS=0`, `.oppy-driver-popover`).
   - `src/app/{router.tsx, providers.tsx}`.
   - `src/shared/i18n/` (`config.ts`, `i18next.d.ts`, `flags/FlagUS.tsx`, `FlagES.tsx`... y los 11 archivos JSON en `locales/es/*.json` y `locales/en/*.json`).
@@ -162,7 +162,7 @@ flowchart TD
   - `src/shared/components/feedback/` (`PageSkeleton.tsx`, `EmptyState.tsx`, `ErrorBoundary.tsx`, `Sonner`).
   - `src/shared/components/layout/` (`AppLayout.tsx`, `Sidebar.tsx`, `Navbar.tsx`, `BottomNav.tsx`, `LanguageFlagSelector.tsx`, `HoldingTenantSwitcher.tsx`, `BodegaSelector.tsx`).
   - `src/shared/hooks/` (`useSwipeNavigation.ts`, `useTheme.ts`, `useIsMobile.ts`, `useBarcodeScanner.ts`, `useWebSocket.ts`).
-- [ ] **Las 10 Carpetas Funcionales en `oppytec-frontend/src/features/` (cubriendo las 22 páginas de Legacy):**
+- [x] **Las 10 Carpetas Funcionales en `oppytec-frontend/src/features/` (cubriendo las 22 páginas de Legacy):**
   1. `features/auth/` (`Login`, `SelectTenant`, `ImpersonationBanner`).
   2. `features/rbac-and-audit/` (Roles, Matriz 3-Niveles, Permisos Temporales JIT, Cupos del Plan y Visor de Auditoría Forense).
   3. `features/catalog/` (Productos Wizard 4 pasos, Familias, Categorías, Unidades 3-Capas, Importador Excel IA de 5 etapas y Gestor de Memoria R2 MB).
@@ -175,7 +175,7 @@ flowchart TD
   10. `features/platform-admin/` (Panel SuperUser OppyTec: Holdings, Entidades Legales, Tenants, Planes, Staff Global, **2 Vistas FinOps `llm_request_logs`**, **Consola FX de Bancos Centrales**, **Consola de Respaldos 4-Capas** y **Centro de Observabilidad de 13 Sub-Vistas con filtro por `Environment`**).
 
 **Checklist de Validación Fase 5:**
-- [ ] `pnpm build`, `pnpm dlx knip`, `.dependency-cruiser.cjs`, `test_i18n_keys_parity_and_no_hardcoded_strings.py` y `test_ui_design_tokens_and_mobile_first.py` completan con 0 errores ni tipos `any`.
+- [x] `pnpm build`, `pnpm dlx knip`, `.dependency-cruiser.cjs`, `test_i18n_keys_parity_and_no_hardcoded_strings.py` y `test_ui_design_tokens_and_mobile_first.py` completan con 0 errores ni tipos `any`.
 
 ---
 
