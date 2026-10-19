@@ -1,4 +1,26 @@
 {
   "version": "2.0.0",
-  "active_claims": []
+  "active_claims": [
+    {
+      "file": "oppytec-frontend/src/shared/i18n/,oppytec-frontend/src/shared/currency/",
+      "symbol_path": "phase5.frontend_i18n_11_namespaces_flags_and_fx_currency",
+      "claimed_by": "07-i18n-and-fx-currency-specialist",
+      "intent": "Implementar 11 namespaces JSON es/en, banderas SVG, LanguageFlagSelector, CurrencyContext, CurrencySelector, MoneyBadge y useCurrencyFormatter",
+      "claimed_at": "2026-10-19T19:15:07.147987+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/index.css,oppytec-frontend/src/App.tsx,oppytec-frontend/src/app/,oppytec-frontend/src/shared/api/,oppytec-frontend/src/shared/realtime/,oppytec-frontend/src/shared/auth/,oppytec-frontend/src/shared/components/,oppytec-frontend/src/shared/hooks/,oppytec-frontend/src/shared/lib/,oppytec-frontend/src/features/",
+      "symbol_path": "phase5.frontend_react19_mobile_first_and_10_features",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Construir el sistema de diseno Mobile-First 3 temas Legacy, Can, useRealtimeSync y las 10 features (22 vistas + OppyFy + Admin 13 sub-vistas)",
+      "claimed_at": "2026-10-19T19:15:07.231319+00:00"
+    },
+    {
+      "file": "docs/architecture/graphify/v2_phase5_frontend_graph.json,docs/bitacora/",
+      "symbol_path": "phase5.graphify_snapshot_and_bitacora_fase5",
+      "claimed_by": "12-tech-writer-openspec-archify",
+      "intent": "Generar snapshot Graphify Fase 5 y Bitacora Fase 5 en el Segundo Cerebro",
+      "claimed_at": "2026-10-19T19:15:07.312218+00:00"
+    }
+  ]
 }
