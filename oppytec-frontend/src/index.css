@@ -270,7 +270,8 @@ input[type="number"] {
   border-width: 2px !important;
 }
 
-.animate-blink-red {
+.animate-blink-red,
+.animate-blink-critical {
   animation: blink-red 2.0s ease-in-out infinite;
   border-width: 2px !important;
 }

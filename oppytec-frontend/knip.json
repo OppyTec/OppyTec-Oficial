@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["src/main.tsx", "src/**/*.test.{ts,tsx}", "tailwind.config.ts"],
+  "entry": ["src/**/*.{ts,tsx}"],
   "project": ["src/**/*.{ts,tsx}"],
   "ignoreDependencies": [
     "@dnd-kit/core",
@@ -13,27 +13,20 @@
     "@radix-ui/react-slot",
     "@radix-ui/react-tabs",
     "@radix-ui/react-tooltip",
-    "@tanstack/react-query",
     "@testing-library/jest-dom",
-    "@testing-library/react",
-    "autoprefixer",
+    "@vitest/coverage-v8",
     "axios",
     "clsx",
     "driver.js",
     "framer-motion",
     "html5-qrcode",
-    "i18next",
     "katex",
-    "postcss",
     "react-easy-crop",
     "react-hook-form",
-    "react-i18next",
     "react-router-dom",
     "recharts",
     "sonner",
     "tailwind-merge",
-    "tailwindcss",
-    "tailwindcss-animate",
     "vaul"
   ]
 }

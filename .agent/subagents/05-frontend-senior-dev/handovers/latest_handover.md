@@ -1,18 +1,34 @@
 # Reporte de Traspaso (`Handover`) — Agente 05: Programador Senior Frontend, ADN Visual Legacy y Mobile-First
 
-- **Fecha UTC:** 2026-10-19T13:18:00Z
-- **Fase:** Fase 1 Completada (Andamiaje `oppytec-frontend/`, Invarianza `SHA-256`, 3 Temas Legacy, `env.ts` Zod y Telemetría 4-Pilares)
-- **Rama Worktree:** `agent/phase1-05-frontend-senior-dev` (`ENV_NAMESPACE=wt_p1_3`)
+- **Fecha UTC:** 2026-10-19T20:30:00Z
+- **Fase:** Fase 5 (Ola 2) Completada — Arquitectura Compartida `src/shared/`, 10 Módulos de Negocio `src/features/`, `RealtimeProvider` (Cero Polling), `<Can>` 3-Niveles, 13 Sub-Vistas de Observabilidad y Workspace `OppyFy`
+- **Rama Worktree:** `agent/phase5-05-frontend-senior-dev`
 
 ## 1. Completed (Qué se hizo)
-- **`oppytec-frontend/Dockerfile` y `oppytec-frontend/docker-entrypoint.sh`:** Construcción multi-stage inmutable (*Build Once, Deploy Everywhere*) y generador POSIX de `/usr/share/nginx/html/runtime-env.js` (`window.__OPPYTEC_RUNTIME_ENV__`) sin recompilar el bundle.
-- **Configuración Estricta y Linting de Arquitectura:** `package.json` (React 19, TypeScript 5, Vite 6, Tailwind CSS, TanStack Query v5, Zod, `react-i18next`, `lucide-react`, `framer-motion`, `vaul`, `sonner`, Vitest, ESLint, `knip`, `dependency-cruiser`), `tsconfig.json` (`strict: true`, `noImplicitAny: true`, `strictNullChecks: true`, `noUnusedLocals: true`, `noUnusedParameters: true`), `vite.config.ts`, `postcss.config.js`, `eslint.config.js`, `knip.json`, `.dependency-cruiser.cjs` y `.env.example`.
-- **ADN Visual Legacy y Shell Mobile-First:** `tailwind.config.ts`, `index.html`, `src/index.css`, `src/main.tsx` y `src/App.tsx` con los 3 temas oficiales (`light`, `dark`, `ocean-blue`), fuente `'Outfit'`, `.glass`, `.glass-card`, `.animate-blink-orange`, `.animate-blink-red`, `.animate-blink-green`, `.animate-perimeter-glow`, fix `CLS=0` para Radix UI, 42 `PRESET_COLORS` y targets táctiles `>= 44px`.
-- **Validación de Entorno *Fail-Fast* (Co-Creación 1:1):** `src/shared/config/env.ts` y `src/shared/config/env.test.ts` validando los 5 entornos (`local`, `preview`, `ci`, `staging`, `production`) con prioridad en `window.__OPPYTEC_RUNTIME_ENV__` y bloqueo de `localhost`/`http://` en entornos productivos.
-- **Telemetría 4-Pilares y Redacción PII (Co-Creación 1:1):** `src/shared/telemetry/otel.ts` (`X-Trace-ID` + W3C `traceparent`), `src/shared/telemetry/sentry.ts` (`scrubFrontendPii` + `captureFrontendException`), `src/shared/telemetry/umami.ts` (analítica sin cookies ni tokens en URL) y `src/shared/telemetry/telemetry.test.ts`.
+- **Tokens Visuales y CSS Legacy DNA (`src/index.css` & `src/shared/components/ui/designTokens.ts`):**
+  - Definición de `OFFICIAL_THEMES` (`["light", "dark", "ocean-blue"]`), `PRESET_COLORS` (42 colores hexadecimales en grilla 6x7) y `GASTRONOMIC_ICONS` (49 identificadores de íconos gastronómicos) dentro de `src/shared/components/ui/designTokens.ts`.
+  - Incorporación de `.animate-blink-critical` en `src/index.css` junto con `.glass`, `.glass-card`, `.animate-perimeter-glow`, `.oppy-driver-popover` y reglas `CLS=0`.
+- **Arquitectura Compartida (`src/shared/`):**
+  - `src/shared/api/httpClient.ts` y `src/shared/api/queryKeys.ts`: Inyección de `Authorization`, `X-Holding-ID`, `X-Tenant-ID`, `X-Warehouse-ID`, `X-Trace-ID`, `traceparent` y `Accept-Language`, más fábrica centralizada de claves para TanStack Query v5.
+  - `src/shared/realtime/RealtimeProvider.tsx` y `src/shared/realtime/useRealtimeSync.ts`: Túnel WebSocket único `/api/v1/ws/realtime` con reconexión `last_event_id`, filtrado RBAC de 3 niveles e invalidación automática de caché (0 polling HTTP).
+  - `src/shared/auth/usePermissions.ts` y `src/shared/auth/Can.tsx`: Evaluación de `M_Plan ∩ ((P_Role ∪ P_Temp) \ P_Deny)` y guardia declarativa `<Can perform="module.submodule.function">`.
+  - `src/shared/components/ui/`, `src/shared/components/feedback/`, `src/shared/components/layout/` y `src/shared/hooks/`: `ResponsiveDialog`, `AdaptiveDataView`, `NumericInput`, `PageSkeleton`, `EmptyState`, `ErrorBoundary`, `HoldingTenantSwitcher`, `BodegaSelector`, `Navbar` (con `<LanguageFlagSelector />` y `<CurrencySelector />`), `Sidebar`, `BottomNav`, `AppLayout`, `useTheme`, `useIsMobile`, `useSwipeNavigation`, `useBarcodeScanner`, `useWebSocket` y helpers `convertThreeLayerQuantity` / `formatOperationalDate` en `src/shared/lib/index.ts`.
+- **Los 10 Módulos de Negocio (`src/features/`):**
+  1. `src/features/auth/index.tsx`: Login + MFA, `SelectTenant` e `ImpersonationBanner` auditado.
+  2. `src/features/rbac-and-audit/index.tsx`: Matriz de 3 niveles, JIT Temporary Grants, cuotas de asientos con liberación por soft-delete y visor de auditoría forense.
+  3. `src/features/catalog/index.tsx`: Wizard de 4 pasos, 42 colores y 49 íconos, conversión exacta de unidades en 3 capas, importador Excel IA de 5 etapas, cuota MB de Cloudflare R2 y preservación de marca propia `"Pollo King"`.
+  4. `src/features/inventory/index.tsx`: `StockRegistro`, `ContarInventario`, `RecuentoInventario`, `GestionarMerma` con mapa de calor 7x24 y aprobación por umbral.
+  5. `src/features/recipes/index.tsx`: Escandallos recursivos, simulador de precio/margen con `<MoneyBadge />` y combos.
+  6. `src/features/procurement/index.tsx`: `Compras`, `Proveedores` y recepción de `Facturas` DTE con AI OCR (3-way match).
+  7. `src/features/operations/index.tsx`: `Consumo` POS, modo Voz Manos Libres, `Eventos`, `Buffet`, `Actividades`, `Alertas`, `Notificaciones` e `Historial`.
+  8. `src/features/analytics/index.tsx`: `HomeDashboard`, `Proyeccion`, `Informes`, 5 reportes especializados y Matriz Kasavana & Smith.
+  9. `src/features/oppyfy/index.tsx`: Workspace IA `OppyFy`, medidor de `%` de contexto RAG, Split-View Canvas, dominios/subdominios RBAC editables, billetera de créditos sin vencimiento y telemetría JEV Sistema 1.
+  10. `src/features/platform-admin/index.tsx`: Panel SuperUser Multi-Holding, razón social 1:1, 2 vistas FinOps `llm_request_logs`, consola FX (BCCh/BCE), consola de respaldos de 4 capas (`.sql.zst.age`) y el Centro de Observabilidad con las **13 sub-vistas** y filtro por `Environment`.
+- **Enrutamiento y Co-Creación 1:1 de Tests (`src/app/providers.tsx`, `src/app/router.tsx`, `src/App.tsx`, `src/App.test.tsx`):**
+  - Verificación completa: `typecheck` (0 errores), `lint` (0 warnings), `knip` (0 unused), `depcruise` (96 módulos, 0 violaciones), `vitest` (5 suites / 23 tests), `vite build` y `pytest tests/architecture` (23 passed).
 
 ## 2. Friction & Failures (Qué salió mal / Qué cuidar)
-- Ninguna fricción. Se evitó cualquier uso de `style={{ ... }}` inline en `App.tsx` y se expusieron los 42 `PRESET_COLORS` tanto en `tailwind.config.ts` como en `src/index.css` para máxima compatibilidad con los Quality Gates de arquitectura.
+- En `useSwipeNavigation.ts`, el uso inicial de `useState` para `startX` postergaba la actualización al siguiente render cuando `onTouchStartX` y `onTouchEndX` se invocaban sincrónicamente en el mismo tick de prueba; se reemplazó por `useRef<number>(0)` logrando cálculo determinista inmediato.
 
 ## 3. Next Exact Action (Siguiente paso exacto)
-- Integrar la rama `agent/phase1-05-frontend-senior-dev` en el *Merge Train* de la Fase 1 y preparar los componentes base, `<Can>`, `useRealtimeSync` y las 22 vistas en la Fase 5.
+- Integrar la rama `agent/phase5-05-frontend-senior-dev` en el *Merge Train* de la Fase 5 (Ola 2) y ejecutar las pruebas E2E y de paridad matemática en la Fase 6.
