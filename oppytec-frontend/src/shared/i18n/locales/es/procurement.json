@@ -1,0 +1,13 @@
+{
+  "title": "Abastecimiento, Proveedores y Órdenes de Compra",
+  "purchase_order": {
+    "number": "Orden de Compra #{{poNumber}}",
+    "supplier": "Proveedor: {{supplierName}}",
+    "status_approved": "Aprobada por {{approver}}",
+    "total_amount": "Total OC: {{amount}}"
+  },
+  "dte": {
+    "reception_title": "Recepción de Factura Electrónica (DTE)",
+    "price_variance_alert": "Desviación de precio de {{variancePct}}% en {{item}}"
+  }
+}

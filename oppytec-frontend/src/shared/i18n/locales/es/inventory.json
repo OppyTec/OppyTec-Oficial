@@ -1,0 +1,14 @@
+{
+  "title": "Inventario Multi-Bodega y Kardex",
+  "warehouse": {
+    "select": "Bodega: {{warehouse}}",
+    "stock_level": "Stock disponible: {{quantity}} {{unit}}",
+    "critical_alert": "Alerta de stock crítico en {{item}} (mínimo {{minStock}})"
+  },
+  "movements": {
+    "inbound": "Recepción de mercadería",
+    "outbound": "Salida por consumo",
+    "transfer": "Traspaso entre bodegas",
+    "waste": "Merma registrada: {{reason}}"
+  }
+}

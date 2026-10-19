@@ -1,0 +1,12 @@
+{
+  "title": "OppyFy Intelligent Assistant (3-Layer RAG & JEV)",
+  "chat": {
+    "placeholder": "Ask {{brandName}} about costs, recipes, or inventory...",
+    "credits_remaining": "Available AI credits: {{credits}}",
+    "jev_fast_path": "Resolved by JEV Deterministic Engine (System 1) in {{ms}} ms"
+  },
+  "governance": {
+    "rbac_filtered": "Response filtered according to your RBAC role ({{role}})",
+    "citations_count": "{{count}} verified tenant sources"
+  }
+}

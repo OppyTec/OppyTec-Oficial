@@ -1,0 +1,12 @@
+{
+  "title": "Multi-Holding Platform SuperAdmin Console",
+  "tenants": {
+    "provisioning": "Provision new tenant {{schema}}",
+    "r2_quota": "Cloudflare R2 Quota: {{usedMb}} MB / {{limitMb}} MB",
+    "backup_restore": "Surgical tenant restore for {{tenantId}}"
+  },
+  "fx_admin": {
+    "manual_override": "Manual rate override for {{pair}} set to {{rate}} due to {{reason}}",
+    "sync_now": "Synchronize BCCh and ECB Frankfurter rates"
+  }
+}

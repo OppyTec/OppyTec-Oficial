@@ -1,0 +1,11 @@
+{
+  "rbac": {
+    "title": "Granular Roles and Permissions (3-Level)",
+    "permission_denied": "You do not have the required permission: {{permission}}",
+    "seat_quota_usage": "Seats used: {{used}} of {{limit}} users"
+  },
+  "audit": {
+    "title": "Immutable Audit Log",
+    "event_recorded": "Event {{action}} recorded by {{actor}} with trace {{traceId}}"
+  }
+}

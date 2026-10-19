@@ -1,0 +1,39 @@
+{
+  "app": {
+    "title": "OppyTec SaaS v2.0",
+    "subtitle": "Software de Grado Operacional y Financiero",
+    "welcome": "Bienvenido a OppyTec, {{name}}"
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "refresh": "Actualizar",
+    "confirm": "Confirmar"
+  },
+  "status": {
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "loading": "Cargando...",
+    "saving": "Guardando cambios...",
+    "empty": "Sin registros disponibles",
+    "items_count": "Total: {{count}} elementos"
+  },
+  "language": {
+    "label": "Idioma",
+    "es": "Español",
+    "en": "English (US)",
+    "switch_to": "Cambiar idioma a {{lang}}"
+  },
+  "currency": {
+    "label": "Moneda",
+    "source_label": "Fuente: {{source}}",
+    "anomaly_warning": "Variación cambiaria mayor al {{threshold}}% detectada (Circuito de protección activo)",
+    "converted_from": "Convertido desde {{base}} a tasa {{rate}}"
+  }
+}

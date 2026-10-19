@@ -1,0 +1,12 @@
+{
+  "title": "Operaciones de Cocina, Producción y Despacho",
+  "production": {
+    "batch_code": "Lote de producción {{batchId}}",
+    "station": "Estación: {{stationName}}",
+    "scheduled_for": "Programado para {{date}}"
+  },
+  "counts": {
+    "blind_inventory": "Toma de inventario físico ciego",
+    "variance_summary": "Diferencia detectada: {{delta}} {{unit}}"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Consola SuperAdmin de Plataforma Multi-Holding",
+  "tenants": {
+    "provisioning": "Aprovisionar nuevo tenant {{schema}}",
+    "r2_quota": "Cuota Cloudflare R2: {{usedMb}} MB / {{limitMb}} MB",
+    "backup_restore": "Restauración quirúrgica de tenant {{tenantId}}"
+  },
+  "fx_admin": {
+    "manual_override": "Override manual de tasa {{pair}} fijado en {{rate}} por {{reason}}",
+    "sync_now": "Sincronizar tasas BCCh y BCE Frankfurter"
+  }
+}

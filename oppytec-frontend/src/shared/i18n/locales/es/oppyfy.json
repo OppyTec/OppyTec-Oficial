@@ -1,0 +1,12 @@
+{
+  "title": "Asistente Inteligente OppyFy (RAG 3-Capas & JEV)",
+  "chat": {
+    "placeholder": "Pregunta a {{brandName}} sobre costos, recetas o inventario...",
+    "credits_remaining": "Créditos IA disponibles: {{credits}}",
+    "jev_fast_path": "Resuelto por Motor Determinista JEV (Sistema 1) en {{ms}} ms"
+  },
+  "governance": {
+    "rbac_filtered": "Respuesta filtrada según tu rol RBAC ({{role}})",
+    "citations_count": "{{count}} fuentes verificadas del tenant"
+  }
+}

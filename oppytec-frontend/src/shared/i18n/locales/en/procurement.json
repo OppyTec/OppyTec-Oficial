@@ -1,0 +1,13 @@
+{
+  "title": "Procurement, Suppliers and Purchase Orders",
+  "purchase_order": {
+    "number": "Purchase Order #{{poNumber}}",
+    "supplier": "Supplier: {{supplierName}}",
+    "status_approved": "Approved by {{approver}}",
+    "total_amount": "PO Total: {{amount}}"
+  },
+  "dte": {
+    "reception_title": "Electronic Invoice Receipt (DTE)",
+    "price_variance_alert": "Price variance of {{variancePct}}% on {{item}}"
+  }
+}

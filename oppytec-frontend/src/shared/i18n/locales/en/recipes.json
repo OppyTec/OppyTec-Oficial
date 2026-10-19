@@ -1,0 +1,12 @@
+{
+  "title": "Menu Engineering, Recipes and Sub-Recipes",
+  "costing": {
+    "yield_factor": "Yield factor: {{yieldPct}}%",
+    "food_cost": "Theoretical Food Cost: {{foodCostPct}}%",
+    "margin_contribution": "Contribution margin: {{margin}}"
+  },
+  "bom": {
+    "recursion_depth": "Sub-recipe level {{depth}} of {{maxDepth}}",
+    "ingredients_header": "Ingredient list ({{count}})"
+  }
+}

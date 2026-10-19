@@ -1,0 +1,14 @@
+{
+  "title": "Analítica Financiera, Ingeniería de Menú y KPIs",
+  "kpis": {
+    "real_vs_theoretical": "Costo Real vs Teórico: {{gapPct}}%",
+    "inventory_turnover": "Rotación de inventario: {{days}} días",
+    "period_comparison": "Comparativa período {{period}}"
+  },
+  "matrix": {
+    "star": "Estrella (Alta popularidad, Alto margen)",
+    "plowhorse": "Caballo de batalla (Alta popularidad, Bajo margen)",
+    "puzzle": "Rompecabezas (Baja popularidad, Alto margen)",
+    "dog": "Perro (Baja popularidad, Bajo margen)"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "title": "Financial Analytics, Menu Engineering and KPIs",
+  "kpis": {
+    "real_vs_theoretical": "Actual vs Theoretical Cost: {{gapPct}}%",
+    "inventory_turnover": "Inventory turnover: {{days}} days",
+    "period_comparison": "Period comparison {{period}}"
+  },
+  "matrix": {
+    "star": "Star (High popularity, High margin)",
+    "plowhorse": "Plowhorse (High popularity, Low margin)",
+    "puzzle": "Puzzle (Low popularity, High margin)",
+    "dog": "Dog (Low popularity, Low margin)"
+  }
+}

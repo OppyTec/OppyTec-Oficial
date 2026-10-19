@@ -1,0 +1,11 @@
+{
+  "rbac": {
+    "title": "Roles y Permisos Granulares (3 Niveles)",
+    "permission_denied": "No posees el permiso requerido: {{permission}}",
+    "seat_quota_usage": "Cupos utilizados: {{used}} de {{limit}} usuarios"
+  },
+  "audit": {
+    "title": "Bitácora de Auditoría Inmutable",
+    "event_recorded": "Evento {{action}} registrado por {{actor}} con traza {{traceId}}"
+  }
+}

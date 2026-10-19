@@ -1,0 +1,13 @@
+{
+  "title": "Master Product and Ingredient Catalog",
+  "product": {
+    "name": "Product name",
+    "sku": "SKU Code: {{sku}}",
+    "unit_cost": "Unit cost ({{currency}})",
+    "proper_noun_badge": "Protected Brand / Proper Noun"
+  },
+  "categories": {
+    "title": "Gastronomic Categories",
+    "count": "{{count}} active categories"
+  }
+}

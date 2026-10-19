@@ -1,0 +1,13 @@
+{
+  "title": "Catálogo Maestro de Productos e Insumos",
+  "product": {
+    "name": "Nombre del producto",
+    "sku": "Código SKU: {{sku}}",
+    "unit_cost": "Costo unitario ({{currency}})",
+    "proper_noun_badge": "Marca / Nombre propio protegido"
+  },
+  "categories": {
+    "title": "Categorías Gastronómicas",
+    "count": "{{count}} categorías activas"
+  }
+}

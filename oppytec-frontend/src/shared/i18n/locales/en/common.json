@@ -1,0 +1,39 @@
+{
+  "app": {
+    "title": "OppyTec SaaS v2.0",
+    "subtitle": "Operational and Financial Grade Software",
+    "welcome": "Welcome to OppyTec, {{name}}"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "refresh": "Refresh",
+    "confirm": "Confirm"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "loading": "Loading...",
+    "saving": "Saving changes...",
+    "empty": "No records available",
+    "items_count": "Total: {{count}} items"
+  },
+  "language": {
+    "label": "Language",
+    "es": "Español",
+    "en": "English (US)",
+    "switch_to": "Switch language to {{lang}}"
+  },
+  "currency": {
+    "label": "Currency",
+    "source_label": "Source: {{source}}",
+    "anomaly_warning": "Exchange rate variation above {{threshold}}% detected (Circuit breaker active)",
+    "converted_from": "Converted from {{base}} at rate {{rate}}"
+  }
+}

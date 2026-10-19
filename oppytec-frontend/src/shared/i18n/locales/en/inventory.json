@@ -1,0 +1,14 @@
+{
+  "title": "Multi-Warehouse Inventory and Kardex",
+  "warehouse": {
+    "select": "Warehouse: {{warehouse}}",
+    "stock_level": "Available stock: {{quantity}} {{unit}}",
+    "critical_alert": "Critical stock alert on {{item}} (minimum {{minStock}})"
+  },
+  "movements": {
+    "inbound": "Merchandise receipt",
+    "outbound": "Consumption outbound",
+    "transfer": "Inter-warehouse transfer",
+    "waste": "Recorded waste: {{reason}}"
+  }
+}

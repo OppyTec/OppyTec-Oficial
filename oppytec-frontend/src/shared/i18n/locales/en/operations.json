@@ -1,0 +1,12 @@
+{
+  "title": "Kitchen Operations, Production and Dispatch",
+  "production": {
+    "batch_code": "Production batch {{batchId}}",
+    "station": "Station: {{stationName}}",
+    "scheduled_for": "Scheduled for {{date}}"
+  },
+  "counts": {
+    "blind_inventory": "Blind physical inventory count",
+    "variance_summary": "Detected variance: {{delta}} {{unit}}"
+  }
+}
