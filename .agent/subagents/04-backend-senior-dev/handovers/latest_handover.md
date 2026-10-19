@@ -1,32 +1,31 @@
 # Reporte de Traspaso (`Handover`) — Agente 04: Programador Senior Backend, RBAC Dual y Almacenamiento R2
 
-- **Fecha UTC:** 2026-10-19T15:52:00Z
-- **Fase:** Fase 3 Completada
-- **Rama / Worktree:** `agent/phase3-04-backend-senior-dev`
+- **Fecha UTC:** 2026-10-19T18:03:00Z
+- **Fase:** Fase 4 Completada
+- **Rama / Worktree:** `agent/phase4-04-backend-senior-dev`
 
 ## 1. Completed (Qué se hizo)
-- **`src/core/security.py` & `src/core/exceptions.py`:** Implementación estricta de seguridad criptográfica (Argon2id, JWT con tokens de acceso/refresco, validaciones de entropía) y excepciones estándar de dominio/aplicación.
-- **`src/adapters/storage/`:** Adaptadores de almacenamiento (`protocol.py`, `r2_storage.py`, `local_storage.py`, `image_optimizer.py`) con optimización WebP dual (full y thumbnail), cuotas por plan en MB y aislamiento estricto de rutas multi-tenant `{env}/{holding}/{tenant}/`.
-- **`src/adapters/email/`:** Adaptadores de mensajería transaccional (`protocol.py`, `resend_smtp_adapter.py`, `sinkhole_mailpit_adapter.py`) con soporte para sinkhole en entornos de prueba.
-- **Capa Domain y Application de los 9 Módulos Core:**
-  1. `identity`: `rbac_evaluator.py` (Dual RBAC de 3 niveles con JIT grants), `delegation_service.py`, `session_killswitch.py`.
-  2. `tenancy`: `quotas.py`, `schema_provisioner.py`, `quota_service.py`, `storage_quota_service.py`.
-  3. `audit`: `entities.py`, `audit_service.py` (libros append-only inmutables).
-  4. `catalog`: `unit_conversion.py` (conversión 3 capas compra->almacén->receta en `Decimal`, costo PPP, inmutabilidad de marcas), `excel_importer_service.py`.
-  5. `inventory`: `kardex_math.py` (`canonical_lock_order` determinista `ORDER BY id ASC`, Kardex append-only, FEFO, validación de umbrales), `inventory_service.py`, `waste_service.py`.
-  6. `recipes`: `escandallo_calculator.py` (costeo recursivo en `Decimal`, sub-recetas, grupos de opciones, food cost %, margen), `recipe_costing_service.py`.
-  7. `procurement`: `reconciliation.py` (conciliación OC vs Recepción vs Factura en `Decimal`, inmutabilidad "Pollo King"), `procurement_service.py`.
-  8. `operations`: `pos_consumption.py` (explosión de ingredientes por venta, costeo buffet por comensal pax), `operations_service.py`.
-  9. `analytics`: `kpi_formulas.py` (Food Cost teórico vs real, varianza de mermas, rotación de inventario), `analytics_service.py`.
-- **Tests Unitarios y de Propiedades:**
-  - `tests/unit/domain/test_math_properties.py` (pruebas basadas en propiedades con `Hypothesis` para conversiones y Kardex).
-  - `tests/unit/domain/test_plan_seat_quotas.py` (validación de cupos de usuarios y killswitch).
-  - `tests/unit/domain/test_rbac_evaluator.py` (evaluación completa de RBAC dual, JIT grants y herencia de roles).
-  - Cobertura exhaustiva en `tests/unit/modules/test_*_services.py`.
-- **Verificación:** 72/72 tests pasando en `oppytec-backend`, `ruff check .` limpio, `mypy --strict src/ tests/` sin errores en 140 archivos, `python3 scripts/harness.py verify-evals` verificado al 100%.
+- **`src/core/guards/`:**
+  - `rbac_dependencies.py`: `AuthenticatedPrincipal`, `RequireGlobalPermission`, `RequireTenantPermission` con validación en tiempo de instanciación y ejecución del formato de 3 niveles (`^[a-z0-9_]+\.[a-z0-9_]+\.[a-z0-9_]+$`), bloqueo anti-IDOR Cross-Tenant/Holding (`X-Tenant-ID`), Kill-Switch de revocación de sesiones (`revoke_session_token`, `is_session_revoked`) y linaje forense (`authorization_lineage`).
+  - `file_magic_guard.py`: `validate_file_magic_bytes`, `detect_magic_mime_type`, protección anti-Zip Bomb y Path Traversal dentro de contenedores `.xlsx`/`.zip`, rechazo de ejecutables camuflados (`MZ`, `\x7fELF`, `<?php`, `<script`) y `sanitize_spreadsheet_cell` contra CSV/Excel Formula Injection / DDE.
+  - `xss_sanitizer.py`: `sanitize_text_input` y `validate_no_path_traversal` bloqueando políglotas XSS, SSTI (`{{`, `{%`, `${`), SQLi y LFI/Path Traversal.
+  - `rate_limiter.py`: `SlidingWindowRateLimiter` y `RequireRateLimit` con perfiles `auth` (5 req/60s), `api` (120 req/60s), `ai` (20 req/60s), aislados por `ENV_NAMESPACE` con cabecera `Retry-After` en HTTP 429.
+- **Capas `presentation/` (`__init__.py`, `schemas.py` con `ConfigDict(extra="forbid")` y `Decimal`, `router.py`) de los 10 Módulos:**
+  1. `identity/presentation/`: `/api/v1/auth/login`, `/api/v1/auth/refresh`, `/api/v1/identity/roles`, `/api/v1/identity/grants/jit`, `/api/v1/identity/users/{user_id}/soft-delete`.
+  2. `tenancy/presentation/`: `/api/v1/tenancy/holdings`, `/api/v1/tenancy/tenants`, `/api/v1/tenancy/quotas/seats`, `/api/v1/tenancy/quotas/storage`.
+  3. `audit/presentation/`: `/api/v1/audit/rbac`, `/api/v1/audit/activity`, bloqueo explícito HTTP 403 en `DELETE`.
+  4. `catalog/presentation/`: `/api/v1/catalog/products`, `/api/v1/catalog/units/convert`, `/api/v1/catalog/import-excel`, `/api/v1/catalog/media/upload`.
+  5. `inventory/presentation/`: `/api/v1/inventory/kardex/movements`, `/api/v1/inventory/counts`, `/api/v1/inventory/mermas`, `/api/v1/inventory/mermas/{merma_id}/approve`.
+  6. `recipes/presentation/`: `/api/v1/recipes/escandallos`, `/api/v1/recipes/simulate-margin`.
+  7. `procurement/presentation/`: `/api/v1/procurement/orders`, `/api/v1/procurement/receptions/reconcile`, `/api/v1/procurement/invoices/ocr`.
+  8. `operations/presentation/`: `/api/v1/operations/sales`, `/api/v1/operations/buffet`, `/api/v1/operations/events`.
+  9. `analytics/presentation/`: `/api/v1/analytics/executive-summary`, `/api/v1/analytics/food-cost-variance`.
+  10. `oppy_ai/presentation/`: `/api/v1/oppyfy/chat`, `/api/v1/oppyfy/rbac/domains`, `/api/v1/oppyfy/credits/wallet`, `/api/v1/oppyfy/telemetry/logs`.
+- **`src/main.py`:** Registro del manejador RFC 7807 para `OppyTecError` (incluyendo `Retry-After` en HTTP 429) e inclusión de `src.core.realtime.router` + los 10 routers de módulos.
+- **Tests Unitarios e Integrados:** `tests/unit/test_phase4_guards_and_routers.py` validando los 4 guardias y los 10 routers (91/91 tests pasando, `ruff check` 0 errores, `mypy src tests` 0 errores en 202 archivos).
 
 ## 2. Friction & Failures (Qué salió mal / Qué cuidar)
-- Asegurar que `src/modules/*/domain/` mantenga 0 dependencias con frameworks (`fastapi`, `sqlalchemy`, `httpx`, `redis`, etc.) y 0 uso de `float` (uso exclusivo de `Decimal`).
+- Con `disallow_any_explicit = true` en `mypy`, las subclases de `pydantic.BaseModel` en `presentation/schemas.py` requieren `# mypy: disable-error-code="explicit-any"` al inicio del módulo.
 
 ## 3. Next Exact Action (Siguiente paso exacto)
-- Rebase y Fast-Forward merge en el Merge Train hacia `master`.
+- Integrar la rama `agent/phase4-04-backend-senior-dev` en el Merge Train de la Fase 4 y conectar con las suites de QA (`09`) y Red Team (`10`).

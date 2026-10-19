@@ -19,6 +19,19 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from src.core.exceptions import OppyTecError, RateLimitExceededError
+from src.core.realtime.router import router as realtime_router
+from src.modules.analytics.presentation.router import router as analytics_router
+from src.modules.audit.presentation.router import router as audit_router
+from src.modules.catalog.presentation.router import router as catalog_router
+from src.modules.identity.presentation.router import router as identity_router
+from src.modules.inventory.presentation.router import router as inventory_router
+from src.modules.operations.presentation.router import router as operations_router
+from src.modules.oppy_ai.presentation.router import router as oppy_ai_router
+from src.modules.procurement.presentation.router import router as procurement_router
+from src.modules.recipes.presentation.router import router as recipes_router
+from src.modules.tenancy.presentation.router import router as tenancy_router
+
 try:
     import orjson as _orjson  # noqa: F401
     from fastapi.responses import ORJSONResponse as DefaultJSONResponse
@@ -144,6 +157,25 @@ def create_app() -> FastAPI:
         response.headers.setdefault("X-Frame-Options", "DENY")
         return response
 
+    @app.exception_handler(OppyTecError)
+    async def oppytec_domain_exception_handler(
+        request: Request,
+        exc: OppyTecError,
+    ) -> Response:
+        trace_id = str(
+            getattr(request.state, "trace_id", "")
+            or request.headers.get("X-Trace-ID", uuid.uuid4().hex)
+        )
+        problem = exc.to_rfc7807(trace_id=trace_id, instance=str(request.url.path))
+        headers: dict[str, str] = {"X-Trace-ID": trace_id}
+        if isinstance(exc, RateLimitExceededError):
+            headers["Retry-After"] = str(exc.retry_after_seconds)
+        return DefaultJSONResponse(
+            status_code=exc.status_code,
+            content=problem.to_dict(),
+            headers=headers,
+        )
+
     @app.get("/api/v1/health", tags=["system"])
     async def health_check(request: Request, response: Response) -> dict[str, str]:
         trace_id = getattr(request.state, "trace_id", "") or request.headers.get(
@@ -157,6 +189,18 @@ def create_app() -> FastAPI:
             "version": "2.0.0",
             "trace_id": str(trace_id),
         }
+
+    app.include_router(realtime_router)
+    app.include_router(identity_router)
+    app.include_router(tenancy_router)
+    app.include_router(audit_router)
+    app.include_router(catalog_router)
+    app.include_router(inventory_router)
+    app.include_router(recipes_router)
+    app.include_router(procurement_router)
+    app.include_router(operations_router)
+    app.include_router(analytics_router)
+    app.include_router(oppy_ai_router)
 
     return app
 

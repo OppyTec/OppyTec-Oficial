@@ -364,3 +364,73 @@ def can_delegate_permission(
         return False, "GRANT_CEILING_EXCEEDED"
 
     return True, "DELEGATION_ALLOWED"
+
+
+def evaluate_effective_permission(
+    *,
+    required_permission: str,
+    contracted_modules: frozenset[str] | set[str] | None = None,
+    role_grants: frozenset[str] | set[str] | None = None,
+    temp_grants: frozenset[str] | set[str] | tuple[PermissionGrantSpec, ...] | list[PermissionGrantSpec] = frozenset(),
+    explicit_denies: frozenset[str] | set[str] = frozenset(),
+    actor_user_id: int = 0,
+    is_holding_owner: bool = False,
+    is_superuser_god: bool = False,
+    now: datetime | None = None,
+) -> AuthorizationDecision:
+    """
+    Evalúa la ecuación de acceso efectivo M_Plan ∩ ((P_Rol U P_TempAllow) \\ P_ExplicitDeny)
+    aceptando tanto cadenas de permisos en `temp_grants`/`explicit_denies` como objetos `PermissionGrantSpec`.
+    """
+    normalized_grants: list[PermissionGrantSpec] = []
+    for deny_code in explicit_denies:
+        normalized_grants.append(
+            PermissionGrantSpec(
+                grant_id=f"explicit-deny-{deny_code}",
+                user_id=actor_user_id,
+                permission_code=deny_code,
+                effect="DENY",
+                granted_by_user_id=0,
+                reason="Explicit deny in principal claims",
+            )
+        )
+    for item in temp_grants:
+        if isinstance(item, PermissionGrantSpec):
+            normalized_grants.append(item)
+        else:
+            normalized_grants.append(
+                PermissionGrantSpec(
+                    grant_id=f"temp-allow-{item}",
+                    user_id=actor_user_id,
+                    permission_code=str(item),
+                    effect="ALLOW",
+                    granted_by_user_id=0,
+                    reason="Temporary JIT allow in principal claims",
+                )
+            )
+
+    resolved_roles = frozenset(role_grants) if role_grants is not None else frozenset()
+    if contracted_modules is None:
+        inferred_modules = {
+            extract_permission_module(p)
+            for p in resolved_roles
+            if is_valid_three_level_permission(p)
+        } | {
+            extract_permission_module(g.permission_code)
+            for g in normalized_grants
+            if is_valid_three_level_permission(g.permission_code)
+        }
+        resolved_modules: frozenset[str] | set[str] = inferred_modules
+    else:
+        resolved_modules = contracted_modules
+
+    return evaluate_permission_access(
+        actor_user_id=actor_user_id,
+        required_permission=required_permission,
+        plan_enabled_modules=resolved_modules,
+        role_permissions=resolved_roles,
+        grants=normalized_grants,
+        is_holding_owner=is_holding_owner,
+        is_superuser_god=is_superuser_god,
+        now=now,
+    )

@@ -12,7 +12,8 @@ import hashlib
 import hmac
 import secrets
 import uuid
-from dataclasses import dataclass
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
@@ -20,7 +21,7 @@ import jwt
 from pwdlib import PasswordHash
 
 from src.core.config import Settings, get_settings
-from src.core.exceptions import PermissionDeniedError
+from src.core.exceptions import AuthenticationError, PermissionDeniedError
 
 TokenType = Literal["access", "refresh"]
 
@@ -43,6 +44,26 @@ class TenantJwtClaims:
     jti: str
     issued_at: int
     expires_at: int
+    is_global_staff: bool = False
+    is_holding_owner: bool = False
+    contracted_modules: frozenset[str] = field(default_factory=frozenset)
+    contracted_modules_explicit: bool = False
+    role_grants: frozenset[str] = field(default_factory=frozenset)
+    temp_grants: frozenset[str] = field(default_factory=frozenset)
+    explicit_denies: frozenset[str] = field(default_factory=frozenset)
+    accessible_tenants: frozenset[str] = field(default_factory=frozenset)
+    raw_payload: Mapping[str, object] = field(default_factory=dict)
+
+    def get(self, key: str, default: object = None) -> object:
+        """Permite acceso estilo diccionario además de atributos tipados."""
+        if hasattr(self, key):
+            return getattr(self, key)
+        return self.raw_payload.get(key, default)
+
+    def __getitem__(self, key: str) -> object:
+        if hasattr(self, key):
+            return getattr(self, key)
+        return self.raw_payload[key]
 
 
 def hash_password_pbkdf2_fallback(plain_password: str, salt: str | None = None) -> str:
@@ -112,6 +133,14 @@ def create_jwt_token(
     tenant_schema: str | None = None,
     hierarchy_rank: int = 30,
     is_superuser_god: bool = False,
+    is_global_staff: bool = False,
+    is_holding_owner: bool = False,
+    contracted_modules: Iterable[str] | None = None,
+    role_grants: Iterable[str] | None = None,
+    temp_grants: Iterable[str] | None = None,
+    explicit_denies: Iterable[str] | None = None,
+    accessible_tenants: Iterable[str] | None = None,
+    extra_claims: Mapping[str, object] | None = None,
     expires_delta: timedelta | None = None,
     jti: str | None = None,
     settings: Settings | None = None,
@@ -143,11 +172,22 @@ def create_jwt_token(
         "tenant_schema": tenant_schema,
         "hierarchy_rank": hierarchy_rank,
         "is_superuser_god": is_superuser_god,
+        "is_global_staff": is_global_staff or is_superuser_god,
+        "is_holding_owner": is_holding_owner,
+        "contracted_modules": list(contracted_modules) if contracted_modules is not None else None,
+        "role_grants": list(role_grants) if role_grants is not None else [],
+        "temp_grants": list(temp_grants) if temp_grants is not None else [],
+        "explicit_denies": list(explicit_denies) if explicit_denies is not None else [],
+        "accessible_tenants": list(accessible_tenants) if accessible_tenants is not None else (
+            [tenant_id] if tenant_id is not None else []
+        ),
         "type": token_type,
         "jti": token_jti,
         "iat": int(now.timestamp()),
         "exp": int(expire_dt.timestamp()),
     }
+    if extra_claims:
+        payload.update(extra_claims)
     return str(jwt.encode(payload, secret, algorithm=resolved.ALGORITHM))
 
 
@@ -159,6 +199,15 @@ def create_access_token(
     tenant_schema: str | None = None,
     hierarchy_rank: int = 30,
     is_superuser_god: bool = False,
+    is_global_staff: bool = False,
+    is_holding_owner: bool = False,
+    contracted_modules: Iterable[str] | None = None,
+    role_grants: Iterable[str] | None = None,
+    temp_grants: Iterable[str] | None = None,
+    explicit_denies: Iterable[str] | None = None,
+    accessible_tenants: Iterable[str] | None = None,
+    extra_claims: Mapping[str, object] | None = None,
+    jti: str | None = None,
     expires_delta: timedelta | None = None,
     settings: Settings | None = None,
 ) -> str:
@@ -171,6 +220,15 @@ def create_access_token(
         tenant_schema=tenant_schema,
         hierarchy_rank=hierarchy_rank,
         is_superuser_god=is_superuser_god,
+        is_global_staff=is_global_staff,
+        is_holding_owner=is_holding_owner,
+        contracted_modules=contracted_modules,
+        role_grants=role_grants,
+        temp_grants=temp_grants,
+        explicit_denies=explicit_denies,
+        accessible_tenants=accessible_tenants,
+        extra_claims=extra_claims,
+        jti=jti,
         expires_delta=expires_delta,
         settings=settings,
     )
@@ -184,6 +242,7 @@ def create_refresh_token(
     tenant_schema: str | None = None,
     hierarchy_rank: int = 30,
     is_superuser_god: bool = False,
+    jti: str | None = None,
     expires_delta: timedelta | None = None,
     settings: Settings | None = None,
 ) -> str:
@@ -196,9 +255,17 @@ def create_refresh_token(
         tenant_schema=tenant_schema,
         hierarchy_rank=hierarchy_rank,
         is_superuser_god=is_superuser_god,
+        jti=jti,
         expires_delta=expires_delta,
         settings=settings,
     )
+
+
+def _extract_str_frozenset(raw_payload: Mapping[str, object], key: str) -> frozenset[str]:
+    val = raw_payload.get(key)
+    if isinstance(val, (list, tuple, set, frozenset)):
+        return frozenset(str(item).strip() for item in val if str(item).strip())
+    return frozenset()
 
 
 def decode_and_extract_claims(
@@ -209,7 +276,7 @@ def decode_and_extract_claims(
 ) -> TenantJwtClaims:
     """
     Verifica firma y expiración del JWT y extrae `TenantJwtClaims`.
-    Lanza `PermissionDeniedError` (HTTP 403/401) si el token es inválido, expiró o el tipo no coincide.
+    Lanza `AuthenticationError` (HTTP 401) si el token es inválido, expiró o el tipo no coincide.
     """
     resolved = settings or get_settings()
     secret = (
@@ -224,15 +291,15 @@ def decode_and_extract_claims(
             algorithms=[resolved.ALGORITHM],
         )
     except jwt.PyJWTError as exc:
-        raise PermissionDeniedError(
+        raise AuthenticationError(
             "Invalid or expired JWT token.",
             i18n_key="auth:errors.invalid_or_expired_token",
             status_code=401,
         ) from exc
 
-    tok_type = str(raw_payload.get("type", ""))
+    tok_type = str(raw_payload.get("type", "access"))
     if tok_type != expected_type:
-        raise PermissionDeniedError(
+        raise AuthenticationError(
             f"Unexpected JWT token type '{tok_type}', expected '{expected_type}'.",
             i18n_key="auth:errors.invalid_token_type",
             status_code=401,
@@ -240,7 +307,7 @@ def decode_and_extract_claims(
 
     raw_user_id = raw_payload.get("user_id", raw_payload.get("sub"))
     if not isinstance(raw_user_id, (int, str)):
-        raise PermissionDeniedError(
+        raise AuthenticationError(
             "Missing user_id claim in token.",
             i18n_key="auth:errors.missing_user_claim",
             status_code=401,
@@ -256,16 +323,63 @@ def decode_and_extract_claims(
 
     raw_iat = raw_payload.get("iat", 0)
     raw_exp = raw_payload.get("exp", 0)
+    is_god = bool(raw_payload.get("is_superuser_god", raw_payload.get("is_superuser", False)))
+    is_staff = bool(raw_payload.get("is_global_staff", is_god))
+    is_owner = bool(raw_payload.get("is_holding_owner", False))
+
+    tenant_str = str(tenant_val) if tenant_val is not None else None
+    accessible = _extract_str_frozenset(raw_payload, "accessible_tenants")
+    if not accessible and tenant_str:
+        accessible = frozenset({tenant_str})
+
+    role_grants = _extract_str_frozenset(raw_payload, "role_grants") | _extract_str_frozenset(
+        raw_payload, "permissions"
+    )
+    has_explicit_modules = raw_payload.get("contracted_modules") is not None
 
     return TenantJwtClaims(
         user_id=user_id,
         holding_id=str(holding_val) if holding_val is not None else None,
-        tenant_id=str(tenant_val) if tenant_val is not None else None,
+        tenant_id=tenant_str,
         tenant_schema=str(schema_val) if schema_val is not None else None,
         hierarchy_rank=hierarchy_rank,
-        is_superuser_god=bool(raw_payload.get("is_superuser_god", False)),
+        is_superuser_god=is_god,
         token_type=expected_type,
         jti=str(raw_payload.get("jti", "")),
         issued_at=int(raw_iat) if isinstance(raw_iat, (int, str)) else 0,
         expires_at=int(raw_exp) if isinstance(raw_exp, (int, str)) else 0,
+        is_global_staff=is_staff,
+        is_holding_owner=is_owner,
+        contracted_modules=_extract_str_frozenset(raw_payload, "contracted_modules"),
+        contracted_modules_explicit=has_explicit_modules,
+        role_grants=role_grants,
+        temp_grants=_extract_str_frozenset(raw_payload, "temp_grants"),
+        explicit_denies=_extract_str_frozenset(raw_payload, "explicit_denies"),
+        accessible_tenants=accessible,
+        raw_payload=dict(raw_payload),
     )
+
+
+def decode_access_token(
+    token: str,
+    *,
+    settings: Settings | None = None,
+) -> TenantJwtClaims:
+    """Decodifica y valida un token JWT de tipo `access` extrayendo `TenantJwtClaims`."""
+    return decode_and_extract_claims(token, expected_type="access", settings=settings)
+
+__all__ = [
+    "AuthenticationError",
+    "PermissionDeniedError",
+    "TenantJwtClaims",
+    "TokenType",
+    "create_access_token",
+    "create_jwt_token",
+    "create_refresh_token",
+    "decode_access_token",
+    "decode_and_extract_claims",
+    "hash_password",
+    "hash_password_pbkdf2_fallback",
+    "verify_password",
+    "verify_password_pbkdf2_fallback",
+]

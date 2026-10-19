@@ -18,6 +18,7 @@ class Rfc7807ProblemDetails:
     status: int
     detail: str
     i18n_key: str
+    error_code: str = "OPPYTEC_DOMAIN_ERROR"
     trace_id: str | None = None
     instance: str | None = None
     context: dict[str, str | int] = field(default_factory=dict)
@@ -29,6 +30,7 @@ class Rfc7807ProblemDetails:
             "title": self.title,
             "status": self.status,
             "detail": self.detail,
+            "error_code": self.error_code,
             "i18n_key": self.i18n_key,
             "context": dict(self.context),
         }
@@ -78,6 +80,7 @@ class OppyTecError(Exception):
             title=self.default_title,
             status=self.status_code,
             detail=self.message,
+            error_code=self.error_code,
             i18n_key=self.i18n_key,
             trace_id=resolved_trace,
             instance=instance,
@@ -92,6 +95,66 @@ class PermissionDeniedError(OppyTecError):
     default_error_code = "RBAC_PERMISSION_DENIED"
     default_i18n_key = "auth:errors.permission_denied"
     default_title = "RBAC Permission Denied"
+
+
+class AuthenticationError(PermissionDeniedError):
+    """Fallo de autenticación JWT (token ausente, expirado, firma inválida o sesión revocada)."""
+
+    default_status_code = 401
+    default_error_code = "AUTHENTICATION_REQUIRED"
+    default_i18n_key = "auth:errors.authentication_required"
+    default_title = "Authentication Required"
+
+
+class RateLimitExceededError(OppyTecError):
+    """Exceso de límite de tasa en ventana deslizante (`auth`, `api`, `ai`)."""
+
+    default_status_code = 429
+    default_error_code = "RATE_LIMIT_EXCEEDED"
+    default_i18n_key = "common:errors.rate_limit_exceeded"
+    default_title = "Rate Limit Exceeded"
+
+    def __init__(
+        self,
+        message: str = "Rate limit exceeded. Please retry later.",
+        *,
+        retry_after_seconds: int = 60,
+        i18n_key: str | None = None,
+        status_code: int | None = None,
+        error_code: str | None = None,
+        trace_id: str | None = None,
+        context: dict[str, str | int] | None = None,
+    ) -> None:
+        merged_context: dict[str, str | int] = {"retry_after_seconds": retry_after_seconds}
+        if context:
+            merged_context.update(context)
+        super().__init__(
+            message,
+            i18n_key=i18n_key,
+            status_code=status_code,
+            error_code=error_code,
+            trace_id=trace_id,
+            context=merged_context,
+        )
+        self.retry_after_seconds = retry_after_seconds
+
+
+class ResourceNotFoundError(OppyTecError):
+    """Recurso de dominio no encontrado."""
+
+    default_status_code = 404
+    default_error_code = "RESOURCE_NOT_FOUND"
+    default_i18n_key = "common:errors.not_found"
+    default_title = "Resource Not Found"
+
+
+class SecurityValidationError(OppyTecError):
+    """Violación de validación de seguridad (Magic Bytes, Zip Bomb, XSS, SSTI, SQLi, Path Traversal)."""
+
+    default_status_code = 422
+    default_error_code = "SECURITY_VALIDATION_FAILED"
+    default_i18n_key = "common:errors.security_validation_failed"
+    default_title = "Security Validation Failed"
 
 
 class QuotaExceededError(OppyTecError):
