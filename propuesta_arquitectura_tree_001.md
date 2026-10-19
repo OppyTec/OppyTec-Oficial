@@ -21,6 +21,7 @@
 > - `.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md`  
 > - `.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`  
 > - `.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`  
+> - `.agent/estrategias/estrategia_tiempo_real_websockets_y_notificaciones_001.md`  
 > **Propósito:** Definir el mapa estructural completo de directorios, subdirectorios y archivos críticos para la refactorización paso a paso desde `OppyTec-Legacy` hacia `OppyTec v2.0`.  
 > **Fecha:** Octubre 2026  
 
@@ -61,7 +62,7 @@ OppyTec-Code2/
 ├── .gitignore
 │
 ├── .agent/                                             # 🧠 CAPA DE GOBERNANZA AGÉNTICA Y CONTINUAL HARNESS (Prime Agent + Jev)
-│   ├── estrategias/                                    # 📐 [LAS 16 ESTRATEGIAS MAESTRAS DE REFACTORIZACIÓN (`_001.md`)]
+│   ├── estrategias/                                    # 📐 [LAS 17 ESTRATEGIAS MAESTRAS DE REFACTORIZACIÓN (`_001.md`)]
 │   │   ├── estrategia_migraciones_alembic_001.md       # ★ Migraciones correlativas `0001..NNNN`, schemas `public`/`tenant_*` y Bootstrap Génesis
 │   │   ├── estrategia_rbac_y_auditoria_001.md          # ★ RBAC Dual 3-niveles, acceso transversal Holding, cupos soft-delete, JIT y auditoría
 │   │   ├── estrategia_testing_calidad_y_seguridad_001.md # ★ Co-Creación 1:1 de Tests, 5 Dimensiones, Gates estratificados y 11 vectores Red Team
@@ -77,7 +78,8 @@ OppyTec-Code2/
 │   │   ├── estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md # ★ Imágenes R2: Aislamiento Tenant/Env, Compresión WebP 2-capas y Cuota MB por Plan
 │   │   ├── estrategia_respaldos_base_datos_y_recuperacion_001.md # ★ Backups 4-Capas (Neon PITR, R2 Cifrado, VPS Secundario y Local) + Restore por Tenant
 │   │   ├── estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md # ★ Los 12 Agentes Especializados, System Prompts y Bucles de Autoreparación
-│   │   └── estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md # ★ Rescate del ADN Visual de Legacy (3 temas, 42 colores, 49 íconos) y Mobile-First
+│   │   ├── estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md # ★ Rescate del ADN Visual de Legacy (3 temas, 42 colores, 49 íconos) y Mobile-First
+│   │   └── estrategia_tiempo_real_websockets_y_notificaciones_001.md # ★ Tiempo Real con WebSockets (`/api/v1/ws/realtime`), Redis Pub/Sub, Filtro RBAC y Cero Polling
 │   ├── rules/                                          # [INMUTABLE - Solo lectura para agentes]
 │   │   ├── 00-meta-agent-instructions.md               # ★ Protocolo RLM, prohibición de tocar OppyTec-Legacy, flujo en 4 fases
 │   │   ├── 01-architecture-boundaries.md               # ★ Reglas de capas (Domain -> Application -> Infrastructure -> Presentation)
@@ -100,7 +102,8 @@ OppyTec-Code2/
 │   │   ├── 18-media-storage-r2-and-quota-governance.md # ★ Regla Imágenes R2: llaves {env}/{holding}/{tenant}/, WebP thumb+display, 0 huérfanos y cuota MB
 │   │   ├── 19-database-backups-and-disaster-recovery.md # ★ Regla Backups 4-Capas: cifrado zstd+age, dump quirúrgico por tenant_* y snapshot pre-Alembic
 │   │   ├── 20-multiagent-squad-and-self-healing-loops.md # ★ Regla del Escuadrón de 12 Agentes: paridad matemática Legacy, autoreparación QA y veto de Seguridad
-│   │   └── 21-design-system-legacy-dna-and-mobile-first.md # ★ Regla UI/UX: Rescate visual de Legacy (light/dark/ocean-blue, glass, blink-*) y Mobile-First
+│   │   ├── 21-design-system-legacy-dna-and-mobile-first.md # ★ Regla UI/UX: Rescate visual de Legacy (light/dark/ocean-blue, glass, blink-*) y Mobile-First
+│   │   └── 22-realtime-websockets-and-zero-polling.md  # ★ Regla Tiempo Real: Túnel WebSocket Redis Pub/Sub, filtro RBAC y prohibición de polling HTTP
 │   ├── skills/                                         # [PAQUETES PYTHON EJECUTABLES EN REPL + CRUD VÍA /refine]
 │   │   ├── git_smart_merge/                            # ★ Skill ejecutable (Prime Agent REPL + CLI humano) para Worktrees y Smart Merge
 │   │   │   ├── SKILL.md
@@ -126,6 +129,8 @@ OppyTec-Code2/
 │   │   ├── db_backup_recovery/                         # ★ Skill para respaldos 4-capas, restauración quirúrgica de 1 Tenant y simulacros DRP
 │   │   │   └── SKILL.md
 │   │   ├── ui_ux_design_system/                        # ★ Skill con el ADN visual de Legacy (3 temas, 42 colores, 49 íconos, animaciones) y Mobile-First
+│   │   │   └── SKILL.md
+│   │   ├── realtime_websockets/                        # ★ Skill para eventos en tiempo real vía WebSockets + Redis Pub/Sub e invalidación TanStack Query
 │   │   │   └── SKILL.md
 │   │   ├── alembic-migration-manager/                  # ★ Skill para crear, renumerar (rebase) y verificar migraciones correlativas
 │   │   │   └── SKILL.md
@@ -228,7 +233,8 @@ OppyTec-Code2/
 │   │   ├── ADR-017-multi-tenant-r2-media-storage-webp-and-plan-quotas.md
 │   │   ├── ADR-018-four-layer-encrypted-backups-and-per-tenant-restore.md
 │   │   ├── ADR-019-twelve-agent-squad-model-tiering-and-self-healing.md
-│   │   └── ADR-020-legacy-visual-dna-three-themes-and-mobile-first.md
+│   │   ├── ADR-020-legacy-visual-dna-three-themes-and-mobile-first.md
+│   │   └── ADR-021-redis-pubsub-websockets-rbac-filtered-and-zero-polling.md
 │   └── architecture/
 │       ├── atlas/                                      # ★ ATLAS VISUAL INTERACTIVO (Archify HTML autocontenidos + fuentes JSON tipadas)
 │       │   ├── sources/                                # Fuentes JSON tipadas y recibos de validación (*.archify.json / *.receipt.json)
@@ -264,6 +270,7 @@ OppyTec-Code2/
 │   │   │   ├── exceptions.py                           # Excepciones de dominio mapeadas a respuestas RFC 7807 / HTTP 4xx con `i18n_key`
 │   │   │   ├── i18n/                                   # ★ Motor i18n Backend (`Accept-Language`), Memoria Global `i18n_translation_memory`, filtro de nombres propios (`Pollo King`) y traductor estilo `Pi`
 │   │   │   ├── fx/                                     # ★ Motor Cambiario Institucional (`BCCh` + `BCE Frankfurter`), Circuit Breaker > 8%, Override Manual del SuperUser e historial `fx_rate_history`
+│   │   │   ├── realtime/                               # ★ Motor WebSockets (`/api/v1/ws/realtime`) con Redis Pub/Sub + Streams, filtro RBAC 3-niveles y catch-up `last_event_id`
 │   │   │   ├── backup/                                 # ★ Motor de Respaldos 4-Capas (`Neon PITR`, `R2 Vault Cifrado`, `VPS Secundario`, `Oficina Local`), compresión `zstd` + cifrado `age` y restore quirúrgico por Tenant
 │   │   │   └── guards/                                 # Guardrails deterministas de seguridad y autorización
 │   │   │       ├── rbac_dependencies.py                # ★ `RequireGlobalPermission("m.s.f")` y `RequireTenantPermission("m.s.f")`
@@ -376,8 +383,9 @@ OppyTec-Code2/
 │       │   ├── test_observability_pii_redaction_and_spans.py     # ★ Verifica generación de `X-Trace-ID`, contexto Tenant y redacción PII al 100% en Sentry/OTel
 │       │   ├── test_media_storage_isolation_and_quotas.py        # ★ Verifica aislamiento de llaves R2 por Tenant/Env, límite `max_storage_mb` y limpieza de huérfanos
 │       │   ├── test_backup_encryption_and_tenant_restore.py      # ★ Verifica cifrado obligatorio `.sql.zst.age`, restore quirúrgico de 1 Tenant sin afectar a otros y checksum SHA-256
-│       │   ├── test_subagent_strategy_coverage.py                # ★ Verifica que los 12 sub-agentes existan y cubran las 16 estrategias sin huérfanos
-│       │   └── test_ui_design_tokens_and_mobile_first.py         # ★ Verifica los 3 temas (`light`/`dark`/`ocean-blue`), animaciones, 42 colores y reglas Mobile-First
+│       │   ├── test_subagent_strategy_coverage.py                # ★ Verifica que los 12 sub-agentes existan y cubran las 17 estrategias sin huérfanos
+│       │   ├── test_ui_design_tokens_and_mobile_first.py         # ★ Verifica los 3 temas (`light`/`dark`/`ocean-blue`), animaciones, 42 colores y reglas Mobile-First
+│       │   └── test_websocket_auth_tenant_isolation_and_rbac.py  # ★ Verifica JWT en WebSocket, aislamiento Tenant, filtro RBAC y prohibición de polling HTTP
 │       ├── smoke/                                      # ★ HUMO (< 3s): Arranque FastAPI, OpenAPI, DB/Redis y Login SuperUser Génesis
 │       ├── unit/                                       # ★ UNITARIAS + HYPOTHESIS (< 5s): Fórmulas Decimal, RBAC evaluator, cupos
 │       ├── integration/                                # ★ INTEGRACIÓN: Aislamiento multi-tenant, soft-delete + Redis kill-switch
@@ -436,6 +444,7 @@ OppyTec-Code2/
 │       │   │   ├── otel.ts                             # Propaga cabecera W3C `traceparent` hacia FastAPI
 │       │   │   ├── sentry.ts                           # Conecta `ErrorBoundary` con filtro PII y `X-Trace-ID`
 │       │   │   └── umami.ts                            # Analítica de producto sin cookies inyectada vía `/runtime-env.js`
+│       │   ├── realtime/                               # ★ MOTOR WEBSOCKETS TIEMPO REAL (`RealtimeProvider.tsx`, `useRealtimeSync.ts` -> TanStack Query v5)
 │       │   ├── api/
 │       │   │   ├── httpClient.ts                       # ★ Cliente Axios con interceptor de JWT, `X-Tenant-ID` y silent refresh
 │       │   │   └── queryKeys.ts                        # ★ Fábrica centralizada de claves de TanStack Query (`['stock', tenantId, bodegaId]`)

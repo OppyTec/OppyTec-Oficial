@@ -135,6 +135,7 @@ Cada una de las **14 estrategias maestras (`.agent/estrategias/estrategia_*_001.
 | **14** | `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md` *(Seguridad Red Team)* | **Agente 10** (Cybersecurity Red Team Auditor) | Todos los agentes (poder de veto y autoreparación de seguridad antes del merge). |
 | **15** *(Visual)* | `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md` | **Agente 12** (Tech Writer, OpenSpec, `Graphify` & `Archify`) | Agentes 01 y 02 (usan `Graphify` y auditan los 5 mapas `.archify.html`). |
 | **16** *(UI/UX & Mobile)* | `.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md` | **Agente 05** (Frontend Senior Dev — UI/UX & *Mobile-First*) | Agente 07 (`i18n`/`FX` selectors) y Agente 09 (QA verifica responsividad y paridad visual con Legacy). |
+| **17** *(Tiempo Real WS)* | `.agent/estrategias/estrategia_tiempo_real_websockets_y_notificaciones_001.md` | **Agente 04** (Backend `src/core/realtime/` + Redis Pub/Sub) y **Agente 05** (Frontend `useRealtimeSync` + TanStack Query) | Agente 08 (métricas OTel de WebSockets) y Agente 10 (audita autenticación JWT y filtro RBAC en sockets). |
 
 ---
 

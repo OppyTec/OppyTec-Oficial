@@ -21,5 +21,6 @@ fec578d2e896750a1e368a2db5d2222d731eb5dfa15750937953f0f2177dbe52  .agent/rules/1
 d249e11141d56cdb3c74b931d9ae81e3761c78ccaaebcab63fd583e97709bd3e  .agent/rules/19-database-backups-and-disaster-recovery.md
 69a32381954793a88cbcb419c6bc6d1cf4227e2400f4bf3c3163e81df860de3c  .agent/rules/20-multiagent-squad-and-self-healing-loops.md
 c49a5212c86e8b97b2607a2a17bfbbf49c2b277761bbf6585bcd6e1b2b69b4d2  .agent/rules/21-design-system-legacy-dna-and-mobile-first.md
+5cdd816471b3cef2e7fb72735ae603da191f554ec80eda8f2a9a81bf7c680e57  .agent/rules/22-realtime-websockets-and-zero-polling.md
 b9c995525b0085eea89d19e741aa8efd4dbf00746fb81495aa933549c3fd83f0  .agent/evals/rubric_10_criteria.yaml
 3fafc9bcb098475f47408ac41ad43b2a3141ac1c43995063da57483dd6b92a8a  .agent/guardrails/jev_policies.yaml

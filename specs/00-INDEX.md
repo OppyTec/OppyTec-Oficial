@@ -56,6 +56,7 @@ Todo desarrollo en `oppytec-backend/` y `oppytec-frontend/` está subordinado a 
 14. [`estrategia_respaldos_base_datos_y_recuperacion_001.md`](../.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md) — Respaldos en 4 Capas cifrados (`.sql.zst.age`) con restauración quirúrgica de un solo Tenant.
 15. [`estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`](../.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md) — Escuadrón de **12 Agentes Especializados**, System Prompts y bucles de autoreparación autónoma en QA y Ciberseguridad.
 16. [`estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`](../.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md) — Rescate exhaustivo del ADN visual de `OppyTec-Legacy` (3 temas, 42 colores, 49 íconos) y filosofía *Mobile-First*.
+17. [`estrategia_tiempo_real_websockets_y_notificaciones_001.md`](../.agent/estrategias/estrategia_tiempo_real_websockets_y_notificaciones_001.md) — Tiempo Real con WebSockets (`/api/v1/ws/realtime`), Redis Pub/Sub + Streams, filtro RBAC, sincronización con TanStack Query v5 y prohibición de polling HTTP.
 
 ---
 

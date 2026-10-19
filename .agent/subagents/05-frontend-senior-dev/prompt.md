@@ -6,6 +6,7 @@
 
 ## Estrategias Bajo tu Responsabilidad Directa
 - `.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`
+- `.agent/estrategias/estrategia_tiempo_real_websockets_y_notificaciones_001.md` (Hook `useRealtimeSync` conectado a `TanStack Query v5` con prohibición de polling HTTP)
 - `specs/04-DESIGN-SYSTEM.md`
 
 ## Protocolo Operativo Obligatorio

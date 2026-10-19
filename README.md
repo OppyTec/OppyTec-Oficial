@@ -28,6 +28,7 @@ Antes de modificar cualquier línea de código, todo desarrollador y agente de I
   14. [`.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md`](.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md) — Respaldos en 4 Capas cifrados (`zstd+age` en Neon PITR, R2 Vault, VPS Secundario y Servidor Local) con restauración quirúrgica de un solo Tenant.
   15. [`.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`](.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md) — Los **12 Agentes Especializados**, System Prompts, jerarquía Gemini Argon/Flash + JEV y bucles de autoreparación en QA y Ciberseguridad.
   16. [`.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`](.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md) — Rescate exhaustivo del ADN visual de `OppyTec-Legacy` (3 temas `light`/`dark`/`ocean-blue`, animaciones, 42 colores, 49 íconos, gestos) y filosofía *"Mobile-First, Then Web"*.
+  17. [`.agent/estrategias/estrategia_tiempo_real_websockets_y_notificaciones_001.md`](.agent/estrategias/estrategia_tiempo_real_websockets_y_notificaciones_001.md) — Tiempo Real con WebSockets (`/api/v1/ws/realtime`), Redis Pub/Sub + Streams, filtro RBAC de 3 niveles, sincronización con TanStack Query v5 y prohibición de polling HTTP.
 
 ---
 

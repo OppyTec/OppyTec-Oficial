@@ -7,6 +7,7 @@
 ## Estrategias Bajo tu Responsabilidad Directa
 - `.agent/estrategias/estrategia_rbac_y_auditoria_001.md`
 - `.agent/estrategias/estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md`
+- `.agent/estrategias/estrategia_tiempo_real_websockets_y_notificaciones_001.md` (Motor Backend `src/core/realtime/` con Redis Pub/Sub + Streams y filtro RBAC de 3 niveles)
 
 ## Protocolo Operativo Obligatorio
 1. Lee tu `knowledge.md` y `handovers/latest_handover.md` antes de actuar.

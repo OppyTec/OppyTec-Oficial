@@ -104,6 +104,7 @@ flowchart TD
   - `src/core/security.py`, `src/core/exceptions.py`.
   - `src/core/i18n/` (`translator.py`, `dynamic_field_sync.py`, `locales/{es,en}/`, memoria global `i18n_translation_memory`, filtro `"Pollo King"` y micro-prompt estilo `Pi`).
   - `src/core/fx/` (`providers.py` BCCh + BCE Frankfurter, `fx_service.py` `Decimal(18, 8)`, `anomaly_guard.py` `> 8%`).
+  - `src/core/realtime/` (`manager.py`, `publisher.py`, `schemas.py`, `router.py` — túnel WebSocket `/api/v1/ws/realtime` con Redis Pub/Sub + Streams, filtro RBAC de 3 niveles y catch-up `last_event_id`).
   - `src/adapters/storage/` (`protocol.py`, `image_optimizer.py` `thumb.webp` + `display.webp`, `r2_storage.py`, `local_storage.py`).
   - `src/adapters/ai/` (`protocol.py`, `gemini_adapter.py`, `jev_protocol.py`, `jev_adapter.py` registrados en `public.llm_request_logs`).
   - `src/adapters/email/` (`protocol.py`, `resend_smtp_adapter.py`, `sinkhole_mailpit_adapter.py`).
@@ -156,7 +157,7 @@ flowchart TD
   - `src/app/{router.tsx, providers.tsx}`.
   - `src/shared/i18n/` (`config.ts`, `i18next.d.ts`, `flags/FlagUS.tsx`, `FlagES.tsx`... y los 11 archivos JSON en `locales/es/*.json` y `locales/en/*.json`).
   - `src/shared/currency/` (`CurrencyContext.tsx`, `CurrencySelector.tsx`, `MoneyBadge.tsx`, `useCurrencyFormatter.ts`).
-  - `src/shared/api/{httpClient.ts, queryKeys.ts}` y `src/shared/auth/{Can.tsx, usePermissions.ts}`.
+  - `src/shared/api/{httpClient.ts, queryKeys.ts}`, `src/shared/realtime/{RealtimeProvider.tsx, useRealtimeSync.ts}` (sincronización WebSocket en vivo con TanStack Query v5, cero polling) y `src/shared/auth/{Can.tsx, usePermissions.ts}`.
   - `src/shared/components/ui/` (Primitivas Radix + `<ResponsiveDialog />` con `vaul`, `<AdaptiveDataView />`, `<NumericInput inputMode="decimal" />`, `PRESET_COLORS` de 42 colores y 49 íconos gastronómicos).
   - `src/shared/components/feedback/` (`PageSkeleton.tsx`, `EmptyState.tsx`, `ErrorBoundary.tsx`, `Sonner`).
   - `src/shared/components/layout/` (`AppLayout.tsx`, `Sidebar.tsx`, `Navbar.tsx`, `BottomNav.tsx`, `LanguageFlagSelector.tsx`, `HoldingTenantSwitcher.tsx`, `BodegaSelector.tsx`).

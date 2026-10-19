@@ -197,7 +197,9 @@ Para desacoplar el contexto, no sobrecargar la memoria de trabajo y permitir la 
 │   ├── 17-observability-opentelemetry-sentry-and-umami.md # Observabilidad 4-Pilares y Centro de Mando en platform-admin
 │   ├── 18-media-storage-r2-and-quota-governance.md     # Almacenamiento R2 aislado por Tenant/Env, WebP 2-capas y cuota MB
 │   ├── 19-database-backups-and-disaster-recovery.md    # Respaldos en 4 Capas cifrados (zstd+age) y restauración por Tenant
-│   └── 20-multiagent-squad-and-self-healing-loops.md   # Escuadrón de 12 Agentes, paridad con Legacy y bucles de autoreparación
+│   ├── 20-multiagent-squad-and-self-healing-loops.md   # Escuadrón de 12 Agentes, paridad con Legacy y bucles de autoreparación
+│   ├── 21-design-system-legacy-dna-and-mobile-first.md # ADN Visual de Legacy (3 temas) y arquitectura Mobile-First
+│   └── 22-realtime-websockets-and-zero-polling.md      # Tiempo Real con WebSockets (Redis Pub/Sub), filtro RBAC y cero polling
 ├── skills/                                             # [PAQUETES EJECUTABLES EN REPL + CRUD CONTROLADO VÍA /refine]
 │   ├── git_smart_merge/                                # Orquestación de Git Worktrees, AST Claiming y Smart Merge Train
 │   ├── jev-decision-engine/                            # Primitivas tipadas de JEV (Boolean, Choice, Score + confianza)
@@ -262,6 +264,7 @@ Todas las decisiones arquitectónicas y reglas operativas están detalladas en l
 15. **[`.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md`](.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md):** Respaldos en 4 Capas cifrados (`zstd+age`) y restauración quirúrgica de un solo Tenant.
 16. **[`.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md`](.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md):** Los **12 Agentes Especializados**, cobertura 100% de las estrategias, System Prompts, asignación Gemini Argon/Flash + JEV y bucles de autoreparación autónoma.
 17. **[`.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md`](.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md):** Rescate exhaustivo del ADN visual de `OppyTec-Legacy` (3 temas `light`/`dark`/`ocean-blue`, `.glass`, animaciones, 42 colores, 49 íconos, `framer-motion`, `useSwipeNavigation`) y arquitectura estricta *"Mobile-First, Then Web"*.
+18. **[`.agent/estrategias/estrategia_tiempo_real_websockets_y_notificaciones_001.md`](.agent/estrategias/estrategia_tiempo_real_websockets_y_notificaciones_001.md):** Motor de Tiempo Real con WebSockets (`/api/v1/ws/realtime`), bus **Redis Pub/Sub + Streams**, filtrado por permisos RBAC de 3 niveles, sincronización con TanStack Query v5 y prohibición de polling HTTP.
 
 ---
 
