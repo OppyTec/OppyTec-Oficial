@@ -1,0 +1,24 @@
+{
+  "receipt_version": "3.1.0",
+  "map_id": "01-tenancy-and-schemas",
+  "source_file": "docs/architecture/atlas/sources/01-tenancy-and-schemas.archify.json",
+  "target_html": "docs/architecture/atlas/01-tenancy-and-schemas.archify.html",
+  "source_sha256": "d676a593e6b5d878e52c1ad34277fdcf777f4a0b3589dd7218e4d79c45a88aec",
+  "validated_at": "2026-10-19T13:51:00Z",
+  "validator": "archify-validator-v3.1.0",
+  "status": "VALIDATED",
+  "metrics": {
+    "nodes_count": 18,
+    "edges_count": 22,
+    "lenses_count": 5,
+    "trust_boundaries_count": 4,
+    "cards_with_code_links": 18,
+    "cards_with_test_links": 18
+  },
+  "rules_checked": [
+    "DETAILS_IN_CARDS_NOT_EXCESSIVE_EDGES",
+    "SOURCE_BACKED_FILE_PATHS_EXIST_IN_TREE_001",
+    "EVERY_NODE_HAS_TEST_AND_ADR_EVIDENCE",
+    "LENS_COVERAGE_COMPLETE"
+  ]
+}

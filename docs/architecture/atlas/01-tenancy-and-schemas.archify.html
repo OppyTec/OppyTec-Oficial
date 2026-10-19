@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="ocean-blue">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mapa 1: Persistencia Multi-Schema, Jerarquía 1:1, Alembic 0001..N y Backups 4-Capas — OppyTec v2.0 Archify Atlas</title>
+  <style>
+    :root, [data-theme="ocean-blue"] {
+      --bg-primary: #07192f;
+      --bg-secondary: #0c2544;
+      --bg-card: rgba(15, 41, 74, 0.88);
+      --bg-card-hover: rgba(22, 58, 102, 0.96);
+      --text-primary: #f0f7ff;
+      --text-secondary: #9ec2e6;
+      --accent-primary: #00d2ff;
+      --accent-secondary: #38bdf8;
+      --accent-success: #10b981;
+      --accent-warning: #f59e0b;
+      --accent-danger: #f43f5e;
+      --border-color: rgba(56, 189, 248, 0.28);
+      --shadow-glow: 0 8px 30px rgba(0, 210, 255, 0.14);
+    }
+    [data-theme="dark"] {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: rgba(30, 41, 59, 0.92);
+      --bg-card-hover: rgba(51, 65, 85, 0.98);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent-primary: #6366f1;
+      --accent-secondary: #818cf8;
+      --accent-success: #22c55e;
+      --accent-warning: #eab308;
+      --accent-danger: #ef4444;
+      --border-color: rgba(148, 163, 184, 0.24);
+      --shadow-glow: 0 8px 28px rgba(99, 102, 241, 0.15);
+    }
+    [data-theme="light"] {
+      --bg-primary: #f1f5f9;
+      --bg-secondary: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f8fafc;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --accent-primary: #0284c7;
+      --accent-secondary: #0369a1;
+      --accent-success: #059669;
+      --accent-warning: #d97706;
+      --accent-danger: #e11d48;
+      --border-color: #cbd5e1;
+      --shadow-glow: 0 6px 20px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand-title {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .brand-title h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent-primary);
+    }
+    .brand-title p {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    .lens-bar {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.65rem 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .lens-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+    button, select, input {
+      font-family: inherit;
+      font-size: 0.82rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      padding: 0.45rem 0.8rem;
+      transition: all 0.15s ease;
+    }
+    button { cursor: pointer; font-weight: 600; }
+    button:hover, button.active {
+      background: var(--accent-primary);
+      color: #041326;
+      border-color: var(--accent-primary);
+    }
+    input[type="search"] {
+      min-width: 240px;
+    }
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 1.25rem;
+      padding: 1.25rem 1.5rem;
+      flex: 1;
+    }
+    @media (max-width: 1024px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+    .canvas-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+    .boundary-box {
+      border: 1px solid var(--border-color);
+      border-radius: 0.85rem;
+      background: rgba(12, 37, 68, 0.32);
+      padding: 1rem;
+      box-shadow: var(--shadow-glow);
+    }
+    .boundary-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.45rem;
+      border-bottom: 1px dashed var(--border-color);
+    }
+    .boundary-header h2 {
+      font-size: 0.95rem;
+      color: var(--accent-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .nodes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+      gap: 0.85rem;
+    }
+    .node-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 0.7rem;
+      padding: 0.85rem;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.2s ease;
+      position: relative;
+    }
+    .node-card:hover {
+      transform: translateY(-2px);
+      background: var(--bg-card-hover);
+      border-color: var(--accent-primary);
+    }
+    .node-card.selected {
+      border: 2px solid var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.22);
+    }
+    .node-card.dimmed {
+      opacity: 0.25;
+    }
+    .node-card.upstream-highlight {
+      border-color: var(--accent-warning);
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+    }
+    .node-card.downstream-highlight {
+      border-color: var(--accent-success);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+    }
+    .node-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.18rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(0, 210, 255, 0.16);
+      color: var(--accent-primary);
+      margin-bottom: 0.45rem;
+    }
+    .node-card h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.35rem;
+    }
+    .node-card p {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+    .inspector-panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 0.85rem;
+      padding: 1.15rem;
+      position: sticky;
+      top: 5.2rem;
+      max-height: calc(100vh - 6.5rem);
+      overflow-y: auto;
+      box-shadow: var(--shadow-glow);
+    }
+    .inspector-section {
+      margin-top: 1rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .inspector-section h4 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-secondary);
+      margin-bottom: 0.5rem;
+    }
+    .code-pill {
+      display: block;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.76rem;
+      background: rgba(0, 0, 0, 0.28);
+      padding: 0.45rem 0.65rem;
+      border-radius: 0.45rem;
+      border-left: 3px solid var(--accent-primary);
+      margin-bottom: 0.4rem;
+      word-break: break-all;
+    }
+    ul.invariant-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    ul.invariant-list li {
+      font-size: 0.8rem;
+      line-height: 1.42;
+      padding-left: 1rem;
+      position: relative;
+    }
+    ul.invariant-list li::before {
+      content: "✔";
+      position: absolute;
+      left: 0;
+      color: var(--accent-success);
+      font-weight: bold;
+    }
+    .edge-item {
+      font-size: 0.78rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 0.4rem;
+      background: rgba(0, 210, 255, 0.08);
+      margin-bottom: 0.35rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .receipt-footer {
+      margin-top: auto;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-title">
+      <h1>🐘 OppyTec v2.0 — Archify Interactive Atlas (Mapa 1/5)</h1>
+      <p>Persistencia Multi-Schema (`PublicBase` vs `TenantBase`), Jerarquía `Holding -> LegalEntity 1:1 -> Tenant`, Alembic Lineal `0001..N` y Backups 4-Capas (`.sql.zst.age`)</p>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="searchInput" placeholder="🔍 Buscar tabla, esquema, migración, test o invariante..." aria-label="Buscar nodos en el mapa" />
+      <select id="reachMode" aria-label="Modo de alcance de dependencias">
+        <option value="all">Alcance: Todos los conectados</option>
+        <option value="downstream">Alcance: Aguas Abajo (Downstream)</option>
+        <option value="upstream">Alcance: Aguas Arriba (Upstream)</option>
+      </select>
+      <select id="themeSelector" aria-label="Selector de tema visual">
+        <option value="ocean-blue">🌊 Tema: Ocean-Blue (Legacy DNA)</option>
+        <option value="dark">🌙 Tema: Dark</option>
+        <option value="light">☀️ Tema: Light</option>
+      </select>
+    </div>
+  </header>
+
+  <nav class="lens-bar" aria-label="Filtros por lente arquitectónica">
+    <div class="lens-buttons" id="lensContainer">
+      <button class="active" data-lens="all">Vista Completa (18 Nodos)</button>
+      <button data-lens="public_vs_tenant">Esquema Public vs Tenant</button>
+      <button data-lens="holding_hierarchy">Jerarquía Holding -&gt; LegalEntity 1:1 -&gt; Tenant</button>
+      <button data-lens="alembic_linear">Alembic Lineal 0001..N</button>
+      <button data-lens="backups_4layers">Backups 4-Capas (.sql.zst.age)</button>
+    </div>
+    <div id="activeLensDescription" style="font-size:0.8rem;color:var(--text-secondary);">
+      Haz clic en cualquier nodo para inspeccionar su tarjeta de evidencia, rutas de código y tests asociados.
+    </div>
+  </nav>
+
+  <main class="workspace">
+    <section class="canvas-column" id="canvasContainer" aria-label="Lienzo de nodos por frontera de confianza"></section>
+    <aside class="inspector-panel" id="inspectorPanel" aria-label="Inspector de evidencia de nodo"></aside>
+  </main>
+
+  <footer class="receipt-footer">
+    <span><strong>Archify Engine:</strong> v3.1.0 (Source-Backed Interactive HTML) | <strong>Fase:</strong> Fase 2</span>
+    <span><strong>Fuente Tipada:</strong> <code>docs/architecture/atlas/sources/01-tenancy-and-schemas.archify.json</code></span>
+    <span><strong>SHA-256 Receipt:</strong> <code>d676a593e6b5d878e52c1ad34277fdcf777f4a0b3589dd7218e4d79c45a88aec</code></span>
+  </footer>
+
+  <script id="archify-data" type="application/json">
+{
+  "archify_version": "3.1.0",
+  "map_id": "01-tenancy-and-schemas",
+  "source_sha256": "d676a593e6b5d878e52c1ad34277fdcf777f4a0b3589dd7218e4d79c45a88aec",
+  "trust_boundaries": [
+    {
+      "id": "tb_corporate_hierarchy",
+      "label": "Zona 1: Jerarquía Corporativa e Identidad Global en Esquema 'public' (Holding -> LegalEntity 1:1 -> Tenant)",
+      "lens": "holding_hierarchy"
+    },
+    {
+      "id": "tb_schema_isolation",
+      "label": "Zona 2: Frontera Física Multi-Schema (PublicBase Transversal vs TenantBase Aislado por SET LOCAL search_path)",
+      "lens": "public_vs_tenant"
+    },
+    {
+      "id": "tb_alembic_engine",
+      "label": "Zona 3: Motor de Migraciones Correlativas Lineales (Alembic 0001..N) y Bootstrap Génesis",
+      "lens": "alembic_linear"
+    },
+    {
+      "id": "tb_backup_vault_4layers",
+      "label": "Zona 4: Bóveda Criptográfica de Respaldos en 4 Capas (.sql.zst.age) y Restauración Quirúrgica",
+      "lens": "backups_4layers"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "public_global_iam",
+      "label": "Global IAM & SuperUser Génesis",
+      "category": "holding_hierarchy",
+      "boundary": "tb_corporate_hierarchy",
+      "badge": "PublicBase / Rank 0",
+      "summary": "Tablas public.global_users, global_roles, global_permissions y global_audit_* para trabajadores de OppyTec (cupo ilimitado, soft-delete y Argon2id).",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/identity/infrastructure/models.py",
+        "lines": "1-145",
+        "invariants": [
+          "El SuperUser Génesis se siembra desde SUPERUSER_GENESIS_* con SecretStr (0% hardcoding en código).",
+          "Prohibido duplicar cuentas de trabajadores globales dentro de los esquemas tenant_<slug>.",
+          "Rangos jerárquicos globales: superuser=0, admin=10, supervisor=20, developer=30, custom > 30."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py",
+          "oppytec-backend/tests/unit/test_models_and_mixins.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "public_holdings_plans",
+      "label": "Holdings, SystemPlans & Módulos",
+      "category": "holding_hierarchy",
+      "boundary": "tb_corporate_hierarchy",
+      "badge": "PublicBase / SaaS Core",
+      "summary": "Tablas public.holdings, system_plans (max_active_users, max_storage_mb, precios NUMERIC(14,2) multi-moneda), app_modules y tenant_modules.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/tenancy/infrastructure/models.py",
+        "lines": "1-120",
+        "invariants": [
+          "holdings.ai_credit_balance NUMERIC(14,2) almacena créditos OppyFy acumulables y sin fecha de caducidad.",
+          "system_plans define cuotas editables (max_active_users, max_storage_mb) y precios en CLP, USD, EUR y BRL con Decimal.",
+          "nombres de holdings tienen translatable = False (inmutables ante i18n)."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_fx_currency_precision_and_governance.py",
+          "oppytec-backend/tests/unit/test_models_and_mixins.py"
+        ],
+        "adr_ref": "docs/adr/ADR-002-multi-tenant-postgres-schema-isolation.md"
+      }
+    },
+    {
+      "id": "public_legal_entity_tenant_1to1",
+      "label": "LegalEntities <-> Tenants (Relación 1:1)",
+      "category": "holding_hierarchy",
+      "boundary": "tb_corporate_hierarchy",
+      "badge": "1:1 UNIQUE FK",
+      "summary": "Tablas public.legal_entities (RUT/Tax ID) y public.tenants (schema_name UNIQUE, base_currency y legal_entity_id UNIQUE).",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/tenancy/infrastructure/models.py",
+        "lines": "121-215",
+        "invariants": [
+          "Relación estricta 1:1: 1 Tenant tiene exactamente 1 Entidad Legal y 1 Entidad Legal tiene 1 Tenant (UNIQUE constraint en tenants.legal_entity_id).",
+          "1 Holding agrupa 1..N Tenants, pero cada Tenant pertenece exactamente a 1 Holding.",
+          "Cada Tenant posee un schema_name único validado por regex '^tenant_[a-z0-9_]+$'."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_models_and_mixins.py",
+          "oppytec-backend/tests/integration/test_multi_schema_and_alembic.py"
+        ],
+        "adr_ref": "docs/adr/ADR-002-multi-tenant-postgres-schema-isolation.md"
+      }
+    },
+    {
+      "id": "public_client_users_cross_access",
+      "label": "ClientUsers & Acceso Transversal",
+      "category": "holding_hierarchy",
+      "boundary": "tb_corporate_hierarchy",
+      "badge": "Holding Identity",
+      "summary": "Tablas public.client_users (identidad única a nivel Holding con SoftDeleteMixin) y public.client_user_tenant_access (acceso multi-sucursal).",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/identity/infrastructure/models.py",
+        "lines": "146-240",
+        "invariants": [
+          "El cupo max_active_users se contabiliza con WHERE holding_id = :h AND is_deleted = FALSE.",
+          "El soft-delete libera inmediatamente el cupo comercial sin romper la integridad referencial histórica.",
+          "client_user_tenant_access exige FK compuesta (holding_id, tenant_id) garantizando que nunca cruce hacia otro Holding."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py",
+          "oppytec-backend/tests/unit/test_models_and_mixins.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "async_db_router_search_path",
+      "label": "Motor AsyncSQLAlchemy & search_path",
+      "category": "public_vs_tenant",
+      "boundary": "tb_schema_isolation",
+      "badge": "AsyncEngine + Guard",
+      "summary": "oppytec-backend/src/core/database.py: get_public_db_session, get_tenant_db_session (SET LOCAL search_path) y RESET search_path en checkin.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/database.py",
+        "lines": "1-145",
+        "invariants": [
+          "Ejecuta SET LOCAL search_path TO \"tenant_<slug>\", public dentro de la transacción activa.",
+          "Hook de evento checkin ejecuta RESET search_path antes de devolver la conexión al pool.",
+          "Valida estrictamente el nombre del esquema contra '^tenant_[a-z0-9_]+$' previniendo inyección SQL."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_database_and_redis.py",
+          "oppytec-backend/tests/integration/test_multi_schema_and_alembic.py"
+        ],
+        "adr_ref": "docs/adr/ADR-003-async-sqlalchemy-and-search-path.md"
+      }
+    },
+    {
+      "id": "public_telemetry_i18n_fx_logs",
+      "label": "Telemetría IA, Memoria i18n, FX & Backup Logs",
+      "category": "public_vs_tenant",
+      "boundary": "tb_schema_isolation",
+      "badge": "PublicBase / Global Services",
+      "summary": "Tablas public.llm_request_logs, spec_chunks (solo business-domain/), i18n_translation_memory, fx_current_rates y backup_execution_logs.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/oppyfy/infrastructure/models.py",
+        "lines": "1-135",
+        "invariants": [
+          "Toda llamada a SYSTEM_1_JEV, SYSTEM_2_LLM o EMBEDDING se registra sin excepción en public.llm_request_logs.",
+          "public.spec_chunks indexa únicamente specs/business-domain/*.business.spec.md con pgvector HNSW (vector(768)).",
+          "fx_current_rates almacena tasas BCCh y BCE con NUMERIC(18, 8) y backup_execution_logs registra hashes SHA-256."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_oppyfy_telemetry_and_isolation.py",
+          "oppytec-backend/tests/architecture/test_fx_currency_precision_and_governance.py"
+        ],
+        "adr_ref": "docs/adr/ADR-012-oppyfy-dual-rag-custom-rbac-and-credit-ledger.md"
+      }
+    },
+    {
+      "id": "tenant_rbac_and_forensic_audit",
+      "label": "TenantBase: RBAC Local, JIT & Auditoría",
+      "category": "public_vs_tenant",
+      "boundary": "tb_schema_isolation",
+      "badge": "tenant_<slug> / RBAC",
+      "summary": "Tablas por sucursal: roles (hierarchy_rank 0..30+), cargos (42 colores + 49 íconos), permissions, user_permission_grants (JIT) y audit_* Append-Only.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/audit/infrastructure/models.py",
+        "lines": "1-125",
+        "invariants": [
+          "Permisos de 3 niveles (<modulo>.<submodulo>.<funcion>) con overrides JIT (ALLOW/DENY, expires_at, max_uses).",
+          "audit_rbac_changes y audit_activity_log son estrictamente Append-Only (sin SoftDeleteMixin) y guardan authorization_lineage.",
+          "Todos los esquemas tenant_<slug> mantienen exactamente las mismas tablas DDL."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_rbac_and_audit_coverage.py",
+          "oppytec-backend/tests/unit/test_models_and_mixins.py"
+        ],
+        "adr_ref": "docs/adr/ADR-006-dual-hierarchical-rbac-and-forensic-audit.md"
+      }
+    },
+    {
+      "id": "tenant_oppyfy_and_media_r2",
+      "label": "TenantBase: OppyFy Editable & Cuota R2",
+      "category": "public_vs_tenant",
+      "boundary": "tb_schema_isolation",
+      "badge": "tenant_<slug> / AI & R2",
+      "summary": "Tablas oppyfy_domains/subdomains (100% editables por cliente), oppyfy_worker_credit_wallets, oppyfy_prompt_audit_log, document_chunks y tenant_media_assets.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/oppyfy/infrastructure/models.py",
+        "lines": "136-260",
+        "invariants": [
+          "Cada cliente edita sus propios dominios y sub-dominios de OppyFy y asigna topes de créditos por trabajador.",
+          "Consultas fuera de alcance se bloquean y registran con estado BLOCKED_UNAUTHORIZED_PROMPT.",
+          "tenant_media_assets controla deduplicación SHA-256 intra-tenant y cuota MB de imágenes WebP (thumb + display)."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_oppyfy_telemetry_and_isolation.py",
+          "oppytec-backend/tests/architecture/test_media_storage_isolation_and_quotas.py"
+        ],
+        "adr_ref": "docs/adr/ADR-017-tenant-r2-media-storage-webp-and-plan-quotas.md"
+      }
+    },
+    {
+      "id": "tenant_core_10_modules",
+      "label": "TenantBase: Tablas Operativas (10 Módulos)",
+      "category": "public_vs_tenant",
+      "boundary": "tb_schema_isolation",
+      "badge": "NUMERIC + i18n JSONB",
+      "summary": "Catálogo (3 capas NUMERIC(12,4)), Kardex inmutable (registro_stock), Recetas, Compras, Facturas, Ventas, Mermas, Buffet, Eventos, Turnos y Notas.",
+      "card": {
+        "file_path": "oppytec-backend/src/modules/catalog/infrastructure/models.py",
+        "lines": "1-190",
+        "invariants": [
+          "Conversión exacta de 3 capas de unidades (compra -> almacenamiento -> consumo) con NUMERIC(12,4) y costos NUMERIC(14,2).",
+          "TranslatableI18nMixin en productos, categorías, bodegas y recetas; proveedores ('Pollo King') y marcas ('Savory') tienen translatable = False.",
+          "registro_stock (Kardex) es Append-Only inmutable con bloqueo pesimista ORDER BY id ASC FOR UPDATE."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_i18n_keys_parity_and_no_hardcoded_strings.py",
+          "oppytec-backend/tests/unit/test_models_and_mixins.py"
+        ],
+        "adr_ref": "docs/adr/ADR-004-three-layer-units-and-weighted-costing.md"
+      }
+    },
+    {
+      "id": "alembic_0001_public_genesis",
+      "label": "Migración 0001_public_genesis_*",
+      "category": "alembic_linear",
+      "boundary": "tb_alembic_engine",
+      "badge": "revision = '0001'",
+      "summary": "0001_public_genesis_tenancy_modules_and_global_rbac.py: construye todas las tablas de PublicBase en schema='public' con downgrade() simétrico.",
+      "card": {
+        "file_path": "oppytec-backend/alembic/versions/0001_public_genesis_tenancy_modules_and_global_rbac.py",
+        "lines": "1-240",
+        "invariants": [
+          "Declara explícitamente migration_scope = 'public', revision = '0001' y down_revision = None.",
+          "Se ejecuta exactamente 1 vez sobre el esquema public (nunca se repite dentro del bucle de inquilinos).",
+          "Implementa downgrade() completo y reversible verificado por test_alembic_integrity.py."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_alembic_integrity.py",
+          "oppytec-backend/tests/integration/test_multi_schema_and_alembic.py"
+        ],
+        "adr_ref": "docs/adr/ADR-005-linear-correlative-alembic-migrations.md"
+      }
+    },
+    {
+      "id": "alembic_0002_tenant_initial",
+      "label": "Migración 0002_tenant_initial_*",
+      "category": "alembic_linear",
+      "boundary": "tb_alembic_engine",
+      "badge": "revision = '0002'",
+      "summary": "0002_tenant_initial_client_rbac_and_core_modules.py: construye todas las tablas de TenantBase en cada esquema tenant_<slug> activo.",
+      "card": {
+        "file_path": "oppytec-backend/alembic/versions/0002_tenant_initial_client_rbac_and_core_modules.py",
+        "lines": "1-285",
+        "invariants": [
+          "Declara explícitamente migration_scope = 'tenant', revision = '0002' y down_revision = '0001'.",
+          "alembic/env.py aplica esta migración iterando exclusivamente sobre los esquemas tenant_<slug> con SET LOCAL search_path.",
+          "Implementa downgrade() simétrico eliminando las tablas operativas en orden inverso de dependencias."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_alembic_integrity.py",
+          "oppytec-backend/tests/integration/test_multi_schema_and_alembic.py"
+        ],
+        "adr_ref": "docs/adr/ADR-005-linear-correlative-alembic-migrations.md"
+      }
+    },
+    {
+      "id": "db_migration_cli_and_env",
+      "label": "CLI db_migration.py & alembic/env.py",
+      "category": "alembic_linear",
+      "boundary": "tb_alembic_engine",
+      "badge": "Single-Head CLI",
+      "summary": "Gestor correlativo (new, rebase, verify, impact con Graphify) y ejecutor env.py consciente de migration_scope ('public' | 'tenant').",
+      "card": {
+        "file_path": "oppytec-backend/scripts/db_migration.py",
+        "lines": "1-195",
+        "invariants": [
+          "Prohíbe hashes aleatorios y merge_heads; impone secuencia estricta 0001..NNNN.",
+          "make migration-rebase renumera automáticamente migraciones de ramas paralelas a NNNN+1.",
+          "El subcomando impact consulta Graphify AST a costo 0 tokens antes de alterar columnas."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_alembic_integrity.py",
+          "oppytec-backend/tests/unit/test_db_migration_and_bootstrap.py"
+        ],
+        "adr_ref": "docs/adr/ADR-005-linear-correlative-alembic-migrations.md"
+      }
+    },
+    {
+      "id": "genesis_bootstrapper",
+      "label": "Bootstrapper Génesis Idempotente",
+      "category": "alembic_linear",
+      "boundary": "tb_alembic_engine",
+      "badge": "Idempotent Seed",
+      "summary": "oppytec-backend/src/core/bootstrap.py: siembra idempotente de roles globales, catálogo de 10 módulos, SuperUser Génesis y 5 roles base de cliente.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/bootstrap.py",
+        "lines": "1-165",
+        "invariants": [
+          "Lee SUPERUSER_GENESIS_EMAIL, USERNAME y PASSWORD exclusivamente desde Settings (SecretStr).",
+          "Siembra en public los 4 roles globales base (superuser, admin, supervisor, developer) y los 10 módulos.",
+          "En cada nuevo tenant_<slug> siembra los 5 roles cliente base editables (propietario, superuser, admin, usuario, cajero)."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_db_migration_and_bootstrap.py"
+        ],
+        "adr_ref": "docs/adr/ADR-005-linear-correlative-alembic-migrations.md"
+      }
+    },
+    {
+      "id": "backup_crypto_stream",
+      "label": "Tubería Criptográfica (zstd + age)",
+      "category": "backups_4layers",
+      "boundary": "tb_backup_vault_4layers",
+      "badge": ".sql.zst.age",
+      "summary": "oppytec-backend/src/core/backup/crypto_stream.py: compresión Zstandard y cifrado asimétrico age/AES-256 en memoria con manifiesto SHA-256.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/backup/crypto_stream.py",
+        "lines": "1-125",
+        "invariants": [
+          "Prohibido escribir o subir archivos .sql o .dump en texto plano en cualquier capa de almacenamiento.",
+          "Producción solo posee BACKUP_ENCRYPTION_PUBLIC_KEY (age1...); la llave privada reside fuera del servidor cloud.",
+          "Todo artefacto cumple el patrón '^(public|tenant_[a-z0-9_]+)_\\d{8}T\\d{6}Z\\.sql\\.zst\\.age$'."
+        ],
+        "tests": [
+          "oppytec-backend/tests/architecture/test_backup_encryption_and_tenant_restore.py",
+          "oppytec-backend/tests/unit/test_backup_4layers.py"
+        ],
+        "adr_ref": "docs/adr/ADR-018-four-layer-encrypted-backups-and-per-tenant-restore.md"
+      }
+    },
+    {
+      "id": "backup_layer1_neon_pitr",
+      "label": "Capa 1: Neon PITR & Pre-Migration Branch",
+      "category": "backups_4layers",
+      "boundary": "tb_backup_vault_4layers",
+      "badge": "Layer 1 / RPO ~ 0s",
+      "summary": "oppytec-backend/src/core/backup/neon_pitr_adapter.py: Write-Ahead Log continuo, viaje en el tiempo al segundo exacto y snapshot pre-migración Alembic.",
+      "card": {
+        "file_path": "oppytec-backend/src/core/backup/neon_pitr_adapter.py",
+        "lines": "1-95",
+        "invariants": [
+          "Antes de ejecutar alembic upgrade head en staging/production, crea instantáneamente una rama pre_alembic_NNNN.",
+          "Permite extraer por API un único esquema tenant_<slug> en el segundo exacto previo a un error humano."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_backup_4layers.py",
+          "oppytec-backend/tests/architecture/test_backup_encryption_and_tenant_restore.py"
+        ],
+        "adr_ref": "docs/adr/ADR-018-four-layer-encrypted-backups-and-per-tenant-restore.md"
+      }
+    },
+    {
+      "id": "backup_layer2_r2_vault",
+      "label": "Capa 2: Cloudflare R2 Encrypted Vault",
+      "category": "backups_4layers",
+      "boundary": "tb_backup_vault_4layers",
+      "badge": "Layer 2 / WORM R2",
+      "summary": "oppytec-backend/src/core/backup/r2_vault_adapter.py: bóveda oppytec-backups-vault con doble granularidad (public + cada tenant_<slug> aislado).",
+      "card": {
+        "file_path": "oppytec-backend/src/core/backup/r2_vault_adapter.py",
+        "lines": "1-115",
+        "invariants": [
+          "Almacena dumps cifrados bajo r2://oppytec-backups-vault/{env}/tenants/{holding_id}/{tenant_schema}/.",
+          "Aplica política de retención GFS (7 diarios, 4 semanales, 12 mensuales) y registra SHA-256 en public.backup_execution_logs."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_backup_4layers.py",
+          "oppytec-backend/tests/architecture/test_backup_encryption_and_tenant_restore.py"
+        ],
+        "adr_ref": "docs/adr/ADR-018-four-layer-encrypted-backups-and-per-tenant-restore.md"
+      }
+    },
+    {
+      "id": "backup_layer3_and_layer4",
+      "label": "Capas 3 & 4: VPS Secundario + Oficina Local",
+      "category": "backups_4layers",
+      "boundary": "tb_backup_vault_4layers",
+      "badge": "Layer 3 & 4 / Off-Cloud",
+      "summary": "secondary_vps_adapter.py (nube secundaria activable por .env) y pull-to-local-office en backup_manager.py (descarga Pull-Only a servidor local).",
+      "card": {
+        "file_path": "oppytec-backend/src/core/backup/secondary_vps_adapter.py",
+        "lines": "1-110",
+        "invariants": [
+          "Capa 3 (BACKUP_SECONDARY_VPS_ENABLED) se enciende con 1 variable de entorno sin tocar código.",
+          "Capa 4 opera en modo Pull-Only desde el servidor físico de oficina: la nube jamás tiene credenciales para borrar copias locales."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_backup_4layers.py",
+          "oppytec-backend/tests/architecture/test_backup_encryption_and_tenant_restore.py"
+        ],
+        "adr_ref": "docs/adr/ADR-018-four-layer-encrypted-backups-and-per-tenant-restore.md"
+      }
+    },
+    {
+      "id": "surgical_tenant_restore_and_drill",
+      "label": "Restauración Quirúrgica (restore-tenant) & Drill",
+      "category": "backups_4layers",
+      "boundary": "tb_backup_vault_4layers",
+      "badge": "0% Impacto Vecinos",
+      "summary": "oppytec-backend/scripts/backup_manager.py: restaura un único tenant_<slug> con pre_restore_safety_snapshot previo y simulacro verify-drill.",
+      "card": {
+        "file_path": "oppytec-backend/scripts/backup_manager.py",
+        "lines": "1-210",
+        "invariants": [
+          "Genera obligatoriamente un pre_restore_safety_snapshot antes de reemplazar el esquema del cliente.",
+          "Restaura exclusivamente el esquema tenant_<slug> afectado dentro de una transacción aislada con 0% impacto en los demás restaurantes.",
+          "verify-drill valida periódicamente que los respaldos .sql.zst.age desencripten y restauren con conteo exacto de filas."
+        ],
+        "tests": [
+          "oppytec-backend/tests/unit/test_backup_4layers.py",
+          "oppytec-backend/tests/architecture/test_backup_encryption_and_tenant_restore.py"
+        ],
+        "adr_ref": "docs/adr/ADR-018-four-layer-encrypted-backups-and-per-tenant-restore.md"
+      }
+    }
+  ],
+  "edges": [
+    { "source": "public_global_iam", "target": "public_holdings_plans", "label": "SuperUser crea Holdings y Planes", "protocol": "PublicBase FK / Audit" },
+    { "source": "public_holdings_plans", "target": "public_legal_entity_tenant_1to1", "label": "1 Holding -> 1..N Tenants (1:1 LegalEntity)", "protocol": "UNIQUE(legal_entity_id)" },
+    { "source": "public_holdings_plans", "target": "public_client_users_cross_access", "label": "Valida cupo max_active_users (is_deleted=False)", "protocol": "Quota Guard" },
+    { "source": "public_client_users_cross_access", "target": "tenant_rbac_and_forensic_audit", "label": "Opera en 1..N Tenants del mismo Holding", "protocol": "client_user_tenant_access" },
+    { "source": "public_legal_entity_tenant_1to1", "target": "async_db_router_search_path", "label": "Resuelve schema_name aislado", "protocol": "SET LOCAL search_path" },
+    { "source": "async_db_router_search_path", "target": "tenant_rbac_and_forensic_audit", "label": "Enruta sesión y ejecuta RESET en checkin", "protocol": "AsyncSession" },
+    { "source": "async_db_router_search_path", "target": "tenant_oppyfy_and_media_r2", "label": "Aísla vectores RAG y cuotas R2 por local", "protocol": "AsyncSession" },
+    { "source": "async_db_router_search_path", "target": "tenant_core_10_modules", "label": "Aísla inventario, recetas, compras y ventas", "protocol": "AsyncSession" },
+    { "source": "tenant_oppyfy_and_media_r2", "target": "public_telemetry_i18n_fx_logs", "label": "Registra consumo IA y consulta tasas FX/i18n", "protocol": "public.llm_request_logs" },
+    { "source": "db_migration_cli_and_env", "target": "alembic_0001_public_genesis", "label": "Ejecuta scope='public' 1 sola vez", "protocol": "public.alembic_version" },
+    { "source": "alembic_0001_public_genesis", "target": "alembic_0002_tenant_initial", "label": "Cadena lineal 0001 -> 0002 (Single-Head)", "protocol": "down_revision = '0001'" },
+    { "source": "alembic_0001_public_genesis", "target": "public_holdings_plans", "label": "Materializa DDL de PublicBase", "protocol": "SQLAlchemy DDL" },
+    { "source": "alembic_0002_tenant_initial", "target": "tenant_core_10_modules", "label": "Materializa DDL homogéneo en cada tenant_<slug>", "protocol": "SQLAlchemy DDL" },
+    { "source": "alembic_0002_tenant_initial", "target": "genesis_bootstrapper", "label": "Dispara siembra idempotente post-upgrade", "protocol": "bootstrap.py" },
+    { "source": "genesis_bootstrapper", "target": "public_global_iam", "label": "Siembra SuperUser Génesis (SecretStr) y roles", "protocol": "Argon2id Seed" },
+    { "source": "db_migration_cli_and_env", "target": "backup_layer1_neon_pitr", "label": "pre-migration-snapshot antes de upgrade head", "protocol": "Neon Instant Branch" },
+    { "source": "async_db_router_search_path", "target": "backup_crypto_stream", "label": "Extrae pg_dump de public y cada tenant_<slug>", "protocol": "Streaming Dump" },
+    { "source": "backup_crypto_stream", "target": "backup_layer2_r2_vault", "label": "Sube .sql.zst.age + manifest SHA-256", "protocol": "zstd -10 | age" },
+    { "source": "backup_layer2_r2_vault", "target": "backup_layer3_and_layer4", "label": "Replica a VPS Secundario y Pull-Only a Oficina", "protocol": "3-2-1-1-0 DRP" },
+    { "source": "backup_layer2_r2_vault", "target": "surgical_tenant_restore_and_drill", "label": "Provee artefacto cifrado para restore-tenant", "protocol": "Surgical Tenant Restore" },
+    { "source": "surgical_tenant_restore_and_drill", "target": "tenant_core_10_modules", "label": "Restaura 1 solo tenant_<slug> con snapshot previo", "protocol": "Isolated Transaction" },
+    { "source": "surgical_tenant_restore_and_drill", "target": "public_telemetry_i18n_fx_logs", "label": "Registra auditoría y SHA-256 en backup_execution_logs", "protocol": "Forensic Log" }
+  ]
+}
+  </script>
+
+  <script>
+    (function () {
+      const data = JSON.parse(document.getElementById('archify-data').textContent);
+      let activeLens = 'all';
+      let searchQuery = '';
+      let selectedNodeId = data.nodes[0].id;
+      let reachMode = 'all';
+
+      const canvasContainer = document.getElementById('canvasContainer');
+      const inspectorPanel = document.getElementById('inspectorPanel');
+      const searchInput = document.getElementById('searchInput');
+      const reachSelect = document.getElementById('reachMode');
+      const themeSelector = document.getElementById('themeSelector');
+      const lensButtons = document.querySelectorAll('#lensContainer button');
+
+      function getConnectedSets(nodeId) {
+        const upstream = new Set();
+        const downstream = new Set();
+        data.edges.forEach(edge => {
+          if (edge.target === nodeId) upstream.add(edge.source);
+          if (edge.source === nodeId) downstream.add(edge.target);
+        });
+        return { upstream, downstream };
+      }
+
+      function matchesSearch(node) {
+        if (!searchQuery) return true;
+        const q = searchQuery.toLowerCase();
+        const haystack = [
+          node.label,
+          node.badge,
+          node.summary,
+          node.card.file_path,
+          node.card.adr_ref,
+          ...(node.card.invariants || []),
+          ...(node.card.tests || [])
+        ].join(' ').toLowerCase();
+        return haystack.includes(q);
+      }
+
+      function renderCanvas() {
+        canvasContainer.innerHTML = '';
+        const { upstream, downstream } = getConnectedSets(selectedNodeId);
+
+        data.trust_boundaries.forEach(boundary => {
+          if (activeLens !== 'all' && boundary.lens !== activeLens) return;
+
+          const boundaryNodes = data.nodes.filter(n => n.boundary === boundary.id && matchesSearch(n));
+          if (boundaryNodes.length === 0) return;
+
+          const box = document.createElement('div');
+          box.className = 'boundary-box';
+
+          const header = document.createElement('div');
+          header.className = 'boundary-header';
+          header.innerHTML = `<h2>${boundary.label}</h2><span style="font-size:0.75rem;color:var(--text-secondary)">${boundaryNodes.length} nodos</span>`;
+          box.appendChild(header);
+
+          const grid = document.createElement('div');
+          grid.className = 'nodes-grid';
+
+          boundaryNodes.forEach(node => {
+            const card = document.createElement('article');
+            card.className = 'node-card';
+            if (node.id === selectedNodeId) {
+              card.classList.add('selected');
+            } else if (reachMode === 'upstream') {
+              if (upstream.has(node.id)) card.classList.add('upstream-highlight');
+              else card.classList.add('dimmed');
+            } else if (reachMode === 'downstream') {
+              if (downstream.has(node.id)) card.classList.add('downstream-highlight');
+              else card.classList.add('dimmed');
+            } else {
+              if (upstream.has(node.id)) card.classList.add('upstream-highlight');
+              if (downstream.has(node.id)) card.classList.add('downstream-highlight');
+            }
+
+            card.innerHTML = `
+              <span class="node-badge">${node.badge}</span>
+              <h3>${node.label}</h3>
+              <p>${node.summary}</p>
+            `;
+            card.addEventListener('click', () => {
+              selectedNodeId = node.id;
+              renderCanvas();
+              renderInspector();
+            });
+            grid.appendChild(card);
+          });
+
+          box.appendChild(grid);
+          canvasContainer.appendChild(box);
+        });
+      }
+
+      function renderInspector() {
+        const node = data.nodes.find(n => n.id === selectedNodeId) || data.nodes[0];
+        const incoming = data.edges.filter(e => e.target === node.id);
+        const outgoing = data.edges.filter(e => e.source === node.id);
+
+        inspectorPanel.innerHTML = `
+          <span class="node-badge">${node.badge}</span>
+          <h2 style="font-size:1.15rem;margin-bottom:0.4rem;">${node.label}</h2>
+          <p style="font-size:0.84rem;color:var(--text-secondary);line-height:1.45;">${node.summary}</p>
+
+          <div class="inspector-section">
+            <h4>📂 Evidencia en Código Fuente (Graphify AST)</h4>
+            <code class="code-pill">${node.card.file_path} (Líneas ${node.card.lines})</code>
+            <code class="code-pill">ADR: ${node.card.adr_ref}</code>
+          </div>
+
+          <div class="inspector-section">
+            <h4>🛡️ Invariantes Arquitectónicas y de Negocio</h4>
+            <ul class="invariant-list">
+              ${node.card.invariants.map(inv => `<li>${inv}</li>`).join('')}
+            </ul>
+          </div>
+
+          <div class="inspector-section">
+            <h4>🧪 Tests Deterministas Asociados (Co-Creación 1:1)</h4>
+            ${node.card.tests.map(t => `<code class="code-pill">${t}</code>`).join('')}
+          </div>
+
+          <div class="inspector-section">
+            <h4>🔗 Conexiones Aguas Arriba (${incoming.length}) &amp; Aguas Abajo (${outgoing.length})</h4>
+            ${incoming.map(e => `<div class="edge-item"><span>⬅️ <strong>${e.source}</strong>: ${e.label}</span><code>${e.protocol}</code></div>`).join('')}
+            ${outgoing.map(e => `<div class="edge-item"><span>➡️ <strong>${e.target}</strong>: ${e.label}</span><code>${e.protocol}</code></div>`).join('')}
+          </div>
+        `;
+      }
+
+      lensButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          lensButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeLens = btn.getAttribute('data-lens');
+          renderCanvas();
+        });
+      });
+
+      searchInput.addEventListener('input', e => {
+        searchQuery = e.target.value.trim();
+        renderCanvas();
+      });
+
+      reachSelect.addEventListener('change', e => {
+        reachMode = e.target.value;
+        renderCanvas();
+      });
+
+      themeSelector.addEventListener('change', e => {
+        document.documentElement.setAttribute('data-theme', e.target.value);
+      });
+
+      renderCanvas();
+      renderInspector();
+    })();
+  </script>
+</body>
+</html>

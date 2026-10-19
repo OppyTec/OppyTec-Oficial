@@ -1,0 +1,259 @@
+{
+  "graphify_version": "2.0.0",
+  "phase": "Fase 2",
+  "generated_at": "2026-10-19T13:52:00Z",
+  "generator_agent": "12-tech-writer-openspec-archify",
+  "description": "Snapshot determinista del Grafo AST de Fase 2 (Multi-Schema PublicBase vs TenantBase, 10 Módulos de Negocio, Migraciones Alembic 0001..0002 y Bóveda de Respaldos en 4 Capas).",
+  "nodes": [
+    {
+      "id": "src.core.database:AsyncDatabaseSessionManager",
+      "label": "AsyncDatabaseSessionManager (get_public_db_session / get_tenant_db_session)",
+      "file": "oppytec-backend/src/core/database.py",
+      "layer": "core_persistence",
+      "schema_scope": "both"
+    },
+    {
+      "id": "src.core.redis:RedisClientPool",
+      "label": "RedisClientPool (ENV_NAMESPACE + CircuitBreaker)",
+      "file": "oppytec-backend/src/core/redis.py",
+      "layer": "core_persistence",
+      "schema_scope": "global"
+    },
+    {
+      "id": "src.shared.models_base:PublicBase",
+      "label": "PublicBase (DeclarativeBase schema='public')",
+      "file": "oppytec-backend/src/shared/models_base.py",
+      "layer": "shared_kernel",
+      "schema_scope": "public"
+    },
+    {
+      "id": "src.shared.models_base:TenantBase",
+      "label": "TenantBase (DeclarativeBase dynamic tenant_<slug>)",
+      "file": "oppytec-backend/src/shared/models_base.py",
+      "layer": "shared_kernel",
+      "schema_scope": "tenant"
+    },
+    {
+      "id": "src.shared.soft_delete_mixin:SoftDeleteMixin",
+      "label": "SoftDeleteMixin & TranslatableI18nMixin",
+      "file": "oppytec-backend/src/shared/soft_delete_mixin.py",
+      "layer": "shared_kernel",
+      "schema_scope": "both"
+    },
+    {
+      "id": "src.modules.identity.infrastructure.models:IdentityModels",
+      "label": "IdentityModels (GlobalUser, GlobalRole, ClientUser, ClientUserTenantAccess, TenantRole, Cargo, UserPermissionGrant)",
+      "file": "oppytec-backend/src/modules/identity/infrastructure/models.py",
+      "layer": "module_infrastructure",
+      "schema_scope": "both"
+    },
+    {
+      "id": "src.modules.tenancy.infrastructure.models:TenancyModels",
+      "label": "TenancyModels (SystemPlan, Holding, LegalEntity 1:1, Tenant, AppModule, TenantModule, TenantMediaAsset)",
+      "file": "oppytec-backend/src/modules/tenancy/infrastructure/models.py",
+      "layer": "module_infrastructure",
+      "schema_scope": "both"
+    },
+    {
+      "id": "src.modules.audit.infrastructure.models:AuditModels",
+      "label": "AuditModels (GlobalAuditRbacChange, GlobalAuditActivityLog, AuditRbacChange, AuditActivityLog, BackupExecutionLog, FxCurrentRate, I18nTranslationMemory)",
+      "file": "oppytec-backend/src/modules/audit/infrastructure/models.py",
+      "layer": "module_infrastructure",
+      "schema_scope": "both"
+    },
+    {
+      "id": "src.modules.catalog.infrastructure.models:CatalogModels",
+      "label": "CatalogModels (Categoria, FamiliaProducto, Marca[translatable=False], Producto 3-Capas Decimal + i18n_data)",
+      "file": "oppytec-backend/src/modules/catalog/infrastructure/models.py",
+      "layer": "module_infrastructure",
+      "schema_scope": "tenant"
+    },
+    {
+      "id": "src.modules.inventory.infrastructure.models:InventoryModels",
+      "label": "InventoryModels (Bodega, AreaOperativa, ProductoBodega, RegistroStock[Kardex Append-Only], ConteoInventario, Merma)",
+      "file": "oppytec-backend/src/modules/inventory/infrastructure/models.py",
+      "layer": "module_infrastructure",
+      "schema_scope": "tenant"
+    },
+    {
+      "id": "src.modules.recipes.infrastructure.models:RecipesModels",
+      "label": "RecipesModels (Receta, RecetaIngrediente, Combo, GrupoOpciones)",
+      "file": "oppytec-backend/src/modules/recipes/infrastructure/models.py",
+      "layer": "module_infrastructure",
+      "schema_scope": "tenant"
+    },
+    {
+      "id": "src.modules.procurement.infrastructure.models:ProcurementModels",
+      "label": "ProcurementModels (Proveedor[translatable=False], ProductoProveedor, Compra, CompraItem, Invoice)",
+      "file": "oppytec-backend/src/modules/procurement/infrastructure/models.py",
+      "layer": "module_infrastructure",
+      "schema_scope": "tenant"
+    },
+    {
+      "id": "src.modules.operations.infrastructure.models:OperationsModels",
+      "label": "OperationsModels (Venta, VentaReceta, Evento, Salon, BuffetSession, TurnoHorario, NotaPersonal, Tarea)",
+      "file": "oppytec-backend/src/modules/operations/infrastructure/models.py",
+      "layer": "module_infrastructure",
+      "schema_scope": "tenant"
+    },
+    {
+      "id": "src.modules.analytics.infrastructure.models:AnalyticsModels",
+      "label": "AnalyticsModels (SnapshotFinancieroTenant, ProyeccionDemandaSnapshot)",
+      "file": "oppytec-backend/src/modules/analytics/infrastructure/models.py",
+      "layer": "module_infrastructure",
+      "schema_scope": "tenant"
+    },
+    {
+      "id": "src.modules.oppyfy.infrastructure.models:OppyFyModels",
+      "label": "OppyFyModels (LlmRequestLog, AiCreditPackage, SpecChunk[business-domain only], OppyfyDomain, OppyfySubdomain, OppyfyPermissionGrant, OppyfyWorkerCreditWallet, OppyfyPromptAuditLog, TenantDocument, DocumentChunk)",
+      "file": "oppytec-backend/src/modules/oppyfy/infrastructure/models.py",
+      "layer": "module_infrastructure",
+      "schema_scope": "both"
+    },
+    {
+      "id": "alembic.versions.0001_public_genesis_tenancy_modules_and_global_rbac",
+      "label": "0001_public_genesis_tenancy_modules_and_global_rbac (migration_scope='public')",
+      "file": "oppytec-backend/alembic/versions/0001_public_genesis_tenancy_modules_and_global_rbac.py",
+      "layer": "alembic_migrations",
+      "schema_scope": "public"
+    },
+    {
+      "id": "alembic.versions.0002_tenant_initial_client_rbac_and_core_modules",
+      "label": "0002_tenant_initial_client_rbac_and_core_modules (migration_scope='tenant')",
+      "file": "oppytec-backend/alembic/versions/0002_tenant_initial_client_rbac_and_core_modules.py",
+      "file": "oppytec-backend/alembic/versions/0002_tenant_initial_client_rbac_and_core_modules.py",
+      "layer": "alembic_migrations",
+      "schema_scope": "tenant"
+    },
+    {
+      "id": "scripts.db_migration:CorrelativeMigrationCLI",
+      "label": "db_migration.py (new, rebase, verify, impact)",
+      "file": "oppytec-backend/scripts/db_migration.py",
+      "layer": "alembic_migrations",
+      "schema_scope": "both"
+    },
+    {
+      "id": "src.core.bootstrap:GenesisBootstrapper",
+      "label": "GenesisBootstrapper (seed_public_genesis & seed_tenant_defaults)",
+      "file": "oppytec-backend/src/core/bootstrap.py",
+      "layer": "core_bootstrap",
+      "schema_scope": "both"
+    },
+    {
+      "id": "src.core.backup:FourLayerBackupEngine",
+      "label": "FourLayerBackupEngine (protocol.py, crypto_stream.py, neon_pitr_adapter.py, r2_vault_adapter.py, secondary_vps_adapter.py)",
+      "file": "oppytec-backend/src/core/backup/protocol.py",
+      "layer": "core_backup_drp",
+      "schema_scope": "both"
+    },
+    {
+      "id": "scripts.backup_manager:SurgicalBackupCLI",
+      "label": "backup_manager.py (backup-all, backup-tenant, pre-migration-snapshot, restore-tenant, verify-drill, pull-to-local-office)",
+      "file": "oppytec-backend/scripts/backup_manager.py",
+      "layer": "core_backup_drp",
+      "schema_scope": "both"
+    }
+  ],
+  "edges": [
+    {
+      "source": "src.modules.identity.infrastructure.models:IdentityModels",
+      "target": "src.shared.models_base:PublicBase",
+      "relation": "inherits_public_metadata"
+    },
+    {
+      "source": "src.modules.identity.infrastructure.models:IdentityModels",
+      "target": "src.shared.models_base:TenantBase",
+      "relation": "inherits_tenant_metadata"
+    },
+    {
+      "source": "src.modules.tenancy.infrastructure.models:TenancyModels",
+      "target": "src.shared.models_base:PublicBase",
+      "relation": "inherits_public_metadata"
+    },
+    {
+      "source": "src.modules.tenancy.infrastructure.models:TenancyModels",
+      "target": "src.shared.models_base:TenantBase",
+      "relation": "inherits_tenant_metadata"
+    },
+    {
+      "source": "src.modules.audit.infrastructure.models:AuditModels",
+      "target": "src.shared.models_base:PublicBase",
+      "relation": "inherits_public_metadata"
+    },
+    {
+      "source": "src.modules.audit.infrastructure.models:AuditModels",
+      "target": "src.shared.models_base:TenantBase",
+      "relation": "inherits_tenant_metadata"
+    },
+    {
+      "source": "src.modules.catalog.infrastructure.models:CatalogModels",
+      "target": "src.shared.models_base:TenantBase",
+      "relation": "inherits_tenant_metadata"
+    },
+    {
+      "source": "src.modules.inventory.infrastructure.models:InventoryModels",
+      "target": "src.shared.models_base:TenantBase",
+      "relation": "inherits_tenant_metadata"
+    },
+    {
+      "source": "src.modules.recipes.infrastructure.models:RecipesModels",
+      "target": "src.shared.models_base:TenantBase",
+      "relation": "inherits_tenant_metadata"
+    },
+    {
+      "source": "src.modules.procurement.infrastructure.models:ProcurementModels",
+      "target": "src.shared.models_base:TenantBase",
+      "relation": "inherits_tenant_metadata"
+    },
+    {
+      "source": "src.modules.operations.infrastructure.models:OperationsModels",
+      "target": "src.shared.models_base:TenantBase",
+      "relation": "inherits_tenant_metadata"
+    },
+    {
+      "source": "src.modules.analytics.infrastructure.models:AnalyticsModels",
+      "target": "src.shared.models_base:TenantBase",
+      "relation": "inherits_tenant_metadata"
+    },
+    {
+      "source": "src.modules.oppyfy.infrastructure.models:OppyFyModels",
+      "target": "src.shared.models_base:PublicBase",
+      "relation": "inherits_public_metadata"
+    },
+    {
+      "source": "src.modules.oppyfy.infrastructure.models:OppyFyModels",
+      "target": "src.shared.models_base:TenantBase",
+      "relation": "inherits_tenant_metadata"
+    },
+    {
+      "source": "alembic.versions.0001_public_genesis_tenancy_modules_and_global_rbac",
+      "target": "src.shared.models_base:PublicBase",
+      "relation": "materializes_ddl"
+    },
+    {
+      "source": "alembic.versions.0002_tenant_initial_client_rbac_and_core_modules",
+      "target": "src.shared.models_base:TenantBase",
+      "relation": "materializes_ddl"
+    },
+    {
+      "source": "alembic.versions.0002_tenant_initial_client_rbac_and_core_modules",
+      "target": "alembic.versions.0001_public_genesis_tenancy_modules_and_global_rbac",
+      "relation": "down_revision_0001"
+    },
+    {
+      "source": "scripts.db_migration:CorrelativeMigrationCLI",
+      "target": "alembic.versions.0002_tenant_initial_client_rbac_and_core_modules",
+      "relation": "governs_linear_sequence"
+    },
+    {
+      "source": "src.core.bootstrap:GenesisBootstrapper",
+      "target": "src.modules.identity.infrastructure.models:IdentityModels",
+      "relation": "seeds_genesis_superuser_and_roles"
+    },
+    {
+      "source": "scripts.backup_manager:SurgicalBackupCLI",
+      "target": "src.core.backup:FourLayerBackupEngine",
+      "relation": "orchestrates_4_layer_encrypted_backups"
+    }
+  ]
+}
