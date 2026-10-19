@@ -121,4 +121,7 @@ markers = [
     "unit: Pure domain and application unit tests",
     "integration: Multi-tenant database and Redis integration tests",
     "security_redteam: Kali Linux offensive security and chaos resilience vectors",
+    "e2e: End-to-End full business system tests",
+    "uat: User Acceptance Tests traceable to PRD and user flows",
+    "load: Performance, load and concurrency stress tests (500 RPS, P95 <= 120ms)",
 ]
