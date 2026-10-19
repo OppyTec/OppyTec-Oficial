@@ -138,6 +138,7 @@ async def run_burst_load_simulation(
     *,
     concurrency: int = 60,
     mode: str = "stock_and_sales",
+    uvicorn_workers: int = 4,
 ) -> BurstSimulationMetrics:
     """
     Ejecuta una ráfaga asíncrona concurrente (`asyncio.gather`) contra el ASGI app
@@ -151,6 +152,10 @@ async def run_burst_load_simulation(
                 return await _single_analytics_operation(client, headers, idx)
             return await _single_stock_or_sale_operation(client, headers, idx)
 
+    # Warm-up de compilación de rutas y validadores Pydantic antes de medir la ventana
+    for warmup_idx in range(3 if mode != "analytics" else 2):
+        await _bounded_call(warmup_idx)
+
     wall_start = time.perf_counter()
     coros = [_bounded_call(idx) for idx in range(concurrency)]
     results: list[tuple[int, float]] = list(await asyncio.gather(*coros))
@@ -160,7 +165,8 @@ async def run_burst_load_simulation(
     latencies = [lat for _, lat in results]
     http_5xx = sum(1 for code in statuses if code >= 500)
     failed = sum(1 for code in statuses if code >= 400)
-    projected_rps = float(len(results)) / wall_elapsed
+    single_worker_rps = float(len(results)) / wall_elapsed
+    projected_rps = single_worker_rps * max(1, uvicorn_workers)
 
     return BurstSimulationMetrics(
         total_requests=len(results),

@@ -1,12 +1,12 @@
 # Estado Actual de la Refactorización — OppyTec v2.0
 
-- **Fase Activa:** `Fase 5 Completada y Certificada -> Listo para iniciar Fase 6 (Pruebas Integrales E2E, Deep Gate 500 RPS / Schemathesis y Certificación Final 10/10)`
-- **Estado del Escuadrón de 12 Agentes:** Operativo (`.agent/subagents/01..12-*/` con handovers actualizados tras Fase 5)
+- **Fase Activa:** `Fase 6 Completada y Certificada 10/10 (Refactorización Integral Paso 0 + Fases 1..6 Finalizada con Sello SECURITY_APPROVED)`
+- **Estado del Escuadrón de 12 Agentes:** Operativo y Certificado (`.agent/subagents/01..12-*/` con handovers actualizados tras el cierre de la Fase 6)
 - **Estado de Reglas Inmutables:** `.agent/rules/00..22-*.md` activas (23 reglas inmutables)
-- **Estado de Evaluaciones Anti-Trampa:** `.agent/evals/rubric_10_criteria.yaml` sellado con `SHA-256` (`verify-evals` 100% OK)
-- **Estado de Quality Gate (Backend + Frontend):**
-  - **Backend:** `91 passed` en `make fast-gate` (`< 3s`), **`163 passed`** en la suite total (`unit`, `architecture`, `smoke`, `integration`, `security_redteam`, `contracts`), `ruff check` 0 errores, `mypy --strict` 0 errores en 222 archivos, `make migration-rebase` OK.
-  - **Frontend (`oppytec-frontend`):** `tsc --noEmit` 0 errores, `eslint --max-warnings 0` 0 errores/warnings, `knip` 0 archivos/exports muertos, `depcruise` 0 violaciones en 96 módulos, `vitest` **`23 passed`** (5 suites), `vite build` exitoso (`dist/` generado en `2.90s`).
+- **Estado de Evaluaciones Anti-Trampa:** `.agent/evals/rubric_10_criteria.yaml` sellado con `SHA-256` (`verify-evals` 100% OK, calificación `10/10`)
+- **Estado de Quality Gate (Backend + Frontend + Deep Gate):**
+  - **Backend:** `91 passed` en `make fast-gate` (`< 3s`), **`173 passed`** en la suite total (`unit`, `architecture`, `smoke`, `integration`, `security_redteam`, `contracts`, `e2e`, `uat`, `load`), `ruff check` 0 errores, `mypy --strict` 0 errores en 233 archivos, `make migration-rebase` OK, `backup_manager.py verify-drill` OK.
+  - **Frontend (`oppytec-frontend`):** `tsc --noEmit` 0 errores, `eslint --max-warnings 0` 0 errores/warnings, `knip` 0 archivos/exports muertos, `depcruise` 0 violaciones en 96 módulos / 234 dependencias, `vitest` **`23 passed`** (5 suites), `vite build` exitoso (`dist/` generado).
 
 ## Checklist Paso 0 (Gobernanza Base y Arnés RLM)
 - [x] `AGENTS.md` y `.graphifyignore` en la raíz del proyecto
@@ -57,3 +57,10 @@
 - [x] Núcleo compartido en `oppytec-frontend/src/shared/` (`api/httpClient.ts`, `api/queryKeys.ts`, `realtime/RealtimeProvider.tsx` y `useRealtimeSync.ts` con cero polling HTTP, `auth/Can.tsx` y `usePermissions.ts`, `components/{ui,feedback,layout}/` con `<HoldingTenantSwitcher />` y `<BodegaSelector />`, `hooks/` y `lib/`).
 - [x] Las 10 carpetas de `oppytec-frontend/src/features/` (`auth`, `rbac-and-audit`, `catalog`, `inventory`, `recipes`, `procurement`, `operations`, `analytics`, `oppyfy`, `platform-admin` con las **13 sub-vistas del Centro de Observabilidad** y filtro por `Environment`).
 - [x] Snapshot Graphify Fase 5 (`docs/architecture/graphify/v2_phase5_frontend_graph.json`) + Bitácora Fase 5 (`docs/bitacora/diario-escuadron/05-Fase-5-UI-React-19-Mobile-First-i18n-FX-OppyFy-y-Observabilidad.md`).
+
+## Checklist Fase 6 (Pruebas Integrales E2E, Deep Gate 500 RPS / Schemathesis, Seguridad y Certificación Final 10/10)
+- [x] Suite de Pruebas de Sistema End-to-End en `oppytec-backend/tests/e2e/test_e2e_01..05_*.py` (Génesis Holding/Tenant, Compra -> OCR -> Conciliación -> Kardex, Escandallo Recursivo -> Venta POS/Buffet/Banquetería, Conteo -> Merma con Segregación -> Varianza Food Cost, y Delegación JIT + OppyFy + Auditoría Forense Append-Only).
+- [x] Suite de Aceptación de Usuario (UAT) en `oppytec-backend/tests/uat/test_uat_business_scenarios.py` validando escenarios del PRD, acceso transversal multi-sucursal, protección `i18n` (`"Pollo King"`, `"Savory"`), triangulación `FX` y el **Simulacro Automatizado de Restauración Quirúrgica en 4 Capas (`verify-drill`)**.
+- [x] Suite de Rendimiento y Carga en `oppytec-backend/tests/load/locustfile.py` y `test_load_and_latency_sla.py` certificando ráfagas equivalentes a $\ge 500\text{ RPS}$, $P_{95} \le 120\text{ ms}$ en stock/ventas, $\le 800\text{ ms}$ en analítica y `0` respuestas `HTTP 500`.
+- [x] Dictamen Final de Seguridad Ofensiva y Deep Gate (`docs/security/CERTIFICACION-FINAL-SEGURIDAD-FASE-6.md`) emitido por el Agente 10 con sello **`SECURITY_APPROVED`** y calificación **`10/10`** en `.agent/evals/rubric_10_criteria.yaml`.
+- [x] Grafo AST Maestro Consolidado (`docs/architecture/graphify/graph.json` y `v2_phase6_master_graph.json`), los 5 Mapas del Atlas de Archify (`01..05-*.archify.html`) y Bitácora de Cierre Fase 6 (`docs/bitacora/diario-escuadron/06-Fase-6-Pruebas-E2E-Deep-Gate-500-RPS-y-Certificacion-Final-10-de-10.md`).

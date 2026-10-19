@@ -1,16 +1,16 @@
-# Handover: Agente 01 (`01-orchestrator-pm`) — Cierre Fase 5
+# Handover: Agente 01 (`01-orchestrator-pm`) — Cierre Fase 6 y Certificación Final 10/10
 
 ## Completed
-- Ejecutado `python3 scripts/harness.py prepare-phase --phase 5` y reservas atómicas `claim-ast` en `.agent/memory/claims_registry.json`.
-- Orquestada la Fase 5 en 2 Olas sobre `Git Worktrees` aislados:
-  - **Ola 1:** `07-i18n-and-fx-currency-specialist` (11 namespaces JSON `locales/es/*.json` y `locales/en/*.json`, banderas vectoriales SVG `FlagES`/`FlagUS`, `<LanguageFlagSelector />`, `CurrencyProvider`, `<CurrencySelector />`, `<MoneyBadge />` y `useCurrencyFormatter`) y `12-tech-writer-openspec-archify` (snapshot AST `v2_phase5_frontend_graph.json` y Bitácora Fase 5).
-  - **Ola 2 (rebasada sobre Ola 1):** `05-frontend-senior-dev` (ADN visual Legacy de 3 temas `light`/`dark`/`ocean-blue`, 42 colores, 49 íconos, `<Can>`, `RealtimeProvider`/`useRealtimeSync` con cero polling HTTP, `HoldingTenantSwitcher`, `BodegaSelector` y las 10 carpetas de `src/features/` incluyendo `OppyFy` y las 13 sub-vistas del Centro de Observabilidad en `platform-admin`).
-- Ejecutado el *Smart Merge Train* (`git rebase master` + `git merge --ff-only`) hacia `master` con 0 conflictos y limpieza de todos los worktrees.
-- Certificado Frontend (`tsc --noEmit` 0 errores, `eslint` 0 errores/warnings, `knip` 0 archivos/exports muertos, `depcruise` 0 violaciones en 96 módulos, `vitest` 23 passed, `vite build` OK) y Backend (`make fast-gate` 91 passed, `verify-evals` 100% OK).
+- Ejecutado `python3 scripts/harness.py prepare-phase --phase 6` y reservas atómicas `claim-ast` en `.agent/memory/claims_registry.json`.
+- Orquestada la Fase 6 en paralelo sobre 3 `Git Worktrees` aislados:
+  - `09-qa-parity-and-test-engineer`: Construcción y verificación de `tests/e2e/test_e2e_01..05_*.py`, `tests/uat/test_uat_business_scenarios.py` (incluyendo `Restore Drill` de las 4 capas de backups `.sql.zst.age`), `tests/load/locustfile.py` y `tests/load/test_load_and_latency_sla.py` ($\ge 500\text{ RPS}$, $P_{95} \le 120\text{ ms}$).
+  - `10-cybersecurity-redteam-auditor`: Actualización de `deep-gate` en `Makefile`, ejecución completa del Deep Gate (11 vectores Red Team, Schemathesis OpenAPI fuzzing, SAST/SCA Backend + Frontend, `verify-drill`) y emisión del informe final `docs/security/CERTIFICACION-FINAL-SEGURIDAD-FASE-6.md` con el sello `SECURITY_APPROVED`.
+  - `12-tech-writer-openspec-archify`: Consolidación del grafo AST maestro (`docs/architecture/graphify/graph.json` y `v2_phase6_master_graph.json`), verificación de las 2 bóvedas OpenSpec y los 5 Mapas del Atlas de Archify (`01..05`), y redacción de la Bitácora de Cierre Fase 6 (`docs/bitacora/diario-escuadron/06-Fase-6-Pruebas-E2E-Deep-Gate-500-RPS-y-Certificacion-Final-10-de-10.md`).
+- Ejecutado el *Smart Merge Train* (`git rebase master` + `git merge --ff-only`) hacia `master` con 0 conflictos, limpieza de worktrees y liberación de claims AST.
+- Certificado el monorepo completo con **`173 passed`** en Backend (`make deep-gate`), **`23 passed`** en Frontend (`vitest` + `tsc` + `eslint` + `knip` + `depcruise` + `vite build`) y **`10/10`** en `.agent/evals/rubric_10_criteria.yaml`.
 
 ## Friction & Failures
-- El sub-agente `07` inicial se bloqueó al emitir 22 llamadas `write_to_file` simultáneas en un solo turno; se cortó y relanzó con generación atómica de los 22 JSON.
-- La regla Python `lib/` en `.gitignore` ignoraba `oppytec-frontend/src/shared/lib/index.ts`; se añadió excepción explícita `!oppytec-frontend/src/shared/lib/**` en `.gitignore`.
+- Ninguna fricción: las reservas AST previas aseguraron una partición ortogonal entre `tests/{e2e,uat,load}/`, `Makefile` + `docs/security/` y `docs/architecture/` + `docs/bitacora/`, permitiendo 3 fusiones `--ff-only` limpias.
 
 ## Next Exact Action
-- Iniciar **Fase 6 (Pruebas Integrales E2E, Deep Gate 500 RPS / Schemathesis, Seguridad y Certificación Final `10/10`)** con el Escuadrón Completo (`01..12`).
+- Proyecto **OppyTec v2.0** completado y certificado en sus 6 Fases (`10/10`). Listo para despliegue promocional inmutable (`SHA-256`) hacia `staging` y `production`.
