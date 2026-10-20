@@ -102,7 +102,11 @@ export function RealtimeProvider({
   );
 
   const channelKey = `rt:${env.VITE_ENV_NAMESPACE}:${holdingId}:${tenantId}`;
-  const wsEndpointUrl = `${env.VITE_WS_BASE_URL.replace(/\/+$/, "")}${REALTIME_WS_PATH}?last_event_id=${encodeURIComponent(lastEventId)}`;
+  const baseWs = env.VITE_WS_BASE_URL.replace(/\/+$/, "");
+  const normalizedWsUrl = baseWs.endsWith(REALTIME_WS_PATH)
+    ? baseWs
+    : `${baseWs}${REALTIME_WS_PATH}`;
+  const wsEndpointUrl = `${normalizedWsUrl}?last_event_id=${encodeURIComponent(lastEventId)}`;
 
   const dispatchRealtimeEvent = useCallback(
     (event: RealtimePushEvent): void => {

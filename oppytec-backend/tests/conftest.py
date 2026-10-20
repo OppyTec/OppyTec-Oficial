@@ -9,7 +9,7 @@ Provides:
 from __future__ import annotations
 
 import sys
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import httpx
@@ -36,7 +36,7 @@ def monorepo_root(backend_root: Path) -> Path:
 
 
 @pytest.fixture(autouse=True)
-def default_test_env(monkeypatch: pytest.MonkeyPatch) -> None:
+def default_test_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Sets deterministic baseline environment variables for each test."""
     monkeypatch.setenv("ENVIRONMENT", "local")
     monkeypatch.setenv("ENV_NAMESPACE", "wt_p1_2")
@@ -52,7 +52,15 @@ def default_test_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "JWT_REFRESH_SECRET_KEY",
         "Z9y#xW8$vU7@tS6!rQ5^pO4&nM3*lK2_jI1+hG0-fE9=dC8~bA",
     )
+    monkeypatch.setenv(
+        "SUPERUSER_GENESIS_PASSWORD",
+        "OppyTec_Genesis_Local_Safe_Pass_2026!",
+    )
     monkeypatch.setenv("OTEL_EXPORTER", "none")
+    from src.core.config import get_settings
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 @pytest.fixture
