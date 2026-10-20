@@ -90,3 +90,41 @@ class StorageQuotaStatusResponse(BaseModel):
     effective_max_storage_bytes: int
     remaining_bytes: int
     allowed: bool
+
+
+class LegalEntityCreateRequest(BaseModel):
+    """Solicitud de alta de una Entidad Legal (RUT/Tax ID) asociada a un Holding."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    holding_id: str = Field(..., min_length=2, max_length=120)
+    tax_id: str = Field(..., min_length=3, max_length=50)
+    legal_name: str = Field(..., min_length=2, max_length=200)
+
+    @field_validator("legal_name")
+    @classmethod
+    def _sanitize_legal_name(cls, value: str) -> str:
+        return sanitize_text_input(value, field_name="legal_name")
+
+
+class LegalEntityResponse(BaseModel):
+    """Respuesta de una Entidad Legal registrada."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    entity_id: str
+    holding_id: str
+    tax_id: str
+    legal_name: str
+
+
+class TenancyDashboardSummaryResponse(BaseModel):
+    """Conteo consolidado de recursos globales para el Dashboard de Administración."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    holdings: int = 0
+    legal_entities: int = 0
+    tenants: int = 0
+    users: int = 1
+

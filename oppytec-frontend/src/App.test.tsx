@@ -45,7 +45,13 @@ import {
   REALTIME_WS_PATH,
   useRealtimeContext,
 } from "@/shared/realtime/RealtimeProvider";
-import { OBSERVABILITY_13_SUBVIEWS, PlatformAdminFeatureView } from "@/features/platform-admin";
+import {
+  AdminDashboard,
+  AdminLayout,
+  AdminSidebar,
+  OBSERVABILITY_13_SUBVIEWS,
+  PlatformAdminFeatureView,
+} from "@/features/platform-admin";
 import { AdminLoginPage, LoginPage } from "@/features/auth";
 import { CatalogFeatureView } from "@/features/catalog";
 import { CleanAdminDashboard, ClientAppShell } from "@/app/router";
@@ -282,6 +288,76 @@ describe("OppyTec v2.0 — Phase 5 Frontend Architecture & Paso 1 Auth Routing",
     expect(screen.getByTestId("admin-kpi-grid")).toBeTruthy();
     expect(screen.getByText("Total de holdings registrados")).toBeTruthy();
   });
+
+  it("renders AdminLayout with AdminSidebar, Header controls, and 3-Accordion menu", () => {
+    render(
+      <AppProviders
+        initialSession={{ accessToken: "mock-admin-token" }}
+        initialUser={{
+          id: 1,
+          username: "oppytec.admin",
+          email: "oppytec.admin@gmail.com",
+          firstName: "SuperUser",
+          lastName: "OppyTec",
+          role: "propietario",
+          isSuperuser: true,
+          isGlobalAdmin: true,
+        }}
+      >
+        <BrowserRouter>
+          <AdminLayout />
+        </BrowserRouter>
+      </AppProviders>
+    );
+
+    // Header controls
+    expect(screen.getByTestId("admin-layout-root")).toBeTruthy();
+    expect(screen.getByText("Administración Global")).toBeTruthy();
+    expect(screen.getByText("Modo Global (SaaS)")).toBeTruthy();
+
+    // Sidebar and Navigation sections
+    expect(screen.getByTestId("admin-sidebar")).toBeTruthy();
+    expect(screen.getByText("Admin Panel")).toBeTruthy();
+    expect(screen.getByText("Panel Principal")).toBeTruthy();
+    expect(screen.getByText("Usuarios Globales")).toBeTruthy();
+    expect(screen.getByText("Gestión Negocio")).toBeTruthy();
+    expect(screen.getByText("Gestión Cliente")).toBeTruthy();
+    expect(screen.getByText("Plataforma & Telemetría")).toBeTruthy();
+
+    // User display & Logout
+    expect(screen.getByText("SuperUser OppyTec")).toBeTruthy();
+    expect(screen.getByText("Cerrar Sesión")).toBeTruthy();
+  });
+
+  it("renders AdminDashboard independently with 4 KPI cards and initial clean state", () => {
+    render(
+      <AppProviders>
+        <AdminDashboard />
+      </AppProviders>
+    );
+
+    expect(screen.getByTestId("admin-dashboard-view")).toBeTruthy();
+    expect(screen.getByTestId("kpi-holdings")).toBeTruthy();
+    expect(screen.getByTestId("kpi-legal-entities")).toBeTruthy();
+    expect(screen.getByTestId("kpi-tenants")).toBeTruthy();
+    expect(screen.getByTestId("kpi-users")).toBeTruthy();
+  });
+
+  it("renders AdminSidebar in isolation and responds to collapse toggle", () => {
+    render(
+      <AppProviders>
+        <BrowserRouter>
+          <AdminSidebar isCollapsed={false} />
+        </BrowserRouter>
+      </AppProviders>
+    );
+
+    expect(screen.getByTestId("admin-sidebar")).toBeTruthy();
+    expect(screen.getByLabelText("Colapsar barra lateral")).toBeTruthy();
+  });
+
+
+
 
   it("renders ClientAppShell and verifies theme switching and holding tenant selector", () => {
     render(

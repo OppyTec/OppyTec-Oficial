@@ -19,6 +19,7 @@ from src.core.guards.rbac_dependencies import (
     RequireGlobalPermission,
     RequireTenantPermission,
 )
+from src.modules.identity.presentation.router import _GLOBAL_USERS_STORE
 from src.modules.tenancy.domain.quotas import (
     evaluate_seat_quota_for_new_or_restored_user,
     evaluate_storage_quota_bytes,
@@ -26,8 +27,11 @@ from src.modules.tenancy.domain.quotas import (
 from src.modules.tenancy.presentation.schemas import (
     HoldingCreateRequest,
     HoldingResponse,
+    LegalEntityCreateRequest,
+    LegalEntityResponse,
     SeatQuotaStatusResponse,
     StorageQuotaStatusResponse,
+    TenancyDashboardSummaryResponse,
     TenantCreateRequest,
     TenantResponse,
 )
@@ -35,7 +39,9 @@ from src.modules.tenancy.presentation.schemas import (
 router = APIRouter(tags=["tenancy"])
 
 _holdings_store: dict[str, HoldingResponse] = {}
+_legal_entities_store: dict[str, LegalEntityResponse] = {}
 _tenants_store: dict[str, TenantResponse] = {}
+
 
 
 @router.post(
@@ -103,6 +109,81 @@ async def create_tenant_endpoint(
     )
     _tenants_store[tenant_id] = record
     return record
+
+
+@router.get(
+    "/api/v1/tenancy/tenants",
+    response_model=list[TenantResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def list_tenants_endpoint(
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("tenancy.tenants.read")),
+    ],
+) -> list[TenantResponse]:
+    """Lista las sucursales / tenants registrados en el Plano Global."""
+    return list(_tenants_store.values())
+
+
+@router.post(
+    "/api/v1/tenancy/legal-entities",
+    response_model=LegalEntityResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_legal_entity_endpoint(
+    payload: LegalEntityCreateRequest,
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("tenancy.legal_entities.create")),
+    ],
+) -> LegalEntityResponse:
+    """Registra una nueva Entidad Legal (Razón Social/RUT) vinculada a un Holding."""
+    entity_id = f"le_{uuid.uuid4().hex[:10]}"
+    record = LegalEntityResponse(
+        entity_id=entity_id,
+        holding_id=payload.holding_id,
+        tax_id=payload.tax_id,
+        legal_name=payload.legal_name,
+    )
+    _legal_entities_store[entity_id] = record
+    return record
+
+
+@router.get(
+    "/api/v1/tenancy/legal-entities",
+    response_model=list[LegalEntityResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def list_legal_entities_endpoint(
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("tenancy.legal_entities.read")),
+    ],
+) -> list[LegalEntityResponse]:
+    """Lista las Entidades Legales registradas."""
+    return list(_legal_entities_store.values())
+
+
+@router.get(
+    "/api/v1/tenancy/dashboard/summary",
+    response_model=TenancyDashboardSummaryResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_tenancy_dashboard_summary_endpoint(
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("tenancy.dashboard.read")),
+    ],
+) -> TenancyDashboardSummaryResponse:
+    """Devuelve los conteos agregados reales para el Panel de Control Global."""
+    return TenancyDashboardSummaryResponse(
+        holdings=len(_holdings_store),
+        legal_entities=len(_legal_entities_store),
+        tenants=len(_tenants_store),
+        users=len(_GLOBAL_USERS_STORE),
+    )
+
 
 
 @router.get(

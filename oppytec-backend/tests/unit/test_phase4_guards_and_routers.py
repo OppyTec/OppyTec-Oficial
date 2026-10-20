@@ -443,3 +443,67 @@ async def test_all_ten_module_routers_and_rbac_enforcement(
     assert revoked_resp.status_code == 401
     assert revoked_resp.json()["error_code"] == "SESSION_REVOKED_KILLSWITCH"
     clear_revoked_sessions()
+
+
+@pytest.mark.asyncio
+async def test_tenancy_dashboard_summary_and_admin_endpoints(
+    async_client: httpx.AsyncClient,
+) -> None:
+    """Verifica los endpoints administrativos globales para el Panel de Control (/admin)."""
+    admin_token = create_access_token(
+        user_id=1,
+        holding_id=None,
+        tenant_id=None,
+        is_superuser_god=True,
+        is_global_staff=True,
+        hierarchy_rank=0,
+        contracted_modules=["all"],
+        role_grants=[
+            "tenancy.dashboard.read",
+            "tenancy.holdings.read",
+            "tenancy.holdings.create",
+            "tenancy.legal_entities.read",
+            "tenancy.legal_entities.create",
+            "tenancy.tenants.read",
+            "tenancy.tenants.provision",
+            "identity.users.read",
+        ],
+        accessible_tenants=[],
+    )
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # 1. Dashboard summary inicial: holdings=0, legal_entities=0, tenants=0, users=1 (Genesis)
+    summary_resp = await async_client.get(
+        "/api/v1/tenancy/dashboard/summary",
+        headers=admin_headers,
+    )
+    assert summary_resp.status_code == 200
+    summary_data = summary_resp.json()
+    assert summary_data["users"] >= 1
+    assert summary_data["holdings"] >= 0
+
+    # 2. Listar usuarios globales -> debe contener al Genesis SuperUser
+    users_resp = await async_client.get(
+        "/api/v1/identity/users",
+        headers=admin_headers,
+    )
+    assert users_resp.status_code == 200
+    users_data = users_resp.json()
+    assert len(users_data) >= 1
+    assert any(u["is_superuser"] is True for u in users_data)
+
+    # 3. Listar tenants y legal entities inicialmente
+    tenants_resp = await async_client.get(
+        "/api/v1/tenancy/tenants",
+        headers=admin_headers,
+    )
+    assert tenants_resp.status_code == 200
+    assert isinstance(tenants_resp.json(), list)
+
+    le_resp = await async_client.get(
+        "/api/v1/tenancy/legal-entities",
+        headers=admin_headers,
+    )
+    assert le_resp.status_code == 200
+    assert isinstance(le_resp.json(), list)
+

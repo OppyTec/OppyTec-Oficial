@@ -227,3 +227,11 @@ export function PlatformAdminFeatureView() {
     </section>
   );
 }
+
+export { AdminDashboard } from "./AdminDashboard";
+export { AdminLayout } from "./AdminLayout";
+export { AdminSidebar } from "./AdminSidebar";
+export type { AdminSidebarProps, MenuItem } from "./AdminSidebar";
+export type { DashboardCounts } from "./AdminDashboard";
+export type { TenantOptionItem } from "./AdminLayout";
+

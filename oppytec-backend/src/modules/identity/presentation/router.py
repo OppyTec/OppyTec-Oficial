@@ -341,6 +341,47 @@ async def logout_endpoint(
     return {"status": "logged_out"}
 
 
+@router.get(
+    "/api/v1/identity/users",
+    response_model=list[AuthenticatedUserProfileResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def list_global_users_endpoint(
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("identity.users.read")),
+    ],
+) -> list[AuthenticatedUserProfileResponse]:
+    """Lista los usuarios de nivel Global (`public.global_users`)."""
+    result: list[AuthenticatedUserProfileResponse] = []
+    for u in _GLOBAL_USERS_STORE.values():
+        user_id = int(str(u["id"]))
+        raw_perms = u.get("permissions")
+        perms: list[str] = (
+            [str(p) for p in raw_perms]
+            if isinstance(raw_perms, list)
+            else []
+        )
+        result.append(
+            AuthenticatedUserProfileResponse(
+                id=user_id,
+                username=str(u["username"]),
+                email=str(u["email"]),
+                first_name=str(u.get("first_name")) if u.get("first_name") else None,
+                last_name=str(u.get("last_name")) if u.get("last_name") else None,
+                role=str(u.get("role", "propietario")),
+                is_superuser=bool(u.get("is_superuser", False)),
+                is_global_admin=bool(u.get("is_global_admin", False)),
+                tipo_usuario=str(u.get("tipo_usuario", "GLOBAL")),
+                tenant_id=str(u["tenant_id"]) if u.get("tenant_id") else None,
+                holding_id=str(u["holding_id"]) if u.get("holding_id") else None,
+                permissions=perms,
+            )
+        )
+    return result
+
+
+
 @router.post(
     "/api/v1/auth/refresh",
     response_model=TokenPairResponse,
