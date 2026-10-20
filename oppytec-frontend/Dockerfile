@@ -31,13 +31,16 @@ LABEL org.opencontainers.image.title="oppytec-frontend" \
 # Copiar artefacto compilado inmutable
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# Copiar configuración SPA + Reverse Proxy (/api/v1/ -> backend:8000)
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Copiar generador POSIX de /runtime-env.js
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh && \
     chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d && \
     touch /var/run/nginx.pid && chown nginx:nginx /var/run/nginx.pid
 
-EXPOSE 8080
+EXPOSE 80 8080
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
