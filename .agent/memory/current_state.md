@@ -64,3 +64,12 @@
 - [x] Suite de Rendimiento y Carga en `oppytec-backend/tests/load/locustfile.py` y `test_load_and_latency_sla.py` certificando ráfagas equivalentes a $\ge 500\text{ RPS}$, $P_{95} \le 120\text{ ms}$ en stock/ventas, $\le 800\text{ ms}$ en analítica y `0` respuestas `HTTP 500`.
 - [x] Dictamen Final de Seguridad Ofensiva y Deep Gate (`docs/security/CERTIFICACION-FINAL-SEGURIDAD-FASE-6.md`) emitido por el Agente 10 con sello **`SECURITY_APPROVED`** y calificación **`10/10`** en `.agent/evals/rubric_10_criteria.yaml`.
 - [x] Grafo AST Maestro Consolidado (`docs/architecture/graphify/graph.json` y `v2_phase6_master_graph.json`), los 5 Mapas del Atlas de Archify (`01..05-*.archify.html`) y Bitácora de Cierre Fase 6 (`docs/bitacora/diario-escuadron/06-Fase-6-Pruebas-E2E-Deep-Gate-500-RPS-y-Certificacion-Final-10-de-10.md`).
+
+## Plan Maestro de Refactorización Admin Legacy (6 Pasos Verificables)
+- [x] **Paso 1: Limpieza Total (BD + Frontend), Enrutamiento Real SPA y Vistas `/login` y `/admin/login`** (Completado y verificado)
+- [x] **Paso 2: Shell de Administración (`AdminLayout`, `AdminSidebar`) y Panel Principal (`/admin`)** (Completado y verificado)
+- [ ] **Paso 3: Motor `DynamicAdminTable` + `DynamicAdminForm` y CRUD de Usuarios Globales (`/admin/users`)**
+- [ ] **Paso 4: Gestión de Clientes Multi-Tenant (`Holdings`, `Entidades Legales`, `Tenants` y `Usuarios Clientes`)**
+- [ ] **Paso 5: Gestión de Negocio SaaS (`Tipos de Negocio`, `Módulos` y `Planes SaaS`)**
+- [ ] **Paso 6: Monitoreo FinOps de Tokens IA (`/admin/token-consumption`) y Telemetría v2.0 (`/admin/observability`)**
+
