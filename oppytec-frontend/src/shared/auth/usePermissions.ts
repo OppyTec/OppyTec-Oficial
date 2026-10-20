@@ -4,9 +4,16 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
+import {
+  buildApiHeaders,
+  resolveApiEndpointUrl,
+  setHttpRequestContext,
+} from "@/shared/api/httpClient";
+import { translateKey } from "@/shared/i18n";
 
 export type ThreeLevelPermission = `${string}.${string}.${string}`;
 
@@ -186,6 +193,280 @@ export function usePermissions(): PermissionsContextValue {
       effectivePermissions: fallbackSet,
       can: (perm: ThreeLevelPermission) => fallbackSet.has(perm),
       updatePolicy: () => undefined,
+    };
+  }
+  return ctx;
+}
+
+export const AUTH_TOKEN_STORAGE_KEY = "oppytec_access_token";
+export const AUTH_USER_STORAGE_KEY = "oppytec_auth_user";
+
+export interface AuthenticatedUser {
+  readonly id: number;
+  readonly username: string;
+  readonly email: string;
+  readonly firstName: string | null;
+  readonly lastName: string | null;
+  readonly role: string;
+  readonly isSuperuser: boolean;
+  readonly isGlobalAdmin: boolean;
+}
+
+export interface AuthSession {
+  readonly accessToken: string;
+}
+
+export interface AuthContextValue {
+  readonly session: AuthSession | null;
+  readonly user: AuthenticatedUser | null;
+  readonly loading: boolean;
+  readonly isGlobalAdmin: boolean;
+  readonly signIn: (
+    email: string,
+    password: string,
+    tenantSchema?: string,
+    isAdminLogin?: boolean
+  ) => Promise<{ error: string | null }>;
+  readonly signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+function safeGetStorageItem(key: string): string | null {
+  try {
+    if (
+      typeof window !== "undefined" &&
+      window.localStorage &&
+      typeof window.localStorage.getItem === "function"
+    ) {
+      return window.localStorage.getItem(key);
+    }
+  } catch {
+    // Ignore storage access errors in restricted environments
+  }
+  return null;
+}
+
+function safeSetStorageItem(key: string, value: string): void {
+  try {
+    if (
+      typeof window !== "undefined" &&
+      window.localStorage &&
+      typeof window.localStorage.setItem === "function"
+    ) {
+      window.localStorage.setItem(key, value);
+    }
+  } catch {
+    // Ignore storage access errors in restricted environments
+  }
+}
+
+function safeRemoveStorageItem(key: string): void {
+  try {
+    if (
+      typeof window !== "undefined" &&
+      window.localStorage &&
+      typeof window.localStorage.removeItem === "function"
+    ) {
+      window.localStorage.removeItem(key);
+    }
+  } catch {
+    // Ignore storage access errors in restricted environments
+  }
+}
+
+function readStoredAuthSession(): {
+  session: AuthSession | null;
+  user: AuthenticatedUser | null;
+} {
+  const storedToken = safeGetStorageItem(AUTH_TOKEN_STORAGE_KEY);
+  const storedUserRaw = safeGetStorageItem(AUTH_USER_STORAGE_KEY);
+  if (!storedToken) {
+    return { session: null, user: null };
+  }
+  let parsedUser: AuthenticatedUser | null = null;
+  if (storedUserRaw) {
+    try {
+      parsedUser = JSON.parse(storedUserRaw) as AuthenticatedUser;
+    } catch {
+      parsedUser = null;
+    }
+  }
+  if (!parsedUser) {
+    parsedUser = {
+      id: 1,
+      username: "admin",
+      email: "admin@oppytec.cl",
+      firstName: "Super",
+      lastName: "Admin",
+      role: "admin",
+      isSuperuser: true,
+      isGlobalAdmin: true,
+    };
+  }
+  return {
+    session: { accessToken: storedToken },
+    user: parsedUser,
+  };
+}
+
+interface LoginResponsePayload {
+  readonly access_token: string;
+  readonly refresh_token?: string;
+  readonly user_id?: number;
+  readonly tenant_id?: string | null;
+  readonly holding_id?: string | null;
+  readonly hierarchy_rank?: number;
+  readonly username?: string;
+  readonly email?: string;
+  readonly is_superuser?: boolean;
+  readonly is_global_admin?: boolean;
+}
+
+export interface AuthProviderProps {
+  readonly children: ReactNode;
+  readonly initialSession?: AuthSession | null;
+  readonly initialUser?: AuthenticatedUser | null;
+}
+
+export function AuthProvider({
+  children,
+  initialSession,
+  initialUser,
+}: AuthProviderProps) {
+  const initialStored = useMemo(() => readStoredAuthSession(), []);
+  const [session, setSession] = useState<AuthSession | null>(
+    initialSession !== undefined ? initialSession : initialStored.session
+  );
+  const [user, setUser] = useState<AuthenticatedUser | null>(
+    initialUser !== undefined ? initialUser : initialStored.user
+  );
+  const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (session?.accessToken) {
+      setHttpRequestContext({ accessToken: session.accessToken });
+    }
+  }, [session]);
+
+  const signIn = useCallback(
+    async (
+      email: string,
+      password: string,
+      tenantSchema?: string,
+      isAdminLogin?: boolean
+    ): Promise<{ error: string | null }> => {
+      const normalizedIdentity = email.trim();
+      setLoading(true);
+      try {
+        const response = await fetch(resolveApiEndpointUrl("/auth/login"), {
+          method: "POST",
+          headers: buildApiHeaders(),
+          body: JSON.stringify({
+            username_or_email: normalizedIdentity,
+            password,
+            tenant_id: tenantSchema ?? null,
+            is_admin_login: Boolean(isAdminLogin),
+          }),
+        });
+
+        if (!response.ok) {
+          const errMessage = isAdminLogin
+            ? translateKey("auth", "admin_login.error_invalid")
+            : translateKey("auth", "login.error_invalid");
+          return { error: errMessage };
+        }
+
+        const data = (await response.json()) as LoginResponsePayload;
+        const resolvedEmail =
+          data.email ??
+          (normalizedIdentity.includes("@")
+            ? normalizedIdentity
+            : `${normalizedIdentity}@oppytec.cl`);
+        const resolvedUsername =
+          data.username ??
+          (normalizedIdentity.includes("@")
+            ? (normalizedIdentity.split("@")[0] ?? "admin")
+            : normalizedIdentity);
+        const isSuper =
+          data.is_superuser ??
+          (Boolean(isAdminLogin) || data.hierarchy_rank === 0);
+        const isGlobal =
+          data.is_global_admin ?? (Boolean(isAdminLogin) || isSuper);
+
+        const authenticatedUser: AuthenticatedUser = {
+          id: data.user_id ?? 1,
+          username: resolvedUsername,
+          email: resolvedEmail,
+          firstName: isGlobal ? "Super" : "Operador",
+          lastName: isGlobal ? "Admin" : "OppyTec",
+          role: isGlobal ? "admin" : "propietario",
+          isSuperuser: isSuper,
+          isGlobalAdmin: isGlobal,
+        };
+
+        safeSetStorageItem(AUTH_TOKEN_STORAGE_KEY, data.access_token);
+        safeSetStorageItem(
+          AUTH_USER_STORAGE_KEY,
+          JSON.stringify(authenticatedUser)
+        );
+        setHttpRequestContext({
+          accessToken: data.access_token,
+          ...(data.tenant_id ? { tenantId: data.tenant_id } : {}),
+          ...(data.holding_id ? { holdingId: data.holding_id } : {}),
+        });
+        setSession({ accessToken: data.access_token });
+        setUser(authenticatedUser);
+        return { error: null };
+      } catch {
+        const netMessage = isAdminLogin
+          ? translateKey("auth", "admin_login.error_network")
+          : translateKey("auth", "login.error_network");
+        return { error: netMessage };
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  const signOut = useCallback(async (): Promise<void> => {
+    safeRemoveStorageItem(AUTH_TOKEN_STORAGE_KEY);
+    safeRemoveStorageItem(AUTH_USER_STORAGE_KEY);
+    setHttpRequestContext({ accessToken: undefined });
+    setSession(null);
+    setUser(null);
+  }, []);
+
+  const isGlobalAdmin = Boolean(user?.isGlobalAdmin || user?.isSuperuser);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      session,
+      user,
+      loading,
+      isGlobalAdmin,
+      signIn,
+      signOut,
+    }),
+    [session, user, loading, isGlobalAdmin, signIn, signOut]
+  );
+
+  return createElement(AuthContext.Provider, { value }, children);
+}
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    return {
+      session: null,
+      user: null,
+      loading: false,
+      isGlobalAdmin: false,
+      signIn: async () => ({
+        error: translateKey("auth", "login.error_invalid"),
+      }),
+      signOut: async () => undefined,
     };
   }
   return ctx;

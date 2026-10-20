@@ -1,131 +1,291 @@
-import { useState } from "react";
-import { Can } from "@/shared/auth/Can";
-import { OFFICIAL_TENANT_OPTIONS } from "@/shared/components/layout/HoldingTenantSwitcher";
+import { motion } from "framer-motion";
+import { Package, ShieldAlert } from "lucide-react";
+import { type FormEvent, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/shared/auth/usePermissions";
 import { translateKey } from "@/shared/i18n";
 
-export interface ImpersonationBannerProps {
-  readonly impersonatedTenant: string;
-  readonly reason: string;
-  readonly expiresInMinutes: number;
-  readonly onExitImpersonation: () => void;
+export function LoginBranding() {
+  return (
+    <div className="hidden lg:flex flex-col justify-center p-12 bg-primary text-primary-foreground relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+        <div className="absolute top-10 left-10 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative z-10 space-y-6">
+        <div className="bg-white/20 w-16 h-16 rounded-2xl flex items-center justify-center backdrop-blur-md">
+          <Package size={32} />
+        </div>
+        <h1 className="text-5xl font-black tracking-tighter leading-tight">
+          OppyTec
+        </h1>
+        <p className="text-xl opacity-80 font-medium">
+          Gestión inteligente para la industria hotelera y restaurantes.
+        </p>
+      </div>
+    </div>
+  );
 }
 
-export function ImpersonationBanner({
-  impersonatedTenant,
-  reason,
-  expiresInMinutes,
-  onExitImpersonation,
-}: ImpersonationBannerProps) {
+export function LoginPage() {
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [submitting, setSubmitting] = useState<boolean>(false);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    const result = await signIn(email, password, undefined, false);
+    if (result.error) {
+      setError(result.error);
+      setSubmitting(false);
+    } else {
+      setSubmitting(false);
+      navigate("/", { replace: true });
+    }
+  };
+
   return (
     <div
-      role="status"
-      data-testid="auth-impersonation-banner"
-      className="animate-blink-orange mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-warning bg-warning/15 px-3 py-2 text-xs text-foreground"
+      className="min-h-screen w-full grid lg:grid-cols-2 bg-secondary/30"
+      data-testid="client-login-page"
     >
-      <div>
-        <span className="font-bold">Impersonación Auditada: </span>
-        <span className="font-mono">{impersonatedTenant}</span>
-        <span className="ml-2 text-muted-foreground">{`(${reason} · TTL ${String(expiresInMinutes)}m)`}</span>
-      </div>
-      <button
-        type="button"
-        data-testid="auth-exit-impersonation"
-        onClick={onExitImpersonation}
-        className="touch-target inline-flex min-h-[44px] items-center rounded-md bg-secondary px-3 py-1 font-semibold text-secondary-foreground"
+      <LoginBranding />
+
+      <main className="flex items-center justify-center p-6 md:p-12">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-sm space-y-8"
+        >
+          <div className="text-center lg:text-left space-y-2">
+            <h2 className="text-3xl font-black tracking-tight">Bienvenido</h2>
+            <p className="text-muted-foreground">
+              Ingresa al panel de control de inventario.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium leading-none"
+              >
+                Usuario o Email
+              </label>
+              <input
+                id="email"
+                type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="usuario@ejemplo.com"
+                className="h-12 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                autoCapitalize="none"
+                autoComplete="username"
+                autoCorrect="off"
+                spellCheck="false"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="password"
+                className="text-sm font-medium leading-none"
+              >
+                Contraseña
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="h-12 w-full rounded-md border border-input bg-background/50 px-3 py-2 text-sm backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                autoCapitalize="none"
+                autoComplete="current-password"
+                autoCorrect="off"
+                spellCheck="false"
+                required
+              />
+            </div>
+
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                data-testid="login-error-box"
+                className="bg-destructive/10 border border-destructive/20 text-destructive text-xs font-bold text-center p-3 rounded-xl"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full h-12 rounded-md bg-primary text-primary-foreground font-bold text-base shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50"
+              disabled={submitting}
+            >
+              {submitting ? "Validando..." : "Ingresar al Sistema"}
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-muted-foreground pt-4">
+            ® {new Date().getFullYear()} OppyTec. Todos los derechos reservados.
+          </p>
+        </motion.div>
+      </main>
+    </div>
+  );
+}
+
+export function AdminLoginPage() {
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [submitting, setSubmitting] = useState<boolean>(false);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    const result = await signIn(email, password, undefined, true);
+    if (result.error) {
+      setError(result.error);
+      setSubmitting(false);
+    } else {
+      setSubmitting(false);
+      navigate("/admin", { replace: true });
+    }
+  };
+
+  return (
+    <div
+      className="min-h-screen w-full flex items-center justify-center bg-zinc-950 p-4"
+      data-testid="admin-login-page"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
       >
-        {translateKey("auth", "session.logout")}
-      </button>
+        <div className="p-8 space-y-6">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="h-16 w-16 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
+              <ShieldAlert className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white tracking-tight">
+                Acceso Restringido
+              </h2>
+              <p className="text-sm text-zinc-400 mt-1">
+                Global SaaS Administration
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="admin-email"
+                className="text-sm font-medium leading-none text-zinc-300"
+              >
+                Usuario Administrador
+              </label>
+              <input
+                id="admin-email"
+                type="text"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@oppytec.com"
+                className="h-12 w-full rounded-md bg-zinc-950/50 border border-zinc-800 px-3 py-2 text-white placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                autoCapitalize="none"
+                autoComplete="username"
+                autoCorrect="off"
+                spellCheck="false"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="admin-password"
+                className="text-sm font-medium leading-none text-zinc-300"
+              >
+                Clave de Acceso
+              </label>
+              <input
+                id="admin-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="h-12 w-full rounded-md bg-zinc-950/50 border border-zinc-800 px-3 py-2 text-white placeholder:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                autoCapitalize="none"
+                autoComplete="current-password"
+                required
+              />
+            </div>
+
+            {error && (
+              <div
+                data-testid="admin-login-error-box"
+                className="p-3 rounded-lg bg-red-950/50 border border-red-900/50 text-red-400 text-sm font-medium text-center"
+              >
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full h-12 rounded-md bg-primary text-primary-foreground font-bold text-base mt-2 hover:bg-primary/90 disabled:opacity-50"
+              disabled={submitting}
+            >
+              {submitting ? "Autenticando..." : "Ingresar"}
+            </button>
+          </form>
+        </div>
+        <div className="bg-zinc-950 p-4 text-center border-t border-zinc-800">
+          <p className="text-xs text-zinc-600">
+            OppyTec Cloud Infrastructure © {new Date().getFullYear()}
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 }
 
 export function AuthFeatureView() {
-  const [email, setEmail] = useState<string>("chef.ejecutivo@oppytec.cl");
-  const [mfaCode, setMfaCode] = useState<string>("482910");
-  const [selectedTenantId, setSelectedTenantId] = useState<string>(
-    OFFICIAL_TENANT_OPTIONS[0]?.tenantId ?? "tenant_rest_central"
-  );
-  const [impersonating, setImpersonating] = useState<boolean>(true);
+  const [viewMode, setViewMode] = useState<"client" | "admin">("client");
 
   return (
-    <section
-      data-testid="feature-auth"
-      className="glass-card space-y-4 rounded-xl p-4 md:p-6"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-        <div>
-          <h2 className="text-lg font-bold text-foreground">
-            {translateKey("auth", "login.title")}
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            {translateKey("auth", "login.mfa_prompt", { email })}
-          </p>
-        </div>
-        <Can perform="auth.session.manage" showDeniedBadge>
-          <span className="rounded-full bg-primary/15 px-2.5 py-1 font-mono text-xs font-semibold text-primary">
-            JWT Dual RS256 + MFA Activo
-          </span>
-        </Can>
-      </div>
-
-      {impersonating && (
-        <ImpersonationBanner
-          impersonatedTenant={selectedTenantId}
-          reason="Soporte Nivel 3 — Cuadratura de Kardex"
-          expiresInMinutes={15}
-          onExitImpersonation={() => setImpersonating(false)}
-        />
-      )}
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="space-y-2 rounded-xl border border-border bg-secondary/20 p-3">
-          <label className="block text-xs font-semibold text-muted-foreground">
-            {translateKey("auth", "login.email_label")}
-          </label>
-          <input
-            type="email"
-            aria-label={translateKey("auth", "login.email_label")}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="touch-target min-h-[44px] w-full rounded-md border border-border bg-card px-3 text-xs text-foreground"
-          />
-          <label className="block text-xs font-semibold text-muted-foreground">
-            MFA TOTP (6 dígitos)
-          </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            aria-label="MFA TOTP"
-            value={mfaCode}
-            onChange={(e) => setMfaCode(e.target.value)}
-            className="touch-target min-h-[44px] w-full rounded-md border border-border bg-card px-3 font-mono text-xs text-foreground"
-          />
-        </div>
-
-        <div
-          data-testid="auth-select-tenant"
-          className="space-y-2 rounded-xl border border-border bg-secondary/20 p-3"
+    <section data-testid="feature-auth" className="space-y-4">
+      <div className="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          data-testid="switch-auth-client"
+          onClick={() => setViewMode("client")}
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground"
         >
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            SelectTenant (Multi-Holding)
-          </h3>
-          {OFFICIAL_TENANT_OPTIONS.map((t) => (
-            <button
-              key={t.tenantId}
-              type="button"
-              onClick={() => setSelectedTenantId(t.tenantId)}
-              className={`touch-target flex min-h-[44px] w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs ${
-                selectedTenantId === t.tenantId
-                  ? "border-primary bg-primary/15 font-bold text-primary"
-                  : "border-border bg-card text-foreground"
-              }`}
-            >
-              <span>{t.tenantName}</span>
-              <span className="font-mono text-[11px]">{t.rut}</span>
-            </button>
-          ))}
-        </div>
+          {translateKey("auth", "login.title")}
+        </button>
+        <button
+          type="button"
+          data-testid="switch-auth-admin"
+          onClick={() => setViewMode("admin")}
+          className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground"
+        >
+          {translateKey("auth", "admin_login.title")}
+        </button>
       </div>
+      {viewMode === "admin" ? <AdminLoginPage /> : <LoginPage />}
     </section>
   );
 }

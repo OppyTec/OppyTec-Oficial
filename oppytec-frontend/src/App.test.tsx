@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { BrowserRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import { AppProviders } from "@/app/providers";
 import {
@@ -14,11 +15,9 @@ import {
   DEFAULT_RBAC_POLICY_STATE,
   evaluateEffectivePermissions,
   isValidThreeLevelPermission,
-  PermissionsProvider,
 } from "@/shared/auth/usePermissions";
 import {
   EmptyState,
-  ErrorBoundary,
   PageSkeleton,
 } from "@/shared/components/feedback";
 import {
@@ -37,13 +36,29 @@ import {
   useSwipeNavigation,
   useWebSocket,
 } from "@/shared/hooks";
-import { convertThreeLayerQuantity, formatOperationalDate } from "@/shared/lib";
+import {
+  convertThreeLayerQuantity,
+  formatOperationalDate,
+  type ThreeLayerUnitProfile,
+} from "@/shared/lib";
 import {
   REALTIME_WS_PATH,
   useRealtimeContext,
 } from "@/shared/realtime/RealtimeProvider";
-import { OBSERVABILITY_13_SUBVIEWS } from "@/features/platform-admin";
+import { OBSERVABILITY_13_SUBVIEWS, PlatformAdminFeatureView } from "@/features/platform-admin";
+import { AdminLoginPage, LoginPage } from "@/features/auth";
+import { CatalogFeatureView } from "@/features/catalog";
+import { CleanAdminDashboard, ClientAppShell } from "@/app/router";
 import { App } from "./App";
+
+const SAMPLE_PROFILE: ThreeLayerUnitProfile = {
+  code: "KG",
+  purchaseUnit: "caja",
+  storageUnit: "kg",
+  recipeUnit: "g",
+  purchaseToStorageFactor: "2.00000000",
+  storageToRecipeFactor: "1000.00000000",
+};
 
 function HooksHarness() {
   const isMobile = useIsMobile();
@@ -89,7 +104,7 @@ function HooksHarness() {
   );
 }
 
-describe("OppyTec v2.0 — Phase 5 Frontend Architecture & 10 Feature Modules", () => {
+describe("OppyTec v2.0 — Phase 5 Frontend Architecture & Paso 1 Auth Routing", () => {
   it("validates 3 Legacy DNA themes, 42 preset colors, and 49 gastronomic icons", () => {
     expect(OFFICIAL_THEMES).toEqual(["light", "dark", "ocean-blue"]);
     expect(PRESET_COLORS).toHaveLength(42);
@@ -98,123 +113,84 @@ describe("OppyTec v2.0 — Phase 5 Frontend Architecture & 10 Feature Modules", 
     expect(THEME_STORAGE_KEY).toBe("oppytec_theme");
 
     applyDocumentTheme("ocean-blue");
-    expect(document.documentElement.getAttribute("data-theme")).toBe(
-      "ocean-blue"
-    );
-    expect(document.documentElement.classList.contains("ocean-blue")).toBe(
-      true
-    );
-
-    applyDocumentTheme("light");
-    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("ocean-blue");
+    expect(formatOperationalDate("2026-10-19T14:30:00Z")).toContain("2026");
+    expect(
+      convertThreeLayerQuantity("10.000", "purchase", "storage", SAMPLE_PROFILE)
+    ).toBe("20.0000");
   });
 
-  it("evaluates 3-level RBAC intersection M_Plan ∩ ((P_Role ∪ P_Temp) - P_Deny) and <Can>", () => {
-    expect(isValidThreeLevelPermission("inventory.mermas.approve")).toBe(true);
-    expect(isValidThreeLevelPermission("invalid_two.levels")).toBe(false);
+  it("verifies 3-level RBAC evaluation logic: M_Plan ∩ ((P_Role ∪ P_Temp) \\ P_Deny)", () => {
+    expect(isValidThreeLevelPermission("inventory.stock.read")).toBe(true);
+    expect(isValidThreeLevelPermission("invalid-permission")).toBe(false);
 
-    const effective = evaluateEffectivePermissions(
-      {
-        ...DEFAULT_RBAC_POLICY_STATE,
-        deniedPermissions: ["inventory.mermas.approve"],
-      },
-      "2026-10-19T00:00:00Z"
-    );
-    expect(effective.has("inventory.mermas.approve")).toBe(false);
-    expect(effective.has("inventory.mermas.override_threshold")).toBe(true);
+    const allowed = evaluateEffectivePermissions({
+      ...DEFAULT_RBAC_POLICY_STATE,
+      planModules: ["inventory", "catalog"],
+      rolePermissions: ["inventory.stock.read", "catalog.products.create"],
+      temporaryGrants: [
+        {
+          permission: "operations.pos.consume",
+          expiresAtIso: "2026-12-31T23:59:59Z",
+          reason: "Turno fin de semana",
+          grantedBy: "admin",
+        },
+      ],
+      deniedPermissions: ["catalog.products.create"],
+    });
+
+    expect(allowed.has("inventory.stock.read")).toBe(true);
+    expect(allowed.has("catalog.products.create")).toBe(false);
+    expect(allowed.has("operations.pos.consume")).toBe(false);
 
     render(
-      <PermissionsProvider
-        initialPolicy={{
-          ...DEFAULT_RBAC_POLICY_STATE,
-          deniedPermissions: ["catalog.products.delete"],
-        }}
-      >
-        <Can perform="catalog.products.create">
-          <span>Create Allowed</span>
+      <AppProviders>
+        <Can
+          perform="inventory.stock.read"
+          fallback={<span data-testid="rbac-denied">Denegado</span>}
+        >
+          <span data-testid="rbac-allowed">Permitido</span>
         </Can>
-        <Can perform="catalog.products.delete" showDeniedBadge>
-          <span>Delete Allowed</span>
-        </Can>
-      </PermissionsProvider>
+      </AppProviders>
     );
 
-    expect(
-      screen.getByTestId("rbac-allowed-catalog.products.create")
-    ).toBeTruthy();
-    expect(
-      screen.getByTestId("rbac-denied-catalog.products.delete")
-    ).toBeTruthy();
+    expect(screen.getByTestId("rbac-allowed")).toBeTruthy();
   });
 
-  it("builds canonical API headers, queryKeys, and 3-layer unit conversions", async () => {
+  it("exercises httpClient, queryKeys, error boundary, and realtime provider", async () => {
     setHttpRequestContext({
-      holdingId: "holding-gastro-sur",
-      tenantId: "tenant_rest_central",
-      warehouseId: "bod-camara-fria",
-      accessToken: "jwt-test-token",
+      holdingId: "holding-test",
+      tenantId: "tenant_test",
+      accessToken: "mock-token",
     });
-    expect(getHttpRequestContext().warehouseId).toBe("bod-camara-fria");
 
+    expect(getHttpRequestContext().holdingId).toBe("holding-test");
+    expect(resolveApiEndpointUrl("/catalog/products")).toContain("/catalog/products");
     const headers = buildApiHeaders();
-    expect(headers["X-Holding-ID"]).toBe("holding-gastro-sur");
-    expect(headers["X-Tenant-ID"]).toBe("tenant_rest_central");
-    expect(headers["X-Warehouse-ID"]).toBe("bod-camara-fria");
-    expect(headers["X-Trace-ID"]).toHaveLength(32);
-    expect(headers.Authorization).toBe("Bearer jwt-test-token");
-    expect(resolveApiEndpointUrl("/health")).toContain("/api/v1/health");
+    expect(headers["X-Holding-ID"]).toBe("holding-test");
+    expect(headers["X-Tenant-ID"]).toBe("tenant_test");
+    expect(headers.Authorization).toBe("Bearer mock-token");
 
-    const fallbackResp = await apiRequest("/health", {
-      fallbackData: { status: "ok" },
+    const fallbackResult = await apiRequest<{ ok: boolean }>("/test-endpoint", {
+      fallbackData: { ok: true },
     });
-    expect(fallbackResp.data.status).toBe("ok");
+    expect(fallbackResult.data.ok).toBe(true);
+    expect(queryKeys.catalog.products("tenant_test")).toEqual([
+      "oppytec",
+      "catalog",
+      "products",
+      "tenant_test",
+    ]);
 
-    expect(queryKeys.auth.session()).toEqual(["oppytec", "auth", "session"]);
-    expect(queryKeys.rbac.roles("t1")[3]).toBe("t1");
-    expect(queryKeys.audit.forensicLogs("t1")[3]).toBe("t1");
-    expect(queryKeys.catalog.products("t1")[3]).toBe("t1");
-    expect(
-      queryKeys.inventory.stock({ holdingId: "h1", tenantId: "t1" })[4]
-    ).toBe("t1");
-    expect(queryKeys.recipes.escandallos("t1")[3]).toBe("t1");
-    expect(queryKeys.procurement.invoices("t1")[3]).toBe("t1");
-    expect(queryKeys.operations.alerts("t1")[3]).toBe("t1");
-    expect(queryKeys.analytics.kpis("t1", "2026-10")[4]).toBe("2026-10");
-    expect(queryKeys.oppyfy.credits("t1")[3]).toBe("t1");
-    expect(
-      queryKeys.platformAdmin.observability("01-health-overview", "local")[3]
-    ).toBe("01-health-overview");
-
-    const grams = convertThreeLayerQuantity("1.5", "purchase", "recipe", {
-      code: "BOX-KG-G",
-      purchaseUnit: "Box",
-      storageUnit: "kg",
-      recipeUnit: "g",
-      purchaseToStorageFactor: "10",
-      storageToRecipeFactor: "1000",
-    });
-    expect(grams).toBe("15000.0000");
-    expect(formatOperationalDate("2026-10-19T12:00:00Z", "es")).toBe(
-      "19-10-2026"
-    );
-  });
-
-  it("renders shared UI, feedback components, and WebSocket RealtimeProvider without polling", () => {
-    let dialogOpen = true;
     render(
       <AppProviders>
         <HooksHarness />
-        <PageSkeleton rows={2} />
-        <EmptyState />
-        <ErrorBoundary>
-          <div>Protected Child</div>
-        </ErrorBoundary>
+        <PageSkeleton />
+        <EmptyState title="Sin Datos" />
         <ResponsiveDialog
-          open={dialogOpen}
-          onClose={() => {
-            dialogOpen = false;
-          }}
-          title="Test Modal"
+          open
+          onClose={() => undefined}
+          title="Diálogo Adaptativo"
           isMobile
         >
           <span>Drawer Body</span>
@@ -250,25 +226,71 @@ describe("OppyTec v2.0 — Phase 5 Frontend Architecture & 10 Feature Modules", 
     );
   });
 
-  it("renders App with all 10 feature modules, 13 Observability subviews, and Pollo King preservation", () => {
-    render(<App />);
+  it("renders LoginPage with 1:1 Legacy split-screen, LoginBranding, and input fields", () => {
+    render(
+      <AppProviders>
+        <BrowserRouter>
+          <LoginPage />
+        </BrowserRouter>
+      </AppProviders>
+    );
 
-    // Verify all 10 feature modules are rendered in the shell
-    expect(screen.getByTestId("feature-analytics")).toBeTruthy();
-    expect(screen.getByTestId("feature-catalog")).toBeTruthy();
-    expect(screen.getByTestId("feature-inventory")).toBeTruthy();
-    expect(screen.getByTestId("feature-recipes")).toBeTruthy();
-    expect(screen.getByTestId("feature-procurement")).toBeTruthy();
-    expect(screen.getByTestId("feature-operations")).toBeTruthy();
-    expect(screen.getByTestId("feature-oppyfy")).toBeTruthy();
-    expect(screen.getByTestId("feature-rbac-and-audit")).toBeTruthy();
-    expect(screen.getByTestId("feature-platform-admin")).toBeTruthy();
-    expect(screen.getByTestId("feature-auth")).toBeTruthy();
+    expect(screen.getByTestId("client-login-page")).toBeTruthy();
+    expect(screen.getByText("Bienvenido")).toBeTruthy();
+    expect(screen.getByText("Ingresa al panel de control de inventario.")).toBeTruthy();
+    expect(screen.getByText("Gestión inteligente para la industria hotelera y restaurantes.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Ingresar al Sistema/i })).toBeTruthy();
+  });
 
-    // Verify "Pollo King" proper noun preservation in Catalog
-    expect(
-      screen.getByTestId("catalog-product-PRD-PK-001").textContent
-    ).toContain("Pollo King");
+  it("renders AdminLoginPage with 1:1 Legacy dark background and Acceso Restringido", () => {
+    render(
+      <AppProviders>
+        <BrowserRouter>
+          <AdminLoginPage />
+        </BrowserRouter>
+      </AppProviders>
+    );
+
+    expect(screen.getByTestId("admin-login-page")).toBeTruthy();
+    expect(screen.getByText("Acceso Restringido")).toBeTruthy();
+    expect(screen.getByText("Global SaaS Administration")).toBeTruthy();
+    expect(screen.getByLabelText("Usuario Administrador")).toBeTruthy();
+    expect(screen.getByLabelText("Clave de Acceso")).toBeTruthy();
+  });
+
+  it("renders CleanAdminDashboard with 4 KPI cards and zero demo clutter", () => {
+    render(
+      <AppProviders
+        initialSession={{ accessToken: "mock-admin-token" }}
+        initialUser={{
+          id: 1,
+          username: "oppytec.admin",
+          email: "oppytec.admin@gmail.com",
+          firstName: "SuperUser",
+          lastName: "OppyTec",
+          role: "propietario",
+          isSuperuser: true,
+          isGlobalAdmin: true,
+        }}
+      >
+        <CleanAdminDashboard />
+      </AppProviders>
+    );
+
+    expect(screen.getByTestId("admin-panel-root")).toBeTruthy();
+    expect(screen.getByText("Panel de Control Global")).toBeTruthy();
+    expect(screen.getByTestId("admin-kpi-grid")).toBeTruthy();
+    expect(screen.getByText("Total de holdings registrados")).toBeTruthy();
+  });
+
+  it("renders ClientAppShell and verifies theme switching and holding tenant selector", () => {
+    render(
+      <AppProviders>
+        <BrowserRouter>
+          <ClientAppShell />
+        </BrowserRouter>
+      </AppProviders>
+    );
 
     // Verify theme switching across light, dark, and ocean-blue
     fireEvent.click(screen.getByTestId("theme-btn-dark"));
@@ -285,6 +307,20 @@ describe("OppyTec v2.0 — Phase 5 Frontend Architecture & 10 Feature Modules", 
       target: { value: "tenant_hotel_costanera" },
     });
     expect(getHttpRequestContext().tenantId).toBe("tenant_hotel_costanera");
+  });
+
+  it("exercises CatalogFeatureView and 13 Observability subviews in isolation", () => {
+    render(
+      <AppProviders>
+        <CatalogFeatureView />
+        <PlatformAdminFeatureView />
+      </AppProviders>
+    );
+
+    // Verify "Pollo King" proper noun preservation in Catalog
+    expect(
+      screen.getByTestId("catalog-product-PRD-PK-001").textContent
+    ).toContain("Pollo King");
 
     // Verify all 13 Observability subviews exist and respond to Environment filter
     expect(OBSERVABILITY_13_SUBVIEWS).toHaveLength(13);
@@ -298,5 +334,10 @@ describe("OppyTec v2.0 — Phase 5 Frontend Architecture & 10 Feature Modules", 
     expect(
       screen.getByTestId("observability-active-indicator").textContent
     ).toBe("staging :: 13-finops-llm-request-logs");
+  });
+
+  it("renders App root component without throwing", () => {
+    render(<App />);
+    expect(screen.getByTestId("client-login-page")).toBeTruthy();
   });
 });

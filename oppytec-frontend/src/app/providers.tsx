@@ -1,6 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
-import { PermissionsProvider } from "@/shared/auth/usePermissions";
+import {
+  type AuthenticatedUser,
+  AuthProvider,
+  type AuthSession,
+  PermissionsProvider,
+} from "@/shared/auth/usePermissions";
 import { ErrorBoundary } from "@/shared/components/feedback/ErrorBoundary";
 import { CurrencyProvider } from "@/shared/currency";
 import { RealtimeProvider } from "@/shared/realtime/RealtimeProvider";
@@ -9,12 +14,16 @@ export interface AppProvidersProps {
   readonly children: ReactNode;
   readonly holdingId?: string;
   readonly tenantId?: string;
+  readonly initialSession?: AuthSession | null;
+  readonly initialUser?: AuthenticatedUser | null;
 }
 
 export function AppProviders({
   children,
   holdingId = "holding-gastro-sur",
   tenantId = "tenant_rest_central",
+  initialSession,
+  initialUser,
 }: AppProvidersProps) {
   const [queryClient] = useState(
     () =>
@@ -32,11 +41,16 @@ export function AppProviders({
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <CurrencyProvider>
-          <PermissionsProvider>
-            <RealtimeProvider holdingId={holdingId} tenantId={tenantId}>
-              {children}
-            </RealtimeProvider>
-          </PermissionsProvider>
+          <AuthProvider
+            initialSession={initialSession}
+            initialUser={initialUser}
+          >
+            <PermissionsProvider>
+              <RealtimeProvider holdingId={holdingId} tenantId={tenantId}>
+                {children}
+              </RealtimeProvider>
+            </PermissionsProvider>
+          </AuthProvider>
         </CurrencyProvider>
       </QueryClientProvider>
     </ErrorBoundary>
