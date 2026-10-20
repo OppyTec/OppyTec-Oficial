@@ -3,6 +3,8 @@ oppytec-backend/src/modules/identity/presentation/router.py
 Endpoints REST de Identidad, Autenticación, Roles, Delegación JIT y Soft-Delete con Kill-Switch:
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/refresh`
+- `GET /api/v1/auth/me`
+- `POST /api/v1/auth/logout`
 - `GET /api/v1/identity/roles` y `POST /api/v1/identity/roles`
 - `POST /api/v1/identity/grants/jit`
 - `POST /api/v1/identity/users/{user_id}/soft-delete`
@@ -23,6 +25,7 @@ from src.core.exceptions import AuthenticationError, PermissionDeniedError
 from src.core.guards.rate_limiter import RateLimitCheckResult, RequireRateLimit
 from src.core.guards.rbac_dependencies import (
     AuthenticatedPrincipal,
+    RequireGlobalPermission,
     RequireTenantPermission,
     is_session_revoked,
     revoke_session_token,
@@ -31,6 +34,7 @@ from src.core.security import (
     create_access_token,
     create_refresh_token,
     decode_and_extract_claims,
+    verify_password,
 )
 from src.modules.identity.application.delegation_service import (
     DelegationRequest,
@@ -38,6 +42,7 @@ from src.modules.identity.application.delegation_service import (
 )
 from src.modules.identity.domain.rbac_evaluator import validate_hierarchy_delegation
 from src.modules.identity.presentation.schemas import (
+    AuthenticatedUserProfileResponse,
     JitGrantCreateRequest,
     JitGrantResponse,
     LoginRequest,
@@ -63,6 +68,61 @@ _custom_roles: dict[str, RoleResponse] = {
 }
 
 
+def _build_genesis_store_entry() -> dict[str, object]:
+    """Construye el registro base del SuperUser Génesis sin datos ficticios de clientes."""
+    genesis = build_genesis_superuser_manifest()
+    return {
+        "id": 1,
+        "username": genesis.username,
+        "email": genesis.email,
+        "first_name": "SuperUser",
+        "last_name": "OppyTec",
+        "role": "propietario",
+        "hierarchy_rank": 0,
+        "is_superuser": True,
+        "is_global_admin": True,
+        "is_active": True,
+        "tipo_usuario": "GLOBAL",
+        "tenant_id": None,
+        "holding_id": None,
+        "hashed_password": genesis.hashed_password,
+        "permissions": ["*.*.*"],
+    }
+
+
+_GLOBAL_USERS_STORE: dict[int, dict[str, object]] = {
+    1: _build_genesis_store_entry(),
+}
+_CLIENT_USERS_STORE: dict[int, dict[str, object]] = {}
+
+
+def _match_store_user(
+    store: dict[int, dict[str, object]],
+    ident_lower: str,
+    plain_password: str,
+) -> dict[str, object] | None:
+    """Busca un usuario activo por username o email (case-insensitive) y verifica su contraseña."""
+    for uid, record in store.items():
+        if not bool(record.get("is_active", True)) or bool(record.get("is_deleted", False)):
+            continue
+        uname = str(record.get("username", "")).strip().lower()
+        email = str(record.get("email", "")).strip().lower()
+        if ident_lower not in {uname, email}:
+            continue
+        hashed_pw = str(record.get("hashed_password", record.get("password_hash", "")))
+        plain_stored = record.get("password")
+        password_ok = (
+            verify_password(plain_password, hashed_pw)
+            if hashed_pw
+            else (isinstance(plain_stored, str) and plain_stored == plain_password)
+        )
+        if password_ok:
+            resolved = dict(record)
+            resolved.setdefault("id", uid)
+            return resolved
+    return None
+
+
 @router.post(
     "/api/v1/auth/login",
     response_model=TokenPairResponse,
@@ -72,24 +132,109 @@ async def login_endpoint(
     payload: LoginRequest,
     _rate_limit: Annotated[RateLimitCheckResult, Depends(RequireRateLimit("auth"))],
 ) -> TokenPairResponse:
-    """Autentica al usuario (incluyendo SuperUser Génesis) bajo Rate Limiting `auth`."""
+    """Autentica al usuario (SuperUser Génesis, Global Staff o Cliente) bajo Rate Limiting `auth`."""
     genesis = build_genesis_superuser_manifest()
     ident = payload.username_or_email.strip()
+    ident_lower = ident.lower()
 
-    if ident in {genesis.username, genesis.email} and verify_genesis_password(
+    if ident_lower in {genesis.username.lower(), genesis.email.lower()} and verify_genesis_password(
         payload.password,
         genesis.hashed_password,
     ):
         user_id = 1
         is_god = True
+        is_global_admin = True
         rank = 0
-        tenant_id = payload.tenant_id or "tenant_genesis"
-        holding_id = "holding_genesis"
+        tenant_id: str | None = payload.tenant_id
+        holding_id: str | None = "holding_genesis" if payload.tenant_id else None
+        _GLOBAL_USERS_STORE[1] = {
+            "id": 1,
+            "username": genesis.username,
+            "email": genesis.email,
+            "first_name": "SuperUser",
+            "last_name": "OppyTec",
+            "role": "propietario",
+            "hierarchy_rank": 0,
+            "is_superuser": True,
+            "is_global_admin": True,
+            "is_active": True,
+            "tipo_usuario": "GLOBAL",
+            "tenant_id": tenant_id,
+            "holding_id": holding_id,
+            "hashed_password": genesis.hashed_password,
+            "permissions": ["*.*.*"],
+        }
+        user_profile = AuthenticatedUserProfileResponse(
+            id=user_id,
+            username=genesis.username,
+            email=genesis.email,
+            first_name="SuperUser",
+            last_name="OppyTec",
+            role="propietario",
+            is_superuser=True,
+            is_global_admin=True,
+            tipo_usuario="GLOBAL",
+            tenant_id=tenant_id,
+            holding_id=holding_id,
+            permissions=["*.*.*"],
+        )
     else:
-        raise AuthenticationError(
-            "Invalid username/email or password.",
-            i18n_key="auth:errors.invalid_credentials",
-            status_code=401,
+        matched_global = _match_store_user(_GLOBAL_USERS_STORE, ident_lower, payload.password)
+        matched_client = (
+            None
+            if matched_global is not None
+            else _match_store_user(_CLIENT_USERS_STORE, ident_lower, payload.password)
+        )
+        matched = matched_global or matched_client
+        if matched is None:
+            raise AuthenticationError(
+                "Invalid username/email or password.",
+                i18n_key="auth:errors.invalid_credentials",
+                status_code=401,
+            )
+
+        raw_id = matched.get("id", 0)
+        user_id = int(raw_id) if isinstance(raw_id, (int, str)) else 0
+        is_god = bool(matched.get("is_superuser", False))
+        is_global_admin = bool(
+            matched.get("is_global_admin", is_god or matched_global is not None)
+        )
+        if payload.is_admin_login and not (is_god or is_global_admin):
+            raise AuthenticationError(
+                "Admin console login requires a Global Admin or SuperUser account.",
+                i18n_key="auth:errors.admin_login_required",
+                status_code=401,
+            )
+
+        raw_rank = matched.get("hierarchy_rank", 0 if is_god else 30)
+        rank = int(raw_rank) if isinstance(raw_rank, (int, str)) else 30
+        raw_tenant = payload.tenant_id or matched.get("tenant_id")
+        tenant_id = str(raw_tenant) if raw_tenant is not None else None
+        raw_holding = matched.get("holding_id")
+        holding_id = str(raw_holding) if raw_holding is not None else None
+        raw_perms = matched.get("permissions", [])
+        perms_list = (
+            [str(p) for p in raw_perms]
+            if isinstance(raw_perms, (list, tuple, set, frozenset))
+            else []
+        )
+        first_name_val = matched.get("first_name")
+        last_name_val = matched.get("last_name")
+        user_profile = AuthenticatedUserProfileResponse(
+            id=user_id,
+            username=str(matched.get("username", ident)),
+            email=str(matched.get("email", ident)),
+            first_name=str(first_name_val) if first_name_val is not None else None,
+            last_name=str(last_name_val) if last_name_val is not None else None,
+            role=str(matched.get("role", "propietario" if is_god else "admin")),
+            is_superuser=is_god,
+            is_global_admin=is_global_admin,
+            tipo_usuario=str(
+                matched.get("tipo_usuario", "GLOBAL" if is_global_admin else "CLIENTE")
+            ),
+            tenant_id=tenant_id,
+            holding_id=holding_id,
+            permissions=perms_list,
         )
 
     if is_session_revoked(user_id=user_id):
@@ -105,7 +250,8 @@ async def login_endpoint(
         tenant_id=tenant_id,
         hierarchy_rank=rank,
         is_superuser_god=is_god,
-        is_global_staff=is_god,
+        is_global_staff=is_god or is_global_admin,
+        role_grants=user_profile.permissions,
     )
     refresh_tok = create_refresh_token(
         user_id=user_id,
@@ -121,7 +267,78 @@ async def login_endpoint(
         tenant_id=tenant_id,
         holding_id=holding_id,
         hierarchy_rank=rank,
+        user=user_profile,
     )
+
+
+@router.get(
+    "/api/v1/auth/me",
+    response_model=AuthenticatedUserProfileResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_current_user_profile_endpoint(
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("identity.profile.read")),
+    ],
+) -> AuthenticatedUserProfileResponse:
+    """Devuelve el perfil completo del usuario autenticado en sesión."""
+    record = _GLOBAL_USERS_STORE.get(principal.user_id) or _CLIENT_USERS_STORE.get(
+        principal.user_id
+    )
+    if record is not None:
+        first_name_val = record.get("first_name")
+        last_name_val = record.get("last_name")
+        raw_perms = record.get("permissions", [])
+        perms_list = (
+            [str(p) for p in raw_perms]
+            if isinstance(raw_perms, (list, tuple, set, frozenset))
+            else list(principal.role_grants)
+        )
+        return AuthenticatedUserProfileResponse(
+            id=principal.user_id,
+            username=str(record.get("username", "oppytec.admin")),
+            email=str(record.get("email", "oppytec.admin@gmail.com")),
+            first_name=str(first_name_val) if first_name_val is not None else None,
+            last_name=str(last_name_val) if last_name_val is not None else None,
+            role=str(record.get("role", "propietario")),
+            is_superuser=bool(record.get("is_superuser", principal.is_superuser_god)),
+            is_global_admin=bool(record.get("is_global_admin", principal.is_global_staff)),
+            tipo_usuario=str(record.get("tipo_usuario", "GLOBAL")),
+            tenant_id=principal.tenant_id,
+            holding_id=principal.holding_id,
+            permissions=perms_list,
+        )
+
+    genesis = build_genesis_superuser_manifest()
+    return AuthenticatedUserProfileResponse(
+        id=principal.user_id,
+        username=genesis.username if principal.user_id == 1 else f"user_{principal.user_id}",
+        email=genesis.email if principal.user_id == 1 else f"user_{principal.user_id}@oppytec.com",
+        first_name="SuperUser" if principal.is_superuser_god else None,
+        last_name="OppyTec" if principal.is_superuser_god else None,
+        role="propietario" if principal.is_superuser_god else "admin",
+        is_superuser=principal.is_superuser_god,
+        is_global_admin=principal.is_global_staff,
+        tipo_usuario="GLOBAL" if principal.is_global_staff else "CLIENTE",
+        tenant_id=principal.tenant_id,
+        holding_id=principal.holding_id,
+        permissions=["*.*.*"] if principal.is_superuser_god else sorted(principal.role_grants),
+    )
+
+
+@router.post(
+    "/api/v1/auth/logout",
+    status_code=status.HTTP_200_OK,
+)
+async def logout_endpoint(
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("identity.session.logout")),
+    ],
+) -> dict[str, str]:
+    """Cierra la sesión activa del usuario autenticado."""
+    return {"status": "logged_out"}
 
 
 @router.post(

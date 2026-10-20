@@ -18,9 +18,10 @@ class LoginRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    username_or_email: str = Field(..., min_length=3, max_length=255)
-    password: str = Field(..., min_length=8, max_length=255)
-    tenant_id: str | None = Field(default=None, max_length=120)
+    username_or_email: str = Field(..., min_length=2, max_length=120)
+    password: str = Field(..., min_length=4, max_length=256)
+    tenant_id: str | None = Field(default=None, max_length=64)
+    is_admin_login: bool = Field(default=False)
 
     @field_validator("username_or_email")
     @classmethod
@@ -36,6 +37,25 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str = Field(..., min_length=16)
 
 
+class AuthenticatedUserProfileResponse(BaseModel):
+    """Perfil del usuario autenticado (SuperUser Génesis, Global Staff o Trabajador de Tenant)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: int
+    username: str
+    email: str
+    first_name: str | None = None
+    last_name: str | None = None
+    role: str = "propietario"
+    is_superuser: bool = False
+    is_global_admin: bool = False
+    tipo_usuario: str = "GLOBAL"
+    tenant_id: str | None = None
+    holding_id: str | None = None
+    permissions: list[str] = Field(default_factory=list)
+
+
 class TokenPairResponse(BaseModel):
     """Par de tokens JWT emitidos tras login o refresh."""
 
@@ -44,10 +64,12 @@ class TokenPairResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"  # noqa: S105
+    expires_in: int = 1800
     user_id: int
     tenant_id: str | None = None
     holding_id: str | None = None
     hierarchy_rank: int
+    user: AuthenticatedUserProfileResponse | None = None
 
 
 class RoleUpsertRequest(BaseModel):

@@ -135,6 +135,27 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json" if openapi_enabled else None,
     )
 
+    from fastapi.middleware.cors import CORSMiddleware
+
+    raw_origins = getattr(settings, "ALLOWED_ORIGINS", None)
+    allowed_origins = (
+        list(raw_origins)
+        if isinstance(raw_origins, (list, tuple, set))
+        else ["http://localhost:5173", "http://127.0.0.1:5173"]
+    )
+    if "http://localhost:5173" not in allowed_origins:
+        allowed_origins.append("http://localhost:5173")
+    if "http://127.0.0.1:5173" not in allowed_origins:
+        allowed_origins.append("http://127.0.0.1:5173")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     with suppress(Exception):
         core_observability = importlib.import_module("src.core.observability")
         setup_fn = getattr(core_observability, "setup_observability", None)
