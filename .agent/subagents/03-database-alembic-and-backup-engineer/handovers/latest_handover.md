@@ -1,18 +1,33 @@
 # Reporte de Traspaso (`Handover`) — Agente 03: Especialista en Base de Datos, Alembic y Backups 4-Capas
 
-- **Fecha UTC:** 2026-10-19T14:06:00+00:00
-- **Fase:** Fase 2 Completada -> Lista para Fase 3
+- **Fecha UTC:** 2026-10-22T20:33:00+00:00
+- **Fase:** Plan Maestro — Auditoría Integral de BD, Migración 0003, Aislamiento Multi-Tenant y Backups 4-Capas
 
 ## 1. Completed (Qué se hizo)
-- Construido `oppytec-backend/src/core/database.py` (`validate_tenant_schema_name`, `AsyncEngine` con soporte `AsyncAdaptedQueuePool`/`NullPool`, listener `RESET search_path` en checkin y generadores `get_public_db_session` / `get_tenant_db_session`).
-- Construido `oppytec-backend/src/core/redis.py` con aislamiento por `ENV_NAMESPACE` y `RedisCircuitBreaker` (`< 50 ms`).
-- Construido `oppytec-backend/src/shared/` (`models_base.py` con `PublicBase`/`TenantBase`/`AuditTimestampsMixin`/`TranslatableI18nMixin`, `soft_delete_mixin.py`, `unit_of_work.py`, `pagination.py`).
-- Construidos los modelos SQLAlchemy 2.0 (`infrastructure/models.py`) de los 10 módulos de negocio (`identity`, `tenancy`, `audit`, `catalog`, `inventory`, `recipes`, `procurement`, `operations`, `analytics`, `oppy_ai`) con precisión `Decimal` y protección de nombres propios (`"Pollo King"`).
-- Construido el motor de migraciones correlativas (`alembic.ini`, `alembic/env.py`, `alembic/script.py.mako`, `0001_public_genesis_tenancy_modules_and_global_rbac.py`, `0002_tenant_initial_client_rbac_and_core_modules.py` y `scripts/db_migration.py`).
-- Construido `src/core/bootstrap.py`, el paquete `src/core/backup/` de 4 Capas (`.sql.zst.age` + restauración quirúrgica por Tenant), `scripts/backup_manager.py`, `scripts/seed_dev_data.py`, `scripts/anonymize_for_staging.py` y los 10 archivos de pruebas unitarias 1:1 en `tests/unit/modules/`.
+- **Auditoría de Modelos SQLAlchemy 2.0 (`src/modules/tenancy/infrastructure/models.py`):**
+  - Se verificó que `SystemPlan` exponga las 6 cuotas de capacidad (`max_active_users`, `max_products`, `max_suppliers`, `max_recipes`, `max_combos`, `max_storage_mb`) como `Integer` no-nulables con sus respectivos valores por defecto (`500`, `20`, `0`, `0`, `1024`).
+  - Se verificó que `Holding` y `Tenant` incluyan todos los overrides paramétricos (`custom_max_users_override`, `custom_max_products_override`, `custom_max_suppliers_override`, `custom_max_recipes_override`, `custom_max_combos_override`, `custom_storage_mb_override`) como `Integer` anulables (`nullable=True`).
+- **Auditoría de la Migración Correlativa `0003_public_plans_quotas_and_tenant_capacity_overrides.py`:**
+  - `revision`: `"0003_public_plans_quotas_and_tenant_capacity_overrides"`
+  - `down_revision`: `"0002_tenant_initial_client_rbac_and_core_modules"`
+  - `migration_scope`: `"public"`
+  - **Simetría 100% reversible:** En `upgrade()`, agrega 4 columnas a `system_plans`, 4 a `holdings` y 4 a `tenants` (12 operaciones `op.add_column`). En `downgrade()`, revierte exactamente las 12 columnas en orden inverso LIFO mediante `op.drop_column` con `schema="public"`.
+  - Verificada la generación estática DDL (`alembic upgrade 0002:0003 --sql` y `alembic downgrade 0003:0002 --sql`).
+- **Validación del Arnés de Migración y Quality Gates:**
+  - `python scripts/db_migration.py verify`: 100% OK (cadena correlativa sin gaps ni colisiones).
+  - `make migration-rebase`: 100% OK.
+  - `make fast-gate` (< 15s): 100% OK (105 tests pasados, 0 ruff errors, 0 mypy strict errors).
+  - `make main-gate` (< 3m): 100% OK (Smoke + Integración + 11 Vectores Red Team).
+  - `make deep-gate`: 100% OK (Schemathesis OpenAPI fuzzing + E2E + UAT + Load 500 RPS).
+- **Aislamiento Multi-Tenant y Backups 4-Capas:**
+  - `SET LOCAL search_path` y `RESET search_path` auditados en `tests/integration/test_multi_tenant_schema_isolation.py` (garantizado en checkin y bloques `finally`).
+  - Simulacro automatizado de restauración quirúrgica de 4 capas (`python scripts/backup_manager.py verify-drill --schema tenant_pacifico_centro`): verificado exitosamente sin regresiones (`.sql.zst.age` con checksum SHA-256).
+- **Prueba Unitaria Automatizada de Simetría DDL:**
+  - Implementada `test_migration_0003_symmetry_and_metadata` en `tests/unit/modules/test_tenancy_services.py` con carga dinámica vía `importlib.util` y mock de `alembic.op`.
 
 ## 2. Friction & Failures (Qué salió mal / Qué cuidar)
-- Cuidar que ningún archivo dentro de `src/modules/oppy_ai/` mencione la ruta de la bóveda técnica ni siquiera en comentarios para cumplir `test_oppyfy_telemetry_and_isolation.py`.
+- Recordar que `alembic/versions/` no es un paquete importable directamente (`ModuleNotFoundError`), por lo que cualquier suite de tests sobre las migraciones debe utilizar `importlib.util.spec_from_file_location()`.
+- Cuidar que cualquier modificación a las cuotas en `schemas.py` o `models.py` mantenga consistencia con los 6 recursos validados por `TenantCapacityQuotaService` y `evaluate_resource_capacity_quota`.
 
 ## 3. Next Exact Action (Siguiente paso exacto)
-- Integrar en el *Merge Train* de la Fase 2 y habilitar a los agentes de la Fase 3 para construir los repositorios y servicios de aplicación sobre `PublicBase` y `TenantBase`.
+- Proceder con la ejecución de los siguientes pasos del Plan Maestro (Paso 3 y Paso 4: vistas y CRUDs de administración global en `platform-admin`).

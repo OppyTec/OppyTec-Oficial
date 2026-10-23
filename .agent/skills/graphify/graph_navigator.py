@@ -33,6 +33,7 @@ class ASTGraphNavigator:
             n.get("id") for n in nodes
             if symbol_query.lower() in str(n.get("id", "")).lower()
             or symbol_query.lower() in str(n.get("label", "")).lower()
+            or symbol_query.lower() in str(n.get("path", "")).lower()
         }
         related_edges = [
             e for e in edges

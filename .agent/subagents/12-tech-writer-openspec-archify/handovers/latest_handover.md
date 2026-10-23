@@ -1,21 +1,39 @@
 # Reporte de Traspaso (`Handover`) — Agente 12: Technical Writer, OpenSpec Bipartito, Graphify y Archify
 
-- **Fecha UTC:** 2026-10-19T20:58:00Z
-- **Fase:** Fase 6 (Consolidación Grafo AST Maestro `graph.json` + Verificación OpenSpec/Archify + Bitácora Final `10/10` + MOC Segundo Cerebro) Completada
+- **Fecha UTC:** 2026-10-23T18:25:00Z
+- **Fase / Hito:** Implementación del Plan de Mejora de Graphify — Subcomandos CLI `nav` & `sync-graph` y Gobernanza Estricta Pre/Post-Ejecución
+- **Estado de Certificación:** `SYNC_APPROVED` (100% de integridad en evaluación anti-trampa, Grafo AST sincronizado con 83 nodos y 111 aristas, `AGENTS.md` blindado con Regla 6 obligatoria).
 
 ## 1. Completed
-- **Consolidación del Grafo AST Maestro de OppyTec v2.0 (`docs/architecture/graphify/`):**
-  - Creados `docs/architecture/graphify/v2_phase6_master_graph.json` y `docs/architecture/graphify/graph.json` unificando los 10 módulos Clean Architecture de Backend, los 4 guardias deterministas HTTP, los motores transversales (`i18n`, `FX`, `Realtime WebSockets`, `Backups 4-Capas`, `JEV Sistema 1`, `R2 Storage`), los 10 features + 5 shared kernels de React 19, las 9 suites de verificación (`unit`, `architecture`, `smoke`, `integration`, `security_redteam_01_11`, `contracts_schemathesis`, `e2e_01_05`, `uat_business_scenarios`, `load_locust_500rps`), las 2 bóvedas de OpenSpec y los 5 Mapas del Atlas de Archify.
-  - Verificado que `ASTGraphNavigator(Path('docs/architecture/graphify/graph.json')).neighbors('recipes')` resuelve la vecindad completa (Backend, Frontend, Suites E2E/UAT/Unit y Mapa 3 de Archify) en `< 150 tokens`.
-- **Auditoría de Integridad de las 2 Bóvedas de OpenSpec y de los 5 Mapas del Atlas de Archify:**
-  - Confirmada la paridad 1:1 de las 13 especificaciones de `specs/business-domain/*.business.spec.md` (con `0%` SQL/código) y las 15 especificaciones de `specs/engineering-code/*.code.spec.md` (con `jev_system1_evaluation`).
-  - Confirmada la validez criptográfica `SHA-256` (`MATCH` 100%) de los 5 mapas interactivos `docs/architecture/atlas/01..05-*.archify.html` contra sus fuentes y recibos en `docs/architecture/atlas/sources/*.receipt.json`.
-- **Bitácora de Cierre Fase 6 y Mapa Maestro del Segundo Cerebro (Obsidian Ready):**
-  - Creada `docs/bitacora/diario-escuadron/06-Fase-6-Pruebas-E2E-Deep-Gate-500-RPS-y-Certificacion-Final-10-de-10.md` explicando en lenguaje claro para personas el aporte de los 12 agentes en la Fase 6, el funcionamiento de las suites E2E (`01..05`), UAT, Load (`500 RPS`, $P_{95} \le 120\text{ ms}$), el *Restore Drill* de 4 capas y la certificación `10/10`.
-  - Actualizado `docs/bitacora/00-MAPA-SEGUNDO-CEREBRO.md` enlazando la Bitácora de Fase 6, el grafo maestro `graph.json` / `v2_phase6_master_graph.json` y el certificado de seguridad `docs/security/CERTIFICACION-FINAL-SEGURIDAD-FASE-6.md`.
+- **Subcomandos CLI en `scripts/harness.py`:**
+  - **`nav` (`python scripts/harness.py nav "<símbolo>" [--legacy] [--limit 10]`):**
+    - Consulta deterministamente `ASTGraphNavigator` de `.agent/skills/graphify/graph_navigator.py`.
+    - Realiza búsquedas transversales insensibles a mayúsculas/minúsculas en `id`, `label` y `path`.
+    - Retorna formato JSON compacto y estructurado con el número de coincidencias, muestra ordenada y aristas relacionales en `< 150 tokens`.
+    - Soporte validado para `--legacy` (OppyTec-Legacy de 32MB) en ~0.16s y grafo V2 activo en < 0.01s.
+  - **`sync-graph` (`python scripts/harness.py sync-graph`):**
+    - Escaneo determinista de artefactos: migraciones Alembic (`0001`, `0002`, `0003`), routers FastAPI (11 endpoints REST y WS), componentes y hooks frontend (`LanguageProvider`, `useLanguage`, `LanguageFlagSelector`, `CurrencySelector`, `QuotaProgressIndicator`, `AdminManagementViews`, `DynamicAdminTable`, `DynamicAdminForm`) y suites de test Vitest (`suite:frontend_admin_views_test`, `suite:frontend_i18n_test`, etc.).
+    - Generación y actualización sincronizada de `docs/architecture/graphify/graph.json` y `docs/architecture/graphify/v2_phase6_master_graph.json`.
+    - Métricas automáticas actualizadas: 83 nodos, 111 aristas, 11 routers backend, 3 migraciones, 14 suites de verificación.
+    - Registro inmutable en `.agent/memory/harness_events.jsonl` bajo evento `GRAPHIFY_SYNCED`.
+- **Gobernanza Estricta en `AGENTS.md`:**
+  - **Regla de Oro Inviolable 6:** Establecida la obligatoriedad estricta y sin excepciones de consultar Graphify (`python scripts/harness.py nav "<símbolo>"`) antes de comenzar a leer archivos masivos (pre-ejecución), y de actualizar el grafo (`python scripts/harness.py sync-graph` o despachando al Agente 12) al concluir cualquier modificación de código (post-ejecución).
+  - **Protocolo de Inicio de Sesión (8 Pasos):** Pasos 4 y 7 actualizados explícitamente con los comandos del arnés.
+  - **Integridad Anti-Reward-Hacking:** Cero modificaciones en `.agent/rules/` ni `.agent/evals/`, garantizando que `python scripts/harness.py verify-evals` se mantenga al 100% íntegro.
+- **Bitácora Humana y Segundo Cerebro:**
+  - Creada `docs/bitacora/diario-escuadron/09-Gobernanza-Estricta-Graphify-CLI-nav-y-sync-graph.md`.
+  - Registrado el hito en `docs/bitacora/00-MAPA-SEGUNDO-CEREBRO.md`.
+- **Validación y Pruebas:**
+  - `python scripts/harness.py sync-graph`: **83 nodos, 111 aristas sincronizados**.
+  - `python scripts/harness.py nav "language"`: **4 nodos, 9 aristas (< 100 tokens)**.
+  - `python scripts/harness.py nav "admin"`: **5 nodos, 10 aristas (< 110 tokens)**.
+  - `python scripts/harness.py nav "0003"`: **1 nodo, 4 aristas (< 80 tokens)**.
+  - `python scripts/harness.py verify-evals`: **100% OK (Cero Reward Hacking)**.
+  - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py`: **2 passed in 0.14s**.
+  - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_openspec_bipartition_and_sync.py`: **1 passed in 0.12s**.
 
 ## 2. Friction & Failures
-- Ninguna fricción: todos los artefactos de documentación, grafo AST maestro y bitácora fueron generados y validados dentro del worktree aislado `phase6-12-tech-writer-openspec-archify`.
+- Cero fallos. El balance de tokens y velocidad de ejecución cumple plenamente con las restricciones de costo y tiempo estipuladas.
 
 ## 3. Next Exact Action
-- Proyecto **OppyTec v2.0** documentado y certificado (`10/10`) en sus 6 fases. Listo para integración final en el *Smart Merge Train* por el Agente 11 (`11-git-worktree-merge-arbiter`) y despliegue productivo (*Go-Live*).
+- Notificar al Orquestador (`202f6db5-d371-42a9-a3a7-75de42b066d6`) la disponibilidad inmediata de los comandos `nav` y `sync-graph` para que todo el escuadrón comience a cumplir la regla obligatoria.

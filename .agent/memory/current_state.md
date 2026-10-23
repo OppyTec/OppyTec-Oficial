@@ -5,8 +5,8 @@
 - **Estado de Reglas Inmutables:** `.agent/rules/00..22-*.md` activas (23 reglas inmutables)
 - **Estado de Evaluaciones Anti-Trampa:** `.agent/evals/rubric_10_criteria.yaml` sellado con `SHA-256` (`verify-evals` 100% OK, calificación `10/10`)
 - **Estado de Quality Gate (Backend + Frontend + Deep Gate):**
-  - **Backend:** `91 passed` en `make fast-gate` (`< 3s`), **`173 passed`** en la suite total (`unit`, `architecture`, `smoke`, `integration`, `security_redteam`, `contracts`, `e2e`, `uat`, `load`), `ruff check` 0 errores, `mypy --strict` 0 errores en 233 archivos, `make migration-rebase` OK, `backup_manager.py verify-drill` OK.
-  - **Frontend (`oppytec-frontend`):** `tsc --noEmit` 0 errores, `eslint --max-warnings 0` 0 errores/warnings, `knip` 0 archivos/exports muertos, `depcruise` 0 violaciones en 96 módulos / 234 dependencias, `vitest` **`23 passed`** (5 suites), `vite build` exitoso (`dist/` generado).
+  - **Backend:** `68 passed` en suite unitaria (`< 3s`), `173 passed` en suite total consolidada, `ruff check` 0 errores, `mypy --strict` 0 errores en 234 archivos, Alembic correlativo `0001..0003` OK (`test_alembic_integrity.py`), `test_openspec_bipartition_and_sync.py` OK.
+  - **Frontend (`oppytec-frontend`):** `tsc --noEmit` 0 errores, `vitest` **`31 passed`** (5 suites), router SPA y vistas administrativas de planes, holdings, entidades legales, sucursales y usuarios clientes operativas con `<QuotaProgressIndicator />`.
 
 ## Checklist Paso 0 (Gobernanza Base y Arnés RLM)
 - [x] `AGENTS.md` y `.graphifyignore` en la raíz del proyecto
@@ -69,7 +69,14 @@
 - [x] **Paso 1: Limpieza Total (BD + Frontend), Enrutamiento Real SPA y Vistas `/login` y `/admin/login`** (Completado y verificado)
 - [x] **Paso 2: Shell de Administración (`AdminLayout`, `AdminSidebar`) y Panel Principal (`/admin`)** (Completado y verificado)
 - [ ] **Paso 3: Motor `DynamicAdminTable` + `DynamicAdminForm` y CRUD de Usuarios Globales (`/admin/users`)**
-- [ ] **Paso 4: Gestión de Clientes Multi-Tenant (`Holdings`, `Entidades Legales`, `Tenants` y `Usuarios Clientes`)**
-- [ ] **Paso 5: Gestión de Negocio SaaS (`Tipos de Negocio`, `Módulos` y `Planes SaaS`)**
+- [x] **Paso 4: Gestión de Clientes Multi-Tenant (`Holdings`, `Entidades Legales`, `Tenants` y `Usuarios Clientes` con Soft-Delete e Impersonación de soporte `/admin/impersonate`)** (Completado y auditado)
+- [x] **Paso 5: Gestión de Negocio SaaS (`Módulos`, `Planes SaaS` con 6 cuotas paramétricas, tarifas multi-moneda `Decimal`, y Plan Básico de 10 módulos con RBAC de 2 niveles y semáforo `<QuotaProgressIndicator />`)** (Completado y auditado)
 - [ ] **Paso 6: Monitoreo FinOps de Tokens IA (`/admin/token-consumption`) y Telemetría v2.0 (`/admin/observability`)**
+
+### Resumen de Auditoría del Plan Maestro (Agente 12 — Tech Writer & OpenSpec)
+- **Migración Alembic 0003:** `0003_public_plans_quotas_and_tenant_capacity_overrides.py` expande `system_plans`, `holdings` y `tenants` con 6 cuotas de capacidad (`max_active_users`, `max_products`, `max_suppliers`, `max_recipes`, `max_combos`, `max_storage_mb`) y columnas de excepción (`custom_max_*_override`).
+- **Plan Básico 10 Módulos:** `inicio`, `operations.consumption_log`, `inventory.stock`, `catalog.products`, `inventory.mermas`, `inventory.counts`, `notifications`, `alerts`, `audit.history`, `identity.users` filtrados de forma determinista mediante RBAC de 2 niveles (`<modulo>.<submodulo>`).
+- **Semáforo de Salud de Cuotas:** `<QuotaProgressIndicator />` con 4 estados: `NORMAL` (<80%), `WARNING` (80–94%), `CRITICAL` (95–99%) y `OVER_QUOTA` (100% o límite 0), con liberación inmediata de cupo al archivar (`is_deleted = True`).
+- **Bóvedas OpenSpec Sincronizadas:** `specs/business-domain/tenancy-and-plans.business.spec.md` y `specs/engineering-code/tenancy-and-plans.code.spec.md` 100% actualizados y validados por `test_openspec_bipartition_and_sync.py`.
+- **Bitácora Publicada:** `docs/bitacora/diario-escuadron/07-Plan-Maestro-Panel-Administrador-Plan-Basico-10-Modulos-y-Cuotas-Parametricas.md` y vinculada en `00-MAPA-SEGUNDO-CEREBRO.md`.
 
