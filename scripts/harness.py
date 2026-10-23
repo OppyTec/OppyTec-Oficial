@@ -206,6 +206,32 @@ def prepare_phase_worktrees(phase: int) -> None:
     print('   "Lee el archivo MISSION_PROMPT.md de este directorio y ejecuta tu misión de principio a fin."')
 
 
+def route_task_cmd(prompt_text: str, is_json: bool = False) -> None:
+    """Clasifica un requerimiento de usuario usando el Motor JEV Sistema 1."""
+    sys.path.insert(0, str(AGENT_DIR / "skills" / "jev-decision-engine"))
+    from jev_router import classify_user_request  # type: ignore
+
+    classification = classify_user_request(prompt_text)
+    log_event("JEV_TASK_ROUTED", {
+        "primary_agent": classification.primary_agent.value,
+        "mode": classification.mode.value,
+        "confidence": str(classification.confidence),
+        "supporting": [a.value for a in classification.supporting_agents],
+        "prompt_snippet": prompt_text[:120],
+    })
+
+    if is_json:
+        print(json.dumps(classification.to_dict(), indent=2, ensure_ascii=False))
+    else:
+        print(classification.to_header())
+        print(f"\n📋 Justificación: {classification.rationale}")
+        print("\n🔀 Pipeline de Ejecución (Orden Lógico de Dependencias):")
+        for stage in classification.pipeline:
+            agents_list = ", ".join(f"`{a.value}`" for a in stage.agents)
+            print(f"  • Etapa {stage.stage_number} [{stage.execution_type}]: {stage.stage_name}")
+            print(f"    └─ Agentes asignados: {agents_list}")
+
+
 def show_status() -> None:
     subagents = sorted((AGENT_DIR / "subagents").glob("*"))
     rules = sorted((AGENT_DIR / "rules").glob("*.md"))
@@ -219,12 +245,311 @@ def show_status() -> None:
     verify_anti_cheating_hashes()
 
 
+def nav_ast_cmd(symbol: str, legacy: bool = False, limit: int = 10) -> None:
+    """Navega la vecindad AST de un símbolo (< 150 tokens) usando Graphify."""
+    graphify_path = AGENT_DIR / "skills" / "graphify"
+    if str(graphify_path.resolve()) not in sys.path:
+        sys.path.insert(0, str(graphify_path.resolve()))
+    from graph_navigator import legacy_graph, v2_graph  # type: ignore
+
+    navigator = legacy_graph if legacy else v2_graph
+    data = navigator.neighbors(symbol, limit=limit)
+    print(json.dumps(data, indent=2, ensure_ascii=False))
+
+
+def sync_graph_cmd() -> None:
+    """Escanea e indexa artefactos del proyecto y sincroniza docs/architecture/graphify/graph.json."""
+    graph_path = ROOT_DIR / "docs" / "architecture" / "graphify" / "graph.json"
+    master_path = ROOT_DIR / "docs" / "architecture" / "graphify" / "v2_phase6_master_graph.json"
+
+    if not graph_path.exists():
+        data: dict[str, Any] = {
+            "graph_id": "v2_phase6_master_graph",
+            "phase": "Fase 6 (Sincronización Continua Graphify)",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generator": "12-tech-writer-openspec-archify",
+            "invariants": [],
+            "nodes": [],
+            "edges": [],
+            "metrics": {},
+        }
+    else:
+        data = json.loads(graph_path.read_text(encoding="utf-8"))
+
+    nodes_map: dict[str, dict[str, Any]] = {n["id"]: n for n in data.get("nodes", [])}
+    edges_set: set[tuple[str, str, str]] = {
+        (e["source"], e["target"], e["relation"]) for e in data.get("edges", [])
+    }
+
+    def add_node(node_id: str, label: str, node_type: str, path: str) -> None:
+        nodes_map[node_id] = {
+            "id": node_id,
+            "label": label,
+            "type": node_type,
+            "path": Path(path).as_posix(),
+        }
+
+    def add_edge(source: str, target: str, relation: str) -> None:
+        edges_set.add((source, target, relation))
+
+    # 1. Escaneo de Migraciones Alembic
+    alembic_dir = ROOT_DIR / "oppytec-backend" / "alembic" / "versions"
+    if alembic_dir.exists():
+        for mig_file in sorted(alembic_dir.glob("*.py")):
+            if mig_file.name.startswith("__"):
+                continue
+            stem = mig_file.stem
+            num = stem.split("_")[0] if "_" in stem else "mig"
+            short_desc = "_".join(stem.split("_")[1:4])
+            node_id = f"migration:{num}_{short_desc}"
+            if num == "0001":
+                label = "Alembic 0001 Migration: Genesis Public Tenancy & Global RBAC"
+            elif num == "0002":
+                label = "Alembic 0002 Migration: Tenant Client RBAC & Core Schemas"
+            elif num == "0003":
+                label = "Alembic 0003 Migration: Public Plans, Quotas & Tenant Capacity Overrides"
+            else:
+                label = f"Alembic {num} Migration: {stem[5:].replace('_', ' ').capitalize()}"
+            add_node(node_id, label, "backend_migration", str(mig_file.relative_to(ROOT_DIR)))
+
+        m0001 = next((nid for nid in nodes_map if nid.startswith("migration:0001")), None)
+        m0002 = next((nid for nid in nodes_map if nid.startswith("migration:0002")), None)
+        m0003 = next((nid for nid in nodes_map if nid.startswith("migration:0003")), None)
+
+        if m0001 and "core:database" in nodes_map:
+            add_edge(m0001, "core:database", "executes_on_public_schema")
+        if m0002 and m0001:
+            add_edge(m0002, m0001, "depends_on_public_genesis")
+        if m0003 and m0002:
+            add_edge(m0003, m0002, "extends_public_and_tenant_quotas")
+        if m0003 and "module:tenancy" in nodes_map:
+            add_edge(m0003, "module:tenancy", "enforces_plan_quotas_and_overrides")
+
+    # 2. Escaneo de Routers FastAPI Backend
+    modules_dir = ROOT_DIR / "oppytec-backend" / "src" / "modules"
+    if modules_dir.exists():
+        for mod_folder in sorted(modules_dir.iterdir()):
+            if not mod_folder.is_dir():
+                continue
+            router_file = mod_folder / "presentation" / "router.py"
+            if router_file.exists():
+                mod_name = mod_folder.name
+                node_id = f"router:{mod_name}"
+                label = f"Backend Presentation Router ({mod_name}) /api/v1/{mod_name}"
+                add_node(node_id, label, "backend_router", str(router_file.relative_to(ROOT_DIR)))
+                if "app:backend_main" in nodes_map:
+                    add_edge("app:backend_main", node_id, "mounts_api_router")
+                if f"module:{mod_name}" in nodes_map:
+                    add_edge(node_id, f"module:{mod_name}", "routes_to_domain_module")
+
+    realtime_router = ROOT_DIR / "oppytec-backend" / "src" / "core" / "realtime" / "router.py"
+    if realtime_router.exists():
+        add_node(
+            "router:core_realtime",
+            "Backend Realtime WebSocket Router /api/v1/ws/realtime",
+            "backend_router",
+            str(realtime_router.relative_to(ROOT_DIR)),
+        )
+        if "app:backend_main" in nodes_map:
+            add_edge("app:backend_main", "router:core_realtime", "mounts_ws_router")
+        if "core:realtime_ws" in nodes_map:
+            add_edge("router:core_realtime", "core:realtime_ws", "routes_to_realtime_ws")
+
+    # 3. Componentes Clave de Frontend
+    fe_i18n_selector = ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "i18n" / "LanguageFlagSelector.tsx"
+    if fe_i18n_selector.exists():
+        rel_path = str(fe_i18n_selector.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:language_provider",
+            "LanguageProvider Component & Context Wrapper (React 19 i18n)",
+            "frontend_shared_component",
+            rel_path,
+        )
+        add_node(
+            "frontend:use_language",
+            "useLanguage Hook (Active Language & Context Switcher)",
+            "frontend_shared_hook",
+            rel_path,
+        )
+        add_node(
+            "frontend:language_flag_selector",
+            "LanguageFlagSelector Component (SVG Flags ES/US & Dropdown)",
+            "frontend_shared_component",
+            rel_path,
+        )
+        if "frontend:app_shell" in nodes_map:
+            add_edge("frontend:app_shell", "frontend:language_provider", "mounts_language_provider")
+            add_edge("frontend:app_shell", "frontend:language_flag_selector", "renders_navbar_flag_selector")
+        if "frontend:shared_i18n" in nodes_map:
+            add_edge("frontend:language_provider", "frontend:shared_i18n", "provides_i18n_context")
+            add_edge("frontend:language_flag_selector", "frontend:shared_i18n", "renders_svg_flags_and_locales")
+        add_edge("frontend:use_language", "frontend:language_provider", "consumes_language_context")
+        add_edge("frontend:language_flag_selector", "frontend:use_language", "invokes_language_switcher")
+        if "frontend:feature_platform_admin" in nodes_map:
+            add_edge("frontend:feature_platform_admin", "frontend:language_flag_selector", "renders_admin_flag_selector")
+
+    fe_currency_selector = ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "currency" / "CurrencySelector.tsx"
+    if fe_currency_selector.exists():
+        rel_path = str(fe_currency_selector.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:currency_selector",
+            "CurrencySelector Component & MoneyBadge (CLP/USD/EUR/BRL BigInt 10^8 Formatter)",
+            "frontend_shared_component",
+            rel_path,
+        )
+        if "frontend:shared_fx_currency" in nodes_map:
+            add_edge("frontend:currency_selector", "frontend:shared_fx_currency", "renders_currency_dropdown_and_badge")
+        if "frontend:app_shell" in nodes_map:
+            add_edge("frontend:app_shell", "frontend:currency_selector", "renders_navbar_currency_selector")
+        if "frontend:admin_management_views" in nodes_map:
+            add_edge("frontend:admin_management_views", "frontend:currency_selector", "formats_tenant_pricing_currency")
+
+    fe_quota_indicator = ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "components" / "ui" / "QuotaProgressIndicator.tsx"
+    if fe_quota_indicator.exists():
+        rel_path = str(fe_quota_indicator.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:quota_progress_indicator",
+            "Frontend UI Quota Progress Indicator (4-State Semaphore 80/95/100%)",
+            "frontend_ui_token",
+            rel_path,
+        )
+        if "frontend:admin_management_views" in nodes_map:
+            add_edge("frontend:admin_management_views", "frontend:quota_progress_indicator", "renders_quota_usage_semaphores")
+        m0003 = next((nid for nid in nodes_map if nid.startswith("migration:0003")), None)
+        if m0003:
+            add_edge("frontend:quota_progress_indicator", m0003, "displays_plan_quotas_usage")
+
+    fe_admin_views = ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "AdminManagementViews.tsx"
+    if fe_admin_views.exists():
+        rel_path = str(fe_admin_views.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:admin_management_views",
+            "Frontend Admin Management Views (Holdings, Legal Entities, Tenants & Client Users)",
+            "frontend_feature_submodule",
+            rel_path,
+        )
+        if "frontend:feature_platform_admin" in nodes_map:
+            add_edge("frontend:feature_platform_admin", "frontend:admin_management_views", "contains_crud_views")
+        if "frontend:dynamic_admin_table" in nodes_map:
+            add_edge("frontend:admin_management_views", "frontend:dynamic_admin_table", "renders_table")
+        if "frontend:dynamic_admin_form" in nodes_map:
+            add_edge("frontend:admin_management_views", "frontend:dynamic_admin_form", "renders_modals")
+        if "frontend:shared_rbac_can" in nodes_map:
+            add_edge("frontend:admin_management_views", "frontend:shared_rbac_can", "enforces_rbac_can_guard")
+        if "frontend:shared_i18n" in nodes_map:
+            add_edge("frontend:admin_management_views", "frontend:shared_i18n", "translates_platform_admin_keys")
+        if "module:tenancy" in nodes_map:
+            add_edge("frontend:admin_management_views", "module:tenancy", "consumes_admin_rest_api")
+        m0003 = next((nid for nid in nodes_map if nid.startswith("migration:0003")), None)
+        if m0003:
+            add_edge("frontend:admin_management_views", m0003, "manages_tenant_quotas_from_schema")
+
+    fe_admin_table = ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "components" / "admin" / "DynamicAdminTable.tsx"
+    if fe_admin_table.exists():
+        add_node(
+            "frontend:dynamic_admin_table",
+            "Frontend Shared Dynamic Admin Table (Declarative RBAC <Can>, i18n & Live Filter)",
+            "frontend_shared_component",
+            str(fe_admin_table.relative_to(ROOT_DIR)),
+        )
+
+    fe_admin_form = ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "components" / "admin" / "DynamicAdminForm.tsx"
+    if fe_admin_form.exists():
+        add_node(
+            "frontend:dynamic_admin_form",
+            "Frontend Shared Dynamic Admin Form (Typed Schema Inputs & Modal Binding)",
+            "frontend_shared_component",
+            str(fe_admin_form.relative_to(ROOT_DIR)),
+        )
+
+    # 4. Suites de Test
+    fe_test_map = {
+        "suite:frontend_admin_views_test": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "AdminManagementViews.test.tsx",
+            "Frontend Admin Views & RBAC Interactive Vitest Suite",
+            [("suite:frontend_admin_views_test", "frontend:admin_management_views", "verifies_modal_crud_and_rbac_veto")],
+        ),
+        "suite:frontend_i18n_test": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "i18n" / "i18n.test.tsx",
+            "Frontend i18n & Language Switcher Vitest Suite",
+            [
+                ("suite:frontend_i18n_test", "frontend:language_flag_selector", "tests_language_selection_and_persistence"),
+                ("suite:frontend_i18n_test", "frontend:language_provider", "tests_language_provider_context"),
+            ],
+        ),
+        "suite:frontend_currency_test": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "currency" / "currency.test.tsx",
+            "Frontend FX Currency Formatter & Selectors Vitest Suite",
+            [("suite:frontend_currency_test", "frontend:currency_selector", "tests_currency_formatting_and_selection")],
+        ),
+        "suite:frontend_env_test": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "config" / "env.test.ts",
+            "Frontend Environment & Runtime Configuration Vitest Suite",
+            [("suite:frontend_env_test", "frontend:app_shell", "verifies_runtime_env_and_invariants")],
+        ),
+        "suite:frontend_telemetry_test": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "telemetry" / "telemetry.test.ts",
+            "Frontend Telemetry & OpenTelemetry Vitest Suite",
+            [("suite:frontend_telemetry_test", "frontend:app_shell", "verifies_telemetry_and_spans")],
+        ),
+    }
+    for s_id, (s_path, s_label, s_edges) in fe_test_map.items():
+        if s_path.exists():
+            add_node(s_id, s_label, "verification_suite", str(s_path.relative_to(ROOT_DIR)))
+            for src, tgt, rel in s_edges:
+                add_edge(src, tgt, rel)
+
+    sorted_nodes = sorted(nodes_map.values(), key=lambda n: n["id"])
+    sorted_edges = sorted(
+        [{"source": s, "target": t, "relation": r} for (s, t, r) in edges_set if s in nodes_map and t in nodes_map],
+        key=lambda e: (e["source"], e["target"], e["relation"]),
+    )
+
+    data["nodes"] = sorted_nodes
+    data["edges"] = sorted_edges
+
+    metrics = data.get("metrics", {})
+    metrics["nodes_count"] = len(sorted_nodes)
+    metrics["edges_count"] = len(sorted_edges)
+    metrics["backend_modules"] = sum(1 for n in sorted_nodes if n.get("type") == "backend_module")
+    metrics["backend_routers"] = sum(1 for n in sorted_nodes if n.get("type") == "backend_router")
+    metrics["alembic_migrations"] = sum(1 for n in sorted_nodes if n.get("type") == "backend_migration")
+    metrics["frontend_features"] = sum(1 for n in sorted_nodes if n.get("type") == "frontend_feature")
+    metrics["frontend_shared_kernels"] = sum(1 for n in sorted_nodes if n.get("type") == "frontend_shared")
+    metrics["verification_suites"] = sum(1 for n in sorted_nodes if n.get("type") == "verification_suite")
+    metrics["frontend_admin_views"] = 4
+    metrics["updated_at"] = datetime.now(timezone.utc).isoformat()
+    data["metrics"] = metrics
+
+    graph_path.parent.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+    graph_path.write_text(serialized, encoding="utf-8")
+    if master_path.parent.exists():
+        master_path.write_text(serialized, encoding="utf-8")
+
+    log_event("GRAPHIFY_SYNCED", {
+        "nodes_count": len(sorted_nodes),
+        "edges_count": len(sorted_edges),
+        "alembic_migrations": metrics["alembic_migrations"],
+        "backend_routers": metrics["backend_routers"],
+        "verification_suites": metrics["verification_suites"],
+    })
+    print("🔄 Grafo de Arquitectura Graphify sincronizado con éxito:")
+    print(f"   • Nodos totales: {len(sorted_nodes)} (Routers: {metrics['backend_routers']}, Migraciones: {metrics['alembic_migrations']}, Suites: {metrics['verification_suites']})")
+    print(f"   • Aristas totales: {len(sorted_edges)}")
+    print(f"   • Destino: {graph_path.relative_to(ROOT_DIR)}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="OppyTec v2.0 Multi-Agent RLM Harness")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("status", help="Muestra el estado del arnés y verifica integridad anti-trampa")
     sub.add_parser("verify-evals", help="Verifica los hashes SHA-256 de reglas y evaluaciones inmutables")
+
+    route_p = sub.add_parser("route-task", help="Clasifica y enruta una tarea hacia los 12 agentes con JEV")
+    route_p.add_argument("prompt", help="Texto del requerimiento del usuario a clasificar")
+    route_p.add_argument("--json", action="store_true", help="Salida en formato JSON estructurado")
 
     prep_p = sub.add_parser("prepare-phase", help="Crea los Git Worktrees y MISSION_PROMPT.md para una Fase (1..6)")
     prep_p.add_argument("--phase", type=int, required=True, choices=[1, 2, 3, 4, 5, 6])
@@ -235,17 +560,33 @@ def main() -> int:
     claim_p.add_argument("--symbol", required=True)
     claim_p.add_argument("--intent", required=True)
 
+    nav_p = sub.add_parser("nav", help="Navega la vecindad AST de un símbolo con Graphify (< 150 tokens)")
+    nav_p.add_argument("symbol", help="Símbolo AST o componente a consultar")
+    nav_p.add_argument("--legacy", action="store_true", help="Consultar grafo de OppyTec-Legacy")
+    nav_p.add_argument("--limit", type=int, default=10, help="Límite máximo de nodos/aristas devueltos (def: 10)")
+
+    sub.add_parser("sync-graph", help="Escanea y sincroniza artefactos del proyecto en docs/architecture/graphify/graph.json")
+
     args = parser.parse_args()
     if args.command == "status":
         show_status()
         return 0
     if args.command == "verify-evals":
         return 0 if verify_anti_cheating_hashes() else 1
+    if args.command == "route-task":
+        route_task_cmd(args.prompt, args.json)
+        return 0
     if args.command == "prepare-phase":
         prepare_phase_worktrees(args.phase)
         return 0
     if args.command == "claim-ast":
         claim_ast_symbol(args.worker, args.file, args.symbol, args.intent)
+        return 0
+    if args.command == "nav":
+        nav_ast_cmd(args.symbol, args.legacy, args.limit)
+        return 0
+    if args.command == "sync-graph":
+        sync_graph_cmd()
         return 0
     return 0
 
