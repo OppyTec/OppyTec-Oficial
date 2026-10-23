@@ -26,6 +26,9 @@ Aquí el **Agente 12 (`12-tech-writer-openspec-archify`)** documenta en lenguaje
 - **[[04-Fase-4-Endpoints-API-Guardias-RBAC-y-Red-Team|Bitácora Fase 4: Endpoints API REST FastAPI, 4 Guardias HTTP Deterministas, Resiliencia y 11 Vectores Red Team + Schemathesis]]** ✅ *(Completado: Mapa 4 de Archify con Route Probe)*
 - **[[05-Fase-5-UI-React-19-Mobile-First-i18n-FX-OppyFy-y-Observabilidad|Bitácora Fase 5: UI React 19 Mobile-First, ADN Visual Legacy (3 Temas), i18n con Banderas SVG, Multi-Moneda FX, OppyFy y 13 Sub-Vistas de Observabilidad]]** ✅ *(Completado: Snapshot AST Frontend Graphify Fase 5)*
 - **[[06-Fase-6-Pruebas-E2E-Deep-Gate-500-RPS-y-Certificacion-Final-10-de-10|Bitácora Fase 6: Pruebas E2E (01..05), Escenarios UAT, Deep Gate a 500 RPS, Restore Drill 4-Capas y Certificación Final 10/10]]** ✅ *(Completado: Proyecto Certificado 10/10 para Go-Live)*
+- **[[07-Plan-Maestro-Panel-Administrador-Plan-Basico-10-Modulos-y-Cuotas-Parametricas|Bitácora Plan Maestro: Panel Administrador Global, Plan Básico (10 Módulos) y Cuotas Paramétricas con Semáforo]]** ✅ *(Completado y Auditado: Aprovisionamiento SaaS, Overrides y Soft-Delete Release)*
+- **[[08-Plan-Maestro-4-Vistas-Administrativas-Holdings-Entidades-Tenants-Usuarios-i18n-RBAC|Bitácora Plan Maestro (Pasos 3 y 4): 4 Vistas Administrativas (Holdings, Entidades Legales, Tenants, Usuarios Clientes), Paridad i18n, Blindaje RBAC <Can> y Testing Interactivo]]** ✅ *(Completado y Auditado: DynamicAdminTable, DynamicAdminForm y 36/36 Vitests)*
+- **[[09-Gobernanza-Estricta-Graphify-CLI-nav-y-sync-graph|Bitácora 09 — Gobernanza Estricta de Graphify: Subcomandos CLI 'nav' y 'sync-graph', Pre y Post-Ejecución Obligatoria sin Excepción]]** ✅ *(Implementado en scripts/harness.py: 83 nodos, 111 aristas, AGENTS.md Regla 6 inviolable, verify-evals 100% OK)*
 
 ---
 
@@ -41,7 +44,7 @@ Aquí el **Agente 12 (`12-tech-writer-openspec-archify`)** documenta en lenguaje
   - **[Mapa 3 — Clean Architecture, 10 Módulos, Decimal, Kardex, JEV, i18n, FX y R2](../architecture/atlas/03-clean-architecture-and-domain.archify.html)** ✅ *(Disponible para abrir en navegador)*
   - **[Mapa 4 — Flujos Críticos E2E en Runtime, 4 Guardias HTTP Deterministas, Resiliencia/Caos y 11 Vectores Red Team + Schemathesis](../architecture/atlas/04-critical-runtime-flows-and-resilience.archify.html)** ✅ *(Disponible para abrir en navegador)*
   - **[Mapa 5 — Gobernanza Agéntica, 5 Entornos y Observabilidad 4-Pilares](../architecture/atlas/05-environments-and-agentic-harness.archify.html)** ✅ *(Disponible para abrir en navegador)*
-  - **[Grafo AST Maestro Consolidado (`graph.json`)](../architecture/graphify/graph.json) / [`v2_phase6_master_graph.json`](../architecture/graphify/v2_phase6_master_graph.json)** ✅ *(Grafo unificado Full-Stack + Suites E2E/UAT/Load 500 RPS + 5 Mapas Archify a costo `< 150 tokens`)*
+  - **[Grafo AST Maestro Consolidado (`graph.json`)](../architecture/graphify/graph.json) / [`v2_phase6_master_graph.json`](../architecture/graphify/v2_phase6_master_graph.json)** ✅ *(Grafo unificado Full-Stack: 83 nodos, 111 aristas, soporte CLI 'nav' y 'sync-graph' a costo `< 150 tokens`)*
   - **[Snapshot AST Graphify Fase 5 (`v2_phase5_frontend_graph.json`)](../architecture/graphify/v2_phase5_frontend_graph.json)** ✅ *(Grafo React 19 Feature-Driven con 0 imports cruzados)*
   - **[Snapshot AST Graphify Fase 4 (`v2_phase4_api_and_security_graph.json`)](../architecture/graphify/v2_phase4_api_and_security_graph.json)** ✅ *(Grafo API REST, 4 Guardias HTTP y 11 Vectores Red Team)*
   - **[Snapshot AST Graphify Fase 3 (`v2_phase3_domain_graph.json`)](../architecture/graphify/v2_phase3_domain_graph.json)** ✅ *(Grafo determinista a costo 0 tokens)*
