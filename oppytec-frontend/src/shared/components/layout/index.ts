@@ -14,8 +14,10 @@ export {
 } from "./HoldingTenantSwitcher";
 export { Navbar, type NavbarProps } from "./Navbar";
 export {
+  type BasicPlanNavItem,
   FEATURE_MODULE_ROUTES,
   type FeatureRouteId,
+  PLAN_BASICO_10_NAV_ITEMS,
   Sidebar,
   type SidebarProps,
 } from "./Sidebar";

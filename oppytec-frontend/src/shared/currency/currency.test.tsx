@@ -147,4 +147,30 @@ describe("Frontend Multi-Currency FX Suite (CLP, USD, EUR, BRL, UF & Central Ban
     ).toBe("true");
     expect(screen.getByTestId("money-badge-anomaly")).toBeDefined();
   });
+
+  it("renders CurrencySelector as an interactive dropdown showing active currency code + symbol and closes upon selection", () => {
+    const onCurrencyChange = vi.fn<(c: SupportedCurrency) => void>();
+    render(
+      <CurrencyProvider initialCurrency="CLP">
+        <CurrencySelector onCurrencyChange={onCurrencyChange} />
+      </CurrencyProvider>
+    );
+
+    const trigger = screen.getByRole("button", { name: /Moneda/i });
+    expect(trigger.textContent).toContain("CLP");
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+
+    // Open dropdown
+    fireEvent.click(trigger);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+
+    // Select EUR
+    const eurOption = screen.getByTestId("currency-option-EUR");
+    fireEvent.click(eurOption);
+
+    // Dropdown closes and trigger text updates to "EUR"
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(trigger.textContent).toContain("EUR");
+    expect(onCurrencyChange).toHaveBeenCalledWith("EUR");
+  });
 });

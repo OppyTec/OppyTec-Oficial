@@ -4,7 +4,7 @@ import {
   type OppyTecTheme,
 } from "@/shared/components/ui/designTokens";
 import { CurrencySelector } from "@/shared/currency";
-import { LanguageFlagSelector, translateKey } from "@/shared/i18n";
+import { LanguageFlagSelector, translateKey, useLanguage } from "@/shared/i18n";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import { BodegaSelector } from "./BodegaSelector";
 import {
@@ -41,6 +41,7 @@ export function Navbar({
   onSelectWarehouse,
   onLanguageChanged,
 }: NavbarProps) {
+  useLanguage();
   const { connected, channelKey, lastEventId } = useRealtimeSync();
 
   return (

@@ -12,8 +12,16 @@ import { InventoryFeatureView } from "@/features/inventory";
 import { OperationsFeatureView } from "@/features/operations";
 import { OppyFyFeatureView } from "@/features/oppyfy";
 import {
+  AdminBusinessTypesView,
+  AdminClientUsersView,
   AdminDashboard,
+  AdminGlobalUsersView,
+  AdminHoldingsView,
   AdminLayout,
+  AdminLegalEntitiesView,
+  AdminModulesView,
+  AdminPlansView,
+  AdminTenantsView,
   PlatformAdminFeatureView,
 } from "@/features/platform-admin";
 
@@ -199,42 +207,10 @@ export function AppRouter() {
           }
         >
           <Route index element={<CleanAdminDashboard />} />
-          <Route
-            path="users"
-            element={
-              <AdminPlaceholderView
-                title="Usuarios Globales"
-                description="Gestión de trabajadores y usuarios de OppyTec SaaS"
-              />
-            }
-          />
-          <Route
-            path="business-types"
-            element={
-              <AdminPlaceholderView
-                title="Tipos de Negocio"
-                description="Verticales y categorías de negocios SaaS"
-              />
-            }
-          />
-          <Route
-            path="modules"
-            element={
-              <AdminPlaceholderView
-                title="Módulos (SaaS)"
-                description="Catálogo y jerarquía de módulos y submódulos"
-              />
-            }
-          />
-          <Route
-            path="plans"
-            element={
-              <AdminPlaceholderView
-                title="Planes (SaaS)"
-                description="Planes comerciales, precios y límites de cuota"
-              />
-            }
-          />
+          <Route path="users" element={<AdminGlobalUsersView />} />
+          <Route path="business-types" element={<AdminBusinessTypesView />} />
+          <Route path="modules" element={<AdminModulesView />} />
+          <Route path="plans" element={<AdminPlansView />} />
           <Route
             path="token-consumption"
             element={
@@ -244,42 +220,10 @@ export function AppRouter() {
               />
             }
           />
-          <Route
-            path="holdings"
-            element={
-              <AdminPlaceholderView
-                title="Grupos (Holdings)"
-                description="Gestión de grupos empresariales"
-              />
-            }
-          />
-          <Route
-            path="legal-entities"
-            element={
-              <AdminPlaceholderView
-                title="Entidades Legales"
-                description="Empresas y razones sociales con RUT/Tax ID"
-              />
-            }
-          />
-          <Route
-            path="tenants"
-            element={
-              <AdminPlaceholderView
-                title="Inquilinos (Tenants)"
-                description="Instancias y esquemas de sucursales aisladas"
-              />
-            }
-          />
-          <Route
-            path="client-users"
-            element={
-              <AdminPlaceholderView
-                title="Usuarios Clientes"
-                description="Cuentas de usuarios por sucursal"
-              />
-            }
-          />
+          <Route path="holdings" element={<AdminHoldingsView />} />
+          <Route path="legal-entities" element={<AdminLegalEntitiesView />} />
+          <Route path="tenants" element={<AdminTenantsView />} />
+          <Route path="client-users" element={<AdminClientUsersView />} />
           <Route path="observability" element={<PlatformAdminFeatureView />} />
           <Route
             path="fx-rates"

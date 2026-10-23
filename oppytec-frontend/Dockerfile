@@ -12,8 +12,8 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 
-COPY package.json ./
-RUN pnpm install --frozen-lockfile=false
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.json vite.config.ts tailwind.config.ts postcss.config.js index.html ./
 COPY src ./src

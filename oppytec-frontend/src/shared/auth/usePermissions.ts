@@ -67,8 +67,15 @@ export function evaluateEffectivePermissions(
     if (deniedSet.has(perm)) {
       continue;
     }
-    const modulePrefix = perm.split(".")[0] ?? "";
-    if (planSet.has("*") || planSet.has(modulePrefix) || planSet.has(perm)) {
+    const parts = perm.split(".");
+    const modulePrefix = parts[0] ?? "";
+    const submodulePrefix = `${parts[0] ?? ""}.${parts[1] ?? ""}`;
+    if (
+      planSet.has("*") ||
+      planSet.has(modulePrefix) ||
+      planSet.has(submodulePrefix) ||
+      planSet.has(perm)
+    ) {
       effective.add(perm);
     }
   }
@@ -113,6 +120,9 @@ export const DEFAULT_RBAC_POLICY_STATE: RbacPolicyState = {
     "oppyfy.workspace.query",
     "oppyfy.rbac.configure",
     "platform_admin.holdings.manage",
+    "platform_admin.legal_entities.manage",
+    "platform_admin.tenants.provision",
+    "platform_admin.client_users.manage",
     "platform_admin.observability.read",
     "platform_admin.backups.restore",
   ],

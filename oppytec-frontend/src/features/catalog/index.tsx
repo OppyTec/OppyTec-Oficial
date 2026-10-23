@@ -3,7 +3,8 @@ import { Can } from "@/shared/auth/Can";
 import {
   GASTRONOMIC_ICONS,
   PRESET_COLORS,
-} from "@/shared/components/ui/designTokens";
+  QuotaProgressIndicator,
+} from "@/shared/components/ui";
 import { MoneyBadge } from "@/shared/currency";
 import {
   getActiveLanguage,
@@ -100,6 +101,36 @@ export function CatalogFeatureView() {
             })}
           </span>
         </Can>
+      </div>
+
+      {/* Semáforo de Cuotas del Plan Básico (Productos, Proveedores y Almacenamiento R2) */}
+      <div
+        data-testid="catalog-plan-quotas-grid"
+        className="grid grid-cols-1 gap-3 md:grid-cols-3"
+      >
+        <QuotaProgressIndicator
+          resourceKey="products"
+          label="Cupo de Productos (Plan Básico)"
+          activeCount={CATALOG_PRODUCTS.length}
+          maxLimit={500}
+          softDeletedCount={1}
+          testId="catalog-quota-products"
+        />
+        <QuotaProgressIndicator
+          resourceKey="suppliers"
+          label="Cupo de Proveedores"
+          activeCount={17}
+          maxLimit={20}
+          testId="catalog-quota-suppliers"
+        />
+        <QuotaProgressIndicator
+          resourceKey="storage_mb"
+          label="Almacenamiento R2 (Fotos WebP & Facturas PDF)"
+          activeCount={342}
+          maxLimit={512}
+          unitSuffix="MB"
+          testId="catalog-quota-storage"
+        />
       </div>
 
       {/* 4-Step Product Wizard & 5-Stage AI Excel Importer */}

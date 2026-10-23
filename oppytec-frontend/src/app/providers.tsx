@@ -8,6 +8,7 @@ import {
 } from "@/shared/auth/usePermissions";
 import { ErrorBoundary } from "@/shared/components/feedback/ErrorBoundary";
 import { CurrencyProvider } from "@/shared/currency";
+import { LanguageProvider } from "@/shared/i18n";
 import { RealtimeProvider } from "@/shared/realtime/RealtimeProvider";
 
 export interface AppProvidersProps {
@@ -40,18 +41,20 @@ export function AppProviders({
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <CurrencyProvider>
-          <AuthProvider
-            initialSession={initialSession}
-            initialUser={initialUser}
-          >
-            <PermissionsProvider>
-              <RealtimeProvider holdingId={holdingId} tenantId={tenantId}>
-                {children}
-              </RealtimeProvider>
-            </PermissionsProvider>
-          </AuthProvider>
-        </CurrencyProvider>
+        <LanguageProvider>
+          <CurrencyProvider>
+            <AuthProvider
+              initialSession={initialSession}
+              initialUser={initialUser}
+            >
+              <PermissionsProvider>
+                <RealtimeProvider holdingId={holdingId} tenantId={tenantId}>
+                  {children}
+                </RealtimeProvider>
+              </PermissionsProvider>
+            </AuthProvider>
+          </CurrencyProvider>
+        </LanguageProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

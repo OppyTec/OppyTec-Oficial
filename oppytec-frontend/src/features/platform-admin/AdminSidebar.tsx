@@ -23,6 +23,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { type CSSProperties, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@/shared/hooks";
+import { translateKey, useLanguage } from "@/shared/i18n";
 
 export interface MenuItem {
   readonly path: string;
@@ -33,7 +34,7 @@ export interface MenuItem {
   readonly rgb: string;
 }
 
-export const ADMIN_DIRECT_MENU_ITEMS: readonly MenuItem[] = [
+export const ADMIN_DIRECT_MENU_ITEMS = [
   {
     path: "/admin",
     label: "Panel Principal",
@@ -46,12 +47,13 @@ export const ADMIN_DIRECT_MENU_ITEMS: readonly MenuItem[] = [
     path: "/admin/users",
     label: "Usuarios Globales",
     icon: Users,
+    exact: false,
     color: "#ec4899",
     rgb: "236,72,153",
   },
-];
+] as const;
 
-export const GESTION_NEGOCIO_ITEMS: readonly MenuItem[] = [
+export const GESTION_NEGOCIO_ITEMS = [
   {
     path: "/admin/business-types",
     label: "Tipos de Negocio",
@@ -80,9 +82,9 @@ export const GESTION_NEGOCIO_ITEMS: readonly MenuItem[] = [
     color: "#10b981",
     rgb: "16,185,129",
   },
-];
+] as const;
 
-export const GESTION_CLIENTE_ITEMS: readonly MenuItem[] = [
+export const GESTION_CLIENTE_ITEMS = [
   {
     path: "/admin/holdings",
     label: "Grupos (Holdings)",
@@ -111,9 +113,9 @@ export const GESTION_CLIENTE_ITEMS: readonly MenuItem[] = [
     color: "#0ea5e9",
     rgb: "14,165,233",
   },
-];
+] as const;
 
-export const PLATAFORMA_TELEMETRIA_ITEMS: readonly MenuItem[] = [
+export const PLATAFORMA_TELEMETRIA_ITEMS = [
   {
     path: "/admin/observability",
     label: "Observabilidad 4-Pilares",
@@ -135,7 +137,7 @@ export const PLATAFORMA_TELEMETRIA_ITEMS: readonly MenuItem[] = [
     color: "#6366f1",
     rgb: "99,102,241",
   },
-];
+] as const;
 
 export interface AdminSidebarProps {
   readonly isOpen?: boolean;
@@ -150,6 +152,7 @@ export function AdminSidebar({
   isCollapsed: controlledIsCollapsed,
   onCollapseChange,
 }: AdminSidebarProps) {
+  useLanguage();
   const [localIsCollapsed, setLocalIsCollapsed] = useState<boolean>(false);
   const isCollapsed = controlledIsCollapsed !== undefined ? controlledIsCollapsed : localIsCollapsed;
 
@@ -176,22 +179,86 @@ export function AdminSidebar({
   const navigate = useNavigate();
   const { theme } = useTheme("ocean-blue");
 
-  const [isGestionNegocioOpen, setIsGestionNegocioOpen] = useState<boolean>(false);
-  const [isGestionClienteOpen, setIsGestionClienteOpen] = useState<boolean>(false);
+  const [isGestionNegocioOpen, setIsGestionNegocioOpen] = useState<boolean>(true);
+  const [isGestionClienteOpen, setIsGestionClienteOpen] = useState<boolean>(true);
   const [isPlataformaOpen, setIsPlataformaOpen] = useState<boolean>(false);
+
+  const directMenuItems = [
+    {
+      ...ADMIN_DIRECT_MENU_ITEMS[0],
+      label: translateKey("platform_admin", "sidebar.menu_dashboard"),
+    },
+    {
+      ...ADMIN_DIRECT_MENU_ITEMS[1],
+      label: translateKey("platform_admin", "sidebar.menu_global_users"),
+    },
+  ];
+
+  const gestionNegocioItems = [
+    {
+      ...GESTION_NEGOCIO_ITEMS[0],
+      label: translateKey("platform_admin", "sidebar.menu_business_types"),
+    },
+    {
+      ...GESTION_NEGOCIO_ITEMS[1],
+      label: translateKey("platform_admin", "sidebar.menu_modules"),
+    },
+    {
+      ...GESTION_NEGOCIO_ITEMS[2],
+      label: translateKey("platform_admin", "sidebar.menu_plans"),
+    },
+    {
+      ...GESTION_NEGOCIO_ITEMS[3],
+      label: translateKey("platform_admin", "sidebar.menu_token_consumption"),
+    },
+  ];
+
+  const gestionClienteItems = [
+    {
+      ...GESTION_CLIENTE_ITEMS[0],
+      label: translateKey("platform_admin", "sidebar.menu_holdings"),
+    },
+    {
+      ...GESTION_CLIENTE_ITEMS[1],
+      label: translateKey("platform_admin", "sidebar.menu_legal_entities"),
+    },
+    {
+      ...GESTION_CLIENTE_ITEMS[2],
+      label: translateKey("platform_admin", "sidebar.menu_tenants"),
+    },
+    {
+      ...GESTION_CLIENTE_ITEMS[3],
+      label: translateKey("platform_admin", "sidebar.menu_client_users"),
+    },
+  ];
+
+  const plataformaItems = [
+    {
+      ...PLATAFORMA_TELEMETRIA_ITEMS[0],
+      label: translateKey("platform_admin", "sidebar.menu_observability"),
+    },
+    {
+      ...PLATAFORMA_TELEMETRIA_ITEMS[1],
+      label: translateKey("platform_admin", "sidebar.menu_fx_rates"),
+    },
+    {
+      ...PLATAFORMA_TELEMETRIA_ITEMS[2],
+      label: translateKey("platform_admin", "sidebar.menu_backups"),
+    },
+  ];
 
   const isSubItemActive = (itemPath: string): boolean => {
     return location.pathname.startsWith(itemPath);
   };
 
   useEffect(() => {
-    if (GESTION_NEGOCIO_ITEMS.some((item) => isSubItemActive(item.path))) {
+    if (GESTION_NEGOCIO_ITEMS.some((item) => location.pathname.startsWith(item.path))) {
       setIsGestionNegocioOpen(true);
     }
-    if (GESTION_CLIENTE_ITEMS.some((item) => isSubItemActive(item.path))) {
+    if (GESTION_CLIENTE_ITEMS.some((item) => location.pathname.startsWith(item.path))) {
       setIsGestionClienteOpen(true);
     }
-    if (PLATAFORMA_TELEMETRIA_ITEMS.some((item) => isSubItemActive(item.path))) {
+    if (PLATAFORMA_TELEMETRIA_ITEMS.some((item) => location.pathname.startsWith(item.path))) {
       setIsPlataformaOpen(true);
     }
   }, [location.pathname]);
@@ -250,12 +317,9 @@ export function AdminSidebar({
             }
           }}
         >
-          <Link
-            to={fallbackPath}
-            tabIndex={-1}
+          <div
             title={isCollapsed && !isOpen ? label : undefined}
-            className="flex items-center gap-4 flex-1 outline-none"
-            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-4 flex-1 outline-none select-none"
           >
             <div className="relative shrink-0 w-8 flex justify-center">
               <Icon
@@ -274,7 +338,7 @@ export function AdminSidebar({
             >
               {label}
             </span>
-          </Link>
+          </div>
 
           <button
             type="button"
@@ -401,8 +465,8 @@ export function AdminSidebar({
               ? "bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
               : "bg-secondary/90 border-border text-muted-foreground hover:text-primary hover:bg-primary/10 hover:border-primary/20"
           }`}
-          title={isCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
-          aria-label={isCollapsed ? "Expandir barra lateral" : "Colapsar barra lateral"}
+          title={isCollapsed ? translateKey("platform_admin", "sidebar.expand_sidebar") : translateKey("platform_admin", "sidebar.collapse_sidebar")}
+          aria-label={isCollapsed ? translateKey("platform_admin", "sidebar.expand_sidebar") : translateKey("platform_admin", "sidebar.collapse_sidebar")}
         >
           {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={18} />}
         </motion.button>
@@ -428,7 +492,7 @@ export function AdminSidebar({
               OppyTec
             </span>
             <span className="font-bold text-sm uppercase whitespace-nowrap text-foreground tracking-tight">
-              Admin Panel
+              {translateKey("platform_admin", "sidebar.brand_panel")}
             </span>
           </div>
         </div>
@@ -437,7 +501,7 @@ export function AdminSidebar({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Cerrar barra lateral"
+            aria-label={translateKey("platform_admin", "sidebar.close_sidebar")}
             className="md:hidden absolute right-4 h-8 w-8 rounded-lg flex items-center justify-center border border-border"
           >
             <X size={16} />
@@ -447,7 +511,7 @@ export function AdminSidebar({
 
       {/* Navigation Menu */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {ADMIN_DIRECT_MENU_ITEMS.map((item) => {
+        {directMenuItems.map((item) => {
           const isActive = item.exact
             ? location.pathname === item.path
             : location.pathname.startsWith(item.path);
@@ -497,33 +561,33 @@ export function AdminSidebar({
         })}
 
         {renderDropdownSection(
-          "Gestión Negocio",
+          translateKey("platform_admin", "sidebar.section_business"),
           Briefcase,
           isGestionNegocioOpen,
           () => setIsGestionNegocioOpen((prev) => !prev),
-          GESTION_NEGOCIO_ITEMS,
+          gestionNegocioItems,
           "#eab308",
           "234,179,8",
           "/admin/business-types"
         )}
 
         {renderDropdownSection(
-          "Gestión Cliente",
+          translateKey("platform_admin", "sidebar.section_client"),
           UsersRound,
           isGestionClienteOpen,
           () => setIsGestionClienteOpen((prev) => !prev),
-          GESTION_CLIENTE_ITEMS,
+          gestionClienteItems,
           "#0ea5e9",
           "14,165,233",
           "/admin/holdings"
         )}
 
         {renderDropdownSection(
-          "Plataforma & Telemetría",
+          translateKey("platform_admin", "sidebar.section_platform"),
           Activity,
           isPlataformaOpen,
           () => setIsPlataformaOpen((prev) => !prev),
-          PLATAFORMA_TELEMETRIA_ITEMS,
+          plataformaItems,
           "#06b6d4",
           "6,182,212",
           "/admin/observability"
@@ -538,11 +602,11 @@ export function AdminSidebar({
           className={`flex items-center justify-center gap-2 w-full h-10 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors ${
             isCollapsed && !isOpen ? "px-0" : "px-4"
           }`}
-          title="Configuración de Sistema"
+          title={translateKey("platform_admin", "sidebar.settings_title")}
         >
           <Settings size={16} />
           {(!isCollapsed || isOpen) && (
-            <span className="text-sm font-medium">Configuración</span>
+            <span className="text-sm font-medium">{translateKey("platform_admin", "sidebar.settings_label")}</span>
           )}
         </button>
       </div>

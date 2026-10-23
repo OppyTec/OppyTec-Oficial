@@ -13,7 +13,7 @@ import { apiRequest } from "@/shared/api/httpClient";
 import { useAuth } from "@/shared/auth/usePermissions";
 import { CurrencySelector } from "@/shared/currency";
 import { useSwipeNavigation, useTheme } from "@/shared/hooks";
-import { LanguageFlagSelector } from "@/shared/i18n";
+import { LanguageFlagSelector, translateKey, useLanguage } from "@/shared/i18n";
 import { AdminSidebar } from "./AdminSidebar";
 
 export interface TenantOptionItem {
@@ -22,6 +22,7 @@ export interface TenantOptionItem {
 }
 
 export function AdminTenantSwitcher() {
+  useLanguage();
   const [tenants, setTenants] = useState<readonly TenantOptionItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedTenant, setSelectedTenant] = useState<string>(() => {
@@ -67,14 +68,14 @@ export function AdminTenantSwitcher() {
 
   return (
     <select
-      aria-label="Seleccionar Entorno Tenant"
+      aria-label={translateKey("platform_admin", "layout.tenant_switcher_aria")}
       value={selectedTenant}
       disabled={loading}
       onChange={(e) => handleSwitch(e.target.value)}
       className="h-9 w-[180px] sm:w-[210px] rounded-lg border border-border bg-background px-2.5 text-xs font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       <option value="global" className="font-bold text-primary">
-        Modo Global (SaaS)
+        {translateKey("platform_admin", "layout.global_mode")}
       </option>
       {tenants.map((t) => (
         <option key={t.schema_name} value={t.schema_name}>
@@ -86,6 +87,7 @@ export function AdminTenantSwitcher() {
 }
 
 export function AdminLayout() {
+  useLanguage();
   useSwipeNavigation();
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
@@ -145,7 +147,7 @@ export function AdminLayout() {
             <button
               type="button"
               onClick={() => setIsSidebarOpen(true)}
-              aria-label="Abrir menú"
+              aria-label={translateKey("platform_admin", "layout.open_menu")}
               className="md:hidden flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background hover:bg-secondary transition-colors"
             >
               <div className="space-y-1.5 w-5">
@@ -157,7 +159,7 @@ export function AdminLayout() {
 
             <h1 className="text-base sm:text-lg font-semibold flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-primary shrink-0" />
-              <span className="truncate">Administración Global</span>
+              <span className="truncate">{translateKey("platform_admin", "layout.global_admin")}</span>
             </h1>
           </div>
 
@@ -165,7 +167,7 @@ export function AdminLayout() {
             {/* Tenant Switcher */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground hidden lg:block">
-                Entorno:
+                {translateKey("platform_admin", "layout.environment_label")}
               </span>
               <AdminTenantSwitcher />
             </div>
@@ -185,12 +187,12 @@ export function AdminLayout() {
               className="h-9 w-9 rounded-lg flex items-center justify-center transition-colors shrink-0 cursor-pointer border border-border/50 hover:bg-secondary text-muted-foreground hover:text-foreground"
               title={
                 theme === "light"
-                  ? "Modo Oscuro"
+                  ? translateKey("platform_admin", "layout.theme_dark")
                   : theme === "dark"
-                    ? "Ocean Blue"
-                    : "Modo Claro"
+                    ? translateKey("platform_admin", "layout.theme_ocean")
+                    : translateKey("platform_admin", "layout.theme_light")
               }
-              aria-label="Alternar tema visual"
+              aria-label={translateKey("platform_admin", "layout.theme_toggle_aria")}
             >
               {theme === "light" && <Sun className="w-4 h-4 text-foreground" />}
               {theme === "dark" && <Moon className="w-4 h-4" />}
@@ -203,8 +205,8 @@ export function AdminLayout() {
             <button
               type="button"
               className="h-9 w-9 rounded-lg flex items-center justify-center relative transition-colors cursor-pointer border border-border/50 hover:bg-secondary text-muted-foreground hover:text-foreground"
-              title="Notificaciones de Sistema"
-              aria-label="Notificaciones de Sistema"
+              title={translateKey("platform_admin", "layout.notifications_title")}
+              aria-label={translateKey("platform_admin", "layout.notifications_title")}
             >
               <Bell className="w-4 h-4" />
             </button>
@@ -224,8 +226,8 @@ export function AdminLayout() {
                 onClick={() => void signOut()}
               >
                 <LogOut className="w-4 h-4 hidden sm:block" />
-                <span className="hidden sm:inline">Cerrar Sesión</span>
-                <span className="sm:hidden">Salir</span>
+                <span className="hidden sm:inline">{translateKey("platform_admin", "layout.logout")}</span>
+                <span className="sm:hidden">{translateKey("platform_admin", "layout.logout_short")}</span>
               </button>
             </div>
           </div>

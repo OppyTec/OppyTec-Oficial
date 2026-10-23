@@ -230,6 +230,18 @@ export function PlatformAdminFeatureView() {
 
 export { AdminDashboard } from "./AdminDashboard";
 export { AdminLayout } from "./AdminLayout";
+export {
+  AdminBusinessTypesView,
+  AdminClientUsersView,
+  AdminGlobalUsersView,
+  AdminHoldingsView,
+  AdminLegalEntitiesView,
+  AdminModulesView,
+  AdminPlansView,
+  AdminTenantsView,
+  PLAN_BASICO_10_MODULE_SLUGS,
+  SAAS_MODULE_TREE,
+} from "./AdminManagementViews";
 export { AdminSidebar } from "./AdminSidebar";
 export type { AdminSidebarProps, MenuItem } from "./AdminSidebar";
 export type { DashboardCounts } from "./AdminDashboard";

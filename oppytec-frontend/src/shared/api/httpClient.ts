@@ -83,30 +83,41 @@ export async function apiRequest<TResponse>(
   const traceId = headers["X-Trace-ID"] ?? "00000000000000000000000000000000";
   const tenantId = headers["X-Tenant-ID"] ?? activeContext.tenantId;
 
-  if (options?.fallbackData !== undefined) {
+  try {
+    const response = await fetch(resolveApiEndpointUrl(path), {
+      method: options?.method ?? "GET",
+      headers,
+      body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
+    });
+
+    if (!response.ok) {
+      if (options?.fallbackData !== undefined) {
+        return {
+          data: options.fallbackData,
+          traceId,
+          timestampIso: new Date().toISOString(),
+          tenantId,
+        };
+      }
+      throw new Error(`HTTP ${String(response.status)} on ${path}`);
+    }
+
+    const parsed = (await response.json()) as TResponse;
     return {
-      data: options.fallbackData,
-      traceId,
+      data: parsed,
+      traceId: response.headers.get("X-Trace-ID") ?? traceId,
       timestampIso: new Date().toISOString(),
       tenantId,
     };
+  } catch (err) {
+    if (options?.fallbackData !== undefined) {
+      return {
+        data: options.fallbackData,
+        traceId,
+        timestampIso: new Date().toISOString(),
+        tenantId,
+      };
+    }
+    throw err;
   }
-
-  const response = await fetch(resolveApiEndpointUrl(path), {
-    method: options?.method ?? "GET",
-    headers,
-    body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${String(response.status)} on ${path}`);
-  }
-
-  const parsed = (await response.json()) as TResponse;
-  return {
-    data: parsed,
-    traceId: response.headers.get("X-Trace-ID") ?? traceId,
-    timestampIso: new Date().toISOString(),
-    tenantId,
-  };
 }

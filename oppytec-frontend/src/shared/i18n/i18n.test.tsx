@@ -16,6 +16,8 @@ import {
   LANGUAGE_STORAGE_KEY,
   LanguageFlagSelector,
   type LanguageFlagSelectorProps,
+  LanguageProvider,
+  useLanguage,
   SUPPORTED_LANGUAGES,
   type SupportedLanguage,
   type TranslatableDynamicRecord,
@@ -144,5 +146,56 @@ describe("Frontend i18n Suite (11 Namespaces, SVG Flags & Pollo King Proper Noun
         unit: "kg",
       })
     ).toBe("Available stock: 25 kg");
+  });
+
+  it("renders LanguageFlagSelector as an interactive dropdown displaying active language and closes upon option selection", () => {
+    render(<LanguageFlagSelector />);
+
+    const trigger = screen.getByRole("button", { name: translateKey("common", "language.label") });
+    expect(trigger.textContent).toContain("Español");
+
+    // Open dropdown
+    fireEvent.click(trigger);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+
+    // Select English
+    const enButton = screen.getByTestId("lang-option-en");
+    fireEvent.click(enButton);
+
+    // Dropdown closes and trigger text updates to "English"
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(trigger.textContent).toContain("English");
+    expect(getActiveLanguage()).toBe("en");
+  });
+
+  it("reactively updates all mounted views within LanguageProvider when language switches", () => {
+    function ReactiveView() {
+      useLanguage();
+      return (
+        <div>
+          <span data-testid="reactive-title">{translateKey("common", "status.empty")}</span>
+          <LanguageFlagSelector />
+        </div>
+      );
+    }
+
+    render(
+      <LanguageProvider>
+        <ReactiveView />
+      </LanguageProvider>
+    );
+
+    // Initial Spanish text
+    expect(screen.getByTestId("reactive-title").textContent).toBe("Sin registros disponibles");
+
+    // Switch to English
+    fireEvent.click(screen.getByTestId("lang-option-en"));
+
+    // Immediately updates to English in the mounted view
+    expect(screen.getByTestId("reactive-title").textContent).toBe("No records available");
+
+    // Switch back to Spanish
+    fireEvent.click(screen.getByTestId("lang-option-es"));
+    expect(screen.getByTestId("reactive-title").textContent).toBe("Sin registros disponibles");
   });
 });

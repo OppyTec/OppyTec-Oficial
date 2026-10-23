@@ -26,8 +26,11 @@ import {
   NumericInput,
   OFFICIAL_THEMES,
   PRESET_COLORS,
+  QuotaProgressIndicator,
+  resolveQuotaSemaphoreStatus,
   ResponsiveDialog,
 } from "@/shared/components/ui";
+import { PLAN_BASICO_10_NAV_ITEMS } from "@/shared/components/layout";
 import {
   applyDocumentTheme,
   MOBILE_BREAKPOINT_PX,
@@ -46,14 +49,22 @@ import {
   useRealtimeContext,
 } from "@/shared/realtime/RealtimeProvider";
 import {
+  AdminClientUsersView,
   AdminDashboard,
+  AdminHoldingsView,
   AdminLayout,
+  AdminLegalEntitiesView,
+  AdminPlansView,
   AdminSidebar,
+  AdminTenantsView,
   OBSERVABILITY_13_SUBVIEWS,
+  PLAN_BASICO_10_MODULE_SLUGS,
   PlatformAdminFeatureView,
+  SAAS_MODULE_TREE,
 } from "@/features/platform-admin";
 import { AdminLoginPage, LoginPage } from "@/features/auth";
 import { CatalogFeatureView } from "@/features/catalog";
+import { InventoryFeatureView } from "@/features/inventory";
 import { CleanAdminDashboard, ClientAppShell } from "@/app/router";
 import { App } from "./App";
 
@@ -415,5 +426,96 @@ describe("OppyTec v2.0 — Phase 5 Frontend Architecture & Paso 1 Auth Routing",
   it("renders App root component without throwing", () => {
     render(<App />);
     expect(screen.getByTestId("client-login-page")).toBeTruthy();
+  });
+
+  it("validates 2-level RBAC submodule gating, QuotaProgressIndicator semaphore, Plan Básico 10 modules, Unified Recuento, and Admin Management Views", () => {
+    // 1. 2-Level RBAC Submodule Gating
+    const basicEffective = evaluateEffectivePermissions({
+      ...DEFAULT_RBAC_POLICY_STATE,
+      planModules: ["operations.consumption_log", "catalog.products"],
+      rolePermissions: [
+        "operations.consumption_log.create",
+        "operations.pos.consume",
+        "catalog.products.create",
+      ],
+      temporaryGrants: [],
+      deniedPermissions: [],
+    });
+    expect(basicEffective.has("operations.consumption_log.create")).toBe(true);
+    expect(basicEffective.has("catalog.products.create")).toBe(true);
+    expect(basicEffective.has("operations.pos.consume")).toBe(false);
+
+    // 2. QuotaProgressIndicator Semaphore thresholds (NORMAL <80%, WARNING >=80%, CRITICAL >=95%, OVER_QUOTA 100%)
+    expect(resolveQuotaSemaphoreStatus(100, 500)).toEqual({
+      status: "NORMAL",
+      percentage: 20,
+    });
+    expect(resolveQuotaSemaphoreStatus(420, 500)).toEqual({
+      status: "WARNING",
+      percentage: 84,
+    });
+    expect(resolveQuotaSemaphoreStatus(480, 500)).toEqual({
+      status: "CRITICAL",
+      percentage: 96,
+    });
+    expect(resolveQuotaSemaphoreStatus(500, 500)).toEqual({
+      status: "OVER_QUOTA",
+      percentage: 100,
+    });
+
+    // 3. Plan Básico 10 Modules & Module Tree
+    expect(PLAN_BASICO_10_MODULE_SLUGS).toHaveLength(10);
+    expect(PLAN_BASICO_10_NAV_ITEMS).toHaveLength(10);
+    expect(SAAS_MODULE_TREE.length).toBeGreaterThanOrEqual(8);
+
+    // 4. Render QuotaProgressIndicator, Unified Recuento in InventoryFeatureView, and Admin Views
+    render(
+      <AppProviders>
+        <QuotaProgressIndicator
+          resourceKey="products"
+          label="Productos Activos"
+          activeCount={425}
+          maxLimit={500}
+          softDeletedCount={3}
+          testId="test-quota-warning"
+        />
+        <InventoryFeatureView />
+        <AdminPlansView />
+        <AdminHoldingsView />
+        <AdminLegalEntitiesView />
+        <AdminTenantsView />
+        <AdminClientUsersView />
+      </AppProviders>
+    );
+
+    expect(
+      screen
+        .getByTestId("test-quota-warning")
+        .getAttribute("data-quota-status")
+    ).toBe("WARNING");
+
+    // Verify Unified Recuento (Conteo Físico Activo + Historial de Recuentos in 1 view)
+    expect(screen.getByTestId("inventory-unified-recuento-card")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("recuento-subtab-historial"));
+    expect(
+      screen.getByTestId("recuento-unified-status").textContent
+    ).toContain("Historial de Recuentos Cerrados");
+    fireEvent.click(screen.getByTestId("recuento-subtab-activo"));
+    expect(
+      screen.getByTestId("recuento-unified-status").textContent
+    ).toContain("Conteo Físico Ciego Activo");
+
+    // Verify Admin Views render and respond to interactions
+    expect(screen.getByTestId("admin-plans-view")).toBeTruthy();
+    expect(screen.getByTestId("admin-holdings-view")).toBeTruthy();
+    expect(screen.getByTestId("admin-legal-entities-view")).toBeTruthy();
+    expect(screen.getByTestId("admin-tenants-view")).toBeTruthy();
+    expect(screen.getByTestId("admin-client-users-view")).toBeTruthy();
+    expect(screen.getByTestId("tenant-module-tree")).toBeTruthy();
+
+    fireEvent.click(screen.getByTestId("btn-preset-plan-basico"));
+    expect(
+      (screen.getByTestId("plan-input-slug") as HTMLInputElement).value
+    ).toBe("basic");
   });
 });

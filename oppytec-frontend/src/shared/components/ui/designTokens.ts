@@ -45,3 +45,37 @@ export const GASTRONOMIC_ICONS = [
 ] as const;
 
 export type GastronomicIconId = (typeof GASTRONOMIC_ICONS)[number];
+
+export type QuotaResourceKey =
+  | "users"
+  | "products"
+  | "suppliers"
+  | "recipes"
+  | "combos"
+  | "storage_mb";
+
+export type QuotaSemaphoreStatus =
+  | "NORMAL"
+  | "WARNING"
+  | "CRITICAL"
+  | "OVER_QUOTA";
+
+export function resolveQuotaSemaphoreStatus(
+  activeCount: number,
+  maxLimit: number
+): {
+  readonly status: QuotaSemaphoreStatus;
+  readonly percentage: number;
+} {
+  if (maxLimit <= 0 || activeCount >= maxLimit) {
+    return { status: "OVER_QUOTA", percentage: 100 };
+  }
+  const rawPct = Math.min(100, Math.round((activeCount / maxLimit) * 100));
+  if (rawPct >= 95) {
+    return { status: "CRITICAL", percentage: rawPct };
+  }
+  if (rawPct >= 80) {
+    return { status: "WARNING", percentage: rawPct };
+  }
+  return { status: "NORMAL", percentage: rawPct };
+}

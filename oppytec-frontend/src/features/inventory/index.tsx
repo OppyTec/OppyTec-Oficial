@@ -13,8 +13,12 @@ const INVENTORY_TABS = [
 
 export type InventorySubTab = (typeof INVENTORY_TABS)[number];
 
+export type UnifiedRecuentoSubView = "conteo-activo" | "historial-recuentos";
+
 export function InventoryFeatureView() {
   const [activeTab, setActiveTab] = useState<InventorySubTab>("StockRegistro");
+  const [unifiedRecuentoTab, setUnifiedRecuentoTab] =
+    useState<UnifiedRecuentoSubView>("conteo-activo");
   const [blindCountQty, setBlindCountQty] = useState<string>("24.50");
   const [mermaApproved, setMermaApproved] = useState<boolean>(false);
 
@@ -84,6 +88,58 @@ export function InventoryFeatureView() {
           <div className="flex items-center justify-between border-t border-border pt-2 text-xs">
             <span>Valorización Lote FEFO (PMP):</span>
             <MoneyBadge amount="185400" baseCurrency="CLP" />
+          </div>
+
+          {/* Vista Unificada de Recuento (Plan Básico: Conteo Físico Activo + Historial de Recuentos en 1 sola vista) */}
+          <div
+            data-testid="inventory-unified-recuento-card"
+            className="mt-2 space-y-2 rounded-lg border border-primary/30 bg-card p-3"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-mono text-[11px] font-bold uppercase text-primary">
+                Módulo Recuento Unificado (Plan Básico)
+              </span>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  data-testid="recuento-subtab-activo"
+                  onClick={() => {
+                    setUnifiedRecuentoTab("conteo-activo");
+                    setActiveTab("ContarInventario");
+                  }}
+                  className={`touch-target inline-flex min-h-[44px] items-center rounded-md px-2.5 py-1 text-[11px] font-semibold ${
+                    unifiedRecuentoTab === "conteo-activo"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground"
+                  }`}
+                >
+                  Tab 1: Recuento Físico Activo
+                </button>
+                <button
+                  type="button"
+                  data-testid="recuento-subtab-historial"
+                  onClick={() => {
+                    setUnifiedRecuentoTab("historial-recuentos");
+                    setActiveTab("RecuentoInventario");
+                  }}
+                  className={`touch-target inline-flex min-h-[44px] items-center rounded-md px-2.5 py-1 text-[11px] font-semibold ${
+                    unifiedRecuentoTab === "historial-recuentos"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-secondary-foreground"
+                  }`}
+                >
+                  Tab 2: Historial de Recuentos
+                </button>
+              </div>
+            </div>
+            <p
+              data-testid="recuento-unified-status"
+              className="font-mono text-xs text-muted-foreground"
+            >
+              {unifiedRecuentoTab === "conteo-activo"
+                ? `Conteo Físico Ciego Activo · Stock Capturado: ${blindCountQty} kg`
+                : "Historial de Recuentos Cerrados · Sesión #REC-2026-10 (Varianza: -0.50 kg auditada)"}
+            </p>
           </div>
         </div>
 
