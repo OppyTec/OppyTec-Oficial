@@ -78,5 +78,22 @@
 - **Plan Básico 10 Módulos:** `inicio`, `operations.consumption_log`, `inventory.stock`, `catalog.products`, `inventory.mermas`, `inventory.counts`, `notifications`, `alerts`, `audit.history`, `identity.users` filtrados de forma determinista mediante RBAC de 2 niveles (`<modulo>.<submodulo>`).
 - **Semáforo de Salud de Cuotas:** `<QuotaProgressIndicator />` con 4 estados: `NORMAL` (<80%), `WARNING` (80–94%), `CRITICAL` (95–99%) y `OVER_QUOTA` (100% o límite 0), con liberación inmediata de cupo al archivar (`is_deleted = True`).
 - **Bóvedas OpenSpec Sincronizadas:** `specs/business-domain/tenancy-and-plans.business.spec.md` y `specs/engineering-code/tenancy-and-plans.code.spec.md` 100% actualizados y validados por `test_openspec_bipartition_and_sync.py`.
-- **Bitácora Publicada:** `docs/bitacora/diario-escuadron/07-Plan-Maestro-Panel-Administrador-Plan-Basico-10-Modulos-y-Cuotas-Parametricas.md` y vinculada en `00-MAPA-SEGUNDO-CEREBRO.md`.
+- **Bitácora Publicada:** `docs/bitacora/diario-escuadron/07-Plan-Maestro-Panel-Administrador-Plan-Basico-10-Modulos-y-Cuotas-Parametricas.md`, `08-...`, `09-Gobernanza-Estricta-Graphify-CLI-nav-y-sync-graph.md` y `10-Opcion-3-Persistencia-Real-PostgreSQL-Alembic-0003-y-Verificacion-5D.md`.
+
+## Hito Cerrado: Opción 3 (Persistencia Real y Verificación en Base de Datos)
+- **Estado de Certificación:** `QA_APPROVED` y `SYNC_APPROVED` (DAG Pipeline de 4 Etapas culminado al 100%).
+- **Persistencia en Vivo (Docker):**
+  - PostgreSQL 16 (`oppytec-postgres`): Migración `0003_public_plans_quotas_and_tenant_capacity_overrides.py` ejecutada y persistida en vivo mediante `docker compose exec -T backend alembic upgrade head`.
+  - Introspección dinámica `_has_column()` e idempotencia estricta implementadas.
+  - `alembic_version.version_num` expandido a `VARCHAR(128)` en `alembic/env.py`.
+  - Columnas de cuotas y overrides verificadas físicamente en tablas `public.system_plans`, `public.holdings` y `public.tenants`.
+- **Batería de Pruebas 5D (Agente 09):**
+  - Backend: **196 tests passed** (109 unit/arch, 12 contracts/alembic, 11 integration, 59 uat/redteam, 5 e2e).
+  - Frontend: **40 tests passed** (6 suites Vitest: `AdminManagementViews`, `CurrencySelector`, `LanguageProvider`, `LanguageFlagSelector`, `env`, `telemetry`).
+- **Gobernanza Post-Ejecución Graphify & Archify (Agente 12):**
+  - `python scripts/harness.py sync-graph`: 83 nodos, 111 aristas sincronizados en `graph.json` y `v2_phase6_master_graph.json`.
+  - `python scripts/harness.py nav "0003"`: 1 nodo, 4 aristas (< 80 tokens).
+  - `python scripts/harness.py nav "tenancy"`: 4 nodos, 10 aristas (< 100 tokens).
+  - `python scripts/harness.py verify-evals`: 100% OK (Cero Reward Hacking, hashes SHA-256 inalterados).
+
 

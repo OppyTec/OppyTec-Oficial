@@ -1,43 +1,33 @@
 # Reporte de Traspaso (`Handover`) — Agente 09: Ingeniero de Aseguramiento de Calidad, Paridad Legacy y Testing 5D
 
-- **Fecha UTC:** 2026-10-23T17:50:00Z
-- **Fase:** Certificación QA Frontend Dropdowns i18n/Currency, Reactividad Global, Reglas RBAC, Suites Unitarias y Arquitectura Backend.
-- **Estado de Certificación:** `QA_APPROVED` (Frontend: 39/39 vitest passed en 6 suites, Typecheck 100% limpio; Backend: 26 arch + 83 unit pytest passed; Anti-Reward-Hacking Evals: 100% SHA-256 verificado).
+- **Fecha UTC:** 2026-10-23T21:21:00Z
+- **Fase:** DAG Pipeline Etapa 4 — Control de Calidad y Testing 5D (Continuación de Opción 3: Persistencia Real y Verificación en Base de Datos).
+- **Estado de Certificación:** `QA_APPROVED` (Backend: 109/109 arch & unit passed, 12/12 alembic integrity & contracts passed, 11/11 integration & smoke passed, 59/59 uat & redteam passed, 5/5 e2e passed; Frontend: 40/40 vitest passed; Anti-Reward-Hacking Evals: 100% SHA-256 verificado).
 
 ## 1. Completed (Qué se hizo)
-- **Certificación Frontend Suite Completa (Vitest 39/39 tests, 6/6 suites):**
-  - `src/shared/i18n/i18n.test.tsx` (6 tests):
-    - Paridad 1:1 en 11 namespaces (`es` y `en`).
-    - Protección inmutable de nombres propios de fantasía (`Pollo King`, `Savory`).
-    - Render de banderas SVG (FlagES, FlagUS) y metadatos de idiomas futuros (pt, fr, it, de).
-    - Conmutación instantánea vía selector sin alterar moneda.
-    - Componente dropdown interactivo de banderas de idioma que muestra idioma activo y se cierra al seleccionar.
-    - Reactividad global en componentes montados bajo `LanguageProvider` consumiendo `useLanguage()`.
-  - `src/shared/currency/currency.test.tsx` (4 tests):
-    - Aritmética de punto fijo exacto y formateo (CLP 0 dec, USD/EUR/BRL 2 dec, UF 4 dec).
-    - Conversión exacta y banderas de alerta ante anomalías FX (>8%).
-    - Selectores independientes y aislamiento desacoplado de idioma/moneda.
-    - Componente dropdown interactivo de moneda (código + símbolo) que actualiza estado y se cierra al seleccionar.
-  - `src/features/platform-admin/AdminManagementViews.test.tsx` (5 tests):
-    - Flujo de creación de Holding.
-    - Creación de Razón Social y RUT en Legal Entities.
-    - Aprovisionamiento de Tenant y selector de módulos.
-    - Soft-delete / archiving con liberación de cuota en Client Users.
-    - Cumplimiento de RBAC `<Can>` ocultando botones de acción sin privilegios.
-  - `src/App.test.tsx` (13 tests):
-    - Enrutamiento Paso 1, CleanAdminDashboard (4 KPIs sin demo clutter), AdminLayout, submódulos RBAC y semáforo de cuotas.
-  - `src/shared/config/env.test.ts` y `src/shared/telemetry/telemetry.test.ts` (11 tests).
-- **TypeScript Static Typecheck:**
-  - `pnpm typecheck` (`tsc --noEmit`) ejecutado exitosamente con 0 errores de tipado.
-- **Suite de Pruebas Backend (Pytest 109/109 tests):**
-  - `pytest tests/architecture/`: 26 tests passed (100%). Redacción PII, trazabilidad trace_id y límites de capas.
-  - `pytest tests/unit/`: 83 tests passed (100%). Aprovisionamiento de planes, cuotas de tenancy, killswitch Redis, router cognitivo JEV, y servicios AI.
-- **Integridad Criptográfica Anti-Reward-Hacking:**
-  - `python3 scripts/harness.py verify-evals` ejecutado con éxito: 100% de hashes SHA-256 intactos en `.agent/rules/` y `.agent/evals/`.
+- **Consulta previa obligatoria a Graphify:**
+  - Ejecutado `python scripts/harness.py nav "test"`. Coincidencia con 15 suites de pruebas en el grafo semántico (`suite:architecture`, `suite:contracts_schemathesis`, `suite:e2e_01_05`, `suite:integration`, `suite:load_locust_500rps`, `suite:security_redteam_01_11`, `suite:uat_business_scenarios`, etc.).
+- **Verificación de Integridad de Evaluaciones Anti-Trampa:**
+  - Ejecutado `python scripts/harness.py verify-evals`.
+  - Resultado: `✅ Integridad de .agent/rules/ y .agent/evals/ verificada al 100% (Cero Reward Hacking)`.
+- **Suite de Pruebas de Arquitectura y Unitarias del Backend:**
+  - Ejecutado `oppytec-backend/.venv/bin/pytest tests/architecture/ tests/unit/`.
+  - Resultado: 109 pasados (26 de arquitectura + 83 unitarios), 0 fallos.
+  - Validación de Clean Architecture, redacción de PII, correlación `trace_id`, RBAC de 3 niveles, aprovisionamiento de tenants/holdings/planes y cuotas estrictas del Plan Básico.
+- **Verificación de Contratos OpenAPI y Simetría de Alembic (Cero Regresiones):**
+  - Ejecutado `pytest tests/architecture/test_alembic_integrity.py tests/contracts/`.
+  - Resultado: 12 pasados, 0 fallos.
+  - La migración `0003_public_plans_quotas_and_tenant_capacity_overrides.py` cumple la convención regex estricta `^\d{4}_(public|tenant)_[a-z0-9_]+\.py$`, downgrade simétrico y single-head en el grafo de Alembic.
+  - Contratos OpenAPI validados contra esquemas RFC 7807 y Schemathesis sin status HTTP 500 no capturados.
+- **Validación Complementaria 5D:**
+  - Suites `tests/integration/` y `tests/smoke/`: 11 pasados (aislamiento multi-tenant en schemas PostgreSQL, liberación de cuotas al hacer soft-delete, killswitch Redis jti).
+  - Suites `tests/uat/` y `tests/security_redteam/`: 59 pasados (cobertura IDOR, prevención de double spend en créditos Oppyfy, rechazo polyglot, circuit breakers).
+  - Suite `tests/e2e/`: 5 pasados (onboarding génesis, ciclo escandallo receta a deducción atómica POS, aprobación mermas y segregación de funciones).
+  - Frontend Vitest: 40 pasados en 6 suites (dropdowns i18n y currency, admin management views, reactividad de cuotas).
 
 ## 2. Friction & Failures (Qué salió mal / Qué cuidar)
-- Los warnings de React `act(...)` en `App.test.tsx` se deben a re-renderizados de estados internos asíncronos en componentes montados en testing; no representan fallos ni fugas de memoria.
-- Mantener siempre la independencia estricta entre el contexto de `LanguageProvider` (`useLanguage`) y el de `CurrencyProvider` (`useCurrency`), evitando acoplamientos innecesarios.
+- Ningún fallo detectado en el pipeline de tests ni en la base de datos PostgreSQL persistente.
+- Advertencias informativas de deprecación de `ORJSONResponse` en FastAPI / Starlette testclient y `act(...)` en Vitest; no afectan la lógica funcional ni representan fugas.
 
 ## 3. Next Exact Action (Siguiente paso exacto)
-- Proceder con los Quality Gates de integración profunda (Main Gate / Deep Gate) cuando se consoliden las ramas y pasadas E2E.
+- Traspasar la certificación de calidad al Orquestador para culminar formalmente el DAG Pipeline de la Opción 3 (Persistencia Real y Verificación en Base de Datos).
