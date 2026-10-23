@@ -11,6 +11,7 @@ Verifica:
 """
 from __future__ import annotations
 
+import time
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -30,6 +31,7 @@ from src.adapters.ai import (
     MeteredJevAdapter,
 )
 from src.adapters.ai.jev_adapter import InMemoryTelemetrySink
+from src.core.bootstrap import DEFAULT_SYSTEM_PLANS, PLAN_BASICO_10_MODULES
 from src.modules.oppy_ai.application import (
     BusinessSpecChunkRecord,
     MeteredAIService,
@@ -499,3 +501,105 @@ def test_e2e_metered_ai_service_rag_and_rbac_enforcement() -> None:
     assert blocked_resp.status_code == BLOCKED_UNAUTHORIZED_PROMPT
     assert blocked_resp.prompt_audit_entry.decision_status == BLOCKED_UNAUTHORIZED_PROMPT
     assert blocked_resp.credits_deducted == Decimal("0.00")
+
+
+def test_jev_system1_latency_sla_under_5ms() -> None:
+    """
+    Verifica que el motor JEV (Sistema 1) no sufra regresiones de rendimiento y mantenga su SLA < 5ms
+    en sus tres primitivas inmutables:
+    - `decide_boolean` (guardrails de inyección y equivalencia semántica)
+    - `decide_choice` (enrutamiento de herramientas y subdominios)
+    - `decide_score` (clasificación de severidad y evaluación)
+    """
+    sink = InMemoryTelemetrySink()
+    jev = MeteredJevAdapter(telemetry_sink=sink)
+    h_id = uuid.uuid4()
+    t_id = uuid.uuid4()
+
+    # Ejecutar 50 iteraciones de cada primitiva para medir SLA
+    boolean_latencies: list[float] = []
+    choice_latencies: list[float] = []
+    score_latencies: list[float] = []
+
+    for _ in range(50):
+        t0 = time.perf_counter()
+        b_res = jev.decide_boolean(
+            decision_id="SECURITY_CHECK",
+            prompt_or_input="Select all products from inventory",
+            holding_id=h_id,
+            tenant_id=t_id,
+            tenant_schema="tenant_test",
+            user_id=1,
+            caller_feature="test_security",
+        )
+        boolean_latencies.append((time.perf_counter() - t0) * 1000.0)
+        assert b_res.meets_threshold is True
+
+        t1 = time.perf_counter()
+        c_res = jev.decide_choice(
+            decision_id="TOOL_ROUTE",
+            prompt_or_input="Dame el resumen de ventas del día",
+            candidates=("query_sales_summary", "query_stock_levels", "query_recipe_costs"),
+            holding_id=h_id,
+            tenant_id=t_id,
+            tenant_schema="tenant_test",
+            user_id=1,
+            caller_feature="test_router",
+        )
+        choice_latencies.append((time.perf_counter() - t1) * 1000.0)
+        assert c_res.value == "query_sales_summary"
+
+        t2 = time.perf_counter()
+        s_res = jev.decide_score(
+            decision_id="MERMA_SEVERITY",
+            prompt_or_input="Alerta de merma crítica por quiebre de stock",
+            holding_id=h_id,
+            tenant_id=t_id,
+            tenant_schema="tenant_test",
+            user_id=1,
+            caller_feature="test_score",
+        )
+        score_latencies.append((time.perf_counter() - t2) * 1000.0)
+        assert s_res.level == "HIGH"
+
+    p95_bool = sorted(boolean_latencies)[int(len(boolean_latencies) * 0.95)]
+    p95_choice = sorted(choice_latencies)[int(len(choice_latencies) * 0.95)]
+    p95_score = sorted(score_latencies)[int(len(score_latencies) * 0.95)]
+
+    # SLA < 5ms estricto para cada primitiva
+    assert p95_bool < 5.0, f"decide_boolean P95 SLA exceeded: {p95_bool:.3f}ms >= 5.0ms"
+    assert p95_choice < 5.0, f"decide_choice P95 SLA exceeded: {p95_choice:.3f}ms >= 5.0ms"
+    assert p95_score < 5.0, f"decide_score P95 SLA exceeded: {p95_score:.3f}ms >= 5.0ms"
+
+
+def test_plan_basico_oppyfy_disabled_by_default_and_upgrade_or_override() -> None:
+    """
+    Certifica las reglas de gobierno de Plan Básico respecto al Asistente IA OppyFy:
+    1. En `PLAN_BASICO_10_MODULES`, 'oppy_ai' está desactivado por defecto (no incluido).
+    2. El plan 'basic' en `DEFAULT_SYSTEM_PLANS` usa `PLAN_BASICO_10_MODULES`.
+    3. El plan 'enterprise' incluye 'oppy_ai' por defecto.
+    4. La estructura del payload `TenantModulesAndQuotasUpdateRequest` permite agregar 'oppy_ai'
+       a `enabled_modules` como activación opcional sin requerir cambio de plan base.
+    """
+    # 1. 'oppy_ai' no está en el Plan Básico por defecto
+    assert "oppy_ai" not in PLAN_BASICO_10_MODULES
+
+    # 2. Plan básico en catálogo usa PLAN_BASICO_10_MODULES
+    basic_plan = next(p for p in DEFAULT_SYSTEM_PLANS if p.slug == "basic")
+    assert "oppy_ai" not in basic_plan.included_modules
+    assert set(basic_plan.included_modules) == set(PLAN_BASICO_10_MODULES)
+
+    # 3. Plan Corporativo incluye 'oppy_ai'
+    enterprise_plan = next(p for p in DEFAULT_SYSTEM_PLANS if p.slug == "enterprise")
+    assert "oppy_ai" in enterprise_plan.included_modules
+
+    # 4. Activación opcional mediante `TenantModulesAndQuotasUpdateRequest`
+    from src.modules.tenancy.presentation.schemas import TenantModulesAndQuotasUpdateRequest
+
+    req_with_ai = TenantModulesAndQuotasUpdateRequest(
+        enabled_modules=[*PLAN_BASICO_10_MODULES, "oppy_ai"],
+        custom_max_users_override=10,
+    )
+    assert "oppy_ai" in req_with_ai.enabled_modules
+    assert req_with_ai.custom_max_users_override == 10
+

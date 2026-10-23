@@ -34,6 +34,7 @@ from src.core.security import (
     create_access_token,
     create_refresh_token,
     decode_and_extract_claims,
+    hash_password,
     verify_password,
 )
 from src.modules.identity.application.delegation_service import (
@@ -93,7 +94,38 @@ def _build_genesis_store_entry() -> dict[str, object]:
 _GLOBAL_USERS_STORE: dict[int, dict[str, object]] = {
     1: _build_genesis_store_entry(),
 }
-_CLIENT_USERS_STORE: dict[int, dict[str, object]] = {}
+_CLIENT_USERS_STORE: dict[int, dict[str, object]] = {
+    101: {
+        "user_id": 101,
+        "holding_id": "holding_genesis",
+        "tenant_id": "tenant_genesis",
+        "username": "admin.local",
+        "email": "admin.local@restaurant.cl",
+        "first_name": "Administrador",
+        "last_name": "Sucursal",
+        "role": "admin",
+        "hierarchy_rank": 10,
+        "is_holding_owner": False,
+        "is_deleted": False,
+        "password_hash": hash_password("OppyTec#2026"),
+        "is_active": True,
+    },
+    102: {
+        "user_id": 102,
+        "holding_id": "holding_pacifico",
+        "tenant_id": "tenant_pacifico_centro",
+        "username": "cocinero.jefe",
+        "email": "chef@pacifico.cl",
+        "first_name": "Mario",
+        "last_name": "Gómez",
+        "role": "supervisor",
+        "hierarchy_rank": 20,
+        "is_holding_owner": False,
+        "is_deleted": False,
+        "password_hash": hash_password("OppyTec#2026"),
+        "is_active": True,
+    },
+}
 
 
 def _match_store_user(

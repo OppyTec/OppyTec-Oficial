@@ -16,6 +16,7 @@ from collections.abc import Awaitable, Callable, Mapping, Sequence
 from contextvars import ContextVar, Token
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from pydantic import SecretStr
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -107,6 +108,34 @@ class InMemorySpanExporter:
 
     def clear(self) -> None:
         self._spans.clear()
+
+
+@dataclass(frozen=True)
+class QuotaSemaphoreMetric:
+    """Métrica determinista del semáforo preventivo de cuota (NORMAL, WARNING, CRITICAL, OVER_QUOTA)."""
+
+    resource_type: str
+    status: str
+    usage_percentage: float
+    active_count: int
+    effective_max_limit: int
+    tenant_id: str | None = None
+    holding_id: str | None = None
+    trace_id: str = ""
+    timestamp: str = ""
+
+
+_in_memory_quota_metrics: list[QuotaSemaphoreMetric] = []
+
+
+def get_in_memory_quota_metrics() -> list[QuotaSemaphoreMetric]:
+    """Devuelve las métricas de semáforo de cuota registradas en memoria."""
+    return list(_in_memory_quota_metrics)
+
+
+def clear_in_memory_quota_metrics() -> None:
+    """Limpia las métricas de semáforo de cuota en memoria."""
+    _in_memory_quota_metrics.clear()
 
 
 _current_trace_id_var: ContextVar[str] = ContextVar("oppytec_trace_id", default="")
@@ -239,6 +268,128 @@ def format_structured_log(
         "data": safe_payload,
     }
     return json.dumps(record, ensure_ascii=False)
+
+
+def record_quota_semaphore_metric(
+    *,
+    resource_type: str,
+    status: str,
+    usage_percentage: float | Decimal,
+    active_count: int,
+    effective_max_limit: int,
+    tenant_id: str | None = None,
+    holding_id: str | None = None,
+    details: dict[str, object] | None = None,
+) -> QuotaSemaphoreMetric:
+    """
+    Registra una métrica de semáforo de cuota (NORMAL <80%, WARNING >=80%, CRITICAL >=95%, OVER_QUOTA 100%):
+    - Exporta un Span a InMemorySpanExporter para trazabilidad en cascada OTel.
+    - Genera log estructurado JSON si el estado es WARNING, CRITICAL u OVER_QUOTA.
+    - Aplica scrub_telemetry_payload garantizando CERO fuga de PII o SecretStr.
+    """
+    ctx = get_tenant_telemetry_context()
+    resolved_tenant = tenant_id or ctx.tenant_id
+    resolved_holding = holding_id or ctx.holding_id
+    resolved_trace = ctx.trace_id or get_current_trace_id()
+    pct_float = float(usage_percentage)
+
+    metric = QuotaSemaphoreMetric(
+        resource_type=resource_type,
+        status=status.upper(),
+        usage_percentage=round(pct_float, 2),
+        active_count=active_count,
+        effective_max_limit=effective_max_limit,
+        tenant_id=resolved_tenant,
+        holding_id=resolved_holding,
+        trace_id=resolved_trace,
+        timestamp=datetime.now(UTC).isoformat(),
+    )
+    _in_memory_quota_metrics.append(metric)
+
+    span = SpanRecord(
+        name=f"quota.semaphore.{resource_type}",
+        trace_id=resolved_trace,
+        span_id=uuid.uuid4().hex[:16],
+        duration_ms=0.0,
+        status_code=429 if status.upper() == "OVER_QUOTA" else 200,
+        attributes={
+            "oppytec.quota.resource_type": resource_type,
+            "oppytec.quota.status": status.upper(),
+            "oppytec.quota.usage_pct": round(pct_float, 2),
+            "oppytec.quota.active_count": active_count,
+            "oppytec.quota.effective_limit": effective_max_limit,
+            "oppytec.tenant_id": resolved_tenant or "",
+            "oppytec.holding_id": resolved_holding or "",
+            **ctx.to_attributes(),
+        },
+    )
+    _in_memory_exporter.export(span)
+
+    if status.upper() in ("WARNING", "CRITICAL", "OVER_QUOTA"):
+        log_level = (
+            "WARNING"
+            if status.upper() == "WARNING"
+            else ("ERROR" if status.upper() == "CRITICAL" else "CRITICAL")
+        )
+        safe_details = scrub_telemetry_payload(details or {})
+        payload: dict[str, object] = {
+            "resource_type": resource_type,
+            "status": status.upper(),
+            "usage_pct": round(pct_float, 2),
+            "active_count": active_count,
+            "effective_limit": effective_max_limit,
+            **safe_details,
+        }
+        format_structured_log(log_level, f"quota.semaphore.{status.lower()}", payload)
+
+    return metric
+
+
+def emit_plan_audit_log(
+    action: str,
+    plan_slug: str,
+    details: dict[str, object] | None = None,
+) -> str:
+    """Emite log estructurado JSON de auditoría de planes con redacción PII determinista."""
+    payload: dict[str, object] = {"plan_slug": plan_slug, **(details or {})}
+    return format_structured_log("INFO", f"plan.audit.{action}", payload)
+
+
+def emit_tenant_provisioning_audit_log(
+    action: str,
+    tenant_id: str,
+    holding_id: str,
+    schema_name: str,
+    details: dict[str, object] | None = None,
+) -> str:
+    """Emite log estructurado JSON de aprovisionamiento de tenants con redacción PII determinista."""
+    payload: dict[str, object] = {
+        "tenant_id": tenant_id,
+        "holding_id": holding_id,
+        "schema_name": schema_name,
+        **(details or {}),
+    }
+    return format_structured_log("INFO", f"tenant.provisioning.{action}", payload)
+
+
+def emit_quota_audit_log(
+    action: str,
+    resource_type: str,
+    status: str,
+    details: dict[str, object] | None = None,
+) -> str:
+    """Emite log estructurado JSON de auditoría de cuotas con redacción PII determinista."""
+    payload: dict[str, object] = {
+        "resource_type": resource_type,
+        "status": status.upper(),
+        **(details or {}),
+    }
+    level = (
+        "WARNING"
+        if status.upper() in ("WARNING", "CRITICAL")
+        else ("CRITICAL" if status.upper() == "OVER_QUOTA" else "INFO")
+    )
+    return format_structured_log(level, f"quota.audit.{action}", payload)
 
 
 def extract_trace_id_from_headers(headers: Mapping[str, str]) -> str:

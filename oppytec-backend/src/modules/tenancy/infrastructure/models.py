@@ -35,7 +35,7 @@ from src.shared.soft_delete_mixin import SoftDeleteMixin
 
 
 class SystemPlan(PublicBase, AuditTimestampsMixin, TranslatableI18nMixin):
-    """Plan comercial editable por SuperUser con cuotas (`max_active_users`, `max_storage_mb`) y precios `Decimal`."""
+    """Plan comercial editable por SuperUser con cuotas paramétricas de capacidad y precios `Decimal`."""
 
     __tablename__ = "system_plans"
 
@@ -47,6 +47,10 @@ class SystemPlan(PublicBase, AuditTimestampsMixin, TranslatableI18nMixin):
     slug: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     max_active_users: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
+    max_products: Mapped[int] = mapped_column(Integer, default=500, nullable=False)
+    max_suppliers: Mapped[int] = mapped_column(Integer, default=20, nullable=False)
+    max_recipes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    max_combos: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     max_storage_mb: Mapped[int] = mapped_column(Integer, default=1024, nullable=False)
     included_modules: Mapped[list[str]] = mapped_column(
         JSONDictType,
@@ -95,6 +99,26 @@ class Holding(PublicBase, AuditTimestampsMixin):
         nullable=False,
     )
     custom_max_users_override: Mapped[int | None] = mapped_column(
+        Integer,
+        default=None,
+        nullable=True,
+    )
+    custom_max_products_override: Mapped[int | None] = mapped_column(
+        Integer,
+        default=None,
+        nullable=True,
+    )
+    custom_max_suppliers_override: Mapped[int | None] = mapped_column(
+        Integer,
+        default=None,
+        nullable=True,
+    )
+    custom_max_recipes_override: Mapped[int | None] = mapped_column(
+        Integer,
+        default=None,
+        nullable=True,
+    )
+    custom_max_combos_override: Mapped[int | None] = mapped_column(
         Integer,
         default=None,
         nullable=True,
@@ -165,6 +189,26 @@ class Tenant(PublicBase, AuditTimestampsMixin):
     nombre_comercial: Mapped[str] = mapped_column(String(180), nullable=False)
     base_currency: Mapped[str] = mapped_column(String(10), default="CLP", nullable=False)
     custom_max_users_override: Mapped[int | None] = mapped_column(
+        Integer,
+        default=None,
+        nullable=True,
+    )
+    custom_max_products_override: Mapped[int | None] = mapped_column(
+        Integer,
+        default=None,
+        nullable=True,
+    )
+    custom_max_suppliers_override: Mapped[int | None] = mapped_column(
+        Integer,
+        default=None,
+        nullable=True,
+    )
+    custom_max_recipes_override: Mapped[int | None] = mapped_column(
+        Integer,
+        default=None,
+        nullable=True,
+    )
+    custom_max_combos_override: Mapped[int | None] = mapped_column(
         Integer,
         default=None,
         nullable=True,

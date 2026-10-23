@@ -11,8 +11,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
+from typing import Literal
 
 BYTES_PER_MEGABYTE: int = 1024 * 1024
+WARNING_USAGE_PCT_THRESHOLD: Decimal = Decimal("80.00")
+CRITICAL_USAGE_PCT_THRESHOLD: Decimal = Decimal("95.00")
+
+QuotaResourceType = Literal[
+    "users",
+    "products",
+    "suppliers",
+    "recipes",
+    "combos",
+    "storage_mb",
+]
+QuotaHealthStatus = Literal["NORMAL", "WARNING", "CRITICAL", "OVER_QUOTA"]
 
 
 @dataclass(frozen=True)
@@ -203,3 +216,124 @@ def evaluate_storage_quota_bytes(
         usage_percentage=pct,
         reason_code="STORAGE_AVAILABLE" if allowed else "STORAGE_QUOTA_EXCEEDED",
     )
+
+
+@dataclass(frozen=True)
+class ResourceSlotState:
+    """Estado de un recurso contable (`products`, `suppliers`, `recipes`, `combos`, `users`)."""
+
+    item_id: str
+    resource_type: QuotaResourceType
+    is_deleted: bool = False
+
+
+@dataclass(frozen=True)
+class ResourceQuotaEvaluation:
+    """Evaluación unificada de cualquier cuota de capacidad del Plan + Overrides con semáforo."""
+
+    resource_type: QuotaResourceType
+    allowed: bool
+    active_count: int
+    soft_deleted_count: int
+    effective_max_limit: int
+    remaining_capacity: int
+    usage_percentage: Decimal
+    status: QuotaHealthStatus
+    reason_code: str
+
+
+def compute_quota_health_status(
+    *,
+    active_count: int,
+    effective_max_limit: int,
+    usage_percentage: Decimal,
+) -> QuotaHealthStatus:
+    """
+    Determina el estado del semáforo de cuota:
+    - `OVER_QUOTA`: `effective_max_limit == 0` o `active_count >= effective_max_limit`
+    - `CRITICAL`: `95.00% <= usage_percentage < 100.00%`
+    - `WARNING`: `80.00% <= usage_percentage < 95.00%`
+    - `NORMAL`: `< 80.00%`
+    """
+    if effective_max_limit <= 0 or active_count >= effective_max_limit:
+        return "OVER_QUOTA"
+    if usage_percentage >= CRITICAL_USAGE_PCT_THRESHOLD:
+        return "CRITICAL"
+    if usage_percentage >= WARNING_USAGE_PCT_THRESHOLD:
+        return "WARNING"
+    return "NORMAL"
+
+
+def resolve_effective_resource_limit(
+    *,
+    plan_limit: int,
+    holding_override: int | None = None,
+    tenant_override: int | None = None,
+    allow_zero: bool = True,
+) -> int:
+    """
+    Resuelve el límite efectivo de un recurso (`users`, `products`, `suppliers`, `recipes`, `combos`, `storage_mb`)
+    con precedencia: `tenant_override -> holding_override -> plan_limit`.
+    """
+    if tenant_override is not None and tenant_override >= 0:
+        return tenant_override if allow_zero else max(1, tenant_override)
+    if holding_override is not None and holding_override >= 0:
+        return holding_override if allow_zero else max(1, holding_override)
+    return max(0, plan_limit) if allow_zero else max(1, plan_limit)
+
+
+def evaluate_resource_capacity_quota(
+    *,
+    resource_type: QuotaResourceType,
+    active_non_deleted_count: int,
+    plan_limit: int,
+    soft_deleted_count: int = 0,
+    holding_override: int | None = None,
+    tenant_override: int | None = None,
+) -> ResourceQuotaEvaluation:
+    """
+    Evalúa la capacidad disponible para un recurso contable (`users`, `products`, `suppliers`, `recipes`, `combos`, `storage_mb`).
+    Los elementos archivados (`is_deleted == True`) jamás consumen cupo activo.
+    """
+    if active_non_deleted_count < 0 or soft_deleted_count < 0:
+        raise ValueError("Resource counts cannot be negative.")
+
+    allow_zero = resource_type in ("recipes", "combos")
+    effective_max = resolve_effective_resource_limit(
+        plan_limit=plan_limit,
+        holding_override=holding_override,
+        tenant_override=tenant_override,
+        allow_zero=allow_zero,
+    )
+    allowed = effective_max > 0 and active_non_deleted_count < effective_max
+    remaining = max(0, effective_max - active_non_deleted_count)
+
+    if effective_max > 0:
+        pct = (
+            Decimal(active_non_deleted_count) * Decimal("100") / Decimal(effective_max)
+        ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    else:
+        pct = Decimal("100.00")
+
+    health_status = compute_quota_health_status(
+        active_count=active_non_deleted_count,
+        effective_max_limit=effective_max,
+        usage_percentage=pct,
+    )
+    reason = (
+        f"{resource_type.upper()}_QUOTA_AVAILABLE"
+        if allowed
+        else f"PLAN_{resource_type.upper()}_QUOTA_EXCEEDED"
+    )
+    return ResourceQuotaEvaluation(
+        resource_type=resource_type,
+        allowed=allowed,
+        active_count=active_non_deleted_count,
+        soft_deleted_count=soft_deleted_count,
+        effective_max_limit=effective_max,
+        remaining_capacity=remaining,
+        usage_percentage=pct,
+        status=health_status,
+        reason_code=reason,
+    )
+

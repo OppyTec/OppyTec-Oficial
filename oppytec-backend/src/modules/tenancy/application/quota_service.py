@@ -14,7 +14,11 @@ from src.modules.identity.application.session_killswitch import (
 )
 from src.modules.tenancy.domain.quotas import (
     ClientUserSeatState,
+    QuotaResourceType,
+    ResourceQuotaEvaluation,
+    ResourceSlotState,
     SeatQuotaEvaluation,
+    evaluate_resource_capacity_quota,
     evaluate_seat_quota_for_new_or_restored_user,
 )
 
@@ -138,3 +142,165 @@ class SeatQuotaService:
         self._users[user_id] = updated
         self._killswitch.clear_revocation_on_restore(user_id=user_id)
         return updated
+
+
+class TenantCapacityQuotaService:
+    """
+    Motor multi-recurso de cuotas de capacidad comercial por Plan + Overrides de Holding/Tenant:
+    Gobierna `users`, `products`, `suppliers`, `recipes`, `combos` y `storage_mb`,
+    liberando cupos automáticamente cuando un registro pasa a `is_deleted = True`.
+    """
+
+    def __init__(
+        self,
+        *,
+        plan_limits: dict[QuotaResourceType, int] | None = None,
+        holding_overrides: dict[QuotaResourceType, int | None] | None = None,
+        tenant_overrides: dict[QuotaResourceType, int | None] | None = None,
+    ) -> None:
+        default_limits: dict[QuotaResourceType, int] = {
+            "users": 5,
+            "products": 500,
+            "suppliers": 20,
+            "recipes": 0,
+            "combos": 0,
+            "storage_mb": 512,
+        }
+        if plan_limits:
+            default_limits.update(plan_limits)
+        self._plan_limits: dict[QuotaResourceType, int] = default_limits
+        self._holding_overrides: dict[QuotaResourceType, int | None] = (
+            dict(holding_overrides) if holding_overrides else {}
+        )
+        self._tenant_overrides: dict[QuotaResourceType, int | None] = (
+            dict(tenant_overrides) if tenant_overrides else {}
+        )
+        self._slots: dict[tuple[QuotaResourceType, str], ResourceSlotState] = {}
+        self._used_storage_mb: int = 0
+
+    def update_limits(
+        self,
+        *,
+        plan_limits: dict[QuotaResourceType, int] | None = None,
+        holding_overrides: dict[QuotaResourceType, int | None] | None = None,
+        tenant_overrides: dict[QuotaResourceType, int | None] | None = None,
+    ) -> None:
+        """Actualiza en caliente los techos del plan y los overrides del Holding o Tenant."""
+        if plan_limits:
+            self._plan_limits.update(plan_limits)
+        if holding_overrides is not None:
+            self._holding_overrides = dict(holding_overrides)
+        if tenant_overrides is not None:
+            self._tenant_overrides = dict(tenant_overrides)
+
+    def set_used_storage_mb(self, used_mb: int) -> None:
+        """Actualiza el consumo actual de almacenamiento en MB (imágenes WebP + PDFs DTE)."""
+        if used_mb < 0:
+            raise ValueError("used_mb cannot be negative.")
+        self._used_storage_mb = used_mb
+
+    def evaluate_resource(self, resource_type: QuotaResourceType) -> ResourceQuotaEvaluation:
+        """Evalúa el estado actual de un recurso específico frente a su límite efectivo."""
+        if resource_type == "storage_mb":
+            active_count = self._used_storage_mb
+            deleted_count = 0
+        else:
+            matching = [
+                s for (rtype, _), s in self._slots.items() if rtype == resource_type
+            ]
+            active_count = sum(1 for s in matching if not s.is_deleted)
+            deleted_count = sum(1 for s in matching if s.is_deleted)
+
+        return evaluate_resource_capacity_quota(
+            resource_type=resource_type,
+            active_non_deleted_count=active_count,
+            soft_deleted_count=deleted_count,
+            plan_limit=self._plan_limits.get(resource_type, 0),
+            holding_override=self._holding_overrides.get(resource_type),
+            tenant_override=self._tenant_overrides.get(resource_type),
+        )
+
+    evaluate = evaluate_resource
+
+    def evaluate_all_resources(self) -> dict[QuotaResourceType, ResourceQuotaEvaluation]:
+        """Devuelve el mapa consolidado de las 6 cuotas del Plan y Tenant."""
+        resources: tuple[QuotaResourceType, ...] = (
+            "users",
+            "products",
+            "suppliers",
+            "recipes",
+            "combos",
+            "storage_mb",
+        )
+        return {res: self.evaluate_resource(res) for res in resources}
+
+    def register_item(
+        self,
+        *,
+        resource_type: QuotaResourceType,
+        item_id: str,
+    ) -> ResourceSlotState:
+        """Registra un nuevo ítem activo (`products`, `suppliers`, `recipes`, `combos`, `users`) o lanza HTTP 409."""
+        evaluation = self.evaluate_resource(resource_type)
+        if not evaluation.allowed:
+            raise QuotaExceededError(
+                f"Maximum {resource_type} quota reached ({evaluation.effective_max_limit}). "
+                "Archive/soft-delete an unused item or upgrade the plan.",
+                i18n_key=f"tenancy:errors.{resource_type}_quota_exceeded",
+                context={
+                    "resource_type": resource_type,
+                    "active_count": evaluation.active_count,
+                    "effective_max_limit": evaluation.effective_max_limit,
+                },
+            )
+        slot = ResourceSlotState(
+            item_id=item_id,
+            resource_type=resource_type,
+            is_deleted=False,
+        )
+        self._slots[(resource_type, item_id)] = slot
+        return slot
+
+    def soft_delete_item(
+        self,
+        *,
+        resource_type: QuotaResourceType,
+        item_id: str,
+    ) -> ResourceSlotState:
+        """Archiva (`is_deleted = True`) un ítem liberando inmediatamente 1 cupo activo en el Plan."""
+        key = (resource_type, item_id)
+        existing = self._slots.get(key)
+        if existing is None:
+            raise KeyError(f"Item {item_id} of type {resource_type} not found.")
+        updated = replace(existing, is_deleted=True)
+        self._slots[key] = updated
+        return updated
+
+    def restore_item(
+        self,
+        *,
+        resource_type: QuotaResourceType,
+        item_id: str,
+    ) -> ResourceSlotState:
+        """Restaura un ítem archivado (`is_deleted = False`) verificando que exista cupo disponible."""
+        key = (resource_type, item_id)
+        existing = self._slots.get(key)
+        if existing is None:
+            raise KeyError(f"Item {item_id} of type {resource_type} not found.")
+        if not existing.is_deleted:
+            return existing
+        evaluation = self.evaluate_resource(resource_type)
+        if not evaluation.allowed:
+            raise QuotaExceededError(
+                f"Cannot restore {resource_type} '{item_id}': quota ({evaluation.effective_max_limit}) is full.",
+                i18n_key=f"tenancy:errors.{resource_type}_quota_exceeded_on_restore",
+                context={
+                    "resource_type": resource_type,
+                    "active_count": evaluation.active_count,
+                    "effective_max_limit": evaluation.effective_max_limit,
+                },
+            )
+        updated = replace(existing, is_deleted=False)
+        self._slots[key] = updated
+        return updated
+

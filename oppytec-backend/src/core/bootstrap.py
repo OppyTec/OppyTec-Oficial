@@ -49,6 +49,10 @@ class PlanSeedSpec:
     price_usd: Decimal
     price_eur: Decimal
     price_brl: Decimal
+    max_products: int = 500
+    max_suppliers: int = 20
+    max_recipes: int = 0
+    max_combos: int = 0
 
 
 @dataclass(frozen=True)
@@ -170,12 +174,45 @@ DEFAULT_APP_MODULES: tuple[ModuleSeedSpec, ...] = (
     ),
 )
 
+# Módulos del Plan Básico ("Núcleo Base de Control")
+PLAN_BASICO_10_MODULES: tuple[str, ...] = (
+    "inicio",
+    "operations.consumption_log",
+    "inventory.stock",
+    "catalog.products",
+    "inventory.mermas",
+    "inventory.counts",
+    "notifications",
+    "alerts",
+    "audit.history",
+    "identity.users",
+)
+
 # Planes Base Multi-Moneda (`public.system_plans`)
 DEFAULT_SYSTEM_PLANS: tuple[PlanSeedSpec, ...] = (
+    PlanSeedSpec(
+        slug="basic",
+        name="Plan Básico (Control de Inventario)",
+        max_active_users=5,
+        max_products=500,
+        max_suppliers=20,
+        max_recipes=0,
+        max_combos=0,
+        max_storage_mb=512,
+        included_modules=PLAN_BASICO_10_MODULES,
+        price_clp=Decimal("34990.00"),
+        price_usd=Decimal("39.00"),
+        price_eur=Decimal("35.00"),
+        price_brl=Decimal("195.00"),
+    ),
     PlanSeedSpec(
         slug="starter",
         name="Plan Esencial",
         max_active_users=10,
+        max_products=1500,
+        max_suppliers=50,
+        max_recipes=150,
+        max_combos=40,
         max_storage_mb=512,
         included_modules=("catalog", "inventory", "recipes"),
         price_clp=Decimal("49990.00"),
@@ -187,6 +224,10 @@ DEFAULT_SYSTEM_PLANS: tuple[PlanSeedSpec, ...] = (
         slug="enterprise",
         name="Plan Corporativo",
         max_active_users=100,
+        max_products=10000,
+        max_suppliers=500,
+        max_recipes=2000,
+        max_combos=500,
         max_storage_mb=5120,
         included_modules=(
             "catalog",

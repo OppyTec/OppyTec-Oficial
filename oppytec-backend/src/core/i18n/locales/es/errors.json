@@ -17,5 +17,21 @@
   "validation": {
     "field_required": "El campo '{{fieldName}}' es obligatorio.",
     "invalid_decimal": "El monto ingresado para '{{fieldName}}' no es un valor decimal válido."
+  },
+  "tenancy": {
+    "seat_quota_exceeded": "Límite de usuarios activos alcanzado ({{activeUsers}}/{{maxUsers}}).",
+    "seat_quota_exceeded_on_restore": "No se puede restaurar usuario: límite de usuarios activos alcanzado.",
+    "products_quota_exceeded": "Límite de productos alcanzado para este plan comercial.",
+    "suppliers_quota_exceeded": "Límite de proveedores alcanzado para este plan comercial.",
+    "recipes_quota_exceeded": "Límite de recetas alcanzado para este plan comercial.",
+    "combos_quota_exceeded": "Límite de combos alcanzado para este plan comercial.",
+    "tenant_not_found": "El tenant especificado no existe o no está registrado.",
+    "client_user_not_found": "El usuario cliente no existe.",
+    "cross_holding_forbidden": "No está permitido asociar entidades de distintos holdings.",
+    "cross_tenant_forbidden": "Acceso denegado a tenant de otro holding."
+  },
+  "storage": {
+    "plan_quota_exceeded": "Límite de almacenamiento R2 alcanzado ({{usedMb}}/{{maxMb}} MB).",
+    "cross_tenant_key_forbidden": "Clave de archivo no permitida para este tenant."
   }
 }

@@ -158,6 +158,12 @@ class I18nCatalogTranslator:
         template = self._catalogs.get(resolved_lang, {}).get(target_ns, {}).get(target_key)
         if template is None:
             template = self._catalogs.get(DEFAULT_LANGUAGE, {}).get(target_ns, {}).get(target_key)
+        # Remapping fallback: "module:errors.sub_key" -> namespace "errors", key "module.sub_key"
+        if template is None and target_key.startswith("errors."):
+            remapped_key = f"{target_ns}.{target_key[7:]}"
+            template = self._catalogs.get(resolved_lang, {}).get("errors", {}).get(remapped_key)
+            if template is None:
+                template = self._catalogs.get(DEFAULT_LANGUAGE, {}).get("errors", {}).get(remapped_key)
         if template is None:
             return key
         return interpolate_template(template, params)

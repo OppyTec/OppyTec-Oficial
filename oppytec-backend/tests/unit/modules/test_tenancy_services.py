@@ -4,7 +4,11 @@ Verifica `validate_tenant_schema_name`, `Holding -> LegalEntity (1:1) -> Tenant`
 """
 from __future__ import annotations
 
+import importlib
+import importlib.util
 from decimal import Decimal
+from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from scripts.backup_manager import FourLayerBackupOrchestrator
@@ -60,12 +64,69 @@ def test_tenancy_models_and_legal_entity_1_to_1_unique_constraint() -> None:
         slug="pro",
         name="Plan Pro",
         max_active_users=25,
+        max_products=500,
+        max_suppliers=20,
+        max_recipes=10,
+        max_combos=5,
         max_storage_mb=2048,
         price_clp=Decimal("89990.00"),
         price_usd=Decimal("99.00"),
     )
     assert isinstance(plan.price_clp, Decimal)
     assert TenantMediaAsset.__table__.schema is None
+
+    # Verificación de columnas de cuotas paramétricas en SystemPlan
+    for col_name in (
+        "max_active_users",
+        "max_products",
+        "max_suppliers",
+        "max_recipes",
+        "max_combos",
+        "max_storage_mb",
+    ):
+        assert col_name in SystemPlan.__table__.c
+        assert SystemPlan.__table__.c[col_name].nullable is False
+
+    # Verificación de overrides paramétricos en Holding y Tenant
+    for model in (Holding, Tenant):
+        for override_col in (
+            "custom_max_users_override",
+            "custom_max_products_override",
+            "custom_max_suppliers_override",
+            "custom_max_recipes_override",
+            "custom_max_combos_override",
+            "custom_storage_mb_override",
+        ):
+            assert override_col in model.__table__.c
+            assert model.__table__.c[override_col].nullable is True
+
+
+def test_migration_0003_symmetry_and_metadata(backend_root: Path) -> None:
+    """Verifica que la migración 0003 tenga simetría 100% reversible (upgrade/downgrade) y metadatos válidos."""
+    mig_path = backend_root / "alembic" / "versions" / "0003_public_plans_quotas_and_tenant_capacity_overrides.py"
+    assert mig_path.exists(), "La migración 0003 debe existir en alembic/versions/"
+
+    spec = importlib.util.spec_from_file_location("mig_0003", mig_path)
+    assert spec is not None and spec.loader is not None
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+
+    assert m.revision == "0003_public_plans_quotas_and_tenant_capacity_overrides"
+    assert m.down_revision == "0002_tenant_initial_client_rbac_and_core_modules"
+    assert m.migration_scope == "public"
+
+    added: list[tuple[str, str, str | None]] = []
+    dropped: list[tuple[str, str, str | None]] = []
+
+    with patch.object(m.op, "add_column", side_effect=lambda t, c, schema=None: added.append((t, c.name, schema))):
+        m.upgrade()
+
+    with patch.object(m.op, "drop_column", side_effect=lambda t, c, schema=None: dropped.append((t, c, schema))):
+        m.downgrade()
+
+    assert len(added) == 12
+    assert len(dropped) == 12
+    assert list(reversed(added)) == dropped
 
 
 @pytest.mark.asyncio

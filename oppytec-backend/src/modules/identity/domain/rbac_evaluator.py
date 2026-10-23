@@ -47,6 +47,37 @@ def extract_permission_module(permission_code: str) -> str:
     return cleaned.split(".", 1)[0]
 
 
+def extract_permission_submodule_prefix(permission_code: str) -> str:
+    """Extrae el prefijo de 2 niveles `<modulo>.<submodulo>` de un código de permiso de 3 niveles."""
+    cleaned = permission_code.strip()
+    if not is_valid_three_level_permission(cleaned):
+        raise ValueError(
+            f"Invalid 3-level RBAC permission '{permission_code}'. Expected '<modulo>.<submodulo>.<funcion>'."
+        )
+    parts = cleaned.split(".")
+    return f"{parts[0]}.{parts[1]}"
+
+
+def is_permission_covered_by_plan_modules(
+    permission_code: str,
+    plan_enabled_modules: frozenset[str] | set[str],
+) -> bool:
+    """
+    Evalúa si un permiso `<modulo>.<submodulo>.<funcion>` está cubierto por el techo comercial
+    `M_Plan`, soportando habilitación tanto por módulo padre (`<modulo>`) como por submódulo
+    individual (`<modulo>.<submodulo>`) o comodín (`*`).
+    """
+    cleaned = permission_code.strip()
+    mod = extract_permission_module(cleaned)
+    submod = extract_permission_submodule_prefix(cleaned)
+    return (
+        "*" in plan_enabled_modules
+        or mod in plan_enabled_modules
+        or submod in plan_enabled_modules
+        or cleaned in plan_enabled_modules
+    )
+
+
 @dataclass(frozen=True)
 class PermissionGrantSpec:
     """Especificación inmutable de una concesión temporal Just-In-Time (JIT) o denegación explícita."""
@@ -169,7 +200,7 @@ def compute_effective_permissions(
     effective = {
         perm
         for perm in after_deny
-        if extract_permission_module(perm) in enabled_modules
+        if is_permission_covered_by_plan_modules(perm, enabled_modules)
     }
     return frozenset(effective)
 
@@ -209,11 +240,10 @@ def evaluate_permission_access(
         )
 
     ref_now = now or datetime.now(UTC)
-    module_slug = extract_permission_module(cleaned_perm)
     enabled_modules = {m.strip() for m in plan_enabled_modules if m.strip()}
 
     # Paso 1: Techo Comercial del Plan (aplica incluso al Propietario del Holding)
-    if module_slug not in enabled_modules:
+    if not is_permission_covered_by_plan_modules(cleaned_perm, enabled_modules):
         return AuthorizationDecision(
             allowed=False,
             reason_code="MODULE_NOT_ENABLED_IN_PLAN",

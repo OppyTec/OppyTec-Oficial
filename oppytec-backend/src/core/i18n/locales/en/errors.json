@@ -17,5 +17,21 @@
   "validation": {
     "field_required": "Field '{{fieldName}}' is required.",
     "invalid_decimal": "The amount provided for '{{fieldName}}' is not a valid decimal value."
+  },
+  "tenancy": {
+    "seat_quota_exceeded": "Active user seat limit reached ({{activeUsers}}/{{maxUsers}}).",
+    "seat_quota_exceeded_on_restore": "Cannot restore user: active seat quota is full.",
+    "products_quota_exceeded": "Maximum products quota reached for this commercial plan.",
+    "suppliers_quota_exceeded": "Maximum suppliers quota reached for this commercial plan.",
+    "recipes_quota_exceeded": "Maximum recipes quota reached for this commercial plan.",
+    "combos_quota_exceeded": "Maximum combos quota reached for this commercial plan.",
+    "tenant_not_found": "The specified tenant does not exist or is not registered.",
+    "client_user_not_found": "Client user not found.",
+    "cross_holding_forbidden": "Associating entities across different holdings is forbidden.",
+    "cross_tenant_forbidden": "Access to tenant from another holding is forbidden."
+  },
+  "storage": {
+    "plan_quota_exceeded": "Cloudflare R2 storage quota reached ({{usedMb}}/{{maxMb}} MB).",
+    "cross_tenant_key_forbidden": "File key access not permitted for this tenant."
   }
 }

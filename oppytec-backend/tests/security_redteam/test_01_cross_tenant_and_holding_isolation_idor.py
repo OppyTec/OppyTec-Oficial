@@ -135,3 +135,105 @@ def test_schema_name_sql_injection_rejected_by_validator_and_provisioner() -> No
             tenant_id="tenant_evil",
             schema_name="tenant_a; DROP SCHEMA public--",
         )
+
+
+async def test_client_user_cannot_manipulate_or_escalate_quotas_via_mass_assignment_or_cross_holding_idor(
+    async_client: httpx.AsyncClient,
+) -> None:
+    """
+    Certificación de Defensa en Profundidad:
+    1. Ningún usuario cliente puede modificar cuotas en `PUT /api/v1/tenancy/tenants/{id}/modules-and-quotas`
+       (bloqueo HTTP 403 GLOBAL_STAFF_REQUIRED).
+    2. Ningún usuario cliente puede alterar planes comerciales en `POST /api/v1/tenancy/plans`
+       (bloqueo HTTP 403 GLOBAL_STAFF_REQUIRED).
+    3. Ningún usuario cliente puede inyectar overrides de cuota o campos no permitidos mediante Mass Assignment
+       (rechazo determinista HTTP 422 por ConfigDict(extra="forbid")).
+    4. Ningún usuario cliente puede espiar ni manipular cuotas de otro Holding mediante spoofing de X-Tenant-ID
+       (bloqueo HTTP 403 CROSS_TENANT_ACCESS_VIOLATION).
+    """
+    clear_revoked_sessions()
+    get_rate_limiter().reset()
+
+    # Usuario Cliente (Administrador de sucursal en holding_alpha, SIN rol de Global Staff)
+    client_admin_token = create_access_token(
+        user_id=505,
+        holding_id="holding_alpha",
+        tenant_id="tenant_alpha_hq",
+        tenant_schema="tenant_alpha_hq",
+        hierarchy_rank=10,
+        is_holding_owner=False,
+        is_superuser_god=False,
+        is_global_staff=False,
+        role_grants=[
+            "catalog.products.read",
+            "catalog.products.create",
+            "tenancy.quotas.read",
+            "tenancy.storage_quotas.read",
+        ],
+        accessible_tenants=["tenant_alpha_hq"],
+    )
+
+    client_headers = {
+        "Authorization": f"Bearer {client_admin_token}",
+        "X-Tenant-ID": "tenant_alpha_hq",
+    }
+
+    # 1. Intento de elevar cuotas directamente via PUT modules-and-quotas -> HTTP 403
+    escalate_quota_resp = await async_client.put(
+        "/api/v1/tenancy/tenants/tenant_alpha_hq/modules-and-quotas",
+        headers=client_headers,
+        json={
+            "enabled_modules": ["catalog", "inventory", "operations", "oppy_ai"],
+            "custom_max_users_override": 99999,
+            "custom_storage_mb_override": 1048576,
+        },
+    )
+    assert escalate_quota_resp.status_code == 403
+    assert escalate_quota_resp.json()["error_code"] == "GLOBAL_STAFF_REQUIRED"
+
+    # 2. Intento de manipular el catálogo global de planes comerciales -> HTTP 403
+    manipulate_plan_resp = await async_client.post(
+        "/api/v1/tenancy/plans",
+        headers=client_headers,
+        json={
+            "slug": "unlimited_hacked_plan",
+            "name": "Plan Ilimitado Pirata",
+            "max_active_users": 50000,
+            "max_products": 1000000,
+            "max_storage_mb": 1048576,
+        },
+    )
+    assert manipulate_plan_resp.status_code == 403
+    assert manipulate_plan_resp.json()["error_code"] == "GLOBAL_STAFF_REQUIRED"
+
+    # 3. Intento de Mass Assignment inyectando campos de cuotas en endpoints accesibles -> HTTP 422
+    mass_assignment_resp = await async_client.post(
+        "/api/v1/catalog/products",
+        headers=client_headers,
+        json={
+            "sku": "SKU-OVERRIDE-01",
+            "nombre": "Aceite Malicioso",
+            "unidad_compra": "bidon",
+            "unidad_almacen": "l",
+            "unidad_receta": "ml",
+            "factor_compra_a_almacen": "5",
+            "factor_almacen_a_receta": "1000",
+            "costo_compra_neto": "10000",
+            "custom_max_products_override": 999999,  # Ataque de Mass Assignment
+            "plan_slug": "enterprise_god_mode",       # Intento de bypass de cuotas
+        },
+    )
+    assert mass_assignment_resp.status_code == 422
+    assert "extra_forbidden" in str(mass_assignment_resp.json())
+
+    # 4. Intento de IDOR Cross-Holding sobre el resumen de cuotas -> HTTP 403
+    cross_holding_quota_resp = await async_client.get(
+        "/api/v1/tenancy/quotas/summary",
+        headers={
+            "Authorization": f"Bearer {client_admin_token}",
+            "X-Tenant-ID": "tenant_beta_branch1",  # Sucursal de otro Holding
+        },
+    )
+    assert cross_holding_quota_resp.status_code == 403
+    assert cross_holding_quota_resp.json()["error_code"] == "CROSS_TENANT_ACCESS_VIOLATION"
+
