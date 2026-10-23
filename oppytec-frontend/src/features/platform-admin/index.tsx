@@ -239,6 +239,9 @@ export {
   AdminModulesView,
   AdminPlansView,
   AdminTenantsView,
+  HoldingsManagementView,
+  PlansManagementView,
+  TenantsManagementView,
   PLAN_BASICO_10_MODULE_SLUGS,
   SAAS_MODULE_TREE,
 } from "./AdminManagementViews";

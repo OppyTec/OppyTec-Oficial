@@ -2,11 +2,17 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { describe, expect, it } from "vitest";
 import { AppProviders } from "@/app/providers";
 import { PermissionsProvider } from "@/shared/auth/usePermissions";
+import { CurrencySelector } from "@/shared/currency/CurrencySelector";
+import { LanguageFlagSelector } from "@/shared/i18n/LanguageFlagSelector";
+import { QuotaProgressIndicator } from "@/shared/components/ui/QuotaProgressIndicator";
 import {
   AdminClientUsersView,
   AdminHoldingsView,
   AdminLegalEntitiesView,
   AdminTenantsView,
+  HoldingsManagementView,
+  PlansManagementView,
+  TenantsManagementView,
 } from "./AdminManagementViews";
 
 describe("AdminManagementViews Interaction Tests (Agente 09 QA & Agente 10 RBAC)", () => {
@@ -188,5 +194,42 @@ describe("AdminManagementViews Interaction Tests (Agente 09 QA & Agente 10 RBAC)
     expect(screen.queryByTestId("holdings-table-create-btn")).toBeNull();
     expect(screen.queryByTestId("client-users-table-create-btn")).toBeNull();
     expect(screen.queryByTestId("soft-delete-cu-btn-101")).toBeNull();
+  });
+
+  it("renders PlansManagementView, HoldingsManagementView, TenantsManagementView, QuotaProgressIndicator, and dropdowns without errors", async () => {
+    await act(async () => {
+      render(
+        <AppProviders>
+          <PlansManagementView />
+          <HoldingsManagementView />
+          <TenantsManagementView />
+          <QuotaProgressIndicator
+            resourceKey="users"
+            label="Usuarios Activos"
+            activeCount={3}
+            maxLimit={5}
+            unitSuffix="usuarios"
+            testId="test-quota-users"
+          />
+          <CurrencySelector />
+          <LanguageFlagSelector />
+        </AppProviders>
+      );
+    });
+
+    // Check Plan cards
+    expect(screen.getByTestId("admin-plans-view")).toBeTruthy();
+    expect(screen.getByTestId("plan-card-basic")).toBeTruthy();
+
+    // Check Holdings & Tenants views
+    expect(screen.getByTestId("admin-holdings-view")).toBeTruthy();
+    expect(screen.getByTestId("admin-tenants-view")).toBeTruthy();
+
+    // Check QuotaProgressIndicator
+    expect(screen.getByTestId("test-quota-users")).toBeTruthy();
+
+    // Check dropdowns
+    expect(screen.getByTestId("currency-selector")).toBeTruthy();
+    expect(screen.getByTestId("language-flag-selector")).toBeTruthy();
   });
 });

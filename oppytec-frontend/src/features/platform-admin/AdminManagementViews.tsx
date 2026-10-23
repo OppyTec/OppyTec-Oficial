@@ -2938,3 +2938,9 @@ export function AdminPlansView() {
     </div>
   );
 }
+
+// Canonical Aliases for Admin Management Views
+export const PlansManagementView = AdminPlansView;
+export const HoldingsManagementView = AdminHoldingsView;
+export const TenantsManagementView = AdminTenantsView;
+
