@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Literal
 
+import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.engine import Connection
 
@@ -105,10 +106,16 @@ TENANT_TABLES_IN_ORDER: tuple[str, ...] = (
 def upgrade() -> None:
     """Crea todas las tablas operativas de inquilino (`TenantBase.metadata`) en el esquema activo."""
     bind: Connection = op.get_bind()
+    current_schema = bind.execute(sa.text("SELECT current_schema()")).scalar()
+    if current_schema == "public":
+        return
     TenantBase.metadata.create_all(bind=bind, checkfirst=True)
 
 
 def downgrade() -> None:
     """Elimina en orden inverso todas las tablas de `TenantBase.metadata` creadas en `0002`."""
     bind: Connection = op.get_bind()
+    current_schema = bind.execute(sa.text("SELECT current_schema()")).scalar()
+    if current_schema == "public":
+        return
     TenantBase.metadata.drop_all(bind=bind, checkfirst=True)

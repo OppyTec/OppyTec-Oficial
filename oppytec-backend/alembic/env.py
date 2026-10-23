@@ -94,10 +94,28 @@ def do_run_migrations_for_schema(
     """Ejecuta las migraciones aplicables a `target_schema` (`public` o `tenant_<slug>`)."""
     if target_schema == "public":
         connection.execute(text("SET LOCAL search_path TO public"))
+        connection.execute(
+            text(
+                "CREATE TABLE IF NOT EXISTS public.alembic_version "
+                "(version_num VARCHAR(128) NOT NULL PRIMARY KEY);"
+            )
+        )
+        connection.execute(
+            text("ALTER TABLE public.alembic_version ALTER COLUMN version_num TYPE VARCHAR(128);")
+        )
         target_meta = PublicBase.metadata
     else:
         valid_schema = validate_tenant_schema_name(target_schema)
         connection.execute(text(f'SET LOCAL search_path TO "{valid_schema}", public'))
+        connection.execute(
+            text(
+                f'CREATE TABLE IF NOT EXISTS "{valid_schema}".alembic_version '
+                "(version_num VARCHAR(128) NOT NULL PRIMARY KEY);"
+            )
+        )
+        connection.execute(
+            text(f'ALTER TABLE "{valid_schema}".alembic_version ALTER COLUMN version_num TYPE VARCHAR(128);')
+        )
         target_meta = TenantBase.metadata
 
     context.configure(
@@ -139,4 +157,6 @@ if context.is_offline_mode():
     run_migrations_offline()
 elif getattr(context, "_proxy", None) is not None:
     # Solo ejecuta automáticamente cuando es invocado por el runner CLI de Alembic
-    pass
+    run_migrations_online()
+else:
+    run_migrations_online()
