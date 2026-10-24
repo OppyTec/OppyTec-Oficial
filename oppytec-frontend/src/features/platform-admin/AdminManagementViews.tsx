@@ -17,6 +17,7 @@ import {
   type FormFieldDef,
 } from "@/shared/components/admin";
 import { MoneyBadge } from "@/shared/currency";
+import { toast } from "@/shared/components/ui/sonner";
 import { translateKey } from "@/shared/i18n";
 
 function useSafeNavigate(): (path: string) => void {
@@ -440,40 +441,50 @@ export function AdminHoldingsView() {
   };
 
   const handleModalSubmit = async (formData: Record<string, unknown>) => {
-    const isEdit = Boolean(editingHolding);
-    const apiPayload = {
-      name: String(formData.name ?? "").trim(),
-      plan_slug: String(formData.plan_slug ?? "basic"),
-      max_active_users: Number(formData.max_active_users ?? 5),
-      max_storage_mb: Number(formData.max_storage_mb ?? 512),
-      custom_max_products_override: formData.custom_max_products_override
-        ? Number(formData.custom_max_products_override)
-        : null,
-    };
+    try {
+      const isEdit = Boolean(editingHolding);
+      const apiPayload = {
+        name: String(formData.name ?? "").trim(),
+        plan_slug: String(formData.plan_slug ?? "basic"),
+        max_active_users: Number(formData.max_active_users ?? 5),
+        max_storage_mb: Number(formData.max_storage_mb ?? 512),
+        custom_max_products_override: formData.custom_max_products_override
+          ? Number(formData.custom_max_products_override)
+          : null,
+      };
 
-    if (isEdit && editingHolding) {
-      const updated: HoldingRecordItem = {
-        ...editingHolding,
-        ...apiPayload,
-        is_active: formData.is_active !== false,
-      };
-      setHoldings((prev) =>
-        prev.map((h) => (h.holding_id === editingHolding.holding_id ? updated : h))
+      if (isEdit && editingHolding) {
+        const updated: HoldingRecordItem = {
+          ...editingHolding,
+          ...apiPayload,
+          is_active: formData.is_active !== false,
+        };
+        setHoldings((prev) =>
+          prev.map((h) => (h.holding_id === editingHolding.holding_id ? updated : h))
+        );
+      } else {
+        const newItem: HoldingRecordItem = {
+          holding_id: `holding_${Date.now()}`,
+          ...apiPayload,
+          is_active: formData.is_active !== false,
+        };
+        await apiRequest<HoldingRecordItem>("/tenancy/holdings", {
+          method: "POST",
+          body: apiPayload,
+          fallbackData: newItem,
+        });
+        setHoldings((prev) => [...prev, newItem]);
+      }
+      toast.success(
+        isEdit
+          ? "Holding actualizado con éxito"
+          : `Holding "${formData.name}" creado con éxito`
       );
-    } else {
-      const newItem: HoldingRecordItem = {
-        holding_id: `holding_${Date.now()}`,
-        ...apiPayload,
-        is_active: formData.is_active !== false,
-      };
-      await apiRequest<HoldingRecordItem>("/tenancy/holdings", {
-        method: "POST",
-        body: apiPayload,
-        fallbackData: newItem,
-      });
-      setHoldings((prev) => [...prev, newItem]);
+      return true;
+    } catch (err: any) {
+      toast.error(err?.message || "Ocurrió un error al procesar la operación");
+      return false;
     }
-    return true;
   };
 
   const columns = [
@@ -749,37 +760,48 @@ export function AdminLegalEntitiesView() {
   };
 
   const handleModalSubmit = async (formData: Record<string, unknown>) => {
-    const apiPayload = {
-      holding_id: String(formData.holding_id ?? "holding_genesis"),
-      tax_id: String(formData.tax_id ?? "").trim(),
-      legal_name: String(formData.legal_name ?? "").trim(),
-      legal_address: String(formData.legal_address ?? "").trim() || null,
-    };
+    try {
+      const isEdit = Boolean(editingEntity);
+      const apiPayload = {
+        holding_id: String(formData.holding_id ?? "holding_genesis"),
+        tax_id: String(formData.tax_id ?? "").trim(),
+        legal_name: String(formData.legal_name ?? "").trim(),
+        legal_address: String(formData.legal_address ?? "").trim() || null,
+      };
 
-    if (editingEntity) {
-      const updated: LegalEntityRecordItem = {
-        ...editingEntity,
-        ...apiPayload,
-        is_active: formData.is_active !== false,
-      };
-      setEntities((prev) =>
-        prev.map((e) => (e.entity_id === editingEntity.entity_id ? updated : e))
+      if (editingEntity) {
+        const updated: LegalEntityRecordItem = {
+          ...editingEntity,
+          ...apiPayload,
+          is_active: formData.is_active !== false,
+        };
+        setEntities((prev) =>
+          prev.map((e) => (e.entity_id === editingEntity.entity_id ? updated : e))
+        );
+      } else {
+        const newItem: LegalEntityRecordItem = {
+          entity_id: `le_${Date.now()}`,
+          ...apiPayload,
+          is_active: formData.is_active !== false,
+          tenants_count: 0,
+        };
+        await apiRequest<LegalEntityRecordItem>("/tenancy/legal-entities", {
+          method: "POST",
+          body: apiPayload,
+          fallbackData: newItem,
+        });
+        setEntities((prev) => [...prev, newItem]);
+      }
+      toast.success(
+        isEdit
+          ? "Entidad Legal actualizada con éxito"
+          : `Entidad Legal "${formData.legal_name}" creada con éxito`
       );
-    } else {
-      const newItem: LegalEntityRecordItem = {
-        entity_id: `le_${Date.now()}`,
-        ...apiPayload,
-        is_active: formData.is_active !== false,
-        tenants_count: 0,
-      };
-      await apiRequest<LegalEntityRecordItem>("/tenancy/legal-entities", {
-        method: "POST",
-        body: apiPayload,
-        fallbackData: newItem,
-      });
-      setEntities((prev) => [...prev, newItem]);
+      return true;
+    } catch (err: any) {
+      toast.error(err?.message || "Ocurrió un error al procesar la operación");
+      return false;
     }
-    return true;
   };
 
   const columns = [
@@ -1138,48 +1160,53 @@ export function AdminTenantsView() {
     e.preventDefault();
     if (!nameInput.trim()) return;
 
-    const cleanSlug = (slugInput || nameInput)
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9_]+/g, "_");
-    const schema = cleanSlug.startsWith("tenant_") ? cleanSlug : `tenant_${cleanSlug}`;
+    try {
+      const cleanSlug = (slugInput || nameInput)
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]+/g, "_");
+      const schema = cleanSlug.startsWith("tenant_") ? cleanSlug : `tenant_${cleanSlug}`;
 
-    const apiPayload = {
-      holding_id: holdingIdInput,
-      legal_entity_id: legalEntityIdInput,
-      slug: cleanSlug,
-      display_name: nameInput.trim(),
-      base_currency: currencyInput,
-      enabled_modules: [...enabledModules],
-      custom_max_products_override: prodOverride ? Number(prodOverride) : null,
-      custom_max_suppliers_override: suppOverride ? Number(suppOverride) : null,
-    };
+      const apiPayload = {
+        holding_id: holdingIdInput,
+        legal_entity_id: legalEntityIdInput,
+        slug: cleanSlug,
+        display_name: nameInput.trim(),
+        base_currency: currencyInput,
+        enabled_modules: [...enabledModules],
+        custom_max_products_override: prodOverride ? Number(prodOverride) : null,
+        custom_max_suppliers_override: suppOverride ? Number(suppOverride) : null,
+      };
 
-    if (editingTenant) {
-      const updated: TenantRecordItem = {
-        ...editingTenant,
-        ...apiPayload,
-        is_active: true,
-      };
-      setTenants((prev) =>
-        prev.map((t) => (t.tenant_id === editingTenant.tenant_id ? updated : t))
-      );
-    } else {
-      const newItem: TenantRecordItem = {
-        tenant_id: `t_${Date.now()}`,
-        schema_name: schema,
-        ...apiPayload,
-        is_active: true,
-      };
-      await apiRequest<TenantRecordItem>("/tenancy/tenants", {
-        method: "POST",
-        body: apiPayload,
-        fallbackData: newItem,
-      });
-      setTenants((prev) => [...prev, newItem]);
+      if (editingTenant) {
+        const updated: TenantRecordItem = {
+          ...editingTenant,
+          ...apiPayload,
+          is_active: true,
+        };
+        setTenants((prev) =>
+          prev.map((t) => (t.tenant_id === editingTenant.tenant_id ? updated : t))
+        );
+      } else {
+        const newItem: TenantRecordItem = {
+          tenant_id: `t_${Date.now()}`,
+          schema_name: schema,
+          ...apiPayload,
+          is_active: true,
+        };
+        await apiRequest<TenantRecordItem>("/tenancy/tenants", {
+          method: "POST",
+          body: apiPayload,
+          fallbackData: newItem,
+        });
+        setTenants((prev) => [...prev, newItem]);
+      }
+
+      toast.success(`Tenant "${nameInput}" aprovisionado con éxito`);
+      setIsModalOpen(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Ocurrió un error al procesar la operación");
     }
-
-    setIsModalOpen(false);
   };
 
   const columns = [
@@ -2016,6 +2043,7 @@ export function AdminGlobalUsersView() {
       )
     ) {
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      toast.success(`Usuario "${user.username}" eliminado`);
     }
   };
 
@@ -2035,12 +2063,14 @@ export function AdminGlobalUsersView() {
       setUsers((prev) =>
         prev.map((u) => (u.id === editingUser.id ? { ...editingUser, ...payload } : u))
       );
+      toast.success(`Usuario "${payload.username}" actualizado con éxito`);
     } else {
       const newItem: GlobalUserRecordItem = {
         id: Date.now(),
         ...payload,
       };
       setUsers((prev) => [...prev, newItem]);
+      toast.success(`Usuario "${payload.username}" creado con éxito`);
     }
     return true;
   };
@@ -2670,6 +2700,7 @@ export function AdminPlansView() {
       }
       return [...prev, saved];
     });
+    toast.success("Plan Comercial guardado con éxito");
     setSavedBanner(
       translateKey("platform_admin", "plans.saved_success", {
         name: saved.name,

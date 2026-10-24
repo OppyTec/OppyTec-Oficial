@@ -12,11 +12,11 @@ updated: "2026-10-19"
 
 > **Cómo usar esta carpeta en Obsidian:**  
 > Abre **Obsidian** $\to$ *"Abrir carpeta como bóveda (Open folder as vault)"* $\to$ selecciona la raíz del proyecto `/home/jcampillay/WorkArea/OppyTec/OppyTec-Code2`.  
-> Si abres la **Vista de Grafo (`Ctrl+G`)** en Obsidian, verás cómo este documento conecta todas las estrategias, especificaciones de negocio, contratos de código y el diario de obra de los **12 Agentes Especializados**.
+> Si abres la **Vista de Grafo (`Ctrl+G`)** en Obsidian, verás cómo este documento conecta todas las estrategias, especificaciones de negocio, contratos de código y el diario de obra de los **13 Agentes Especializados**.
 
 ---
 
-## 📓 1. Diario de Obra del Escuadrón de 12 Agentes (`docs/bitacora/diario-escuadron/`)
+## 📓 1. Diario de Obra del Escuadrón de 13 Agentes (`docs/bitacora/diario-escuadron/`)
 Aquí el **Agente 12 (`12-tech-writer-openspec-archify`)** documenta en lenguaje claro para personas qué se ha hecho en cada etapa, qué hizo cada agente, qué problemas surgieron y cómo se resolvieron:
 
 - **[[00-Paso-0-Arquitectura-y-Gobernanza|Bitácora Paso 0: Diseño de las 17 Estrategias, Escuadrón de 12 Agentes y Arnés RLM]]** ✅ *(Completado)*
@@ -89,7 +89,7 @@ Aquí el **Agente 12 (`12-tech-writer-openspec-archify`)** documenta en lenguaje
 
 ---
 
-## 🤖 5. Directorio de los 12 Agentes Especializados (`.agent/subagents/`)
+## 🤖 5. Directorio de los 13 Agentes Especializados (`.agent/subagents/`)
 Cada agente tiene su carpeta propia con su instrucción (`prompt.md`), lo que ha aprendido (`knowledge.md`) y su último reporte de traspaso (`handovers/latest_handover.md`):
 
 1. **[Agente 01 — Orquestador / PM](../../.agent/subagents/01-orchestrator-pm/prompt.md)**
@@ -104,3 +104,4 @@ Cada agente tiene su carpeta propia con su instrucción (`prompt.md`), lo que ha
 10. **[Agente 10 — Auditor Estricto de Ciberseguridad (Red Team)](../../.agent/subagents/10-cybersecurity-redteam-auditor/prompt.md)**
 11. **[Agente 11 — Especialista en Git Worktrees y Smart Merge](../../.agent/subagents/11-git-worktree-merge-arbiter/prompt.md)**
 12. **[Agente 12 — Technical Writer, OpenSpec, Archify y Bitácora Humana](../../.agent/subagents/12-tech-writer-openspec-archify/prompt.md)**
+13. **[Agente 13 — Especialista en Simulación de Usuario Humano en Navegador Real con Playwright](../../.agent/subagents/13-browser-e2e-playwright/prompt.md)**

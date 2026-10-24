@@ -76,3 +76,8 @@ notas.md
 .obsidian/
 .worktrees/
 Predictive Maintenance/
+
+# E2E Test artifacts
+tests/panel-admin-oppytec/artifacts/backups/*.sql
+tests/panel-admin-oppytec/artifacts/screenshots/*.png
+tests/panel-admin-oppytec/artifacts/state_superadmin.json

@@ -7,6 +7,7 @@ import {
   PermissionsProvider,
 } from "@/shared/auth/usePermissions";
 import { ErrorBoundary } from "@/shared/components/feedback/ErrorBoundary";
+import { Toaster } from "@/shared/components/ui/sonner";
 import { CurrencyProvider } from "@/shared/currency";
 import { LanguageProvider } from "@/shared/i18n";
 import { RealtimeProvider } from "@/shared/realtime/RealtimeProvider";
@@ -50,6 +51,7 @@ export function AppProviders({
               <PermissionsProvider>
                 <RealtimeProvider holdingId={holdingId} tenantId={tenantId}>
                   {children}
+                  <Toaster />
                 </RealtimeProvider>
               </PermissionsProvider>
             </AuthProvider>
