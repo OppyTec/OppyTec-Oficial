@@ -1,11 +1,15 @@
 import {
+  AlertTriangle,
   Archive,
   ArrowLeft,
   Check,
   CheckSquare,
   ExternalLink,
   Layers,
-  Sparkles,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
 } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -1139,6 +1143,12 @@ export function AdminTenantsView() {
       holdingId: res.data.holding_id,
       accessToken: res.data.access_token,
     });
+    try {
+      localStorage.setItem("admin_impersonate_tenant", res.data.tenant_id);
+      localStorage.setItem("admin_impersonating", "true");
+    } catch {
+      // Ignore storage errors
+    }
     setImpersonateNotice(
       translateKey("platform_admin", "tenants_view.impersonate_notice", {
         name: tenant.display_name,
@@ -1355,78 +1365,7 @@ export function AdminTenantsView() {
         testId="tenants-table"
       />
 
-      {/* Árbol Jerárquico de Módulos (Plan Básico 10 Módulos) */}
-      <div
-        data-testid="tenant-module-tree"
-        className="rounded-xl border border-border bg-card p-5 space-y-3"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-          <div>
-            <h4 className="text-sm font-bold text-foreground">
-              {translateKey("platform_admin", "tenants_view.module_tree_title", {
-                defaultValue: "Árbol Oficial de Módulos y Submódulos (Plan Básico 10 Módulos)",
-              })}
-            </h4>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {translateKey("platform_admin", "tenants_view.module_tree_desc", {
-                defaultValue: "Visualiza y selecciona los módulos base y avanzados disponibles para los locales gastronómicos.",
-              })}
-            </p>
-          </div>
-          <button
-            type="button"
-            data-testid="tenant-apply-plan-basico-btn"
-            onClick={() => setEnabledModules(PLAN_BASICO_10_MODULE_SLUGS)}
-            className="touch-target inline-flex items-center gap-1.5 rounded-lg bg-primary/15 text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary/25 transition-colors"
-          >
-            <CheckSquare className="h-3.5 w-3.5" />
-            <span>
-              {translateKey("platform_admin", "tenants_view.preset_basic_btn", {
-                defaultValue: "Preset Plan Básico (10 Módulos)",
-              })}
-            </span>
-          </button>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 pt-1">
-          {SAAS_MODULE_TREE.map((root) => (
-            <div
-              key={root.slug}
-              className="rounded-lg border border-border bg-secondary/10 p-3 space-y-1.5 text-xs"
-            >
-              <label className="flex items-center gap-2 font-bold text-foreground cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={enabledModules.includes(root.slug)}
-                  onChange={() => toggleModule(root.slug)}
-                />
-                <span>{root.label}</span>
-              </label>
-
-              {root.children.length > 0 && (
-                <div className="pl-4 space-y-1 border-l border-border/60">
-                  {root.children.map((child) => (
-                    <label
-                      key={child.slug}
-                      className="flex items-center gap-2 text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        data-testid={`mod-check-${child.slug}`}
-                        checked={enabledModules.includes(child.slug)}
-                        onChange={() => toggleModule(child.slug)}
-                      />
-                      <span>└─ {child.label}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Modal Dialog para Aprovisionar / Editar Tenant y Árbol de Módulos */}
+      {/* Modal Dialog para Aprovisionar / Editar Tenant */}
       {isModalOpen && (
         <div
           role="dialog"
@@ -2597,13 +2536,47 @@ export function AdminModulesView() {
         </span>
       ),
     },
+    {
+      key: "status",
+      label: "Estado Plataforma",
+      render: () => (
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          En Producción
+        </span>
+      ),
+    },
   ];
+
+  const totalCount = moduleRows.length;
+  const coreCount = moduleRows.filter((m) => m.is_core).length;
+  const advancedCount = totalCount - coreCount;
 
   return (
     <div data-testid="admin-modules-view" className="p-6 md:p-8 space-y-6">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-border bg-card p-4 space-y-1 shadow-sm">
+          <span className="text-xs text-muted-foreground font-medium">Módulos Registrados</span>
+          <div className="text-2xl font-bold text-foreground font-mono">{totalCount}</div>
+          <span className="text-[10px] text-muted-foreground">Taxonomía oficial OppyTec v2.0</span>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 space-y-1 shadow-sm">
+          <span className="text-xs text-muted-foreground font-medium">Núcleo Plan Básico</span>
+          <div className="text-2xl font-bold text-primary font-mono">{coreCount}</div>
+          <span className="text-[10px] text-emerald-500 font-semibold">Preset predeterminado</span>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4 space-y-1 shadow-sm">
+          <span className="text-xs text-muted-foreground font-medium">Extensiones Avanzadas</span>
+          <div className="text-2xl font-bold text-foreground font-mono">{advancedCount}</div>
+          <span className="text-[10px] text-muted-foreground">Add-ons y módulos custom</span>
+        </div>
+      </div>
+
       <DynamicAdminTable<ModuleRow>
-        title={translateKey("platform_admin", "modules_view.title")}
-        description={translateKey("platform_admin", "modules_view.description")}
+        title={translateKey("platform_admin", "modules_view.title", { defaultValue: "Catálogo Maestro de Módulos" })}
+        description={translateKey("platform_admin", "modules_view.description", {
+          defaultValue: "Inventario oficial de capacidades del SaaS y gobernanza de planes comerciales.",
+        })}
         data={moduleRows}
         columns={columns}
         primaryKey="slug"
@@ -2616,14 +2589,30 @@ export function AdminModulesView() {
 /* =========================================================================
  * 8. VISTA: PLANES (SAAS) — Catálogo de Planes y Editor de Cuotas
  * ========================================================================= */
+const DEFAULT_PLAN_CLIENT_COUNTS: Record<string, number> = {
+  basic: 2,
+  starter: 1,
+  pro: 0,
+  enterprise: 0,
+};
+
 export function AdminPlansView() {
   const [plans, setPlans] = useState<readonly PlanCatalogItem[]>(
     INITIAL_PLANS_FALLBACK
   );
-  const [slug, setSlug] = useState<string>("basic");
-  const [name, setName] = useState<string>(
-    "Plan Básico (Control de Inventario)"
+  const [planClientCounts] = useState<Record<string, number>>(
+    DEFAULT_PLAN_CLIENT_COUNTS
   );
+
+  // Estados de modales y pestañas
+  const [isEditorModalOpen, setIsEditorModalOpen] = useState<boolean>(false);
+  const [activeModalTab, setActiveModalTab] = useState<"quotas" | "modules">("quotas");
+  const [editingPlan, setEditingPlan] = useState<PlanCatalogItem | null>(null);
+  const [isImpactWarningOpen, setIsImpactWarningOpen] = useState<boolean>(false);
+
+  // Campos del formulario
+  const [slug, setSlug] = useState<string>("basic");
+  const [name, setName] = useState<string>("Plan Básico (Control de Inventario)");
   const [maxUsers, setMaxUsers] = useState<number>(5);
   const [maxProducts, setMaxProducts] = useState<number>(500);
   const [maxSuppliers, setMaxSuppliers] = useState<number>(20);
@@ -2653,7 +2642,55 @@ export function AdminPlansView() {
     };
   }, []);
 
-  const handleLoadPlanPreset = (plan: PlanCatalogItem) => {
+  const getClientCount = (planSlug: string) => planClientCounts[planSlug] ?? 0;
+
+  const togglePlanModule = (modSlug: string) => {
+    setSelectedModules((prev) =>
+      prev.includes(modSlug)
+        ? prev.filter((m) => m !== modSlug)
+        : [...prev, modSlug]
+    );
+  };
+
+  const handleApplyBasicPlan = () => {
+    setSelectedModules([...PLAN_BASICO_10_MODULE_SLUGS]);
+    toast.success("Preset de 10 módulos del Plan Básico aplicado");
+  };
+
+  const handleSelectAllModules = () => {
+    const all: string[] = [];
+    SAAS_MODULE_TREE.forEach((m) => {
+      all.push(m.slug);
+      m.children.forEach((c) => all.push(c.slug));
+    });
+    setSelectedModules(all);
+    toast.success("Todos los módulos seleccionados");
+  };
+
+  const handleClearModules = () => {
+    setSelectedModules([]);
+  };
+
+  const handleOpenCreateModal = () => {
+    setEditingPlan(null);
+    setActiveModalTab("quotas");
+    setSlug(`plan_${Date.now().toString().slice(-4)}`);
+    setName("");
+    setMaxUsers(5);
+    setMaxProducts(500);
+    setMaxSuppliers(20);
+    setMaxRecipes(0);
+    setMaxCombos(0);
+    setMaxStorageMb(512);
+    setPriceClp("29990.00");
+    setPriceUsd("35.00");
+    setSelectedModules([...PLAN_BASICO_10_MODULE_SLUGS]);
+    setIsEditorModalOpen(true);
+  };
+
+  const handleOpenEditModal = (plan: PlanCatalogItem) => {
+    setEditingPlan(plan);
+    setActiveModalTab("quotas");
     setSlug(plan.slug);
     setName(plan.name);
     setMaxUsers(plan.max_active_users);
@@ -2665,10 +2702,29 @@ export function AdminPlansView() {
     setPriceClp(String(plan.price_clp));
     setPriceUsd(String(plan.price_usd));
     setSelectedModules(plan.included_modules);
+    setIsEditorModalOpen(true);
   };
 
-  const handleSavePlan = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleDeletePlan = (plan: PlanCatalogItem) => {
+    const count = getClientCount(plan.slug);
+    if (count > 0) {
+      toast.error(
+        `No es posible eliminar el Plan "${plan.name}" porque tiene ${count} cliente(s) activo(s) contratándolo. Migra sus cuentas primero.`
+      );
+      return;
+    }
+
+    if (
+      window.confirm(
+        `¿Estás seguro de eliminar el Plan "${plan.name}"? Esta acción no se puede deshacer.`
+      )
+    ) {
+      setPlans((prev) => prev.filter((p) => p.slug !== plan.slug));
+      toast.success(`Plan "${plan.name}" eliminado con éxito`);
+    }
+  };
+
+  const executeSavePlan = async (isImpactNotification = false) => {
     const newPlan: PlanCatalogItem = {
       slug: slug.trim().toLowerCase(),
       name: name.trim(),
@@ -2685,28 +2741,60 @@ export function AdminPlansView() {
       price_brl: "195.00",
     };
 
-    const res = await apiRequest<PlanCatalogItem>("/tenancy/plans", {
-      method: "POST",
-      body: newPlan,
-      fallbackData: newPlan,
-    });
-    const saved = res.data;
-    setPlans((prev) => {
-      const idx = prev.findIndex((p) => p.slug === saved.slug);
-      if (idx >= 0) {
-        const copy = [...prev];
-        copy[idx] = saved;
-        return copy;
+    try {
+      const res = await apiRequest<PlanCatalogItem>("/tenancy/plans", {
+        method: "POST",
+        body: newPlan,
+        fallbackData: newPlan,
+      });
+      const saved = res.data;
+      setPlans((prev) => {
+        const idx = prev.findIndex((p) => p.slug === saved.slug);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = saved;
+          return copy;
+        }
+        return [...prev, saved];
+      });
+
+      if (isImpactNotification) {
+        toast.success(
+          "Plan Comercial actualizado y notificación programada para los clientes"
+        );
+      } else {
+        toast.success("Plan Comercial guardado con éxito");
       }
-      return [...prev, saved];
-    });
-    toast.success("Plan Comercial guardado con éxito");
-    setSavedBanner(
-      translateKey("platform_admin", "plans.saved_success", {
-        name: saved.name,
-        slug: saved.slug,
-      })
-    );
+
+      setSavedBanner(
+        translateKey("platform_admin", "plans.saved_success", {
+          name: saved.name,
+          slug: saved.slug,
+        })
+      );
+      setIsImpactWarningOpen(false);
+      setIsEditorModalOpen(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Ocurrió un error al procesar la operación");
+    }
+  };
+
+  const handleFormSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      toast.error("El nombre del plan no puede estar vacío");
+      return;
+    }
+
+    if (editingPlan) {
+      const count = getClientCount(editingPlan.slug);
+      if (count > 0) {
+        setIsImpactWarningOpen(true);
+        return;
+      }
+    }
+
+    await executeSavePlan(false);
   };
 
   return (
@@ -2724,19 +2812,17 @@ export function AdminPlansView() {
             {translateKey("platform_admin", "plans.description")}
           </p>
         </div>
-        <button
-          type="button"
-          data-testid="btn-preset-plan-basico"
-          onClick={() => {
-            const basic =
-              plans.find((p) => p.slug === "basic") ?? INITIAL_PLANS_FALLBACK[0];
-            if (basic) handleLoadPlanPreset(basic);
-          }}
-          className="touch-target inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-primary/15 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/25"
-        >
-          <Sparkles className="h-4 w-4" />
-          <span>{translateKey("platform_admin", "plans.preset_basic_btn")}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            data-testid="create-plan-btn"
+            onClick={handleOpenCreateModal}
+            className="touch-target inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            <span>+ Crear Nuevo Plan</span>
+          </button>
+        </div>
       </div>
 
       {savedBanner && (
@@ -2748,224 +2834,493 @@ export function AdminPlansView() {
         </div>
       )}
 
-      {/* Tarjetas de Planes Existentes */}
+      {/* Grid de Tarjetas de Planes */}
       <div className="grid gap-4 md:grid-cols-3">
-        {plans.map((p) => (
-          <div
-            key={p.slug}
-            data-testid={`plan-card-${p.slug}`}
-            className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm hover:border-primary/50 transition-colors"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="font-mono text-[10px] uppercase font-bold text-primary">
-                  {p.slug}
-                </span>
-                <h3 className="text-sm font-bold text-foreground">{p.name}</h3>
-              </div>
-              <MoneyBadge amount={String(p.price_clp)} baseCurrency="CLP" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px] text-muted-foreground">
-              <span>
-                {translateKey("platform_admin", "plans.quotas.users", {
-                  count: p.max_active_users,
-                })}
-              </span>
-              <span>
-                {translateKey("platform_admin", "plans.quotas.products", {
-                  count: p.max_products,
-                })}
-              </span>
-              <span>
-                {translateKey("platform_admin", "plans.quotas.suppliers", {
-                  count: p.max_suppliers,
-                })}
-              </span>
-              <span>
-                {translateKey("platform_admin", "plans.quotas.recipes", {
-                  count: p.max_recipes,
-                })}
-              </span>
-              <span>
-                {translateKey("platform_admin", "plans.quotas.combos", {
-                  count: p.max_combos,
-                })}
-              </span>
-              <span>
-                {translateKey("platform_admin", "plans.quotas.storage_mb", {
-                  count: p.max_storage_mb,
-                })}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              data-testid={`edit-plan-btn-${p.slug}`}
-              onClick={() => handleLoadPlanPreset(p)}
-              className="touch-target w-full rounded-lg border border-border bg-secondary/60 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+        {plans.map((p) => {
+          const clientCount = getClientCount(p.slug);
+          return (
+            <div
+              key={p.slug}
+              data-testid={`plan-card-${p.slug}`}
+              className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-sm hover:border-primary/50 transition-colors flex flex-col justify-between"
             >
-              {translateKey("platform_admin", "plans.edit_plan_btn")}
-            </button>
-          </div>
-        ))}
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="font-mono text-[10px] uppercase font-bold text-primary">
+                      {p.slug}
+                    </span>
+                    <h3 className="text-sm font-bold text-foreground">{p.name}</h3>
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                    <MoneyBadge amount={String(p.price_clp)} baseCurrency="CLP" />
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border ${
+                        clientCount > 0
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
+                          : "border-border bg-muted/60 text-muted-foreground"
+                      }`}
+                    >
+                      👥 {clientCount} local(es) activo(s)
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px] text-muted-foreground border-t border-border/40 pt-2">
+                  <span>
+                    {translateKey("platform_admin", "plans.quotas.users", {
+                      count: p.max_active_users,
+                    })}
+                  </span>
+                  <span>
+                    {translateKey("platform_admin", "plans.quotas.products", {
+                      count: p.max_products,
+                    })}
+                  </span>
+                  <span>
+                    {translateKey("platform_admin", "plans.quotas.suppliers", {
+                      count: p.max_suppliers,
+                    })}
+                  </span>
+                  <span>
+                    {translateKey("platform_admin", "plans.quotas.recipes", {
+                      count: p.max_recipes,
+                    })}
+                  </span>
+                  <span>
+                    {translateKey("platform_admin", "plans.quotas.combos", {
+                      count: p.max_combos,
+                    })}
+                  </span>
+                  <span>
+                    {translateKey("platform_admin", "plans.quotas.storage_mb", {
+                      count: p.max_storage_mb,
+                    })}
+                  </span>
+                </div>
+
+                {/* Badge informativo de módulos habilitados */}
+                <div className="pt-2 border-t border-border/40">
+                  <span className="inline-flex items-center gap-1.5 rounded bg-secondary/70 px-2 py-0.5 font-mono text-[10px] font-medium text-foreground">
+                    🧩 {p.included_modules.length} módulos habilitados
+                  </span>
+                </div>
+              </div>
+
+              {/* Botones de Acción: Editar y Eliminar */}
+              <div className="flex items-center gap-2 pt-3 border-t border-border/50">
+                <button
+                  type="button"
+                  data-testid={`edit-plan-btn-${p.slug}`}
+                  onClick={() => handleOpenEditModal(p)}
+                  className="touch-target flex-1 inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-border bg-secondary/60 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  <span>{translateKey("platform_admin", "plans.edit_plan_btn", { defaultValue: "Editar" })}</span>
+                </button>
+                <button
+                  type="button"
+                  data-testid={`delete-plan-btn-${p.slug}`}
+                  onClick={() => handleDeletePlan(p)}
+                  className="touch-target inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-colors"
+                  title="Eliminar Plan"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Eliminar</span>
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Formulario Paramétrico de las 6 Cuotas */}
-      <form
-        onSubmit={(e) => void handleSavePlan(e)}
-        data-testid="admin-plan-editor-form"
-        className="rounded-xl border border-border bg-card p-5 space-y-4"
-      >
-        <h3 className="text-sm font-bold uppercase text-muted-foreground">
-          {translateKey("platform_admin", "plans.editor_title")}
-        </h3>
+      {/* Modal Dialog del Editor de Planes */}
+      {isEditorModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+        >
+          <div className="w-full max-w-3xl rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div>
+                <h3 className="text-base font-bold text-foreground">
+                  {editingPlan ? "Editar Plan Comercial" : "Crear Nuevo Plan Comercial"}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Configura las cuotas de capacidad, precios y módulos que componen la oferta comercial.
+                </p>
+              </div>
+              <button
+                type="button"
+                data-testid="close-plan-modal-btn"
+                onClick={() => setIsEditorModalOpen(false)}
+                className="touch-target inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="space-y-1 text-xs">
-            <span className="font-semibold text-foreground">
-              {translateKey("platform_admin", "plans.fields.slug")}
-            </span>
-            <input
-              data-testid="plan-input-slug"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
-            />
-          </label>
+            {/* Pestañas Superiores del Modal */}
+            <div className="flex items-center gap-2 border-b border-border pb-2">
+              <button
+                type="button"
+                data-testid="tab-quotas-btn"
+                onClick={() => setActiveModalTab("quotas")}
+                className={`touch-target px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                  activeModalTab === "quotas"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                📊 Cuotas y Precios
+              </button>
+              <button
+                type="button"
+                data-testid="tab-modules-btn"
+                onClick={() => setActiveModalTab("modules")}
+                className={`touch-target px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
+                  activeModalTab === "modules"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+              >
+                🧩 Módulos Habilitados
+                <span className="rounded-full bg-primary-foreground/20 px-2 py-0.5 font-mono text-[10px]">
+                  {selectedModules.length}
+                </span>
+              </button>
+            </div>
 
-          <label className="space-y-1 text-xs">
-            <span className="font-semibold text-foreground">
-              {translateKey("platform_admin", "plans.fields.name")}
-            </span>
-            <input
-              data-testid="plan-input-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs"
-            />
-          </label>
+            <form
+              onSubmit={(e) => void handleFormSubmit(e)}
+              data-testid="admin-plan-editor-form"
+              className="space-y-4"
+            >
+              {/* Pestaña 1: Cuotas y Precios */}
+              {activeModalTab === "quotas" && (
+                <div className="grid gap-4 sm:grid-cols-2 animate-in fade-in duration-200">
+                  <label className="space-y-1 text-xs">
+                    <span className="font-semibold text-foreground">
+                      {translateKey("platform_admin", "plans.fields.slug")}
+                    </span>
+                    <input
+                      data-testid="plan-input-slug"
+                      value={slug}
+                      disabled={Boolean(editingPlan)}
+                      readOnly={Boolean(editingPlan)}
+                      onChange={(e) => setSlug(e.target.value)}
+                      className={`w-full rounded-lg border border-border px-3 py-2 font-mono text-xs ${
+                        editingPlan
+                          ? "bg-muted cursor-not-allowed opacity-75"
+                          : "bg-background"
+                      }`}
+                    />
+                    {editingPlan && (
+                      <span className="text-[10px] text-muted-foreground block">
+                        El identificador técnico (slug) está bloqueado para preservar integridad referencial.
+                      </span>
+                    )}
+                  </label>
 
-          <label className="space-y-1 text-xs">
-            <span className="font-semibold text-foreground">
-              {translateKey("platform_admin", "plans.fields.price_clp")}
-            </span>
-            <input
-              data-testid="plan-input-price-clp"
-              value={priceClp}
-              onChange={(e) => setPriceClp(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
-            />
-          </label>
+                  <label className="space-y-1 text-xs">
+                    <span className="font-semibold text-foreground">
+                      {translateKey("platform_admin", "plans.fields.name")}
+                    </span>
+                    <input
+                      data-testid="plan-input-name"
+                      value={name}
+                      required
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs"
+                    />
+                  </label>
 
-          <label className="space-y-1 text-xs">
-            <span className="font-semibold text-foreground">
-              {translateKey("platform_admin", "plans.fields.price_usd")}
-            </span>
-            <input
-              data-testid="plan-input-price-usd"
-              value={priceUsd}
-              onChange={(e) => setPriceUsd(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
-            />
-          </label>
+                  <label className="space-y-1 text-xs">
+                    <span className="font-semibold text-foreground">
+                      {translateKey("platform_admin", "plans.fields.price_clp")}
+                    </span>
+                    <input
+                      data-testid="plan-input-price-clp"
+                      value={priceClp}
+                      onChange={(e) => setPriceClp(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
+                    />
+                  </label>
 
-          <label className="space-y-1 text-xs">
-            <span className="font-semibold text-foreground">
-              {translateKey("platform_admin", "plans.fields.max_users")}
-            </span>
-            <input
-              type="number"
-              min={1}
-              data-testid="plan-quota-users"
-              value={maxUsers}
-              onChange={(e) => setMaxUsers(Number(e.target.value))}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
-            />
-          </label>
+                  <label className="space-y-1 text-xs">
+                    <span className="font-semibold text-foreground">
+                      {translateKey("platform_admin", "plans.fields.price_usd")}
+                    </span>
+                    <input
+                      data-testid="plan-input-price-usd"
+                      value={priceUsd}
+                      onChange={(e) => setPriceUsd(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
+                    />
+                  </label>
 
-          <label className="space-y-1 text-xs">
-            <span className="font-semibold text-foreground">
-              {translateKey("platform_admin", "plans.fields.max_products")}
-            </span>
-            <input
-              type="number"
-              min={0}
-              data-testid="plan-quota-products"
-              value={maxProducts}
-              onChange={(e) => setMaxProducts(Number(e.target.value))}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
-            />
-          </label>
+                  <label className="space-y-1 text-xs">
+                    <span className="font-semibold text-foreground">
+                      {translateKey("platform_admin", "plans.fields.max_users")}
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      data-testid="plan-quota-users"
+                      value={maxUsers}
+                      onChange={(e) => setMaxUsers(Number(e.target.value))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
+                    />
+                  </label>
 
-          <label className="space-y-1 text-xs">
-            <span className="font-semibold text-foreground">
-              {translateKey("platform_admin", "plans.fields.max_suppliers")}
-            </span>
-            <input
-              type="number"
-              min={0}
-              data-testid="plan-quota-suppliers"
-              value={maxSuppliers}
-              onChange={(e) => setMaxSuppliers(Number(e.target.value))}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
-            />
-          </label>
+                  <label className="space-y-1 text-xs">
+                    <span className="font-semibold text-foreground">
+                      {translateKey("platform_admin", "plans.fields.max_products")}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      data-testid="plan-quota-products"
+                      value={maxProducts}
+                      onChange={(e) => setMaxProducts(Number(e.target.value))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
+                    />
+                  </label>
 
-          <label className="space-y-1 text-xs">
-            <span className="font-semibold text-foreground">
-              {translateKey("platform_admin", "plans.fields.max_recipes")}
-            </span>
-            <input
-              type="number"
-              min={0}
-              data-testid="plan-quota-recipes"
-              value={maxRecipes}
-              onChange={(e) => setMaxRecipes(Number(e.target.value))}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
-            />
-          </label>
+                  <label className="space-y-1 text-xs">
+                    <span className="font-semibold text-foreground">
+                      {translateKey("platform_admin", "plans.fields.max_suppliers")}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      data-testid="plan-quota-suppliers"
+                      value={maxSuppliers}
+                      onChange={(e) => setMaxSuppliers(Number(e.target.value))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
+                    />
+                  </label>
 
-          <label className="space-y-1 text-xs">
-            <span className="font-semibold text-foreground">
-              {translateKey("platform_admin", "plans.fields.max_combos")}
-            </span>
-            <input
-              type="number"
-              min={0}
-              data-testid="plan-quota-combos"
-              value={maxCombos}
-              onChange={(e) => setMaxCombos(Number(e.target.value))}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
-            />
-          </label>
+                  <label className="space-y-1 text-xs">
+                    <span className="font-semibold text-foreground">
+                      {translateKey("platform_admin", "plans.fields.max_recipes")}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      data-testid="plan-quota-recipes"
+                      value={maxRecipes}
+                      onChange={(e) => setMaxRecipes(Number(e.target.value))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
+                    />
+                  </label>
 
-          <label className="space-y-1 text-xs">
-            <span className="font-semibold text-foreground">
-              {translateKey("platform_admin", "plans.fields.max_storage_mb")}
-            </span>
-            <input
-              type="number"
-              min={64}
-              data-testid="plan-quota-storage-mb"
-              value={maxStorageMb}
-              onChange={(e) => setMaxStorageMb(Number(e.target.value))}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
-            />
-          </label>
+                  <label className="space-y-1 text-xs">
+                    <span className="font-semibold text-foreground">
+                      {translateKey("platform_admin", "plans.fields.max_combos")}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      data-testid="plan-quota-combos"
+                      value={maxCombos}
+                      onChange={(e) => setMaxCombos(Number(e.target.value))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
+                    />
+                  </label>
+
+                  <label className="space-y-1 text-xs">
+                    <span className="font-semibold text-foreground">
+                      {translateKey("platform_admin", "plans.fields.max_storage_mb")}
+                    </span>
+                    <input
+                      type="number"
+                      min={64}
+                      data-testid="plan-quota-storage-mb"
+                      value={maxStorageMb}
+                      onChange={(e) => setMaxStorageMb(Number(e.target.value))}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* Pestaña 2: Módulos Habilitados y Presets */}
+              {activeModalTab === "modules" && (
+                <div className="space-y-3 animate-in fade-in duration-200">
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-secondary/20 p-3">
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-foreground">
+                        Presets Rápidos de Paquetes
+                      </span>
+                      <p className="text-[11px] text-muted-foreground">
+                        Carga plantillas prediseñadas o marca los módulos individualmente.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        data-testid="plan-apply-basic-preset-btn"
+                        onClick={handleApplyBasicPlan}
+                        className="touch-target inline-flex items-center gap-1 rounded-lg bg-primary/15 text-primary px-2.5 py-1.5 text-xs font-semibold hover:bg-primary/25 transition-colors"
+                      >
+                        <CheckSquare className="h-3.5 w-3.5" />
+                        <span>⚡ Preset Plan Básico (10)</span>
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="plan-select-all-btn"
+                        onClick={handleSelectAllModules}
+                        className="touch-target inline-flex items-center gap-1 rounded-lg bg-secondary text-foreground px-2.5 py-1.5 text-xs font-semibold hover:bg-secondary/80 transition-colors"
+                      >
+                        <span>🚀 Seleccionar Todos</span>
+                      </button>
+                      <button
+                        type="button"
+                        data-testid="plan-clear-modules-btn"
+                        onClick={handleClearModules}
+                        className="touch-target inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted transition-colors"
+                      >
+                        <span>🧹 Limpiar</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Árbol Jerárquico Oficial de Módulos */}
+                  <div className="max-h-72 overflow-y-auto rounded-xl border border-border bg-secondary/10 p-3.5 space-y-3">
+                    {SAAS_MODULE_TREE.map((root) => (
+                      <div key={root.slug} className="space-y-1.5">
+                        <label className="flex items-center gap-2 font-semibold text-foreground cursor-pointer">
+                          <input
+                            type="checkbox"
+                            data-testid={`plan-mod-check-${root.slug}`}
+                            checked={selectedModules.includes(root.slug)}
+                            onChange={() => togglePlanModule(root.slug)}
+                          />
+                          <span>{root.label}</span>
+                          {root.isBasicPlanCore && (
+                            <span className="ml-auto rounded bg-primary/15 text-primary px-1.5 py-0.5 font-mono text-[9px]">
+                              Plan Básico
+                            </span>
+                          )}
+                        </label>
+
+                        {root.children.length > 0 && (
+                          <div className="pl-5 space-y-1.5 border-l border-border/60">
+                            {root.children.map((child) => (
+                              <label
+                                key={child.slug}
+                                className="flex items-center gap-2 text-muted-foreground hover:text-foreground cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  data-testid={`plan-mod-check-${child.slug}`}
+                                  checked={selectedModules.includes(child.slug)}
+                                  onChange={() => togglePlanModule(child.slug)}
+                                />
+                                <span>└─ {child.label}</span>
+                                {child.isBasicPlanCore && (
+                                  <span className="ml-auto rounded bg-primary/15 text-primary px-1.5 py-0.5 font-mono text-[9px]">
+                                    Plan Básico
+                                  </span>
+                                )}
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-3 pt-3 border-t border-border">
+                {activeModalTab === "quotas" ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalTab("modules")}
+                    className="touch-target inline-flex min-h-[44px] items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                  >
+                    <span>Configurar Módulos del Plan ➔</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setActiveModalTab("quotas")}
+                    className="touch-target inline-flex min-h-[44px] items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    <span>⬅ Volver a Cuotas y Precios</span>
+                  </button>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    data-testid="close-plan-modal-btn"
+                    onClick={() => setIsEditorModalOpen(false)}
+                    className="touch-target inline-flex min-h-[44px] items-center justify-center rounded-lg border border-border bg-secondary/60 px-4 py-2 text-xs font-semibold text-foreground hover:bg-secondary"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    data-testid="save-plan-submit-btn"
+                    className="touch-target inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Check className="h-4 w-4" />
+                    <span>{translateKey("platform_admin", "plans.save_btn", { defaultValue: "Guardar Plan" })}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
+      )}
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            data-testid="save-plan-submit-btn"
-            className="touch-target inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
-          >
-            <Check className="h-4 w-4" />
-            <span>{translateKey("platform_admin", "plans.save_btn")}</span>
-          </button>
+      {/* Modal de Advertencia de Impacto a Clientes Activos */}
+      {isImpactWarningOpen && editingPlan && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-amber-500/40 bg-card p-6 shadow-2xl space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-amber-500/15 p-2 text-amber-500 flex-shrink-0">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-base font-bold text-foreground">
+                  Advertencia de Impacto a Clientes Activos
+                </h4>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Existen {getClientCount(editingPlan.slug)} cliente(s) / local(es) con el Plan "{editingPlan.name}" contratado. Modificar sus cuotas o módulos afectará sus límites operativos. ¿Deseas editar de todas maneras y notificar a los clientes?
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+              <button
+                type="button"
+                data-testid="cancel-impact-btn"
+                onClick={() => setIsImpactWarningOpen(false)}
+                className="touch-target inline-flex min-h-[44px] items-center justify-center rounded-lg border border-border bg-secondary/60 px-4 py-2 text-xs font-semibold text-foreground hover:bg-secondary"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                data-testid="confirm-impact-save-btn"
+                onClick={() => void executeSavePlan(true)}
+                className="touch-target inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 shadow-sm"
+              >
+                Sí, Editar y Notificar
+              </button>
+            </div>
+          </div>
         </div>
-      </form>
+      )}
     </div>
   );
 }

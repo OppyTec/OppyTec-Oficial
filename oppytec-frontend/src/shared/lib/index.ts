@@ -1,3 +1,5 @@
+export * from "./utils";
+
 import {
   formatScaledDecimal,
   parseScaledDecimal,

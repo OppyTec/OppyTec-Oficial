@@ -52,8 +52,14 @@ def test_005_commercial_plans_customization_flow(
     view = page.locator('[data-testid="admin-plans-view"]')
     expect(view).to_be_visible(timeout=10000)
 
+    # 3. Abrir modal con botón "+ Crear Nuevo Plan"
+    create_btn = page.locator('[data-testid="create-plan-btn"]')
+    expect(create_btn).to_be_visible(timeout=8000)
+    create_btn.click()
+
+    # Formulario dentro del diálogo modal
     form = page.locator('[data-testid="admin-plan-editor-form"]')
-    expect(form).to_be_visible(timeout=10000)
+    expect(form).to_be_visible(timeout=8000)
 
     # 3. Diligenciar campos del editor de planes
     slug_input = page.locator('[data-testid="plan-input-slug"]')

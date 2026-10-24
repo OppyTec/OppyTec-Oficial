@@ -1,4 +1,19 @@
 {
   "version": "2.0.0",
-  "active_claims": []
+  "active_claims": [
+    {
+      "file": "oppytec-frontend/src/shared/components/layout/AppLayout.tsx",
+      "symbol_path": "AppLayout",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Replicar layout exacto Legacy con AppBar, Sidebar y HomeLanding",
+      "claimed_at": "2026-10-24T14:27:28.044740+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/shared/components/layout/Navbar.tsx",
+      "symbol_path": "Navbar",
+      "claimed_by": "07-i18n-and-fx-currency-specialist",
+      "intent": "Integrar CurrencySelector y LanguageFlagSelector entre buscador y usuario",
+      "claimed_at": "2026-10-24T16:32:00.000000+00:00"
+    }
+  ]
 }

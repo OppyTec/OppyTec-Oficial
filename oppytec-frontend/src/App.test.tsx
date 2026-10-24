@@ -30,7 +30,7 @@ import {
   resolveQuotaSemaphoreStatus,
   ResponsiveDialog,
 } from "@/shared/components/ui";
-import { PLAN_BASICO_10_NAV_ITEMS } from "@/shared/components/layout";
+import { Navbar, PLAN_BASICO_10_NAV_ITEMS } from "@/shared/components/layout";
 import {
   applyDocumentTheme,
   MOBILE_BREAKPOINT_PX,
@@ -511,11 +511,40 @@ describe("OppyTec v2.0 — Phase 5 Frontend Architecture & Paso 1 Auth Routing",
     expect(screen.getByTestId("admin-legal-entities-view")).toBeTruthy();
     expect(screen.getByTestId("admin-tenants-view")).toBeTruthy();
     expect(screen.getByTestId("admin-client-users-view")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("tenants-table-create-btn"));
     expect(screen.getByTestId("tenant-module-tree")).toBeTruthy();
 
-    fireEvent.click(screen.getByTestId("btn-preset-plan-basico"));
+    fireEvent.click(screen.getByTestId("edit-plan-btn-basic"));
     expect(
       (screen.getByTestId("plan-input-slug") as HTMLInputElement).value
     ).toBe("basic");
+  });
+
+  it("renders Navbar with CurrencySelector and LanguageFlagSelector between search bar and user profile pill", () => {
+    render(
+      <BrowserRouter>
+        <AppProviders>
+          <Navbar restaurantName="Restaurante Central Santiago" />
+        </AppProviders>
+      </BrowserRouter>
+    );
+
+    // Verify search bar input is rendered
+    expect(
+      screen.getByPlaceholderText("Buscar producto, receta o evento...")
+    ).toBeTruthy();
+
+    // Verify CurrencySelector is rendered with its group and testid
+    const currencySelector = screen.getByTestId("currency-selector");
+    expect(currencySelector).toBeTruthy();
+    expect(currencySelector.getAttribute("data-active-currency")).toBeTruthy();
+
+    // Verify LanguageFlagSelector is rendered with its testid
+    const languageSelector = screen.getByTestId("language-flag-selector");
+    expect(languageSelector).toBeTruthy();
+    expect(languageSelector.getAttribute("data-active-lang")).toBeTruthy();
+
+    // Verify User Profile Pill is rendered
+    expect(screen.getByTestId("navbar-user-pill")).toBeTruthy();
   });
 });

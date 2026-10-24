@@ -45,9 +45,18 @@ export function useTheme(initialTheme: OppyTecTheme = "ocean-blue") {
     setThemeState(next);
   }, []);
 
+  const toggleTheme = useCallback((): void => {
+    setThemeState((prev) => {
+      if (prev === "light") return "dark";
+      if (prev === "dark") return "ocean-blue";
+      return "light";
+    });
+  }, []);
+
   return {
     theme,
     setTheme,
+    toggleTheme,
     themes: OFFICIAL_THEMES,
   };
 }

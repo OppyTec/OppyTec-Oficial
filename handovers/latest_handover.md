@@ -1,39 +1,50 @@
-# Reporte de Traspaso (`Handover`) — Agente 12: Technical Writer, OpenSpec Bipartito, Graphify y Archify
+# Reporte de Traspaso (`Handover`) — Agente 07: Especialista en i18n y Multi-Moneda FX
 
-- **Fecha UTC:** 2026-10-23T18:25:00Z
-- **Fase / Hito:** Implementación del Plan de Mejora de Graphify — Subcomandos CLI `nav` & `sync-graph` y Gobernanza Estricta Pre/Post-Ejecución
-- **Estado de Certificación:** `SYNC_APPROVED` (100% de integridad en evaluación anti-trampa, Grafo AST sincronizado con 83 nodos y 111 aristas, `AGENTS.md` blindado con Regla 6 obligatoria).
+- **Fecha UTC:** 2026-10-24T16:44:00Z
+- **Fase / Hito:** Integración de Selector de Moneda (`CurrencySelector`) y Selector de Idioma (`LanguageFlagSelector`) en el AppBar de Cliente (`Navbar.tsx`)
+- **Estado de Certificación:** `NAVBAR_CURRENCY_I18N_INTEGRATION_APPROVED` (100% de suites Vitest exitosas [41/41 tests], compilación TypeScript estricto con 0 errores, build de producción en 4.26s, NGINX container `oppytec-frontend` actualizado y validado visualmente mediante Playwright).
 
 ## 1. Completed
-- **Subcomandos CLI en `scripts/harness.py`:**
-  - **`nav` (`python scripts/harness.py nav "<símbolo>" [--legacy] [--limit 10]`):**
-    - Consulta deterministamente `ASTGraphNavigator` de `.agent/skills/graphify/graph_navigator.py`.
-    - Realiza búsquedas transversales insensibles a mayúsculas/minúsculas en `id`, `label` y `path`.
-    - Retorna formato JSON compacto y estructurado con el número de coincidencias, muestra ordenada y aristas relacionales en `< 150 tokens`.
-    - Soporte validado para `--legacy` (OppyTec-Legacy de 32MB) en ~0.16s y grafo V2 activo en < 0.01s.
-  - **`sync-graph` (`python scripts/harness.py sync-graph`):**
-    - Escaneo determinista de artefactos: migraciones Alembic (`0001`, `0002`, `0003`), routers FastAPI (11 endpoints REST y WS), componentes y hooks frontend (`LanguageProvider`, `useLanguage`, `LanguageFlagSelector`, `CurrencySelector`, `QuotaProgressIndicator`, `AdminManagementViews`, `DynamicAdminTable`, `DynamicAdminForm`) y suites de test Vitest (`suite:frontend_admin_views_test`, `suite:frontend_i18n_test`, etc.).
-    - Generación y actualización sincronizada de `docs/architecture/graphify/graph.json` y `docs/architecture/graphify/v2_phase6_master_graph.json`.
-    - Métricas automáticas actualizadas: 83 nodos, 111 aristas, 11 routers backend, 3 migraciones, 14 suites de verificación.
-    - Registro inmutable en `.agent/memory/harness_events.jsonl` bajo evento `GRAPHIFY_SYNCED`.
-- **Gobernanza Estricta en `AGENTS.md`:**
-  - **Regla de Oro Inviolable 6:** Establecida la obligatoriedad estricta y sin excepciones de consultar Graphify (`python scripts/harness.py nav "<símbolo>"`) antes de comenzar a leer archivos masivos (pre-ejecución), y de actualizar el grafo (`python scripts/harness.py sync-graph` o despachando al Agente 12) al concluir cualquier modificación de código (post-ejecución).
-  - **Protocolo de Inicio de Sesión (8 Pasos):** Pasos 4 y 7 actualizados explícitamente con los comandos del arnés.
-  - **Integridad Anti-Reward-Hacking:** Cero modificaciones en `.agent/rules/` ni `.agent/evals/`, garantizando que `python scripts/harness.py verify-evals` se mantenga al 100% íntegro.
-- **Bitácora Humana y Segundo Cerebro:**
-  - Creada `docs/bitacora/diario-escuadron/09-Gobernanza-Estricta-Graphify-CLI-nav-y-sync-graph.md`.
-  - Registrado el hito en `docs/bitacora/00-MAPA-SEGUNDO-CEREBRO.md`.
-- **Validación y Pruebas:**
-  - `python scripts/harness.py sync-graph`: **83 nodos, 111 aristas sincronizados**.
-  - `python scripts/harness.py nav "language"`: **4 nodos, 9 aristas (< 100 tokens)**.
-  - `python scripts/harness.py nav "admin"`: **5 nodos, 10 aristas (< 110 tokens)**.
-  - `python scripts/harness.py nav "0003"`: **1 nodo, 4 aristas (< 80 tokens)**.
-  - `python scripts/harness.py verify-evals`: **100% OK (Cero Reward Hacking)**.
-  - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_harness_and_merge_integrity.py`: **2 passed in 0.14s**.
-  - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_openspec_bipartition_and_sync.py`: **1 passed in 0.12s**.
+- **Integración de `CurrencySelector` y `LanguageFlagSelector` en AppBar de Cliente (`oppytec-frontend/src/shared/components/layout/Navbar.tsx`):**
+  - Importación limpia de `CurrencySelector` desde `@/shared/currency`.
+  - Importación limpia de `LanguageFlagSelector` desde `@/shared/i18n`.
+  - Ubicación exacta en el Desktop Header (`hidden md:flex`) entre el contenedor del buscador (`Search Bar`) y el bloque de acciones de la derecha (`User Profile Pill` y botones):
+    ```tsx
+    <div className="flex items-center gap-2 shrink-0">
+      <CurrencySelector />
+      <LanguageFlagSelector onLanguageChange={onLanguageChanged} />
+    </div>
+    ```
+  - Compatibilidad visual armónica garantizada en los 3 temas oficiales (`light`, `dark`, `ocean-blue`), con tokens `bg-card/90`, `border-border`, `text-foreground`, sombras sutiles y touch targets `>= 38px`.
+  - Soporte de dropdown interactivo con cierre al pulsar fuera (`click outside`) o tecla `Escape`.
+  - Independencia estricta entre moneda (`CLP`, `USD`, `EUR`, `BRL`, `UF`) e idioma (`es`, `en`), manteniendo el filtro inviolable de nombres comerciales y marcas gastronómicas.
+- **Validación Automatizada y Calidad de Código:**
+  - `npm test`: 6 test files, 41/41 tests aprobados (100% pass) con 0 errores.
+  - Test unitario añadido en `App.test.tsx` verificando la renderización de `CurrencySelector` y `LanguageFlagSelector` entre el Search Bar y la Píldora de Perfil.
+  - `npm run build`: Compilación TypeScript estricta (`tsc --noEmit`) y empaquetado Vite sin ningún error.
+- **Despliegue y Contenedor Docker:**
+  - Reconstrucción de imagen y reinicio de contenedor: `docker compose build frontend && docker compose up -d frontend`.
+  - Verificación de salud y exposición en puerto 5173.
+- **Evidencia Visual con Playwright:**
+  - Flujo automatizado: Login como `oppytec.admin@gmail.com` / `oppytec.2026`, navegación a `/admin/tenants`, clic en "Entrar" e "Ir al Local".
+  - Captura de pantalla generada en:
+    `/home/jcampillay/.gemini/antigravity-cli/brain/202f6db5-d371-42a9-a3a7-75de42b066d6/after_currency_and_lang_selectors.png`
+  - Verificación visual exitosa: selectores alineados con precisión entre el campo de búsqueda y la píldora de usuario, conservando intactos todos los elementos de AppBar y sidebar.
 
-## 2. Friction & Failures
-- Cero fallos. El balance de tokens y velocidad de ejecución cumple plenamente con las restricciones de costo y tiempo estipuladas.
+---
 
-## 3. Next Exact Action
-- Notificar al Orquestador (`202f6db5-d371-42a9-a3a7-75de42b066d6`) la disponibilidad inmediata de los comandos `nav` y `sync-graph` para que todo el escuadrón comience a cumplir la regla obligatoria.
+# Reporte de Traspaso (`Handover`) — Agente 11: Especialista en Git Worktrees y Árbitro de Smart Merge
+
+- **Fecha UTC:** 2026-10-24T16:55:00Z
+- **Fase / Hito:** Arbitraje de Merge Train, Certificación Quality Gate y Push a `origin/master` (Layout Legacy, AppBar FX/i18n, OppyBot Drawer, Control RBAC)
+- **Estado de Certificación:** `MASTER_MERGE_AND_PUSH_APPROVED`
+  - Vitest: 6/6 test files pasados, 41/41 tests unitarios aprobados (100% pass).
+  - TypeScript & Vite: Compilación estricta con 0 errores (`tsc --noEmit && vite build`).
+  - Sincronización Remota: `git push origin master` exitoso sin conflictos forzados ni regresiones.
+
+## 1. Scope Fusionado y Certificado
+- Replicación del Layout de Cliente idéntico a OppyTec Legacy (`AppBar h-20`, `Sidebar` colapsable con persistencia en `localStorage`, `HomeDashboard` con KPIs y accesos directos).
+- Integración de `CurrencySelector` (FX) y `LanguageFlagSelector` (i18n) en AppBar sin colisión de estado.
+- Bloqueo y candado (`Lock`) para módulos no contratados según plan comercial.
+- Drawer interactivo flotante para OppyBot (IA).
+- Suite de tests unitarios y e2e actualizada.
