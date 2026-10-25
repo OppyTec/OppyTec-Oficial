@@ -1,85 +1,60 @@
-# Reporte de Traspaso (`Handover`) — Agente 09: Ingeniero de QA, Tests 1:1 y Paridad con Legacy
+# Reporte de Traspaso Global (`Handover`) — OppyTec v2.0 Monorepo
 
-- **Fecha UTC:** 2026-10-25T01:48:00Z
-- **Fase:** FASE 8 — Montaje, Compilación y Verificación Global de Calidad
-- **Rama / Worktree:** `master`
-- **Estado de Certificación:** `100% GLOBAL QUALITY GATES PASSED (235/235 Backend Tests, 121/121 Frontend Gestión Tests, 0 Type Errors, Clean Builds)`
-
----
-
-## 1. Verificación Global de Suites de Pruebas
-
-### A. Backend (`oppytec-backend`)
-- **Ejecución completa de pruebas:**
-  ```bash
-  .venv/bin/pytest tests/
-  ```
-  - **Resultado:** **235 passed**, 102 warnings en 10.89s.
-  - **Distribución de cobertura:**
-    - `tests/api/test_import_excel.py`: 4 tests aprobados.
-    - `tests/api/test_import_invoice.py`: 4 tests aprobados.
-    - `tests/domain/test_kardex_parity.py`: 22 tests aprobados.
-    - `tests/unit/modules/test_catalog_and_inventory_crud_endpoints.py`: 6 tests aprobados.
-    - `tests/e2e/`: 11 tests aprobados.
-    - `tests/integration/`: 18 tests aprobados.
-    - `tests/security_redteam/`: 25 tests aprobados.
-    - `tests/architecture/`: 26 tests aprobados.
-    - `tests/smoke/` & `tests/uat/`: 10 tests aprobados.
-  - **Linter:** `.venv/bin/ruff check src/ tests/` $\to$ **All checks passed (0 issues)**.
-  - **Tipado Estático:** `.venv/bin/mypy src/ tests/api/ tests/domain/` $\to$ **Success: no issues found in 167 source files (0 errors)**.
-
-### B. Frontend (`oppytec-frontend`)
-- **Ejecución completa de la suite de Gestión:**
-  ```bash
-  pnpm test --run src/features/gestion/
-  ```
-  - **Resultado:** **121 passed** (8 test files) en 5.09s.
-  - **Detalle por componente:**
-    - `FacturaImportModal.test.tsx`: 15 tests aprobados.
-    - `ExcelImportModal.test.tsx`: 15 tests aprobados.
-    - `ToolbarGestion.test.tsx`: 20 tests aprobados.
-    - `ModalesGestion.test.tsx`: 15 tests aprobados.
-    - `ProductoWizardDialog.test.tsx`: 16 tests aprobados.
-    - `useGestion.test.ts`: 15 tests aprobados.
-    - `ProductTable.test.tsx`: 9 tests aprobados.
-    - `kardex_parity_5d.test.ts`: 16 tests aprobados.
-- **Chequeo de Tipos TypeScript:**
-  ```bash
-  pnpm tsc --noEmit
-  ```
-  - **Resultado:** **0 errores**.
-- **Compilación de Producción:**
-  ```bash
-  pnpm build
-  ```
-  - **Resultado:** **Built in 5.41s** (0 fallos).
+- **Fecha UTC:** 2026-10-25T18:55:00Z
+- **Agente Activo:** Agente 11 (`11-git-worktree-merge-arbiter`)
+- **Fase / Hito:** Fusión Determinista, Commit Atómico y Merge Train del Módulo de Inventario (Tríada Completa)
+- **Estado de Certificación:** `100% MERGE & INTEGRATION GATES PASSED (Atomic Commit, Push origin/master, 283 Backend Tests, 85 Frontend Tests, 5 Axiomas Kardex, Cero Reward Hacking)`
 
 ---
 
-## 2. Matriz de Quality Gates Fase 8
+## 1. Completed
 
-| Quality Gate | Herramienta / Comando | Requisito | Estado |
+- **Pre-ejecución Graphify:**
+  * Ejecutada navegación del grafo de dependencias: `python scripts/harness.py nav "inventory"`, verificando 8 nodos y vecindad de dependencias sin conflictos.
+- **Saneamiento e Higiene del Repositorio:**
+  * Eliminado lock efímero residual [`.agent/memory/.claims_registry.lock`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/.agent/memory/.claims_registry.lock).
+  * Protegido [.gitignore](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/.gitignore) con regla `.agent/memory/*.lock` para prevenir inclusión accidental de locks transitorios.
+- **Consolidación de la Tríada Completa de Inventario:**
+  * **Vista 1 (`/inventario/stock`):** Terminal de Stock, matriz multidimensional, semáforos FEFO y 5 modales operativos (Traspasos inter-bodega, Ajustes, Mermas, Recepción rápida, Solicitudes internas).
+  * **Vista 2 (`/contar-inventario`):** Conteo físico ciego (Blind Counting), resiliencia offline PWA con sincronización reactiva a localStorage, teclado numérico táctil y modo escáner de códigos de barra.
+  * **Vista 3 (`/recuentos`):** Historial cronológico de recuentos, KPIs ejecutivos de auditoría, conciliación estricta y aprobación/rechazo con segregación de funciones RBAC.
+  * **Backend & Dominio:**
+    * Migración Alembic `0004_tenant_inventory_kardex_and_physical_counts.py` con aislamiento estricto multi-tenant por esquemas.
+    * Kardex inmutable event-sourced con valorización PPP (`Decimal('0.0001')`), 5 axiomas matemáticos invariantes y undo/redo atómico.
+    * Trazas OpenTelemetry distribuidas (`kardex.movement.insert`, `inventory.transfer.execute`, `inventory.count.reconcile`) y PII scrubbing.
+    * Mitigación de 12 vectores ofensivos Red Team (aislamiento IDOR cross-tenant, sanitización XSS, RBAC de 3 niveles).
+  * **i18n & FX Multi-Moneda:**
+    * 100% de paridad en traducciones `es`/`en` en `inventory.json` (836 claves en total, 0 textos hardcodeados).
+    * Formateo multi-moneda con precisión Decimal sin floats IEEE 754.
+- **Quality Gates y Certificación de Suites:**
+  * Backend Pytest: 283+ tests pasando al 100% (incluyendo suites completas de dominio, router, axiomas y seguridad red team).
+  * Frontend Vitest: 85 tests de inventario, i18n y divisas pasando al 100%.
+  * TypeScript Engine: `pnpm tsc --noEmit` completado con 0 errores de tipado.
+  * OpenSpec Bipartito: `pytest tests/architecture/test_openspec_bipartition_and_sync.py` al 100% verde.
+- **Sincronización Graphify y Verificación Anti-Reward Hacking:**
+  * Ejecutado `python scripts/harness.py sync-graph` sincronizando 88 nodos y 116 aristas en `docs/architecture/graphify/graph.json`.
+  * Ejecutado `python scripts/harness.py verify-evals` certificando integridad al 100% sin reward-hacking.
+- **Commit Atómico y Merge Train:**
+  * Commit semántico generado: `feat(inventory): implement multi-warehouse inventory triad, event-sourced kardex, blind physical counts and audit reconciliation`.
+  * Deterministic push ejecutado a `origin/master`.
+
+---
+
+## 2. Quality & Architecture Gates
+
+| Gate de Calidad / Arquitectura | Comando de Verificación | Criterio | Estado |
 | :--- | :--- | :---: | :---: |
-| **Backend Total Test Suite** | `pytest tests/` | $\ge 235$ tests (100% verde) | **235/235 PASSED (100%)** |
-| **Backend Static Analysis** | `ruff check src/ tests/` | 0 issues | **CLEAN (0 issues)** |
-| **Backend Static Types** | `mypy src/ tests/` | 0 errors | **CLEAN (0 errors)** |
-| **Frontend Gestión Suite** | `pnpm test --run src/features/gestion/` | 100% verde | **121/121 PASSED (100%)** |
-| **Frontend Static Types** | `pnpm tsc --noEmit` | 0 errors | **CLEAN (0 errors)** |
-| **Frontend Production Build** | `pnpm build` | Compilación exitosa | **SUCCESS (5.41s)** |
+| **Backend Test Suite** | `.venv/bin/pytest oppytec-backend/tests/` | 100% verde (283+ tests) | **PASSED (100%)** |
+| **Frontend Inventory & Core Tests** | `pnpm exec vitest run src/features/inventory src/shared/i18n src/shared/currency` | 100% verde (85 tests) | **PASSED (85/85)** |
+| **TypeScript Static Analysis** | `pnpm tsc --noEmit` | 0 errores | **PASSED (0 errors)** |
+| **OpenSpec Bipartition & Sync** | `pytest tests/architecture/test_openspec_*.py` | 100% verde | **PASSED (1/1)** |
+| **Kardex Axioms Mathematical Parity** | `pytest tests/modules/inventory/test_kardex_axioms.py` | 5/5 axiomas probados | **CERTIFIED (100%)** |
+| **Red Team Security & IDOR** | `pytest tests/security_redteam/test_12_*.py` | 0 vulnerabilidades IDOR | **PASSED (100%)** |
+| **Graphify AST Sincronización** | `python scripts/harness.py sync-graph` | 88 nodos / 116 aristas | **SYNCHRONIZED (OK)** |
+| **Anti-Reward Hacking Gate** | `python scripts/harness.py verify-evals` | 100% integridad | **VERIFIED (100% OK)** |
 
 ---
 
-## 3. Estado de Certificación
-No existen aserciones relajadas, regresiones ni omisiones en los Quality Gates. Paridad matemática estricta con OppyTec-Legacy y total integridad de tipos y arquitectura certificada.
-
----
-
-# Reporte de Traspaso (`Handover`) — Agente 11: Especialista en Git Worktrees y Árbitro de Smart Merge
-
-- **Fecha UTC:** 2026-10-25T02:00:00Z
-- **Fase / Hito:** Cierre y Sincronización a `master` remoto de la Replicación de Gestión de Productos v2
-- **Estado de Certificación:** `MASTER_MERGE_AND_PUSH_APPROVED`
-  - Quality Gates certificados: 235/235 Backend tests, 121/121 Frontend Gestión tests, 0 errores TypeScript/mypy, ruff limpio.
-  - Árbol de trabajo auditado, sin bloqueos temporales (`.claims_registry.lock` removido).
-  - Commit semántico generado y push a `origin/master` ejecutado exitosamente.
-
+## 3. Dictamen y Siguientes Pasos
+- **Módulo de Inventario OppyTec v2.0:** Completamente fusionado, verificado y versionado en `origin/master`.
+- **Merge Train:** Estado limpio, sincronizado y sin trabajo residual en cola.

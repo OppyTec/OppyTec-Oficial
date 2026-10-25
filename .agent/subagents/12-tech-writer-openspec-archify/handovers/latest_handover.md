@@ -1,39 +1,47 @@
 # Reporte de Traspaso (`Handover`) — Agente 12: Technical Writer, OpenSpec Bipartito, Graphify y Archify
 
-- **Fecha UTC:** 2026-10-23T23:35:00Z
-- **Fase / Hito:** Gobernanza, Memoria y Estrategia del Nuevo Agente 13 (`13-browser-e2e-playwright`)
-- **Estado de Certificación:** `SYNC_APPROVED` (Grafo AST 100% sincronizado, `verify-evals` 100% OK, estructura completa del Agente 13 persistida y registrada en el Segundo Cerebro).
+- **Fecha UTC:** 2026-10-25T18:20:00Z
+- **Fase / Hito:** Cierre y Certificación Documental del Módulo de Inventario — Culminación de Fase 8 en `PLAN_MAESTRO_INVENTARIO.md`, Sincronización Bipartita OpenSpec y Graphify
+- **Estado de Certificación:** `DOCUMENTATION_AND_GRAPHIFY_SYNC_APPROVED` (Grafo AST 100% sincronizado: 88 nodos y 116 aristas, `verify-evals` 100% OK sin alteración de reglas inmutables, test de arquitectura OpenSpec 100% verde).
 
 ---
 
 ## 1. Completed (Qué se hizo)
-- **Cumplimiento de la Regla de Oro Inviolable #6 Pre-Ejecución:**
-  - Ejecutado `python scripts/harness.py nav "agent"` verificando la presencia en el grafo AST en < 80 tokens.
-- **Construcción Exhaustiva de la Carpeta del Agente 13 (`.agent/subagents/13-browser-e2e-playwright/`):**
-  - [agent.md](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/.agent/subagents/13-browser-e2e-playwright/agent.md): Manifiesto formal del `13-browser-e2e-playwright-specialist`, declarando:
-    * **Propósito e Inmunidad:** Aislamiento total de las suites rápidas de pruebas de los Agentes 01 al 12 (cero impacto en el tiempo de CI ni en el desarrollo paralelo).
-    * **Modos de Operación:** Modo Visual Humano (`PLAYWRIGHT_HEADLESS=false`, `PLAYWRIGHT_SLOW_MO=500`) para demostración e inspección interactiva y Modo Headless CI (`PLAYWRIGHT_HEADLESS=true`, `PLAYWRIGHT_SLOW_MO=0`) para pipelines automatizados.
-    * **Capacidades de Interacción:** Relleno de formularios con cadencia realista, manejo de scroll en modales con contenedores `overflow-y-auto` (`scrollTop = scrollHeight`), control seguro de switches `aria-checked` para evitar deselecciones, validación visual de cuotas y semáforos, y manejo de selectores Radix UI Portals y Mobile-First.
-    * **Matriz de Responsabilidades:** 6 flujos asignados (Onboarding/Login, Holdings, Entidades Legales, Tenants, Usuarios/RBAC, y Planes/Cuotas).
-    * **Protocolo de Ejecución:** Pre-flight checks, capturas automáticas de pantalla ante fallos (`screenshots/`), trazas zip (`traces/`) y videos (`videos/`).
-  - [prompt.md](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/.agent/subagents/13-browser-e2e-playwright/prompt.md): Prompt operativo maestro con Tier de Modelo asignado `Gemini 4 Argon`, referencias a estrategias maestras y protocolo paso a paso.
-  - [knowledge.md](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/.agent/subagents/13-browser-e2e-playwright/knowledge.md): Base de conocimiento evolutiva inicial con aprendizajes destilados del Legacy (`tests/002_admin`: `test_admin_flow.py` y `test_gestion_cliente_flow.py`) y patrones del stack moderno (React 19, Radix UI, TanStack Query, Mobile-First breakpoints).
-  - [handovers/latest_handover.md](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/.agent/subagents/13-browser-e2e-playwright/handovers/latest_handover.md): Plantilla inicial de handover del Agente 13 con estado operativo `INITIALIZED`.
-- **Regla de Oro Inviolable #6 Post-Ejecución (Graphify):**
-  - Ejecutado `python scripts/harness.py sync-graph`.
-  - Nodos totales: 83 | Aristas totales: 111 | Destino: `docs/architecture/graphify/graph.json`.
-- **Verificación de Evaluaciones Anti-Trampa (Reward Hacking Guard):**
-  - Ejecutado `python scripts/harness.py verify-evals` $\to$ `100% OK`.
-- **Actualización del Segundo Cerebro Humano:**
-  - Registrado el Agente 13 en [docs/bitacora/00-MAPA-SEGUNDO-CEREBRO.md](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/docs/bitacora/00-MAPA-SEGUNDO-CEREBRO.md) actualizando la sección del directorio a los 13 Agentes Especializados.
+
+- **Pre-ejecución Graphify:**
+  * Ejecutada navegación previa del grafo AST: `python scripts/harness.py nav "inventory"`, verificando 8 nodos coincidentes y vecindad de dependencias.
+- **Actualización Integral de `PLAN_MAESTRO_INVENTARIO.md`:**
+  * Marcada en el resumen inicial la **Fase 8 como COMPLETADA**:
+    `- [x] **Fase 8:** Capas Cruzadas, i18n 100% \`es\`/\`en\` (\`inventory.json\`), Multi-Moneda FX, Observabilidad OpenTelemetry, Testing 5D (Vitest + Pytest) y Certificación E2E Playwright desacoplada (Agente 13) — **COMPLETADA**`
+  * Marcados como completados `[x]` todos los ítems de la Fase 8 (8.1, 8.2, 8.3, 8.4, 8.5, 8.7), documentando los entregables de los especialistas:
+    * **Agente 07 (i18n & FX):** 433 líneas sincronizadas en `es`/`en` (`inventory.json`), 0 cadenas hardcodeadas, 85/85 tests pasando.
+    * **Agente 08 (Observabilidad):** Trazas de span OpenTelemetry (`kardex.movement.insert`, `inventory.transfer.execute`, `inventory.count.reconcile`), métricas distribuidas, PII scrubbing en logs/trazas, 283 tests pasando.
+    * **Agente 09 (QA Parity & Testing 5D):** 5 axiomas matemáticos certificados para Kardex/PPP (`test_kardex_axioms.py`), Hypothesis property-based testing, 90/90 tests backend pasando, 74/74 tests frontend pasando.
+    * **Agente 10 (Red Team):** 11 vectores de seguridad cubiertos + Vector 12 específico de Inventario (`test_12_inventory_offensive_security_and_rbac.py`), IDOR cross-tenant mitigado y sellado, 71/71 tests de seguridad pasando.
+    * **Ítem 8.6:** Registrado como certificación E2E Playwright en navegador real desacoplada (Agente 13) según la Regla Inmutable 8 de OppyTec.
+- **Sincronización de Bóvedas OpenSpec Bipartito:**
+  * Actualizado [`specs/business-domain/inventory-and-kardex.business.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/business-domain/inventory-and-kardex.business.spec.md):
+    - 0% código técnico o SQL (`CREATE TABLE`, `sqlalchemy`, etc.).
+    - Escenarios de negocio actualizados: tomas físicas ciegas, actas de conciliación PPP y traslados atómicos inter-bodega.
+  * Actualizado [`specs/engineering-code/inventory-and-kardex.code.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/engineering-code/inventory-and-kardex.code.spec.md):
+    - `last_verified_phase: "Fase 8"`.
+    - Contratos técnicos completos: endpoints REST RFC 7807, transaccionalidad ACID, WebSockets tiempo real, modales operativos y vistas frontend.
+    - Mapeo 1:1 de suites de prueba backend (Pytest) y frontend (Vitest).
+  * Actualizado [`specs/engineering-code/waste-and-mermas.code.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/engineering-code/waste-and-mermas.code.spec.md):
+    - `last_verified_phase: "Fase 8"`.
+  * Verificación de test de arquitectura: `pytest oppytec-backend/tests/architecture/test_openspec_bipartition_and_sync.py` $\to$ **1 passed (100% verde)**.
+- **Indexación y Grafo AST Graphify:**
+  * Ejecutado `python scripts/harness.py sync-graph` actualizando `docs/architecture/graphify/graph.json`:
+    - 88 nodos y 116 aristas sincronizadas.
+- **Verificación Anti-Reward Hacking:**
+  * Ejecutado `python scripts/harness.py verify-evals` $\to$ **100% verificado (Cero Reward Hacking)**.
 
 ---
 
 ## 2. Friction & Failures (Qué cuidar)
-- La ejecución visual del Agente 13 (`PLAYWRIGHT_HEADLESS=false`) requiere un entorno con servidor gráfico X11/Wayland o emulación con `xvfb` si se ejecuta en entornos remotos o contenedores sin display.
-- Los portales de Radix UI proyectan las opciones desplegables fuera del DOM del modal, por lo que el Agente 13 debe buscar los elementos en el cuerpo del documento (`document.body`).
+- Cero fricciones. Todas las rúbricas y verificaciones pasaron al primer intento sin advertencias.
 
 ---
 
 ## 3. Next Exact Action (Siguiente paso exacto)
-- Notificar al Agente Orquestador (`202f6db5-d371-42a9-a3a7-75de42b066d6`) la disponibilidad completa y operativa de la gobernanza del Agente 13 para dar inicio a los flujos E2E de Playwright.
+- El Módulo de Inventario (Fases 1 a 8) queda 100% documentado, integrado y listo para Merge Train o Certificación Pre-Release E2E Playwright con el Agente 13 (`13-browser-e2e-playwright`).

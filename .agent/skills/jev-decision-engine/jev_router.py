@@ -2,15 +2,16 @@
 """
 .agent/skills/jev-decision-engine/jev_router.py — Motor de Enrutamiento Cognitivo JEV (Sistema 1)
 Clasifica de manera determinista e instantánea (< 15ms) cualquier requerimiento de usuario
-hacia los 12 Agentes Especializados del Escuadrón de OppyTec v2.0.
+hacia los 13 Agentes Especializados del Escuadrón de OppyTec v2.0.
 
 Implementa:
 1. `JevTaskClassification`: Dictamen tipado con Agente Líder, Agentes de Soporte, Modo (FAST_TRACK vs DAG_PIPELINE) y Confianza.
-2. `JevPipelineStage`: Grafo Dirigido Acíclico (DAG) de 4 Etapas con orden lógico estricto de dependencias:
+2. `JevPipelineStage`: Grafo Dirigido Acíclico (DAG) de hasta 5 Etapas con orden lógico estricto de dependencias:
    - Etapa 1: Definición y Contratos (02-software-architect, 03-database-alembic-and-backup-engineer)
    - Etapa 2: Construcción en Paralelo (04-backend-senior-dev, 05-frontend-senior-dev)
    - Etapa 3: Capas Cruzadas y Especialistas (06-ai-oppyfy-and-jev-engineer, 07-i18n-and-fx-currency-specialist, 08-environments-and-observability-engineer)
    - Etapa 4: Calidad, Veto de Seguridad y Cierre (09-qa-parity-and-test-engineer, 10-cybersecurity-redteam-auditor, 11-git-worktree-merge-arbiter, 12-tech-writer-openspec-archify)
+   - Etapa 5: Certificación E2E en Navegador Real (13-browser-e2e-playwright)
 3. Matriz de Palabras Clave y Señales Semánticas Calibradas.
 """
 from __future__ import annotations
@@ -43,6 +44,7 @@ class SquadAgentId(str, Enum):
     RED_TEAM = "10-cybersecurity-redteam-auditor"
     MERGE_ARBITER = "11-git-worktree-merge-arbiter"
     TECH_WRITER = "12-tech-writer-openspec-archify"
+    E2E_PLAYWRIGHT = "13-browser-e2e-playwright"
 
 
 @dataclass(frozen=True)
@@ -139,10 +141,24 @@ SQUAD_CATALOG: dict[SquadAgentId, SquadAgentMeta] = {
         tier="Gemini 3.8 Flash",
         focus="Bóvedas OpenSpec (business vs engineering), Graphify AST, Atlas Archify, Bitácora",
     ),
+    SquadAgentId.E2E_PLAYWRIGHT: SquadAgentMeta(
+        id=SquadAgentId.E2E_PLAYWRIGHT,
+        name="Especialista E2E en Navegador Real y Playwright",
+        stage=5,
+        tier="Gemini 4 Argon",
+        focus="Pruebas E2E en Navegador Real (Chromium/Firefox/WebKit), Playwright, interacción visual humana y flujos completos UI desacoplados",
+    ),
 }
 
 # Señales semánticas de alta precisión para cada agente
 AGENT_SIGNALS: dict[SquadAgentId, tuple[str, ...]] = {
+    SquadAgentId.E2E_PLAYWRIGHT: (
+        "playwright", "e2e real", "navegador real", "probar en el navegador",
+        "abrir navegador", "interaccion humana", "interacción humana",
+        "simular usuario", "click en boton", "click en botón", "prueba e2e",
+        "browser", "flujo de usuario en pantalla", "captura de pantalla e2e",
+        "pantalla real",
+    ),
     SquadAgentId.FRONTEND: (
         "vista", "vistas", "pantalla", "pantallas", "componente", "componentes",
         "botón", "boton", "tabla", "formulario", "modal", "dialog", "diseño", "diseno",
@@ -316,8 +332,31 @@ def classify_user_request(prompt: str) -> JevTaskClassification:
         ):
             all_involved.append(SquadAgentId.QA)
 
+        # Etapa 5 (Playwright E2E en Navegador Real) es desacoplada y opcional:
+        # Solo se activa si el Agente 13 fue activado por sus señales o si el usuario pide explícitamente pruebas en navegador / E2E Playwright.
+        playwright_explicit = any(
+            kw in prompt_lower
+            for kw in (
+                "playwright",
+                "navegador real",
+                "e2e real",
+                "probar en el navegador",
+                "pantalla real",
+                "abrir navegador",
+                "interaccion humana",
+                "interacción humana",
+                "simular usuario",
+                "click en boton",
+                "click en botón",
+                "flujo de usuario en pantalla",
+                "captura de pantalla e2e",
+            )
+        )
+        if playwright_explicit and SquadAgentId.E2E_PLAYWRIGHT not in all_involved:
+            all_involved.append(SquadAgentId.E2E_PLAYWRIGHT)
+
         # Agrupar por etapas lógicas de dependencias
-        stage_groups: dict[int, list[SquadAgentId]] = {1: [], 2: [], 3: [], 4: []}
+        stage_groups: dict[int, list[SquadAgentId]] = {1: [], 2: [], 3: [], 4: [], 5: []}
         for agent in all_involved:
             stg = SQUAD_CATALOG[agent].stage
             if stg == 0:
@@ -330,10 +369,11 @@ def classify_user_request(prompt: str) -> JevTaskClassification:
             2: "Construcción en Código (Backend & Frontend en Paralelo)",
             3: "Capas Especializadas (i18n, FX, OppyFy, Observabilidad)",
             4: "Quality Gate, Pruebas 5D, Veto de Seguridad y Documentación",
+            5: "Certificación E2E en Navegador Real (Playwright, Desacoplado)",
         }
 
         pipeline = []
-        for stg_num in (1, 2, 3, 4):
+        for stg_num in (1, 2, 3, 4, 5):
             agents_in_stage = stage_groups[stg_num]
             if agents_in_stage:
                 pipeline.append(

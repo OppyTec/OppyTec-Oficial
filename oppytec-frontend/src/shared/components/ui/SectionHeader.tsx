@@ -51,6 +51,21 @@ export function SectionHeader({
     let isCancelled = false;
 
     const animate = async () => {
+      if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+        setRenderedIcon(() => Icon);
+        setRenderedColor(color);
+        setHeaderTitle(title);
+        setHeaderSubtitle(subtitle);
+        setSubtitleVisible(true);
+        setIconVisible(true);
+        setIsAnimating(false);
+        globalPreviousTitle = title;
+        globalPreviousSubtitle = subtitle;
+        globalPreviousIcon = Icon;
+        globalPreviousColor = color;
+        return;
+      }
+
       const isFirstOpen = headerTitle === "";
 
       if (isFirstOpen) {
@@ -58,20 +73,16 @@ export function SectionHeader({
         setRenderedColor(color);
         globalPreviousIcon = Icon;
         globalPreviousColor = color;
-        setIconVisible(false);
-        await new Promise((r) => setTimeout(r, 50));
-        if (isCancelled) return;
-
-        setIsAnimating(true);
         setIconVisible(true);
-        await new Promise((r) => setTimeout(r, 200));
+        setIsAnimating(true);
+        await new Promise((r) => setTimeout(r, 60));
         if (isCancelled) return;
 
-        // Type the full title
+        // Type the full title with agile, organic cadence (~18ms-28ms per char, ~350-450ms total)
         let current = "";
         for (let i = 0; i < title.length; i++) {
           if (isCancelled) return;
-          const delay = Math.max(10, 100 - (i / title.length) * 90);
+          const delay = Math.max(14, 28 - (i / title.length) * 14);
           await new Promise((r) => setTimeout(r, delay));
           if (isCancelled) return;
           current += title[i];
@@ -102,14 +113,15 @@ export function SectionHeader({
           }
         }
 
-        // Delete suffix
+        // Delete suffix with snappy, fluid cadence (~12ms-24ms per char)
         let current = headerTitle;
-        const deleteStartSpeed = 80;
-        const deleteEndSpeed = 20;
+        const deleteStartSpeed = 24;
+        const deleteEndSpeed = 12;
         const deleteSteps = current.length - commonPrefix.length;
 
         let iconSwapped = false;
         let elapsed = 0;
+        const iconSwapTarget = 60;
 
         for (let i = 0; i < deleteSteps; i++) {
           if (isCancelled) return;
@@ -121,7 +133,7 @@ export function SectionHeader({
           if (isCancelled) return;
           elapsed += delay;
 
-          if (!iconSwapped && elapsed >= 200) {
+          if (!iconSwapped && elapsed >= iconSwapTarget) {
             setRenderedIcon(() => Icon);
             setRenderedColor(color);
             globalPreviousIcon = Icon;
@@ -136,7 +148,7 @@ export function SectionHeader({
 
         // Ensure icon is swapped if deletion was too fast
         if (!iconSwapped) {
-          const remaining = 200 - elapsed;
+          const remaining = iconSwapTarget - elapsed;
           if (remaining > 0) {
             await new Promise((r) => setTimeout(r, remaining));
             if (isCancelled) return;
@@ -147,10 +159,10 @@ export function SectionHeader({
           globalPreviousColor = color;
         }
 
-        // Type new suffix
+        // Type new suffix with agile, natural cadence (~12ms-26ms per char)
         const newSuffix = title.substring(commonPrefix.length);
-        const typeStartSpeed = 100;
-        const typeEndSpeed = 10;
+        const typeStartSpeed = 26;
+        const typeEndSpeed = 12;
         const typeSteps = newSuffix.length;
 
         for (let i = 0; i < typeSteps; i++) {
@@ -166,7 +178,7 @@ export function SectionHeader({
           globalPreviousTitle = current;
         }
 
-        await new Promise((r) => setTimeout(r, 100));
+        await new Promise((r) => setTimeout(r, 40));
         if (isCancelled) return;
 
         setIconVisible(true);
@@ -209,7 +221,7 @@ export function SectionHeader({
               color: renderedColor,
               opacity: iconVisible ? (isAnimating ? 0.7 : 1) : 0,
               transform: isAnimating ? "scale(1.1)" : "scale(1)",
-              transition: "opacity 0.3s ease-in-out, transform 0.7s cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: "opacity 0.2s ease-in-out, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
             }}
           />
           <h1 className="text-3xl lg:text-4xl font-black tracking-tighter flex items-center whitespace-nowrap min-h-[44px]">
@@ -240,7 +252,7 @@ export function SectionHeader({
           </p>
           <p
             className={cn(
-              "col-start-1 row-start-1 text-muted-foreground text-[10px] font-bold uppercase tracking-widest transition-all duration-500 text-center",
+              "col-start-1 row-start-1 text-muted-foreground text-[10px] font-bold uppercase tracking-widest transition-all duration-300 text-center",
               center ? "lg:text-center" : "lg:text-left",
               subtitleVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1"
             )}

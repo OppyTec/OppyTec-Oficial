@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   FUTURE_LANGUAGE_CODES,
   FUTURE_LANGUAGES,
@@ -31,6 +31,19 @@ import {
 
 describe("Frontend i18n Suite (12 Namespaces, SVG Flags & Pollo King Proper Noun Guard)", () => {
   beforeEach(() => {
+    cleanup();
+    window.localStorage.clear();
+    setActiveLanguage("es");
+  });
+
+  afterEach(() => {
+    cleanup();
+    window.localStorage.clear();
+    setActiveLanguage("es");
+  });
+
+  afterAll(() => {
+    cleanup();
     window.localStorage.clear();
     setActiveLanguage("es");
   });

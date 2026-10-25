@@ -12,12 +12,15 @@ import json
 import logging
 import time
 import uuid
-from collections.abc import Awaitable, Callable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
 
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 from pydantic import SecretStr
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -138,6 +141,32 @@ def clear_in_memory_quota_metrics() -> None:
     _in_memory_quota_metrics.clear()
 
 
+@dataclass(frozen=True)
+class InventoryOperationMetric:
+    """Métrica determinista de operaciones de inventario y Kardex."""
+
+    operation: str
+    status: str
+    duration_ms: float
+    tenant_id: str | None = None
+    bodega_id: int | None = None
+    user_id: str | None = None
+    timestamp: str = ""
+
+
+_in_memory_inventory_metrics: list[InventoryOperationMetric] = []
+
+
+def get_in_memory_inventory_metrics() -> list[InventoryOperationMetric]:
+    """Devuelve las métricas de operaciones de inventario registradas en memoria."""
+    return list(_in_memory_inventory_metrics)
+
+
+def clear_in_memory_inventory_metrics() -> None:
+    """Limpia las métricas de inventario en memoria."""
+    _in_memory_inventory_metrics.clear()
+
+
 _current_trace_id_var: ContextVar[str] = ContextVar("oppytec_trace_id", default="")
 _current_tenant_ctx_var: ContextVar[TenantTelemetryContext | None] = ContextVar(
     "oppytec_tenant_telemetry_ctx", default=None
@@ -255,6 +284,16 @@ def format_structured_log(
     """Genera una línea JSON estructurada con contexto multi-tenant y redacción PII."""
     ctx = get_tenant_telemetry_context()
     safe_payload = scrub_telemetry_payload(payload or {})
+    resolved_tenant = ctx.tenant_id or (
+        str(safe_payload["tenant_id"])
+        if "tenant_id" in safe_payload and safe_payload["tenant_id"] is not None
+        else None
+    )
+    resolved_holding = ctx.holding_id or (
+        str(safe_payload["holding_id"])
+        if "holding_id" in safe_payload and safe_payload["holding_id"] is not None
+        else None
+    )
     record: dict[str, object] = {
         "timestamp": datetime.now(UTC).isoformat(),
         "level": level.upper(),
@@ -262,12 +301,134 @@ def format_structured_log(
         "trace_id": ctx.trace_id,
         "environment": ctx.environment,
         "env_namespace": ctx.env_namespace,
-        "holding_id": ctx.holding_id,
-        "tenant_id": ctx.tenant_id,
+        "holding_id": resolved_holding,
+        "tenant_id": resolved_tenant,
         "tenant_schema": ctx.tenant_schema,
         "data": safe_payload,
     }
     return json.dumps(record, ensure_ascii=False)
+
+
+@contextmanager
+def trace_span(
+    name: str,
+    attributes: dict[str, object] | None = None,
+    tracer_name: str = "oppytec.inventory",
+) -> Iterator[dict[str, object]]:
+    """
+    Context manager de observabilidad 4-pilares para operaciones críticas:
+    1. Inicia un span con OpenTelemetry (opentelemetry.trace.get_tracer).
+    2. Enlaza atributos enriquecidos (tenant_id, bodega_id, user_id, items_count, transfer_uuid, etc.).
+    3. Redacta PII/SecretStr de forma determinista usando scrub_telemetry_payload.
+    4. Registra métrica e inyecta SpanRecord en InMemorySpanExporter.
+    5. Captura excepciones limpiamente, registra status ERROR en OTel y emite log estructurado JSON.
+    """
+    start_ns = time.perf_counter_ns()
+    ctx = get_tenant_telemetry_context()
+    resolved_trace = ctx.trace_id or get_current_trace_id()
+    span_id = uuid.uuid4().hex[:16]
+
+    dynamic_attrs: dict[str, object] = dict(attributes or {})
+    if ctx.tenant_id and "tenant_id" not in dynamic_attrs:
+        dynamic_attrs["tenant_id"] = ctx.tenant_id
+    if ctx.user_id and "user_id" not in dynamic_attrs:
+        dynamic_attrs["user_id"] = ctx.user_id
+
+    tracer = trace.get_tracer(tracer_name)
+    span_status_code = 200
+    status_str = "SUCCESS"
+
+    with tracer.start_as_current_span(name) as otel_span:
+        for k, v in dynamic_attrs.items():
+            if v is not None:
+                otel_span.set_attribute(str(k), v if isinstance(v, (bool, str, int, float)) else str(v))
+
+        try:
+            yield dynamic_attrs
+            otel_span.set_status(Status(StatusCode.OK))
+            safe_payload = scrub_telemetry_payload(dynamic_attrs)
+            logging.getLogger(tracer_name).info(
+                format_structured_log("INFO", name, safe_payload)
+            )
+        except Exception as exc:
+            status_str = "ERROR"
+            from src.core.exceptions import OppyTecError
+
+            span_status_code = exc.status_code if isinstance(exc, OppyTecError) else 500
+            otel_span.record_exception(exc)
+            otel_span.set_status(Status(StatusCode.ERROR, str(exc)))
+            err_payload = scrub_telemetry_payload(
+                {
+                    **dynamic_attrs,
+                    "error": str(exc),
+                    "error_type": type(exc).__name__,
+                }
+            )
+            logging.getLogger(tracer_name).error(
+                format_structured_log("ERROR", name, err_payload)
+            )
+            raise
+        finally:
+            duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
+            clean_attrs = scrub_telemetry_payload(dynamic_attrs)
+            for k, v in clean_attrs.items():
+                if v is not None:
+                    otel_span.set_attribute(str(k), v if isinstance(v, (bool, str, int, float)) else str(v))
+
+            raw_bodega = dynamic_attrs.get("bodega_id")
+            metric_bodega: int | None = None
+            if raw_bodega is not None:
+                try:
+                    metric_bodega = int(str(raw_bodega))
+                except (ValueError, TypeError):
+                    metric_bodega = None
+
+            raw_tenant = dynamic_attrs.get("tenant_id")
+            metric_tenant = str(raw_tenant) if raw_tenant is not None else ctx.tenant_id
+
+            raw_user = dynamic_attrs.get("user_id")
+            metric_user = str(raw_user) if raw_user is not None else ctx.user_id
+
+            if metric_tenant is not None:
+                otel_span.set_attribute("oppytec.tenant_id", metric_tenant)
+            if metric_user is not None:
+                otel_span.set_attribute("oppytec.user_id", metric_user)
+
+            merged_attrs: dict[str, str | int | float | bool] = {
+                **ctx.to_attributes(),
+                **{
+                    str(k): (v if isinstance(v, (str, int, float, bool)) else str(v))
+                    for k, v in clean_attrs.items()
+                    if v is not None
+                },
+            }
+            if metric_tenant is not None:
+                merged_attrs["oppytec.tenant_id"] = metric_tenant
+                merged_attrs["tenant_id"] = metric_tenant
+            if metric_user is not None:
+                merged_attrs["oppytec.user_id"] = metric_user
+                merged_attrs["user_id"] = metric_user
+
+            record = SpanRecord(
+                name=name,
+                trace_id=resolved_trace,
+                span_id=span_id,
+                duration_ms=round(duration_ms, 3),
+                status_code=span_status_code,
+                attributes=merged_attrs,
+            )
+            _in_memory_exporter.export(record)
+
+            metric = InventoryOperationMetric(
+                operation=name,
+                status=status_str,
+                duration_ms=round(duration_ms, 3),
+                tenant_id=metric_tenant,
+                bodega_id=metric_bodega,
+                user_id=metric_user,
+                timestamp=datetime.now(UTC).isoformat(),
+            )
+            _in_memory_inventory_metrics.append(metric)
 
 
 def record_quota_semaphore_metric(

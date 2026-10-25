@@ -198,6 +198,24 @@
       "path": "oppytec-frontend/src/features/recipes/"
     },
     {
+      "id": "frontend:inventory_recuento_card",
+      "label": "RecuentoCard Component (Tarjetas de Conteo, Acordeón de Insumos & Conciliación)",
+      "type": "frontend_component",
+      "path": "oppytec-frontend/src/features/inventory/recuentos/RecuentoCard.tsx"
+    },
+    {
+      "id": "frontend:inventory_recuento_detalle_modal",
+      "label": "RecuentoDetalleModal Component (Modal de Auditoría y Acta Detallada de Recuento)",
+      "type": "frontend_modal_component",
+      "path": "oppytec-frontend/src/features/inventory/recuentos/RecuentoDetalleModal.tsx"
+    },
+    {
+      "id": "frontend:inventory_recuentos_page",
+      "label": "RecuentosPage Component (/recuentos - Historial de Recuentos, KPIs, Filtros & Auditoría)",
+      "type": "frontend_feature_submodule",
+      "path": "oppytec-frontend/src/features/inventory/recuentos/RecuentosPage.tsx"
+    },
+    {
       "id": "frontend:language_flag_selector",
       "label": "LanguageFlagSelector Component (SVG Flags ES/US & Dropdown)",
       "type": "frontend_shared_component",
@@ -292,6 +310,12 @@
       "label": "Alembic 0003 Migration: Public Plans, Quotas & Tenant Capacity Overrides",
       "type": "backend_migration",
       "path": "oppytec-backend/alembic/versions/0003_public_plans_quotas_and_tenant_capacity_overrides.py"
+    },
+    {
+      "id": "migration:0004_tenant_inventory_kardex",
+      "label": "Alembic 0004 Migration: Tenant inventory kardex and physical counts",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0004_tenant_inventory_kardex_and_physical_counts.py"
     },
     {
       "id": "module:analytics",
@@ -472,6 +496,12 @@
       "label": "Frontend i18n & Language Switcher Vitest Suite",
       "type": "verification_suite",
       "path": "oppytec-frontend/src/shared/i18n/i18n.test.tsx"
+    },
+    {
+      "id": "suite:frontend_recuentos_page",
+      "label": "RecuentosPage Vitest Integration Suite (9 Tests — KPIs, Filtros, Acordeón, RBAC & Kardex Impact)",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/inventory/__tests__/RecuentosPage.test.tsx"
     },
     {
       "id": "suite:frontend_telemetry_test",
@@ -763,6 +793,11 @@
       "relation": "renders_currency_dropdown_and_badge"
     },
     {
+      "source": "frontend:feature_inventory",
+      "target": "frontend:inventory_recuentos_page",
+      "relation": "contains_submodule"
+    },
+    {
       "source": "frontend:feature_platform_admin",
       "target": "frontend:admin_management_views",
       "relation": "contains_crud_views"
@@ -801,6 +836,21 @@
       "source": "frontend:feature_recipes",
       "target": "module:recipes",
       "relation": "consumes_rest_api"
+    },
+    {
+      "source": "frontend:inventory_recuentos_page",
+      "target": "frontend:inventory_recuento_card",
+      "relation": "renders_session_cards"
+    },
+    {
+      "source": "frontend:inventory_recuentos_page",
+      "target": "frontend:inventory_recuento_detalle_modal",
+      "relation": "renders_detail_modal"
+    },
+    {
+      "source": "frontend:inventory_recuentos_page",
+      "target": "router:inventory",
+      "relation": "consumes_counts_api"
     },
     {
       "source": "frontend:language_flag_selector",
@@ -1043,6 +1093,11 @@
       "relation": "tests_language_provider_context"
     },
     {
+      "source": "suite:frontend_recuentos_page",
+      "target": "frontend:inventory_recuentos_page",
+      "relation": "verifies_view_and_rbac"
+    },
+    {
       "source": "suite:frontend_telemetry_test",
       "target": "frontend:app_shell",
       "relation": "verifies_telemetry_and_spans"
@@ -1079,7 +1134,7 @@
     "frontend_features": 10,
     "frontend_shared_kernels": 5,
     "cross_feature_imports": 0,
-    "verification_suites": 14,
+    "verification_suites": 15,
     "redteam_vectors": 11,
     "e2e_flows": 5,
     "archify_atlas_maps": 5,
@@ -1088,11 +1143,11 @@
     "load_test_target_rps": 500,
     "load_test_p95_budget_ms": 120,
     "rubric_score": "10/10",
-    "nodes_count": 83,
-    "edges_count": 111,
+    "nodes_count": 88,
+    "edges_count": 116,
     "frontend_admin_views": 4,
     "backend_routers": 11,
-    "alembic_migrations": 3,
-    "updated_at": "2026-10-25T01:51:54.167782+00:00"
+    "alembic_migrations": 4,
+    "updated_at": "2026-10-25T18:52:37.935412+00:00"
   }
 }

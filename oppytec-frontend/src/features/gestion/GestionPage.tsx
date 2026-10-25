@@ -217,7 +217,7 @@ export function GestionPage() {
   return (
     <div
       data-testid="gestion-page"
-      className="container mx-auto px-2 sm:px-4 py-4 md:py-6 max-w-7xl animate-fade-in"
+      className="container mx-auto px-2 sm:px-4 py-4 md:py-6 max-w-7xl space-y-6 animate-fade-in"
     >
       {/* 1. Header Section */}
       <SectionHeader
@@ -225,7 +225,6 @@ export function GestionPage() {
         subtitle="Catálogo de productos e insumos"
         icon={Package}
         color="#eab308"
-        center={false}
       />
 
       {/* 2. Draft Recovery Banner */}

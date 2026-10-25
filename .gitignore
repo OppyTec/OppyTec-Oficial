@@ -76,6 +76,7 @@ notas.md
 .obsidian/
 .worktrees/
 Predictive Maintenance/
+.agent/memory/*.lock
 
 # E2E Test artifacts
 tests/panel-admin-oppytec/artifacts/backups/*.sql

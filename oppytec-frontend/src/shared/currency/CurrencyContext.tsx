@@ -224,7 +224,7 @@ export interface CurrencyContextValue {
   ) => string;
 }
 
-const CurrencyContext = createContext<CurrencyContextValue | undefined>(
+export const CurrencyContext = createContext<CurrencyContextValue | undefined>(
   undefined
 );
 

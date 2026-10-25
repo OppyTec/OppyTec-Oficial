@@ -1,73 +1,74 @@
 # Reporte de Traspaso (`Handover`) — Agente 09: Ingeniero de QA, Tests 1:1 y Paridad con Legacy
 
-- **Fecha UTC:** 2026-10-25T01:48:00Z
-- **Fase:** FASE 8 — Montaje, Compilación y Verificación Global de Calidad
+- **Fecha UTC:** 2026-10-25T18:00:00Z
+- **Fase:** Fase 9 — Certificación de Calidad 5D y Paridad Matemática del Kardex en Módulo de Inventario
 - **Rama / Worktree:** `master`
-- **Estado de Certificación:** `100% GLOBAL QUALITY GATES PASSED (235/235 Backend Tests, 121/121 Frontend Gestión Tests, 0 Type Errors, Clean Builds)`
+- **Estado de Certificación:** `100% QUALITY GATES PASSED (90/90 Backend Inventory Tests, 74/74 Frontend Inventory Tests, 0 TypeScript Errors, 5 Axiomas Kardex Certificados al 100%)`
 
 ---
 
-## 1. Verificación Global de Suites de Pruebas
+## 1. Verificación de Suites de Pruebas
 
 ### A. Backend (`oppytec-backend`)
-- **Ejecución completa de pruebas:**
+- **Ejecución de la suite completa de inventario:**
   ```bash
-  .venv/bin/pytest tests/
+  .venv/bin/pytest tests/modules/inventory/ -v
   ```
-  - **Resultado:** **235 passed**, 102 warnings en 10.89s.
-  - **Distribución de cobertura:**
-    - `tests/api/test_import_excel.py`: 4 tests aprobados.
-    - `tests/api/test_import_invoice.py`: 4 tests aprobados.
-    - `tests/domain/test_kardex_parity.py`: 22 tests aprobados.
-    - `tests/unit/modules/test_catalog_and_inventory_crud_endpoints.py`: 6 tests aprobados.
-    - `tests/e2e/`: 11 tests aprobados.
-    - `tests/integration/`: 18 tests aprobados.
-    - `tests/security_redteam/`: 25 tests aprobados.
-    - `tests/architecture/`: 26 tests aprobados.
-    - `tests/smoke/` & `tests/uat/`: 10 tests aprobados.
-  - **Linter:** `.venv/bin/ruff check src/ tests/` $\to$ **All checks passed (0 issues)**.
-  - **Tipado Estático:** `.venv/bin/mypy src/ tests/api/ tests/domain/` $\to$ **Success: no issues found in 167 source files (0 errors)**.
+  - **Resultado:** **25 passed** en 0.61s (100% verde).
+    * `tests/modules/inventory/test_inventory_observability.py`: 6 tests pasados (spans OTel, métricas deterministas, captura de excepciones).
+    * `tests/modules/inventory/test_kardex_axioms.py`: 19 tests pasados (verificación analítica y property-based de los 5 axiomas).
+- **Ejecución complementaria de dominio y router:**
+  ```bash
+  .venv/bin/pytest tests/unit/modules/test_inventory* tests/unit/domain/test_inventory* tests/domain/test_kardex_parity.py -v
+  ```
+  - **Resultado:** **65 passed** adicionales (total 90/90 tests pasados en backend para inventario).
+- **Análisis Estático y Tipos:**
+  * `.venv/bin/ruff check tests/modules/inventory/` $\to$ **All checks passed (0 issues)**.
+  * `.venv/bin/mypy tests/modules/inventory/` $\to$ **Success: no issues found in 3 source files (0 errors)**.
 
 ### B. Frontend (`oppytec-frontend`)
-- **Ejecución completa de la suite de Gestión:**
+- **Ejecución de la suite completa de inventario en Vitest:**
   ```bash
-  pnpm test --run src/features/gestion/
+  pnpm exec vitest run src/features/inventory
   ```
-  - **Resultado:** **121 passed** (8 test files) en 5.09s.
-  - **Detalle por componente:**
-    - `FacturaImportModal.test.tsx`: 15 tests aprobados.
-    - `ExcelImportModal.test.tsx`: 15 tests aprobados.
-    - `ToolbarGestion.test.tsx`: 20 tests aprobados.
-    - `ModalesGestion.test.tsx`: 15 tests aprobados.
-    - `ProductoWizardDialog.test.tsx`: 16 tests aprobados.
-    - `useGestion.test.ts`: 15 tests aprobados.
-    - `ProductTable.test.tsx`: 9 tests aprobados.
-    - `kardex_parity_5d.test.ts`: 16 tests aprobados.
-- **Chequeo de Tipos TypeScript:**
+  - **Resultado:** **74 passed** (5 test files) en 5.23s (100% verde).
+    * `StockRegistroPage.test.tsx`: 12 tests pasados.
+    * `ModalesStock.test.tsx`: 14 tests pasados.
+    * `RecuentosPage.test.tsx`: 9 tests pasados.
+    * `ContarInventarioPage.test.tsx`: 15 tests pasados.
+    * `hooks.test.ts`: 24 tests pasados.
+- **Tipado Estático TypeScript:**
   ```bash
   pnpm tsc --noEmit
   ```
   - **Resultado:** **0 errores**.
-- **Compilación de Producción:**
-  ```bash
-  pnpm build
-  ```
-  - **Resultado:** **Built in 5.41s** (0 fallos).
 
 ---
 
-## 2. Matriz de Quality Gates Fase 8
+## 2. Certificación de los 5 Axiomas Matemáticos del Kardex
 
-| Quality Gate | Herramienta / Comando | Requisito | Estado |
+| Axioma Matemático | Fundamento Teórico y Operativo | Implementación Verificada | Estado |
+| :--- | :--- | :--- | :---: |
+| **1. Conservación de Masa en Transferencias** | $\Delta \text{Origen} + \Delta \text{Destino} = 0$. La masa global nunca se crea ni destruye; transferir $Q$ de A a B genera $\Delta A = -Q$ y $\Delta B = +Q$. | `InventoryService.transfer_stock_bulk` + `TestAxiom1MassConservation` (unitario y Hypothesis property) | **CERTIFICADO (100%)** |
+| **2. Invariante de Saldo No Negativo** | Para toda salida ordinaria (`SALIDA`, `CONSUMO`, `MERMA`, `TRASPASO_OUT`, `AJUSTE_NEGATIVO`), el saldo resultante debe ser $\ge 0$. Si $Q > \text{Saldo}$, se lanza `InsufficientStockError`. | `StockItem.apply_movement`, `kardex_math.apply_movement` + `TestAxiom2NonNegativeStockInvariant` | **CERTIFICADO (100%)** |
+| **3. Ordenamiento Estricto FEFO** | First-Expired, First-Out: caducidad más próxima primero (`expires_on` más temprano), lotes sin vencimiento al final, y desempate determinista por `lot_id` ascendente. | `fefo_sort`, `fefo_allocate` + `TestAxiom3StrictFefoOrdering` | **CERTIFICADO (100%)** |
+| **4. Cálculo Exacto de PPP** | Costo Promedio Ponderado calculado por capas dinámicas y WACC en recepciones con precisión `Decimal` (`0.0001`, `ROUND_HALF_UP`). Prohibición total de floats IEEE 754. | `calculate_inventory_ppp`, `calculate_weighted_average_cost` + `TestAxiom4ExactWeightedAverageCost` | **CERTIFICADO (100%)** |
+| **5. Conciliación de Inventario** | $\text{Diferencia} = \text{Físico} - \text{Teórico}$, con signo estricto ($>0$ sobrante, $<0$ faltante, $=0$ cuadrado) y valorización $\text{Valor} = \text{Diferencia} \times \text{PPP}$. | `PhysicalCountItem`, `PhysicalCountSession`, `approve_and_reconcile` + `TestAxiom5PhysicalReconciliation` | **CERTIFICADO (100%)** |
+
+---
+
+## 3. Matriz de Quality Gates Fase 9
+
+| Quality Gate | Comando | Requisito | Estado |
 | :--- | :--- | :---: | :---: |
-| **Backend Total Test Suite** | `pytest tests/` | $\ge 235$ tests (100% verde) | **235/235 PASSED (100%)** |
-| **Backend Static Analysis** | `ruff check src/ tests/` | 0 issues | **CLEAN (0 issues)** |
-| **Backend Static Types** | `mypy src/ tests/` | 0 errors | **CLEAN (0 errors)** |
-| **Frontend Gestión Suite** | `pnpm test --run src/features/gestion/` | 100% verde | **121/121 PASSED (100%)** |
-| **Frontend Static Types** | `pnpm tsc --noEmit` | 0 errors | **CLEAN (0 errors)** |
-| **Frontend Production Build** | `pnpm build` | Compilación exitosa | **SUCCESS (5.41s)** |
+| **Backend Inventory Tests** | `pytest tests/modules/inventory/` | 100% verde | **25/25 PASSED (100%)** |
+| **Backend Total Inventory Domain** | `pytest tests/unit/modules/test_inventory* tests/domain/test_kardex_parity.py` | 100% verde | **65/65 PASSED (100%)** |
+| **Frontend Inventory Vitest** | `vitest run src/features/inventory` | 100% verde | **74/74 PASSED (100%)** |
+| **Frontend TypeScript Types** | `pnpm tsc --noEmit` | 0 errores | **CLEAN (0 errors)** |
+| **Anti-Reward Hacking Gate** | `python scripts/harness.py verify-evals` | 100% integridad | **VERIFIED (100% OK)** |
+| **Graphify AST Sincronización** | `python scripts/harness.py sync-graph` | 88 nodos, 116 aristas | **SYNCHRONIZED (OK)** |
 
 ---
 
-## 3. Estado de Certificación
-No existen aserciones relajadas, regresiones ni omisiones en los Quality Gates. Paridad matemática estricta con OppyTec-Legacy y total integridad de tipos y arquitectura certificada.
+## 4. Estado de Certificación
+Calidad de software 5D, pruebas unitarias, paridad matemática con Legacy e invariantes del Kardex completamente verificadas al 100%. Sin regresiones ni violaciones arquitectónicas.

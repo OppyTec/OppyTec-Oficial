@@ -1,8 +1,17 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Can } from "@/shared/auth/Can";
 import { NumericInput } from "@/shared/components/ui/NumericInput";
 import { MoneyBadge } from "@/shared/currency";
 import { translateKey } from "@/shared/i18n";
+
+export * from "./types";
+export * from "./hooks";
+export * from "./mockData";
+export * from "./stock/StockRegistroPage";
+export * from "./stock/components";
+export * from "./conteo";
+export * from "./recuentos";
 
 const INVENTORY_TABS = [
   "StockRegistro",
@@ -15,7 +24,18 @@ export type InventorySubTab = (typeof INVENTORY_TABS)[number];
 
 export type UnifiedRecuentoSubView = "conteo-activo" | "historial-recuentos";
 
+const DAYS_MAP = [
+  { key: "mon", label: "Lun" },
+  { key: "tue", label: "Mar" },
+  { key: "wed", label: "Mié" },
+  { key: "thu", label: "Jue" },
+  { key: "fri", label: "Vie" },
+  { key: "sat", label: "Sáb" },
+  { key: "sun", label: "Dom" },
+] as const;
+
 export function InventoryFeatureView() {
+  const { t } = useTranslation("inventory");
   const [activeTab, setActiveTab] = useState<InventorySubTab>("StockRegistro");
   const [unifiedRecuentoTab, setUnifiedRecuentoTab] =
     useState<UnifiedRecuentoSubView>("conteo-activo");
@@ -66,7 +86,7 @@ export function InventoryFeatureView() {
         >
           <div className="flex items-center justify-between">
             <span className="font-mono text-xs font-bold text-primary">
-              {`Modo Activo: ${activeTab}`}
+              {t("view.active_mode", { tab: activeTab, defaultValue: `Modo Activo: ${activeTab}` })}
             </span>
             <span className="animate-blink-critical rounded-md border border-destructive px-2 py-0.5 text-[11px] font-bold text-destructive">
               {translateKey("inventory", "warehouse.critical_alert", {
@@ -86,7 +106,7 @@ export function InventoryFeatureView() {
           />
 
           <div className="flex items-center justify-between border-t border-border pt-2 text-xs">
-            <span>Valorización Lote FEFO (PMP):</span>
+            <span>{t("view.valuation_fefo", "Valorización Lote FEFO (PMP):")}</span>
             <MoneyBadge amount="185400" baseCurrency="CLP" />
           </div>
 
@@ -97,7 +117,7 @@ export function InventoryFeatureView() {
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-mono text-[11px] font-bold uppercase text-primary">
-                Módulo Recuento Unificado (Plan Básico)
+                {t("view.unified_card_title", "Módulo Recuento Unificado (Plan Básico)")}
               </span>
               <div className="flex gap-1">
                 <button
@@ -113,7 +133,7 @@ export function InventoryFeatureView() {
                       : "bg-secondary text-secondary-foreground"
                   }`}
                 >
-                  Tab 1: Recuento Físico Activo
+                  {t("view.tab1_active", "Tab 1: Recuento Físico Activo")}
                 </button>
                 <button
                   type="button"
@@ -128,7 +148,7 @@ export function InventoryFeatureView() {
                       : "bg-secondary text-secondary-foreground"
                   }`}
                 >
-                  Tab 2: Historial de Recuentos
+                  {t("view.tab2_history", "Tab 2: Historial de Recuentos")}
                 </button>
               </div>
             </div>
@@ -137,8 +157,8 @@ export function InventoryFeatureView() {
               className="font-mono text-xs text-muted-foreground"
             >
               {unifiedRecuentoTab === "conteo-activo"
-                ? `Conteo Físico Ciego Activo · Stock Capturado: ${blindCountQty} kg`
-                : "Historial de Recuentos Cerrados · Sesión #REC-2026-10 (Varianza: -0.50 kg auditada)"}
+                ? t("view.status_active", { qty: blindCountQty, defaultValue: `Conteo Físico Ciego Activo · Stock Capturado: ${blindCountQty} kg` })
+                : t("view.status_history", "Historial de Recuentos Cerrados · Sesión #REC-2026-10 (Varianza: -0.50 kg auditada)")}
             </p>
           </div>
         </div>
@@ -150,7 +170,7 @@ export function InventoryFeatureView() {
         >
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase text-muted-foreground">
-              Mapa de Calor 7x24 Mermas & Umbral JEV
+              {t("view.merma_heatmap_title", "Mapa de Calor 7x24 Mermas & Umbral JEV")}
             </h3>
             <Can perform="inventory.mermas.approve">
               <button
@@ -159,23 +179,23 @@ export function InventoryFeatureView() {
                 onClick={() => setMermaApproved(true)}
                 className="touch-target inline-flex min-h-[44px] items-center rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground"
               >
-                {mermaApproved ? "Merma Aprobada" : "Aprobar Merma > Umbral"}
+                {mermaApproved ? t("view.merma_approved", "Merma Aprobada") : t("view.approve_merma_threshold", "Aprobar Merma > Umbral")}
               </button>
             </Can>
           </div>
           <p className="text-xs text-muted-foreground">
             {translateKey("inventory", "movements.waste", {
-              reason: "Corte de cadena de frío turno noche (7 días x 24 horas)",
+              reason: t("view.cold_chain_loss_reason", "Corte de cadena de frío turno noche (7 días x 24 horas)"),
             })}
           </p>
           <div className="grid grid-cols-7 gap-1 font-mono text-[10px]">
-            {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((day) => (
+            {DAYS_MAP.map((day) => (
               <div
-                key={day}
+                key={day.key}
                 className="rounded border border-border bg-card p-1.5 text-center"
               >
-                <div className="font-bold">{day}</div>
-                <div className="text-primary">24h OK</div>
+                <div className="font-bold">{t(`view.days.${day.key}`, day.label)}</div>
+                <div className="text-primary">{t("view.ok_24h", "24h OK")}</div>
               </div>
             ))}
           </div>

@@ -1,69 +1,61 @@
 # Reporte de Traspaso (`Handover`) — Agente 10: Auditor Estricto de Ciberseguridad Red Team
 
-- **Fecha UTC:** 2026-10-25T01:15:00Z
-- **Fase:** Auditoría y Blindaje de Seguridad Fase 6 — Ingesta Inteligente (Excel IA y Facturas IA / DTE)
-- **Estado de Certificación:** `SECURITY_PHASE6_HARDENED_AND_CERTIFIED` (0 bypasses, CWE-1236 mitigado, Magic Bytes estrictos, Anti-Double Extension activo, DoS limits 1.500 filas / 10MB validados, 100% tests pasando en backend y frontend).
+- **Fecha UTC:** 2026-10-25T18:15:00Z
+- **Agente:** Agente 10 (`10-cybersecurity-redteam-auditor`)
+- **Fase / Módulo:** Auditoría Ofensiva de Ciberseguridad, Aislamiento Multi-Tenant y RBAC en el Módulo de Inventario (Fase 10)
+- **Estado de Certificación:** `SECURITY_INVENTORY_MODULE_HARDENED_AND_CERTIFIED` (0 bypasses, IDORs mitigados con parche en caliente, 11/11 vectores cubiertos, 71/71 tests de Red Team pasando al 100%, evals íntegros sin reward hacking).
 
 ---
 
-## 1. Completed (Auditoría Ofensiva y Parcheo de Seguridad)
+## 1. Executive Summary & Poder de Veto de Seguridad
 
-### 1.1 CWE-1236: Formula Injection Prevention (CSV & Excel)
-1. **Backend (`src/core/guards/file_magic_guard.py`):**
-   - Reforzado `sanitize_spreadsheet_cell` para mitigar inyecciones por prefijos `=`, `+`, `-`, `@`, `\t`, `\r`, `|` y espacios iniciales (`lstrip()`).
-   - Creado `sanitize_spreadsheet_export_value` para exportaciones seguras sin riesgo de ejecución en suites ofimáticas (Excel, Calc, Google Sheets).
-   - Bloqueo determinista de cargas DDE remotas (`=cmd|`, `=powershell`, `=importxml`, etc.) devolviendo HTTP 422 (`CSV_FORMULA_INJECTION_BLOCKED`).
-   - Validación y sanitización estricta de `headers` en `ExcelImportRequest`.
-2. **Frontend (`src/shared/lib/security.ts`):**
-   - Creadas funciones `sanitizeSpreadsheetCell`, `sanitizeSpreadsheetRecord`, `isFormulaInjection`.
-   - Integración directa en `ExcelImportModal.tsx` al leer filas y encabezados, y en `ExcelTemplateDownloader.ts` al generar la plantilla CSV descargable.
+En el marco de la auditoría ofensiva de ciberseguridad sobre el Módulo de Inventario de OppyTec v2.0 (`router.py`, `inventory_service.py`, `physical_count_service.py`, `waste_service.py`), el Agente 10 identificó una brecha crítica de **IDOR Cross-Tenant**:
+1. Las entidades `PhysicalCountSession`, `WasteRecord` y los asientos de `KardexEntry` no retenían ni validaban activamente el `tenant_id` en las operaciones en memoria (`/counts/{id}`, `/counts/{id}/items`, `/counts/{id}/finalize`, `/counts/{id}/approve`, `/counts/{id}/reject`, `/counts/{id}/delete`, `/stock/undo`, `/stock/redo`, `/mermas/{id}/approve`).
+2. Esto permitía a un usuario legítimamente autenticado en `Tenant Beta` acceder, alterar o revertir actas y movimientos de `Tenant Alpha` enviando el `id` correspondiente.
 
-### 1.2 File Upload Hardening: Magic Bytes y Anti-Double Extension
-1. **Magic Bytes binarios estrictos:**
-   - **PDF:** `%PDF-` (`0x25 0x50 0x44 0x46`).
-   - **XML DTE Factura:** `<?xml` (con soporte para UTF-8 BOM `0xef 0xbb 0xbf` y espacios).
-   - **Excel XLSX:** `PK\x03\x04` (`0x50 0x4b 0x03 0x04` ZIP container con inspección anti-Zip Bomb y Zip Slip).
-   - **CSV:** Texto plano UTF-8 / ASCII sin bytes nulos (`\x00`) ni firmas ejecutables.
-2. **Anti-Double Extension y Bloqueo de Ejecutables:**
-   - Detección exhaustiva de extensiones ejecutables peligrosas (`.exe`, `.sh`, `.bat`, `.cmd`, `.bin`, `.msi`, `.dll`, `.scr`, `.pif`, `.vbs`, `.js`, `.py`, `.php`, `.pl`, etc.) en cualquier segmento del nombre del archivo.
-   - Bloqueo de archivos con doble extensión (`.pdf.exe`, `.xlsx.sh`, `.backup.pdf`, etc.) con código `DOUBLE_EXTENSION_BLOCKED` o `EXECUTABLE_EXTENSION_BLOCKED`.
-   - Implementado en backend (`validate_file_magic_bytes`) y frontend (`validateUploadFile`).
-
-### 1.3 DoS Prevention
-1. **Límite de 1.500 filas por lote:**
-   - En backend: `MAX_BATCH_ROWS = 1500` validado en Pydantic (`ExcelImportRequest.rows`), `ExcelImporterService.import_rows`, y en el endpoint `POST /api/v1/catalog/import/batch-create`.
-   - En frontend: Verificación temprana en `ExcelImportModal.tsx` antes de renderizar la grilla de revisión.
-2. **Límite de 10 MB por archivo:**
-   - En backend: `DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024` verificado en subidas multipart y en Base64 (`14 * 1024 * 1024` chars de límite superior en Pydantic).
-   - En frontend: Validación antes de lectura en `validateUploadFile`.
-3. **Resiliencia contra ReDoS:**
-   - Expresiones regulares lineales sin cuantificadores anidados vulnerables.
-   - Bounded parsing y límite de longitud de cadenas antes de evaluación de expresiones regulares.
+**Acción Inmediata (Remediación Preventiva sin Veto Bloqueante):**
+Se aplicó un parche de seguridad en caliente que:
+- Introduce `tenant_id` obligatorio en `PhysicalCountSession`, `StockTransfer`, `KardexEntry` y `WasteRecord`.
+- Exige validación de pertenencia al inquilino en todos los métodos de servicio (`get_session`, `list_sessions`, `save_count_items`, `finalize_count_session`, `approve_and_reconcile`, `reject_session`, `delete_session`, `undo_movement`, `redo_movement`, `get_movement`, `report_waste`, `approve`, `reject`).
+- Eleva `CrossTenantAccessError` (HTTP 403 `CROSS_TENANT_ACCESS_VIOLATION`) ante cualquier discrepancia de inquilino.
+- Se implementó la nueva suite de pruebas ofensivas: [`test_12_inventory_offensive_security_and_rbac.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/tests/security_redteam/test_12_inventory_offensive_security_and_rbac.py) con 12/12 tests pasando.
 
 ---
 
-## 2. Validation & Quality Gates
+## 2. Cobertura de los 11 Vectores de Seguridad Ofensiva en Inventario
 
-| Componente | Comando | Resultado |
-| :--- | :--- | :--- |
-| **Backend Pytest Completo** | `.venv/bin/pytest tests/ -q` | **235 pasados (100% verde)** en 11.3s |
-| **Vector Red Team 05 (Uploads & Excel)** | `.venv/bin/pytest tests/security_redteam/test_05_malicious_file_uploads_and_excel_exploits.py` | **11/11 tests pasados (100%)** |
-| **Frontend TypeScript** | `npx tsc --noEmit` | **0 errores** (código de salida 0) |
-| **Frontend Security Unit Tests** | `npx vitest run src/shared/lib/security.test.ts` | **10/10 tests pasados (100%)** |
-| **Frontend Gestión Suite Completa** | `npx vitest run src/features/gestion/` | **121/121 tests pasados (8/8 suites)** |
+| Vector de Seguridad | Mecanismo de Defensa / Ataque Evaluado | Resultado |
+| :--- | :--- | :---: |
+| **1. Escape de Tenant (Aislamiento de esquemas PostgreSQL)** | Validación de `schema_name` con regex estricto `^tenant_[a-z0-9_]{1,63}$` en `validate_tenant_schema_name`, `SET LOCAL search_path` y `RESET search_path` en checkin del pool. | **CERTIFICADO (0 fugas)** |
+| **2. Concurrencia y Bypass de Stock Negativo** | Orden determinista anti-deadlock `canonical_lock_order` (`ORDER BY id ASC`), y bloqueo atómico con `InsufficientStockError` que impide sobregiro (*overdraft*). | **CERTIFICADO (0 saldos negativos)** |
+| **3. RBAC de 3 Niveles en Endpoints Críticos** | Guardias `RequireTenantPermission` en `/stock/bulk-transfer`, `/mermas/{id}/approve`, `/counts/{id}/approve`, `/stock/undo`, `/stock/redo` retornan HTTP 403 `RBAC_PERMISSION_DENIED` a roles no autorizados. | **CERTIFICADO (HTTP 403 estricto)** |
+| **4. IDOR en Conteo Físico y Traspasos** | Validación estricta de `tenant_id` en cabecera y cuerpo de sesión. Tentativas de lectura, mutación o borrado cruzado devuelven HTTP 403 `CROSS_TENANT_ACCESS_VIOLATION`. | **CERTIFICADO (Mitigado)** |
+| **5. IDOR en Kardex Ledger y Reversión** | Filtrado estricto por inquilino en `/kardex/movements` y validación de propiedad en `/stock/undo` y `/stock/redo`. | **CERTIFICADO (Mitigado)** |
+| **6. Segregación de Funciones (SoD) en Mermas** | Regla estricta `record.reporter_user_id != approver_user_id`. Intentos de auto-aprobación son bloqueados con HTTP 403. | **CERTIFICADO (SoD Activo)** |
+| **7. Invariantes en Traspasos Inter-Bodega** | Rechazo de traspaso a la misma bodega (`TransferSameWarehouseError`, HTTP 400) y verificación previa de saldo origen. | **CERTIFICADO** |
+| **8. Costos Negativos y Cantidades Anómalas** | Value Objects `StockQuantity` y `MoneyAmount` prohíben floats (IEEE 754), NaN, infinitos y valores negativos, forzando precisión `Decimal`. | **CERTIFICADO (0% floats)** |
+| **9. Mass Assignment (`extra="forbid"`)** | Todos los esquemas Pydantic v2 en `schemas.py` tienen `extra="forbid"`, rechazando parámetros inyectados con HTTP 422. | **CERTIFICADO** |
+| **10. Prevención XSS y SSTI** | Entradas libres (`notas`, `reason`) inspeccionadas con `sanitize_text_input`, bloqueando políglotas con HTTP 422 `XSS_PAYLOAD_BLOCKED`. | **CERTIFICADO** |
+| **11. Inyección SQL en Filtros y Rutas** | Tipado estricto de parámetros de ruta y consulta (`int`, `gt=0`); validación regex de identificadores. | **CERTIFICADO** |
 
 ---
 
-## 3. Resumen de Archivos Auditados y Modificados
-- [file_magic_guard.py](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/core/guards/file_magic_guard.py)
-- [__init__.py](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/core/guards/__init__.py)
-- [schemas.py (catalog)](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/catalog/presentation/schemas.py)
-- [excel_importer_service.py](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/catalog/application/excel_importer_service.py)
-- [router.py (procurement)](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/procurement/presentation/router.py)
-- [schemas.py (procurement)](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/procurement/presentation/schemas.py)
-- [test_05_malicious_file_uploads_and_excel_exploits.py](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/tests/security_redteam/test_05_malicious_file_uploads_and_excel_exploits.py)
-- [security.ts](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-frontend/src/shared/lib/security.ts)
-- [security.test.ts](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-frontend/src/shared/lib/security.test.ts)
-- [index.ts (shared/lib)](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-frontend/src/shared/lib/index.ts)
-- [ExcelImportModal.tsx](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-frontend/src/features/gestion/components/ExcelImportModal/ExcelImportModal.tsx)
-- [ExcelTemplateDownloader.ts](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-frontend/src/features/gestion/components/ExcelImportModal/ExcelTemplateDownloader.ts)
+## 3. Calidad y Verificación de Evals
+
+- **Suite de Seguridad Red Team Completa:**
+  `pytest tests/security_redteam/` $\to$ **71/71 tests pasados (100% verde)** en 3.31s.
+- **Suite de Inventario Completa:**
+  `pytest tests/unit/ tests/modules/ tests/domain/` $\to$ **178/178 tests pasados (100% verde)** en 5.36s.
+- **Integridad de Evals (Harness):**
+  `python scripts/harness.py verify-evals` $\to$ **100% verificado (Cero Reward Hacking)**.
+
+---
+
+## 4. Archivos Modificados y Creados
+
+- [`entities.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/inventory/domain/entities.py) (Adición de `tenant_id` a `PhysicalCountSession` y `StockTransfer`).
+- [`inventory_service.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/inventory/application/inventory_service.py) (Validación de tenant en `KardexEntry`, `undo_movement`, `redo_movement`, `get_movement`, `ledger`).
+- [`physical_count_service.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/inventory/application/physical_count_service.py) (Validación de tenant en ciclo completo de recuentos).
+- [`waste_service.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/inventory/application/waste_service.py) (Validación de tenant en `WasteRecord`, `approve`, `reject`).
+- [`router.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/inventory/presentation/router.py) (Inyección de `principal.tenant_id` en todas las llamadas a servicios de inventario, recuentos y mermas).
+- [`test_12_inventory_offensive_security_and_rbac.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/tests/security_redteam/test_12_inventory_offensive_security_and_rbac.py) (Nueva suite ofensiva con 12 vectores exhaustivos).

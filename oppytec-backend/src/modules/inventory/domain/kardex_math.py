@@ -2,6 +2,7 @@
 oppytec-backend/src/modules/inventory/domain/kardex_math.py
 Matemática pura del Kardex: orden canónico de locks (ORDER BY id ASC FOR UPDATE), saldo atómico,
 FEFO y umbral de aprobación de mermas. Solo `Decimal`.
+Cumple Regla Inmutable 02 (Clean Architecture: 0 imports de infraestructura).
 """
 from __future__ import annotations
 
@@ -10,22 +11,39 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
-from src.core.exceptions import InsufficientStockError
+from src.modules.inventory.domain.entities import (
+    KardexMovement,
+    PhysicalCountItem,
+    PhysicalCountSession,
+    StockItem,
+    StockTransfer,
+)
+from src.modules.inventory.domain.exceptions import (
+    InsufficientStockError,
+    InvalidMovementTypeError,
+    InventoryDomainError,
+    NegativeStockNotAllowedError,
+    TransferSameWarehouseError,
+)
+from src.modules.inventory.domain.value_objects import (
+    ENTRY_MOVEMENTS,
+    EXIT_MOVEMENTS,
+    MONEY_QUANT,
+    QTY_QUANT,
+    MoneyAmount,
+    MovementType,
+    StockQuantity,
+    StorageLocation,
+)
 
 ZERO = Decimal(0)
 HUNDRED = Decimal(100)
 DEFAULT_IVA_PCT = Decimal(19)
 
 COST_QUANT = Decimal("0.0001")
-MONEY_QUANT = Decimal("0.01")
 PERCENT_QUANT = Decimal("0.01")
 INTEGER_QUANT = Decimal("1")
 TURNOVER_QUANT = Decimal("0.1")
-
-ENTRY_MOVEMENTS: frozenset[str] = frozenset({"ENTRADA", "COMPRA", "AJUSTE_POSITIVO", "TRASPASO_IN"})
-EXIT_MOVEMENTS: frozenset[str] = frozenset(
-    {"SALIDA", "CONSUMO", "MERMA", "AJUSTE_NEGATIVO", "TRASPASO_OUT"}
-)
 
 
 def canonical_lock_order(ids: Iterable[int]) -> list[int]:
@@ -33,21 +51,35 @@ def canonical_lock_order(ids: Iterable[int]) -> list[int]:
     return sorted(set(ids))
 
 
-def apply_movement(balance: Decimal, movement_type: str, quantity: Decimal) -> Decimal:
+def apply_movement(
+    balance: Decimal | StockQuantity,
+    movement_type: MovementType | str,
+    quantity: Decimal | StockQuantity | str | int,
+) -> Decimal:
     """Calcula el saldo resultante; las salidas no pueden dejar saldo negativo."""
-    if quantity <= ZERO:
+    dec_balance = balance.value if isinstance(balance, StockQuantity) else Decimal(str(balance))
+    dec_qty = quantity.value if isinstance(quantity, StockQuantity) else Decimal(str(quantity))
+
+    if dec_qty <= ZERO:
         raise ValueError("movement quantity must be strictly positive")
-    if movement_type in ENTRY_MOVEMENTS:
-        return balance + quantity
-    if movement_type in EXIT_MOVEMENTS:
-        result = balance - quantity
+
+    parsed_type = (
+        MovementType.from_str(movement_type)
+        if not isinstance(movement_type, MovementType)
+        else movement_type
+    )
+
+    if parsed_type.value in ENTRY_MOVEMENTS:
+        return dec_balance + dec_qty
+    if parsed_type.value in EXIT_MOVEMENTS:
+        result = dec_balance - dec_qty
         if result < ZERO:
             raise InsufficientStockError(
                 "Insufficient stock for movement",
-                context={"movement": movement_type},
+                context={"movement": parsed_type.value},
             )
         return result
-    raise ValueError(f"unknown movement type: {movement_type}")
+    raise InvalidMovementTypeError(f"unknown movement type: {movement_type}")
 
 
 @dataclass(frozen=True)
@@ -67,15 +99,26 @@ class LotAllocation:
     quantity: Decimal
 
 
-def fefo_allocate(lots: Sequence[StockLot], required: Decimal) -> list[LotAllocation]:
-    """First-Expired-First-Out: consume primero los lotes que vencen antes (sin fecha al final)."""
-    if required <= ZERO:
-        raise ValueError("required quantity must be strictly positive")
-    ordered = sorted(
-        (lot for lot in lots if lot.quantity > ZERO),
+def fefo_sort(lots: Iterable[StockLot]) -> list[StockLot]:
+    """
+    Ordena lotes bajo política FEFO estricta:
+    1. Lotes con fecha de caducidad más próxima primero.
+    2. Lotes sin caducidad (`expires_on is None`) al final.
+    3. Desempate determinista por `lot_id` ascendente.
+    """
+    return sorted(
+        lots,
         key=lambda lot: (lot.expires_on is None, lot.expires_on or date.max, lot.lot_id),
     )
-    remaining = required
+
+
+def fefo_allocate(lots: Sequence[StockLot], required: Decimal | StockQuantity) -> list[LotAllocation]:
+    """First-Expired-First-Out: consume primero los lotes que vencen antes (sin fecha al final)."""
+    req_dec = required.value if isinstance(required, StockQuantity) else required
+    if req_dec <= ZERO:
+        raise ValueError("required quantity must be strictly positive")
+    ordered = fefo_sort(lot for lot in lots if lot.quantity > ZERO)
+    remaining = req_dec
     out: list[LotAllocation] = []
     for lot in ordered:
         if remaining <= ZERO:
@@ -334,4 +377,54 @@ calculate_gross_amount = gross_from_net
 calculate_net_amount = net_from_gross
 calculate_packaging_cost = packaging_cost
 
-
+__all__ = [
+    "COST_QUANT",
+    "DEFAULT_IVA_PCT",
+    "ENTRY_MOVEMENTS",
+    "EXIT_MOVEMENTS",
+    "HUNDRED",
+    "INTEGER_QUANT",
+    "MONEY_QUANT",
+    "PERCENT_QUANT",
+    "QTY_QUANT",
+    "TURNOVER_QUANT",
+    "ZERO",
+    "InsufficientStockError",
+    "InvalidMovementTypeError",
+    "InventoryDomainError",
+    "KardexMovement",
+    "LotAllocation",
+    "MoneyAmount",
+    "MovementType",
+    "NegativeStockNotAllowedError",
+    "PhysicalCountItem",
+    "PhysicalCountSession",
+    "PurchaseLayer",
+    "StockItem",
+    "StockLot",
+    "StockQuantity",
+    "StockTransfer",
+    "StorageLocation",
+    "TransferSameWarehouseError",
+    "apply_movement",
+    "calculate_days_of_coverage",
+    "calculate_food_cost_pct",
+    "calculate_gross_amount",
+    "calculate_gross_margin_pct",
+    "calculate_inflation_variance_pct",
+    "calculate_inventory_ppp",
+    "calculate_monthly_turnover_index",
+    "calculate_moving_average_10",
+    "calculate_net_amount",
+    "calculate_net_margin_pct",
+    "calculate_packaging_cost",
+    "calculate_weighted_average_cost",
+    "canonical_lock_order",
+    "fefo_allocate",
+    "fefo_sort",
+    "gross_from_net",
+    "net_from_gross",
+    "packaging_cost",
+    "waste_requires_approval",
+    "waste_total_cost",
+]

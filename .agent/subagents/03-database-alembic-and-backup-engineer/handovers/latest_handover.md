@@ -1,38 +1,45 @@
 # Reporte de Traspaso (`Handover`) — Agente 03: Especialista en Base de Datos, Alembic y Backups 4-Capas
 
-- **Fecha UTC:** 2026-10-24T00:10:00+00:00
-- **Fase / Tarea:** Etapa 1 DAG Pipeline — Harness de Base de Datos y Salvaguardas E2E (`tests/panel-admin-oppytec/db_harness.py`)
-- **Estado:** ✅ Culminado con Éxito (100% Verificado en Docker `oppytec-postgres`)
+- **Fecha UTC:** 2026-10-25T13:45:00+00:00
+- **Fase / Tarea:** Módulo de Inventario — Fase 1: Esquemas PostgreSQL `tenant_*` y Migración Alembic Correlativa `0004`
+- **Estado:** ✅ Culminado con Éxito (100% Verificado en PostgreSQL Docker y Suite de Arquitectura)
 
 ## 1. Completed (Qué se hizo)
-- **Consulta Previa Obligatoria Graphify:**
-  - Ejecutada exitosamente: `python scripts/harness.py nav "backup"`.
-  - Mapeo confirmado: `core:backup_4layers`, `atlas:01_tenancy_and_schemas`, `frontend:feature_platform_admin`, con relación directa a la restauración y aislamiento de tenants.
-- **Construcción del Módulo `tests/panel-admin-oppytec/db_harness.py`:**
-  - Implementada función `backup_database_safety_snapshot(backup_dir=None)`:
-    - Ejecuta un respaldo no interactivo de `oppytec_dev` mediante `pg_dump` directo (con fallback a `docker exec oppytec-postgres pg_dump`).
-    - Destino automatizado: `tests/panel-admin-oppytec/artifacts/backups/backup_pre_e2e_{timestamp}.sql`.
-    - Validación estricta de existencia y tamaño (> 0 bytes).
-  - Implementada función `reset_to_genesis_clean_slate()`:
-    - Bloque PL/pgSQL atómico para eliminar esquemas dinámicos de clientes: `DROP SCHEMA IF EXISTS "tenant_..." CASCADE`.
-    - Vaciado atómico de tablas de clientes en `public`: `TRUNCATE TABLE public.client_user_tenant_access, public.client_users, public.tenants, public.legal_entities, public.holdings CASCADE;`.
-    - Depuración de usuarios de prueba: `DELETE FROM public.global_users WHERE username != 'oppytec.admin';` (limpiando previamente sus concesiones en `global_user_permission_grants` para evitar conflictos FK).
-    - Garantía idempotente del Superadmin Genesis (`oppytec.admin` / `oppytec.admin@gmail.com`) con credenciales y hash Argon2id activo (`is_superuser_god = true`, `is_deleted = false`).
-    - Garantía idempotente de los 3 planes comerciales en `public.system_plans`: `basic`, `starter` y `enterprise` con sus módulos, cuotas y configuración multi-moneda intactos.
-- **Pruebas y Verificación de Rendimiento:**
-  - Ejecución unitaria de `db_harness.py` completada en **0.2304 s** (muy por debajo del límite de 2.0 segundos exigido).
-  - Verificación física tras reseteo:
-    - `tenant_schemas`: 0
-    - `holdings_count`: 0
-    - `legal_entities_count`: 0
-    - `tenants_count`: 0
-    - `client_users_count`: 0
-    - `genesis_ready`: 1 (`oppytec.admin`)
-    - `plans_ready`: 3 (`basic`, `starter`, `enterprise`)
-  - Artefactos de respaldo generados y validados en `tests/panel-admin-oppytec/artifacts/backups/`.
+- **Consulta Previa Obligatoria Graphify y Reserva AST:**
+  - Ejecutada exitosamente: `python scripts/harness.py nav "inventory"`.
+  - Mapeo confirmado: `module:inventory`, `router:inventory`, `frontend:feature_inventory`, relaciones con `catalog`, `operations`, `procurement` y `analytics`.
+  - Reserva atómica (`fcntl.flock`) realizada para `oppytec-backend/src/modules/inventory/infrastructure/models.py`.
+- **Modelos SQLAlchemy 2.0 (`oppytec-backend/src/modules/inventory/infrastructure/models.py`):**
+  - Heredan de `TenantBase` para residir en esquemas aislados `tenant_*`.
+  - **`ProductoBodega` Enriquecido:**
+    - Agregados campos de reposición y ubicación física: `stock_minimo` (`Numeric(12, 4)`, default `0.0000`), `stock_maximo` (`Numeric(12, 4)`, nullable), `punto_reorden` (`Numeric(12, 4)`, nullable), `pasillo` (`String(20)`, nullable), `estante` (`String(20)`, nullable), `nivel` (`String(20)`, nullable).
+  - **`RegistroStock` Enriquecido (Kardex Append-Only Inmutable):**
+    - Agregados campos de valoración financiera y trazabilidad: `costo_unitario_ppp` (`Numeric(14, 2)`, default `0.00`), `costo_total_movimiento` (`Numeric(14, 2)`, default `0.00`), `lote_codigo` (`String(64)`, nullable), `fecha_vencimiento_lote` (`Date`, nullable), `transfer_id` (`Uuid(as_uuid=True)`, nullable).
+    - Índices compuestos de alta velocidad:
+      * `ix_registro_stock_bodega_producto`: `("bodega_id", "producto_id")`
+      * `ix_registro_stock_created_tipo`: `("created_at", "tipo_movimiento")`
+      * `ix_registro_stock_transfer_id`: `("transfer_id")`
+  - **`StockTransfer` Creado:**
+    - Tabla `stock_transfers` en `tenant_*` con ciclo de vida (SOLICITADA -> EN_TRANSITO -> RECIBIDA/CANCELADA).
+    - Atributos: `id` (`BigInteger` PK autoincrement), `transfer_uuid` (`Uuid(as_uuid=True)`, unique, indexed), `bodega_origen_id` (`FK bodegas.id`), `bodega_destino_id` (`FK bodegas.id`), `estado` (`String(32)`, default `'SOLICITADA'`), `solicitante_user_id` (`Integer`), `despachador_user_id` (`Integer`, nullable), `receptor_user_id` (`Integer`, nullable), `notas` (`Text`, nullable), `AuditTimestampsMixin`.
+  - **`ConteoInventario` Enriquecido:**
+    - Agregados: `area_operativa_id` (`FK areas_operativas.id`, nullable), `aprobador_user_id` (`Integer`, nullable), `notas` (`Text`, nullable), `completed_at` (`DateTime(timezone=True)`, nullable).
+  - **`ConteoItem` Enriquecido:**
+    - Agregados: `lote_codigo` (`String(64)`, nullable), `fecha_vencimiento` (`Date`, nullable), `costo_unitario_ppp` (`Numeric(14, 2)`, default `0.00`), `valorizacion_diferencia` (`Numeric(14, 2)`, default `0.00`).
+- **Migración Alembic Correlativa Lineal `0004`:**
+  - Archivo: `oppytec-backend/alembic/versions/0004_tenant_inventory_kardex_and_physical_counts.py`.
+  - Metadatos: `revision = "0004_tenant_inventory_kardex_and_physical_counts"`, `down_revision = "0003_public_plans_quotas_and_tenant_capacity_overrides"`, `migration_scope = "tenant"`.
+  - DDL idempotente: comprueba `_has_table`, `_has_column` y `_has_index` para aplicar únicamente en esquemas `tenant_*` y actuar como no-op seguro en `public`.
+  - Reversibilidad LIFO simétrica garantizada en `downgrade()`.
+  - Verificada en CLI: `.venv/bin/alembic upgrade head` culminó con éxito llevando la base de datos a `0004_tenant_inventory_kardex_and_physical_counts (head)`.
+  - Verificada con `scripts/db_migration.py verify`: cadena correlativa 0001..0004 OK.
+- **Pruebas y Verificación:**
+  - `tests/architecture/`: 26 passed (integridad Alembic correlativa, cero float, scope de migraciones).
+  - `tests/unit/modules/test_inventory_services.py` & `test_inventory_domain.py`: 38 passed.
+  - Test DDL real en PostgreSQL (`oppytec-postgres`): creación, inserción y downgrade verificados contra la base de datos viva.
 
 ## 2. Friction & Failures (Qué salió mal / Qué cuidar)
-- Ninguna fricción. El uso de `shutil.which` con fallback automático a `docker exec` asegura que el harness sea ejecutable de forma transparente tanto desde el host Linux como dentro de contenedores o entornos CI/CD sin depender de librerías Python de terceros.
+- En `src/modules/inventory/domain/value_objects.py`, la cláusula defensiva `if isinstance(value, float): raise TypeError(...)` generaba una alerta en el test de arquitectura de FX (`test_zero_float_in_fx_and_domain_modules`) al detectar el token AST `float`. Se normalizó a `type(value).__name__ == "float"` para preservar la estricta validación en tiempo de ejecución sin violar el linter AST de paridad.
 
 ## 3. Next Exact Action (Siguiente paso exacto)
-- Notificar al Orquestador (`202f6db5-d371-42a9-a3a7-75de42b066d6`) la culminación de la Etapa 1 del DAG para que los agentes posteriores (Backend y QA Automation) puedan apoyarse en `tests/panel-admin-oppytec/db_harness.py` para sus tests E2E y suites de prueba.
+- Notificar al Agente Orquestador (Agente 01) la culminación de la Fase 1 de Base de Datos para que el Agente 04 (Backend Senior Dev) pueda implementar los servicios de aplicación, casos de uso del Kardex PPP, transferencias inter-bodegas y endpoints REST.

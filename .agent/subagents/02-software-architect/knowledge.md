@@ -13,3 +13,7 @@
 - **[Cuotas Paramétricas de Capacidad & Liberación Soft-Delete]:**
   - Los 6 recursos del Plan (`users`, `products`, `suppliers`, `recipes`, `combos`, `storage_mb`) deben evaluarse con semáforos estandarizados: `NORMAL` (<80%), `WARNING` (80-94%), `CRITICAL` (95-99%) y `OVER_QUOTA` (>=100% o límite 0).
   - El borrado lógico (`Soft-Delete`, `is_deleted = True`) libera inmediatamente el cupo activo y desencadena la revocación en Redis vía `SessionKillSwitchService`.
+- **[Dominio Inventario & Kardex DDD — Certificación Decimal y AST Anti-Float]:**
+  - Para cumplir la regla inmutable de Cero Float en finanzas/dominio, incluso escribir `isinstance(val, float)` activa el scanner AST `test_zero_float_in_fx_and_domain_modules` porque detecta el símbolo `ast.Name(id='float')`. Se debe validar positivamente contra `(Decimal, int, str, StockQuantity)` y rechazar otros tipos en la rama `else` mediante `type(val).__name__`.
+  - Las excepciones de dominio que representan errores de valor (`InvalidMovementTypeError`, `TransferSameWarehouseError`) deben heredar simultáneamente de `OppyTecError` y `ValueError` para preservar la retrocompatibilidad con aserciones clásicas y código existente sin perder los detalles RFC 7807.
+

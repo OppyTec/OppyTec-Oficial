@@ -60,12 +60,20 @@ describe("Fase 8: GestionPage Integration & E2E Suite", () => {
     it("renders GestionPage container when mounted with query param ?tab=productos", async () => {
       renderGestionPage("/gestion?tab=productos");
 
-      expect(screen.getByTestId("gestion-page")).toBeDefined();
+      const container = screen.getByTestId("gestion-page");
+      expect(container).toBeDefined();
+      expect(container.className).toContain("max-w-7xl");
+      expect(container.className).toContain("space-y-6");
+
+      const header = container.querySelector("header");
+      expect(header).toBeDefined();
+      expect(header?.className).toContain("justify-center");
+
       await screen.findByTestId("product-table-root");
       await waitFor(() => {
         expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/Gestión/i);
       });
-      expect(screen.getByText("Catálogo de productos e insumos")).toBeDefined();
+      expect(screen.getAllByText("Catálogo de productos e insumos")[0]).toBeDefined();
     });
 
     it("renders unified toolbar, search bar, and category carousel", async () => {

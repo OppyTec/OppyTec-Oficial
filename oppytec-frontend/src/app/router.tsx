@@ -8,7 +8,7 @@ import {
 import { AnalyticsFeatureView } from "@/features/analytics";
 import { AdminLoginPage, LoginPage } from "@/features/auth";
 import { CatalogFeatureView } from "@/features/catalog";
-import { InventoryFeatureView } from "@/features/inventory";
+import { StockRegistroPage, ContarInventarioPage, RecuentosPage } from "@/features/inventory";
 import { OperationsFeatureView } from "@/features/operations";
 import { OppyFyFeatureView } from "@/features/oppyfy";
 import {
@@ -170,9 +170,11 @@ export function ClientAppShell() {
         <Route path="/consumo/*" element={<ModulePlaceholderView title="Consumo y Operaciones" moduleSlug="module:consumo" />} />
         <Route path="/registro-de-consumo" element={<ModulePlaceholderView title="Registro de Consumo" moduleSlug="module:consumo:registro_de_consumo" />} />
         <Route path="/ventas/*" element={<ModulePlaceholderView title="Punto de Venta (Ventas Comerciales)" moduleSlug="module:ventas" />} />
-        <Route path="/inventario/*" element={<ModulePlaceholderView title="Inventario y Kardex Multi-Bodega" moduleSlug="module:inventario" />} />
-        <Route path="/contar-inventario" element={<ModulePlaceholderView title="Recuento Físico Ciego" moduleSlug="module:inventario:recuento" />} />
-        <Route path="/recuentos" element={<ModulePlaceholderView title="Historial de Recuentos" moduleSlug="module:inventario:historial" />} />
+        <Route path="/inventario/stock" element={<StockRegistroPage />} />
+        <Route path="/inventario" element={<StockRegistroPage />} />
+        <Route path="/inventario/*" element={<StockRegistroPage />} />
+        <Route path="/contar-inventario" element={<ContarInventarioPage />} />
+        <Route path="/recuentos" element={<RecuentosPage />} />
         <Route path="/gestion/*" element={<GestionPage />} />
         <Route path="/gestion" element={<GestionPage />} />
         <Route path="/proveedores" element={<ModulePlaceholderView title="Directorio de Proveedores" moduleSlug="module:gestion:proveedores" />} />
@@ -207,7 +209,7 @@ export function ClientFeatureRouter({ activeFeature }: ClientFeatureRouterProps)
     case "catalog":
       return <CatalogFeatureView />;
     case "inventory":
-      return <InventoryFeatureView />;
+      return <StockRegistroPage />;
     case "recipes":
       return <RecipesFeatureView />;
     case "procurement":

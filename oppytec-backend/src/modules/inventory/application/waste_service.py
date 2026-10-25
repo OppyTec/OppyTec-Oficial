@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from src.core.exceptions import PermissionDeniedError
+from src.core.exceptions import CrossTenantAccessError, PermissionDeniedError
 from src.modules.inventory.application.inventory_service import InventoryService
 from src.modules.inventory.domain.kardex_math import waste_requires_approval, waste_total_cost
 
@@ -24,6 +24,7 @@ class WasteRecord:
     reason: str
     reporter_user_id: int
     status: str
+    tenant_id: str | None = None
 
 
 class WasteService:
@@ -44,6 +45,7 @@ class WasteService:
         unit_cost: Decimal,
         reason: str,
         reporter_user_id: int,
+        tenant_id: str | None = None,
     ) -> WasteRecord:
         """Reporta una merma; aplica al Kardex solo si no requiere aprobación."""
         total = waste_total_cost(quantity, unit_cost)
@@ -52,15 +54,27 @@ class WasteService:
         record = WasteRecord(
             self._seq, producto_id, bodega_id, quantity, total, reason, reporter_user_id,
             "PENDIENTE" if pending else "APROBADA",
+            tenant_id=tenant_id,
         )
         if not pending:
             self._apply(record, unit_cost)
         self._wastes[record.waste_id] = record
         return record
 
-    def approve(self, waste_id: int, approver_user_id: int, unit_cost: Decimal) -> WasteRecord:
-        """Aprueba una merma pendiente; el aprobador no puede ser quien la reportó."""
+    def approve(
+        self,
+        waste_id: int,
+        approver_user_id: int,
+        unit_cost: Decimal,
+        tenant_id: str | None = None,
+    ) -> WasteRecord:
+        """Aprueba una merma pendiente; valida tenant y que el aprobador no sea quien la reportó."""
         record = self._wastes[waste_id]
+        if tenant_id and record.tenant_id and record.tenant_id != tenant_id:
+            raise CrossTenantAccessError(
+                f"Cross-tenant access denied: waste record {waste_id} belongs to a different tenant.",
+                i18n_key="tenancy:errors.cross_tenant_forbidden",
+            )
         if record.reporter_user_id == approver_user_id:
             raise PermissionDeniedError("Reporter cannot approve own waste")
         if record.status == "PENDIENTE":
@@ -68,9 +82,14 @@ class WasteService:
             record.status = "APROBADA"
         return record
 
-    def reject(self, waste_id: int) -> WasteRecord:
-        """Rechaza una merma pendiente sin tocar el Kardex."""
+    def reject(self, waste_id: int, tenant_id: str | None = None) -> WasteRecord:
+        """Rechaza una merma pendiente sin tocar el Kardex validando tenant."""
         record = self._wastes[waste_id]
+        if tenant_id and record.tenant_id and record.tenant_id != tenant_id:
+            raise CrossTenantAccessError(
+                f"Cross-tenant access denied: waste record {waste_id} belongs to a different tenant.",
+                i18n_key="tenancy:errors.cross_tenant_forbidden",
+            )
         if record.status == "PENDIENTE":
             record.status = "RECHAZADA"
         return record

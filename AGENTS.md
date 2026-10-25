@@ -1,4 +1,4 @@
-# AGENTS.md — Enrutador Cognitivo Maestro y Gobernanza del Escuadrón Multi-Agente de OppyTec v2.0
+# AGENTS.md — Enrutador Cognitivo Maestro y Gobernanza del Escuadrón Multi-Agente de 13 Agentes de OppyTec v2.0
 
 > **Estado:** Activo e Inmutable  
 > **Propósito:** Punto de entrada obligatorio en el milisegundo `0` para cualquier Agente de IA (**Prime Agent RLM**, **Pi**, **Claude Code**, **Codex**, **Gemini**) que opere en este monorepo.  
@@ -22,6 +22,14 @@
    - **Pre-ejecución:** SIEMPRE, todos los agentes deben antes de comenzar su trabajo consultar Graphify mediante `python scripts/harness.py nav "<símbolo>"` para mapear la vecindad AST relevante (< 150 tokens) antes de leer archivos masivos.
    - **Post-ejecución:** SIEMPRE, al concluir la ejecución de todos los agentes involucrados en cualquier modificación de código, debe actualizarse el grafo mediante `python scripts/harness.py sync-graph` (o delegando al Agente 12).
    - Esta regla es estricta, obligatoria y no admite ninguna excepción.
+7. **MODOS DE TRABAJO (`FAST_TRACK` vs `DAG_PIPELINE`):**
+   - **`FAST_TRACK`**: Modo ágil para tareas acotadas, atómicas o cosméticas (ej: cambiar el estilo de un botón, corregir una traducción o ajustar un lint menor) donde un único agente especialista es despachado directamente para resolver y cerrar el ciclo sin convocar a todo el escuadrón.
+   - **`DAG_PIPELINE`**: Modo coordinado por etapas en paralelo (Etapas 1 a 4) para tareas transversales completas, nuevas funcionalidades, migraciones de esquema o cambios arquitectónicos que requieren diseño, backend, frontend, seguridad y control de calidad.
+8. **PRINCIPIO DE OPERACIÓN DEL AGENTE 13 (`13-browser-e2e-playwright` - DESACOPLADO):**
+   - El Agente 13 opera de forma **desacoplada e independiente** como la **Etapa 5 de Certificación E2E en Navegador Real con Playwright**.
+   - Simula la interacción de un usuario humano real en múltiples navegadores (Chromium, Firefox, WebKit).
+   - Se ejecuta bajo demanda o en instancias de certificación pre-release y smoke tests completos.
+   - **NO bloquea** el desarrollo rápido, ni la integración continua ni la ejecución de pruebas unitarias, de integración o tests de arquitectura del DAG (Etapas 1 a 4).
 
 ---
 
@@ -30,7 +38,10 @@
 Al recibir cualquier requerimiento o iniciar cualquier tarea:
 
 1. **Clasificación JEV en el Milisegundo 0 (`python scripts/harness.py route-task "<prompt>"`):**
-   - Determina el Agente Líder, agentes de soporte y si opera en modo **`FAST_TRACK`** (mono-agente ágil) o **`DAG_PIPELINE`** (multi-agente estructurado).
+   - Determina el Agente Líder, agentes de soporte y el modo de operación:
+     - **`FAST_TRACK`**: Agente único especialista para tareas acotadas.
+     - **`DAG_PIPELINE`**: Pipeline coordinado de 4 etapas para desarrollo transversal.
+     - **`Etapa 5 (Desacoplada)`**: Agente 13 (`13-browser-e2e-playwright`) convocado bajo demanda para certificación en navegador real sin bloquear el flujo principal.
 2. **Lee el estado actual del proyecto:** `.agent/memory/current_state.md`.
 3. **Despacho Inmediato de Subagentes (`invoke_subagent`):**
    - El Orquestador despacha obligatoriamente a los subagentes designados por JEV mediante la herramienta `invoke_subagent(TypeName="...", Role="...", Prompt="...", Model="...")`.
@@ -47,7 +58,7 @@ Al recibir cualquier requerimiento o iniciar cualquier tarea:
 
 ---
 
-## 3. Matriz del Escuadrón de 12 Agentes y DAG de 4 Etapas con Orden Lógico
+## 3. Matriz del Escuadrón de 13 Agentes y DAG de 5 Etapas con Orden Lógico
 
 ```mermaid
 flowchart TD
@@ -76,11 +87,16 @@ flowchart TD
         A12["📚 12-tech-writer-openspec-archify<br/>(OpenSpec Bipartito, Graphify, Archify, Bitácora)"]
     end
 
+    subgraph Etapa5["Etapa 5: Certificación E2E en Navegador Real (Desacoplada)"]
+        A13["🎭 13-browser-e2e-playwright<br/>(Playwright, Simulación Humana, E2E Navegador Real)"]
+    end
+
     JEV -->|FAST_TRACK| DirectExec["Ejecución Directa Agente Líder"]
     JEV -->|DAG_PIPELINE| Etapa1
     Etapa1 --> Etapa2
     Etapa2 --> Etapa3
     Etapa3 --> Etapa4
+    Etapa4 -.->|Bajo Demanda / Certificación Pre-Release| Etapa5
 ```
 
 | ID | Carpeta en `.agent/subagents/` | Etapa DAG | Especialidad y Estrategias a Cargo | Tier de Modelo |
@@ -97,6 +113,7 @@ flowchart TD
 | **10** | `10-cybersecurity-redteam-auditor/` | Etapa 4 | 11 Vectores Red Team (Kali), Semgrep/Trivy, **Autoparcheo y Poder de Veto Final** | Gemini 4 Argon |
 | **11** | `11-git-worktree-merge-arbiter/` | Etapa 4 | *Merge Train* (`rebase + --ff-only`), resolución determinista y Árbitro Fresco de 4 vías | Gemini 4 Argon |
 | **12** | `12-tech-writer-openspec-archify/` | Etapa 4 | Sincronización de Bóvedas OpenSpec (`business-domain/` y `engineering-code/`), `Graphify` y Atlas `Archify` | Gemini 3.8 Flash |
+| **13** | `13-browser-e2e-playwright/` | Etapa 5 (Desacoplada) | Simulación de usuario humano en navegador real (Chromium/Firefox/WebKit) con Playwright | Gemini 4 Argon |
 
 ---
 

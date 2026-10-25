@@ -91,6 +91,125 @@
       "claimed_by": "05-frontend-senior-dev",
       "intent": "Construir ProductoWizardDialog multipaso con drafting y nombre autogenerado",
       "claimed_at": "2026-10-24T22:56:24.768140+00:00"
+    },
+    {
+      "file": "AGENTS.md",
+      "symbol_path": "governance",
+      "claimed_by": "12-tech-writer-openspec-archify",
+      "intent": "Actualizar gobernanza a escuadrón de 13 agentes",
+      "claimed_at": "2026-10-25T12:22:41.638538+00:00"
+    },
+    {
+      "file": ".agent/skills/jev-decision-engine/jev_router.py",
+      "symbol_path": "classify_user_request",
+      "claimed_by": "06-ai-oppyfy-and-jev-engineer",
+      "intent": "Integrar Agente 13 Playwright y Etapa 5 en JEV Router",
+      "claimed_at": "2026-10-25T12:23:32.421708+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/gestion/GestionPage.tsx",
+      "symbol_path": "GestionPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Estandarizar SectionHeader centrado y layout simétrico",
+      "claimed_at": "2026-10-25T12:43:56.988845+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/shared/components/ui/SectionHeader.tsx",
+      "symbol_path": "SectionHeader",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Optimizar fluidez y cadencia natural del efecto typewriter",
+      "claimed_at": "2026-10-25T12:53:23.874630+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/inventory/domain/kardex_math.py",
+      "symbol_path": "InventoryDomain",
+      "claimed_by": "02-software-architect",
+      "intent": "DDD inventory value objects, entities, and business rules",
+      "claimed_at": "2026-10-25T13:33:20.658439+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/inventory/infrastructure/models.py",
+      "symbol_path": "models",
+      "claimed_by": "03-database-alembic-and-backup-engineer",
+      "intent": "Enriquecer modelos de inventario con kardex PPP, transfers y conteos",
+      "claimed_at": "2026-10-25T13:33:37.868777+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/inventory/application/inventory_service.py",
+      "symbol_path": "InventoryService",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Implement transactional inventory service with kardex invariant undo redo and stock status",
+      "claimed_at": "2026-10-25T14:02:16.392999+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/inventory/application/physical_count_service.py",
+      "symbol_path": "PhysicalCountService",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Implement physical count sessions, counting, finalizing, and approval reconciliation",
+      "claimed_at": "2026-10-25T14:02:24.671380+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/types.ts",
+      "symbol_path": "InventoryContracts",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Fase 3: Contratos TypeScript de Dominio y Hooks Reactivos de Inventario",
+      "claimed_at": "2026-10-25T14:31:56.082461+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/stock/StockRegistroPage.tsx",
+      "symbol_path": "StockRegistroPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implementar Vista 1 Registro de Stock Fase 4",
+      "claimed_at": "2026-10-25T14:49:17.358695+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/stock/dialogs/TransferDialog.tsx",
+      "symbol_path": "TransferDialog",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Crear TransferDialog para traspasos inter-bodega con ADN Legacy",
+      "claimed_at": "2026-10-25T15:25:02.989352+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/stock/dialogs/AdjustmentDialog.tsx",
+      "symbol_path": "AdjustmentDialog",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Crear AdjustmentDialog para ajustes de stock",
+      "claimed_at": "2026-10-25T15:25:12.884926+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/stock/dialogs/MermaDialog.tsx",
+      "symbol_path": "MermaDialog",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Crear MermaDialog para reporte de mermas",
+      "claimed_at": "2026-10-25T15:25:24.169850+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/stock/dialogs/AddingMercaderiaDialog.tsx",
+      "symbol_path": "AddingMercaderiaDialog",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Crear AddingMercaderiaDialog para recepcion rapida",
+      "claimed_at": "2026-10-25T15:25:24.248801+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/stock/dialogs/SolicitudesDialog.tsx",
+      "symbol_path": "SolicitudesDialog",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Crear SolicitudesDialog para pedidos internos",
+      "claimed_at": "2026-10-25T15:25:24.324132+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/conteo/ContarInventarioPage.tsx",
+      "symbol_path": "ContarInventarioPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implementacion Fase 6 ContarInventario",
+      "claimed_at": "2026-10-25T16:03:05.602268+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/recuentos/RecuentosPage.tsx",
+      "symbol_path": "RecuentosPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implementar vista de historial de recuentos y auditoria",
+      "claimed_at": "2026-10-25T16:39:10.684680+00:00"
     }
   ]
 }

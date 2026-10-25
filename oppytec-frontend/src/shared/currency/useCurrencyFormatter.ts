@@ -1,11 +1,12 @@
-import { useCallback } from "react";
+import { useCallback, useContext } from "react";
 import {
   CURRENCY_DECIMALS,
+  CurrencyContext,
+  DEFAULT_CENTRAL_BANK_RATES,
   convertAmountExact,
   formatScaledDecimal,
   parseScaledDecimal,
   type SupportedCurrency,
-  useCurrency,
 } from "./CurrencyContext";
 
 export const CURRENCY_SYMBOLS: Readonly<Record<SupportedCurrency, string>> = {
@@ -68,7 +69,9 @@ export interface UseCurrencyFormatterReturn {
 }
 
 export function useCurrencyFormatter(): UseCurrencyFormatterReturn {
-  const { currency, rates } = useCurrency();
+  const context = useContext(CurrencyContext);
+  const currency = context?.currency ?? "CLP";
+  const rates = context?.rates ?? DEFAULT_CENTRAL_BANK_RATES;
 
   const format = useCallback(
     (

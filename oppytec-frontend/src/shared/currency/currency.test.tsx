@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, cleanup } from "@testing-library/react";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import {
   getActiveLanguage,
   LanguageFlagSelector,
@@ -48,8 +48,13 @@ function CurrencyHookConsumer() {
 
 describe("Frontend Multi-Currency FX Suite (CLP, USD, EUR, BRL, UF & Central Bank Governance)", () => {
   beforeEach(() => {
+    cleanup();
     window.localStorage.clear();
     setActiveLanguage("es");
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it("formats CLP (0 decimals), USD/EUR/BRL (2 decimals), and UF (4 decimals) using exact fixed-point math", () => {

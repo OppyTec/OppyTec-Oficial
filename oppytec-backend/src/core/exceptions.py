@@ -210,3 +210,31 @@ class DomainValidationError(OppyTecError):
     default_i18n_key = "common:errors.validation_error"
     default_title = "Domain Validation Error"
 
+
+class NegativeStockNotAllowedError(OppyTecError, ValueError):
+    """Operación de inventario rechazada porque resultaría en un stock negativo no permitido."""
+
+    default_status_code = 409
+    default_error_code = "NEGATIVE_STOCK_NOT_ALLOWED"
+    default_i18n_key = "inventory:errors.negative_stock_not_allowed"
+    default_title = "Negative Stock Not Allowed"
+
+
+class InvalidMovementTypeError(OppyTecError, ValueError):
+    """Tipo de movimiento de Kardex no válido o desconocido."""
+
+    default_status_code = 400
+    default_error_code = "INVALID_MOVEMENT_TYPE"
+    default_i18n_key = "inventory:errors.invalid_movement_type"
+    default_title = "Invalid Movement Type"
+
+
+class TransferSameWarehouseError(OppyTecError, ValueError):
+    """Intento de transferir inventario entre la misma bodega de origen y destino."""
+
+    default_status_code = 400
+    default_error_code = "TRANSFER_SAME_WAREHOUSE_FORBIDDEN"
+    default_i18n_key = "inventory:errors.transfer_same_warehouse"
+    default_title = "Transfer to Same Warehouse Forbidden"
+
+

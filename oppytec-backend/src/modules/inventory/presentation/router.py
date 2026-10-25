@@ -1,31 +1,47 @@
 """
 oppytec-backend/src/modules/inventory/presentation/router.py
-Endpoints REST de Kardex por Bodega, Toma Física (`canonical_lock_order`) y Flujo de Mermas:
+Endpoints REST de Kardex por Bodega, Toma Física (`canonical_lock_order`),
+Snapshot de Stock con Semáforos, Undo/Redo Transaccional, Mermas e Ingesta de Facturas:
 - `POST /api/v1/inventory/kardex/movements` y `GET /api/v1/inventory/kardex/movements`
-- `POST /api/v1/inventory/counts`
-- `POST /api/v1/inventory/mermas`
-- `POST /api/v1/inventory/mermas/{merma_id}/approve`
+- `GET /api/v1/inventory/stock/status`
+- `POST /api/v1/inventory/stock/undo` y `POST /api/v1/inventory/stock/redo`
+- `POST /api/v1/inventory/stock/bulk-transfer`
+- `POST /api/v1/inventory/counts` (direct submit con orden canónico anti-deadlock)
+- `POST /api/v1/inventory/counts/start`
+- `GET /api/v1/inventory/counts` y `GET /api/v1/inventory/counts/{conteo_id}`
+- `PUT /api/v1/inventory/counts/{conteo_id}/items`
+- `POST /api/v1/inventory/counts/{conteo_id}/finalize`
+- `POST /api/v1/inventory/counts/{conteo_id}/approve` y `POST /api/v1/inventory/counts/{conteo_id}/reject`
+- `DELETE /api/v1/inventory/counts/{conteo_id}`
+- `POST /api/v1/inventory/mermas` y `POST /api/v1/inventory/mermas/{merma_id}/approve`
+- `POST /api/v1/inventory/import/parse-invoice` y `POST /api/v1/inventory/import/confirm-invoice`
 """
 from __future__ import annotations
 
 from contextlib import suppress
 from decimal import Decimal
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 
 from src.core.exceptions import (
+    CrossTenantAccessError,
     DomainValidationError,
-    InsufficientStockError,
     ResourceNotFoundError,
     SecurityValidationError,
+    TransferSameWarehouseError,
 )
 from src.core.guards.rbac_dependencies import (
     AuthenticatedPrincipal,
     RequireTenantPermission,
 )
+from src.core.realtime.router import get_realtime_publisher
+from src.core.realtime.schemas import RealtimeEventEnvelope
 from src.modules.inventory.application.inventory_service import InventoryService
+from src.modules.inventory.application.physical_count_service import PhysicalCountService
 from src.modules.inventory.application.waste_service import WasteService
+from src.modules.inventory.domain.entities import PhysicalCountSession
 from src.modules.inventory.presentation.schemas import (
     BulkTransferItemResult,
     BulkTransferRequest,
@@ -42,6 +58,14 @@ from src.modules.inventory.presentation.schemas import (
     MermaApproveRequest,
     MermaReportRequest,
     MermaResponse,
+    PhysicalCountItemDetailResponse,
+    PhysicalCountSaveItemsRequest,
+    PhysicalCountSessionDetailResponse,
+    PhysicalCountStartRequest,
+    StockLotStatusResponse,
+    StockRedoRequest,
+    StockStatusItemResponse,
+    StockUndoRequest,
 )
 
 router = APIRouter(tags=["inventory"])
@@ -51,6 +75,55 @@ _waste_service = WasteService(
     inventory=_inventory_service,
     approval_threshold=Decimal("50000.00"),
 )
+_physical_count_service = PhysicalCountService(inventory=_inventory_service)
+
+
+def _parse_optional_uuid(val: str | None) -> UUID | None:
+    """Parsea de forma segura un UUID opcional desde cadenas de identidad."""
+    if not val:
+        return None
+    try:
+        return UUID(str(val))
+    except Exception:
+        return None
+
+
+def _session_to_detail_response(session: PhysicalCountSession) -> PhysicalCountSessionDetailResponse:
+    """Mapea una entidad de dominio `PhysicalCountSession` a su esquema REST de respuesta."""
+    return PhysicalCountSessionDetailResponse(
+        id=session.id or 0,
+        bodega_id=session.bodega_id,
+        area_operativa_id=session.area_operativa_id,
+        estado=session.estado,
+        responsable_user_id=session.responsable_user_id,
+        aprobador_user_id=session.aprobador_user_id,
+        notas=session.notas,
+        completed_at=session.completed_at,
+        total_discrepancy_units=session.total_discrepancy_units().value,
+        total_discrepancy_value=session.total_discrepancy_value().amount,
+        items=[
+            PhysicalCountItemDetailResponse(
+                id=item.id,
+                producto_id=item.producto_id,
+                stock_teorico_sistema=item.stock_teorico_sistema.value,
+                stock_fisico_contado=item.stock_fisico_contado.value,
+                diferencia_unidades=item.diferencia_unidades.value,
+                costo_unitario_ppp=item.costo_unitario_ppp.amount,
+                valorizacion_diferencia=item.valorizacion_diferencia.amount,
+                lote_codigo=item.lote_codigo,
+                fecha_vencimiento=item.fecha_vencimiento,
+                has_discrepancy=item.has_discrepancy,
+                is_surplus=item.is_surplus,
+                is_shortage=item.is_shortage,
+            )
+            for item in session.items
+        ],
+    )
+
+
+# ============================================================================
+# KARDEX Y MOVIMIENTOS ATÓMICOS
+# ============================================================================
 
 
 @router.post(
@@ -73,8 +146,36 @@ async def register_kardex_movement_endpoint(
         quantity=payload.quantity,
         unit_cost=payload.unit_cost,
         actor_user_id=principal.user_id,
+        lote_codigo=payload.lote_codigo,
+        fecha_vencimiento_lote=payload.fecha_vencimiento_lote,
+        documento_referencia=payload.documento_referencia,
+        tenant_id=principal.tenant_id,
     )
+
+    with suppress(Exception):
+        publisher = get_realtime_publisher()
+        await publisher.publish_event(
+            RealtimeEventEnvelope(
+                event_type="inventory.stock.updated",
+                holding_id=_parse_optional_uuid(principal.holding_id),
+                tenant_id=_parse_optional_uuid(principal.tenant_id),
+                target_bodega_id=entry.bodega_id,
+                required_permission="inventory.stock.read",
+                query_keys_to_invalidate=[
+                    ["inventory", "stock", "status"],
+                    ["inventory", "kardex", "movements"],
+                ],
+                payload={
+                    "producto_id": entry.producto_id,
+                    "bodega_id": entry.bodega_id,
+                    "movement_type": entry.movement_type,
+                    "resulting_balance": str(entry.resulting_balance),
+                },
+            )
+        )
+
     return KardexMovementResponse(
+        id=entry.id,
         producto_id=entry.producto_id,
         bodega_id=entry.bodega_id,
         movement_type=entry.movement_type,
@@ -82,6 +183,11 @@ async def register_kardex_movement_endpoint(
         resulting_balance=entry.resulting_balance,
         unit_cost=entry.unit_cost,
         actor_user_id=entry.actor_user_id,
+        created_at=entry.created_at,
+        lote_codigo=entry.lote_codigo,
+        fecha_vencimiento_lote=entry.fecha_vencimiento_lote,
+        documento_referencia=entry.documento_referencia,
+        transfer_id=str(entry.transfer_id) if entry.transfer_id else None,
     )
 
 
@@ -91,7 +197,7 @@ async def register_kardex_movement_endpoint(
     status_code=status.HTTP_200_OK,
 )
 async def list_kardex_movements_endpoint(
-    _principal: Annotated[
+    principal: Annotated[
         AuthenticatedPrincipal,
         Depends(RequireTenantPermission("inventory.kardex.read")),
     ],
@@ -99,6 +205,7 @@ async def list_kardex_movements_endpoint(
     """Devuelve el libro mayor inmutable del Kardex."""
     return [
         KardexMovementResponse(
+            id=e.id,
             producto_id=e.producto_id,
             bodega_id=e.bodega_id,
             movement_type=e.movement_type,
@@ -106,9 +213,194 @@ async def list_kardex_movements_endpoint(
             resulting_balance=e.resulting_balance,
             unit_cost=e.unit_cost,
             actor_user_id=e.actor_user_id,
+            created_at=e.created_at,
+            lote_codigo=e.lote_codigo,
+            fecha_vencimiento_lote=e.fecha_vencimiento_lote,
+            documento_referencia=e.documento_referencia,
+            transfer_id=str(e.transfer_id) if e.transfer_id else None,
         )
-        for e in _inventory_service.ledger()
+        for e in _inventory_service.ledger(tenant_id=principal.tenant_id)
     ]
+
+
+# ============================================================================
+# SNAPSHOT DE EXISTENCIAS Y SEMÁFOROS
+# ============================================================================
+
+
+@router.get(
+    "/api/v1/inventory/stock/status",
+    response_model=list[StockStatusItemResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def get_stock_status_endpoint(
+    bodega_id: int = Query(..., gt=0),
+    area_operativa_id: int | None = Query(default=None),
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.stock.read")),
+    ] = None,  # type: ignore[assignment]
+) -> list[StockStatusItemResponse]:
+    """
+    Retorna el snapshot consolidado de existencias en tiempo real para una bodega,
+    desglosado por lotes, vigencias y semáforos de stock (crítico, bajo mínimo, reorden).
+    """
+    status_list = _inventory_service.get_stock_status(bodega_id, area_operativa_id=area_operativa_id)
+    return [
+        StockStatusItemResponse(
+            producto_id=s.producto_id,
+            bodega_id=s.bodega_id,
+            stock_actual=s.stock_actual,
+            stock_minimo=s.stock_minimo,
+            stock_maximo=s.stock_maximo,
+            punto_reorden=s.punto_reorden,
+            pasillo=s.pasillo,
+            estante=s.estante,
+            nivel=s.nivel,
+            is_below_minimum=s.is_below_minimum,
+            is_critical=s.is_critical,
+            needs_reorder=s.needs_reorder,
+            lots=[
+                StockLotStatusResponse(
+                    lote_codigo=lot.lote_codigo,
+                    fecha_vencimiento=lot.fecha_vencimiento,
+                    cantidad=lot.cantidad,
+                )
+                for lot in s.lots
+            ],
+        )
+        for s in status_list
+    ]
+
+
+# ============================================================================
+# UNDO & REDO TRANSACCIONAL
+# ============================================================================
+
+
+@router.post(
+    "/api/v1/inventory/stock/undo",
+    response_model=KardexMovementResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def undo_stock_movement_endpoint(
+    payload: StockUndoRequest,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.stock.undo")),
+    ],
+) -> KardexMovementResponse:
+    """Revierte transaccionalmente un movimiento en Kardex generando un asiento inverso compensatorio."""
+    entry = _inventory_service.undo_movement(
+        movement_id=payload.movement_id,
+        actor_user_id=principal.user_id,
+        reason=payload.reason,
+        tenant_id=principal.tenant_id,
+    )
+
+    with suppress(Exception):
+        publisher = get_realtime_publisher()
+        await publisher.publish_event(
+            RealtimeEventEnvelope(
+                event_type="inventory.stock.updated",
+                holding_id=_parse_optional_uuid(principal.holding_id),
+                tenant_id=_parse_optional_uuid(principal.tenant_id),
+                target_bodega_id=entry.bodega_id,
+                required_permission="inventory.stock.read",
+                query_keys_to_invalidate=[
+                    ["inventory", "stock", "status"],
+                    ["inventory", "kardex", "movements"],
+                ],
+                payload={
+                    "action": "undo",
+                    "movement_id": entry.id,
+                    "producto_id": entry.producto_id,
+                    "bodega_id": entry.bodega_id,
+                    "resulting_balance": str(entry.resulting_balance),
+                },
+            )
+        )
+
+    return KardexMovementResponse(
+        id=entry.id,
+        producto_id=entry.producto_id,
+        bodega_id=entry.bodega_id,
+        movement_type=entry.movement_type,
+        quantity=entry.quantity,
+        resulting_balance=entry.resulting_balance,
+        unit_cost=entry.unit_cost,
+        actor_user_id=entry.actor_user_id,
+        created_at=entry.created_at,
+        lote_codigo=entry.lote_codigo,
+        fecha_vencimiento_lote=entry.fecha_vencimiento_lote,
+        documento_referencia=entry.documento_referencia,
+        transfer_id=str(entry.transfer_id) if entry.transfer_id else None,
+    )
+
+
+@router.post(
+    "/api/v1/inventory/stock/redo",
+    response_model=KardexMovementResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def redo_stock_movement_endpoint(
+    payload: StockRedoRequest,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.stock.redo")),
+    ],
+) -> KardexMovementResponse:
+    """Reaplica un movimiento que fue previamente revertido en el Kardex."""
+    entry = _inventory_service.redo_movement(
+        movement_id=payload.movement_id,
+        actor_user_id=principal.user_id,
+        reason=payload.reason,
+        tenant_id=principal.tenant_id,
+    )
+
+    with suppress(Exception):
+        publisher = get_realtime_publisher()
+        await publisher.publish_event(
+            RealtimeEventEnvelope(
+                event_type="inventory.stock.updated",
+                holding_id=_parse_optional_uuid(principal.holding_id),
+                tenant_id=_parse_optional_uuid(principal.tenant_id),
+                target_bodega_id=entry.bodega_id,
+                required_permission="inventory.stock.read",
+                query_keys_to_invalidate=[
+                    ["inventory", "stock", "status"],
+                    ["inventory", "kardex", "movements"],
+                ],
+                payload={
+                    "action": "redo",
+                    "movement_id": entry.id,
+                    "producto_id": entry.producto_id,
+                    "bodega_id": entry.bodega_id,
+                    "resulting_balance": str(entry.resulting_balance),
+                },
+            )
+        )
+
+    return KardexMovementResponse(
+        id=entry.id,
+        producto_id=entry.producto_id,
+        bodega_id=entry.bodega_id,
+        movement_type=entry.movement_type,
+        quantity=entry.quantity,
+        resulting_balance=entry.resulting_balance,
+        unit_cost=entry.unit_cost,
+        actor_user_id=entry.actor_user_id,
+        created_at=entry.created_at,
+        lote_codigo=entry.lote_codigo,
+        fecha_vencimiento_lote=entry.fecha_vencimiento_lote,
+        documento_referencia=entry.documento_referencia,
+        transfer_id=str(entry.transfer_id) if entry.transfer_id else None,
+    )
+
+
+# ============================================================================
+# TOMA DE INVENTARIO Y AUDITORÍAS FÍSICAS
+# ============================================================================
 
 
 @router.post(
@@ -123,7 +415,7 @@ async def submit_inventory_count_endpoint(
         Depends(RequireTenantPermission("inventory.counts.submit")),
     ],
 ) -> InventoryCountResponse:
-    """Procesa una toma de inventario garantizando el orden canónico de bloqueo `ORDER BY id ASC`."""
+    """Procesa una toma directa de inventario garantizando el orden canónico de bloqueo `ORDER BY id ASC`."""
     ordered_ids = _inventory_service.lock_order(item.producto_id for item in payload.items)
     items_by_id = {item.producto_id: item for item in payload.items}
 
@@ -148,6 +440,199 @@ async def submit_inventory_count_endpoint(
 
 
 @router.post(
+    "/api/v1/inventory/counts/start",
+    response_model=PhysicalCountSessionDetailResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def start_count_session_endpoint(
+    payload: PhysicalCountStartRequest,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.counts.create")),
+    ],
+) -> PhysicalCountSessionDetailResponse:
+    """Inicia una nueva sesión de recuento físico ciego en estado `EN_PROGRESO`."""
+    session = _physical_count_service.start_count_session(
+        bodega_id=payload.bodega_id,
+        area_operativa_id=payload.area_operativa_id,
+        responsable_user_id=principal.user_id,
+        notas=payload.notas,
+        tenant_id=principal.tenant_id,
+    )
+    return _session_to_detail_response(session)
+
+
+@router.get(
+    "/api/v1/inventory/counts",
+    response_model=list[PhysicalCountSessionDetailResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def list_count_sessions_endpoint(
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.counts.read")),
+    ],
+    bodega_id: int | None = Query(default=None),
+    estado: str | None = Query(default=None),
+) -> list[PhysicalCountSessionDetailResponse]:
+    """Lista las sesiones históricas de recuento físico del tenant."""
+    sessions = _physical_count_service.list_sessions(
+        bodega_id=bodega_id,
+        estado=estado,
+        tenant_id=principal.tenant_id,
+    )
+    return [_session_to_detail_response(s) for s in sessions]
+
+
+@router.get(
+    "/api/v1/inventory/counts/{conteo_id}",
+    response_model=PhysicalCountSessionDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_count_session_endpoint(
+    conteo_id: int,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.counts.read")),
+    ],
+) -> PhysicalCountSessionDetailResponse:
+    """Obtiene el detalle completo de una sesión de recuento con sus líneas y cuadraturas."""
+    session = _physical_count_service.get_session(conteo_id, tenant_id=principal.tenant_id)
+    return _session_to_detail_response(session)
+
+
+@router.put(
+    "/api/v1/inventory/counts/{conteo_id}/items",
+    response_model=PhysicalCountSessionDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def save_count_items_endpoint(
+    conteo_id: int,
+    payload: PhysicalCountSaveItemsRequest,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.counts.execute")),
+    ],
+) -> PhysicalCountSessionDetailResponse:
+    """Guarda o actualiza incrementalmente las líneas contadas en una sesión en progreso."""
+    session = _physical_count_service.save_count_items(
+        conteo_id,
+        payload.items,
+        tenant_id=principal.tenant_id,
+    )
+    return _session_to_detail_response(session)
+
+
+@router.post(
+    "/api/v1/inventory/counts/{conteo_id}/finalize",
+    response_model=PhysicalCountSessionDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def finalize_count_session_endpoint(
+    conteo_id: int,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.counts.execute")),
+    ],
+) -> PhysicalCountSessionDetailResponse:
+    """Cierra la sesión de recuento, calcula discrepancias y transiciona a `PENDIENTE_APROBACION`."""
+    session = _physical_count_service.finalize_count_session(conteo_id, tenant_id=principal.tenant_id)
+    return _session_to_detail_response(session)
+
+
+@router.post(
+    "/api/v1/inventory/counts/{conteo_id}/approve",
+    response_model=PhysicalCountSessionDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def approve_count_session_endpoint(
+    conteo_id: int,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.counts.approve")),
+    ],
+) -> PhysicalCountSessionDetailResponse:
+    """
+    Aprueba administrativamente el acta de inventario y genera automáticamente
+    los asientos de ajuste (`AJUSTE_AUDITORIA`) en Kardex bajo orden canónico anti-deadlock.
+    """
+    session = _physical_count_service.approve_and_reconcile(
+        conteo_id=conteo_id,
+        aprobador_user_id=principal.user_id,
+        tenant_id=principal.tenant_id,
+    )
+
+    with suppress(Exception):
+        publisher = get_realtime_publisher()
+        await publisher.publish_event(
+            RealtimeEventEnvelope(
+                event_type="inventory.counts.approved",
+                holding_id=_parse_optional_uuid(principal.holding_id),
+                tenant_id=_parse_optional_uuid(principal.tenant_id),
+                target_bodega_id=session.bodega_id,
+                required_permission="inventory.stock.read",
+                query_keys_to_invalidate=[
+                    ["inventory", "stock", "status"],
+                    ["inventory", "kardex", "movements"],
+                    ["inventory", "counts"],
+                ],
+                payload={
+                    "conteo_id": conteo_id,
+                    "bodega_id": session.bodega_id,
+                    "reconciled_items_count": len(session.items),
+                },
+            )
+        )
+
+    return _session_to_detail_response(session)
+
+
+@router.post(
+    "/api/v1/inventory/counts/{conteo_id}/reject",
+    response_model=PhysicalCountSessionDetailResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def reject_count_session_endpoint(
+    conteo_id: int,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.counts.approve")),
+    ],
+) -> PhysicalCountSessionDetailResponse:
+    """Rechaza un acta de recuento físico y ordena reconteo."""
+    session = _physical_count_service.reject_session(
+        conteo_id,
+        principal.user_id,
+        tenant_id=principal.tenant_id,
+    )
+    return _session_to_detail_response(session)
+
+
+@router.delete(
+    "/api/v1/inventory/counts/{conteo_id}",
+    status_code=status.HTTP_200_OK,
+)
+async def delete_count_session_endpoint(
+    conteo_id: int,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.counts.delete")),
+    ],
+) -> dict[str, bool]:
+    """Elimina una sesión de recuento que no esté aprobada."""
+    success = _physical_count_service.delete_session(
+        conteo_id,
+        tenant_id=principal.tenant_id,
+    )
+    return {"success": success}
+
+
+# ============================================================================
+# MERMAS Y PÉRDIDAS
+# ============================================================================
+
+
+@router.post(
     "/api/v1/inventory/mermas",
     response_model=MermaResponse,
     status_code=status.HTTP_201_CREATED,
@@ -168,6 +653,7 @@ async def report_merma_endpoint(
             quantity=payload.quantity,
             unit_cost=payload.unit_cost,
             actor_user_id=principal.user_id,
+            tenant_id=principal.tenant_id,
         )
     rec = _waste_service.report_waste(
         producto_id=payload.producto_id,
@@ -176,6 +662,7 @@ async def report_merma_endpoint(
         unit_cost=payload.unit_cost,
         reason=payload.reason,
         reporter_user_id=principal.user_id,
+        tenant_id=principal.tenant_id,
     )
     return MermaResponse(
         waste_id=rec.waste_id,
@@ -208,6 +695,7 @@ async def approve_merma_endpoint(
             waste_id=merma_id,
             approver_user_id=principal.user_id,
             unit_cost=payload.unit_cost,
+            tenant_id=principal.tenant_id,
         )
     except KeyError as exc:
         raise ResourceNotFoundError(
@@ -227,6 +715,11 @@ async def approve_merma_endpoint(
     )
 
 
+# ============================================================================
+# TRASPASOS INTER-BODEGA
+# ============================================================================
+
+
 @router.post(
     "/api/v1/inventory/stock/bulk-transfer",
     response_model=BulkTransferResponse,
@@ -240,56 +733,48 @@ async def bulk_transfer_stock_endpoint(
     ],
 ) -> BulkTransferResponse:
     """Realiza una transferencia atómica de existencias entre bodegas con validación y Kardex."""
-    if payload.bodega_origen_id == payload.bodega_destino_id:
+    try:
+        results_pairs = _inventory_service.transfer_stock_bulk(
+            bodega_origen_id=payload.bodega_origen_id,
+            bodega_destino_id=payload.bodega_destino_id,
+            items=payload.items,
+            actor_user_id=principal.user_id,
+            notas=payload.fecha_transferencia,
+            tenant_id=principal.tenant_id,
+        )
+    except TransferSameWarehouseError as exc:
         raise DomainValidationError(
             "Origin and destination warehouses cannot be the same.",
             i18n_key="inventory:errors.same_origin_destination_warehouse",
+        ) from exc
+
+    results: list[BulkTransferItemResult] = [
+        BulkTransferItemResult(
+            producto_id=out_entry.producto_id,
+            cantidad=out_entry.quantity,
+            origen_resulting_balance=out_entry.resulting_balance,
+            destino_resulting_balance=in_entry.resulting_balance,
         )
+        for out_entry, in_entry in results_pairs
+    ]
 
-    ordered_ids = _inventory_service.lock_order(item.producto_id for item in payload.items)
-    items_by_pid = {item.producto_id: item for item in payload.items}
-
-    # Validación previa de existencias suficientes en bodega de origen
-    for pid in ordered_ids:
-        item = items_by_pid[pid]
-        current_origin = _inventory_service.balance(pid, payload.bodega_origen_id)
-        if current_origin < item.cantidad:
-            raise InsufficientStockError(
-                f"Insufficient stock for product {pid} in origin warehouse {payload.bodega_origen_id}. Available: {current_origin}, Required: {item.cantidad}",
-                i18n_key="inventory:errors.insufficient_stock",
-                context={
-                    "producto_id": pid,
-                    "bodega_id": payload.bodega_origen_id,
-                    "available": str(current_origin),
-                    "required": str(item.cantidad),
+    with suppress(Exception):
+        publisher = get_realtime_publisher()
+        await publisher.publish_event(
+            RealtimeEventEnvelope(
+                event_type="inventory.stock.updated",
+                holding_id=_parse_optional_uuid(principal.holding_id),
+                tenant_id=_parse_optional_uuid(principal.tenant_id),
+                required_permission="inventory.stock.read",
+                query_keys_to_invalidate=[
+                    ["inventory", "stock", "status"],
+                    ["inventory", "kardex", "movements"],
+                ],
+                payload={
+                    "bodega_origen_id": payload.bodega_origen_id,
+                    "bodega_destino_id": payload.bodega_destino_id,
+                    "transferred_items_count": len(results),
                 },
-            )
-
-    results: list[BulkTransferItemResult] = []
-    for pid in ordered_ids:
-        item = items_by_pid[pid]
-        out_entry = _inventory_service.register_movement(
-            producto_id=pid,
-            bodega_id=payload.bodega_origen_id,
-            movement_type="TRASPASO_OUT",
-            quantity=item.cantidad,
-            unit_cost=Decimal("0.00"),
-            actor_user_id=principal.user_id,
-        )
-        in_entry = _inventory_service.register_movement(
-            producto_id=pid,
-            bodega_id=payload.bodega_destino_id,
-            movement_type="TRASPASO_IN",
-            quantity=item.cantidad,
-            unit_cost=Decimal("0.00"),
-            actor_user_id=principal.user_id,
-        )
-        results.append(
-            BulkTransferItemResult(
-                producto_id=pid,
-                cantidad=item.cantidad,
-                origen_resulting_balance=out_entry.resulting_balance,
-                destino_resulting_balance=in_entry.resulting_balance,
             )
         )
 
@@ -339,7 +824,6 @@ async def parse_invoice_endpoint(
             )
 
     # 1. Validación de Magic Bytes binarios
-
     mime_type: str | None = None
     if content.startswith(b"%PDF-"):
         mime_type = "application/pdf"
@@ -384,7 +868,7 @@ async def parse_invoice_endpoint(
     if mime_type == "application/xml":
         try:
             import xml.etree.ElementTree as ET
-            root = ET.fromstring(content)  # noqa: S314 (XXE bloqueado previamente por validate_file_magic_bytes)
+            root = ET.fromstring(content)  # noqa: S314 (XXE bloqueado previamente)
             for elem in root.iter():
                 tag = elem.tag.split("}")[-1]
                 val = (elem.text or "").strip()
@@ -576,6 +1060,7 @@ async def confirm_invoice_endpoint(
         total_cost += (item.cantidad * item.costo_unitario)
         movements.append(
             KardexMovementResponse(
+                id=entry.id,
                 producto_id=entry.producto_id,
                 bodega_id=entry.bodega_id,
                 movement_type=entry.movement_type,
@@ -583,6 +1068,11 @@ async def confirm_invoice_endpoint(
                 resulting_balance=entry.resulting_balance,
                 unit_cost=entry.unit_cost,
                 actor_user_id=entry.actor_user_id,
+                created_at=entry.created_at,
+                lote_codigo=entry.lote_codigo,
+                fecha_vencimiento_lote=entry.fecha_vencimiento_lote,
+                documento_referencia=entry.documento_referencia,
+                transfer_id=str(entry.transfer_id) if entry.transfer_id else None,
             )
         )
 
@@ -594,5 +1084,3 @@ async def confirm_invoice_endpoint(
         total_registered_cost=total_cost,
         kardex_movements=movements,
     )
-
-
