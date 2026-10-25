@@ -30,11 +30,21 @@ import {
   Mic,
   ShoppingBag,
   ScanLine,
+  Settings,
+  Store,
+  Warehouse,
+  Layers,
+  Mail,
+  Palette,
+  HelpCircle,
+  Briefcase,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { cn, getImageUrl } from "@/shared/lib";
 import { usePermissions } from "@/shared/auth/usePermissions";
 import { useTheme } from "@/shared/hooks";
+import { translateKey, useLanguage } from "@/shared/i18n";
 
 export const FEATURE_MODULE_ROUTES = [
   { id: "analytics", labelEs: "Analítica & KPIs", labelEn: "Analytics & KPIs" },
@@ -225,44 +235,196 @@ export function Sidebar({
   const [isInventarioOpen, setIsInventarioOpen] = useState(false);
   const [isGestionOpen, setIsGestionOpen] = useState(false);
   const [isContabilidadOpen, setIsContabilidadOpen] = useState(false);
+  const [isAnaliticaOpen, setIsAnaliticaOpen] = useState(false);
   const [isPanelEjecutivoOpen, setIsPanelEjecutivoOpen] = useState(false);
   const [isPanelActividadesOpen, setIsPanelActividadesOpen] = useState(false);
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        settingsRef.current &&
+        !settingsRef.current.contains(e.target as Node)
+      ) {
+        setIsSettingsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const location = useLocation();
   const navigate = useNavigate();
   const { theme } = useTheme();
   const { policy } = usePermissions();
+  const { t } = useTranslation(["navigation", "common", "configuracion"]);
+  useLanguage();
+
+  const configSections = [
+    {
+      id: "negocio",
+      label: translateKey("configuracion", "sidebar.negocio"),
+      icon: Store,
+      action: () => navigate("/configuracion?tab=negocio"),
+    },
+    {
+      id: "bodegas",
+      label: translateKey("configuracion", "sidebar.bodegas"),
+      icon: Warehouse,
+      action: () => navigate("/configuracion?tab=bodegas"),
+    },
+    {
+      id: "areas",
+      label: translateKey("configuracion", "sidebar.areas"),
+      icon: Layers,
+      action: () => navigate("/configuracion?tab=areas"),
+    },
+    {
+      id: "plantillas_email",
+      label: translateKey("configuracion", "sidebar.plantillas_email"),
+      icon: Mail,
+      action: () => navigate("/configuracion?tab=plantillas_email"),
+    },
+    {
+      id: "tema",
+      label: translateKey("configuracion", "sidebar.apariencia"),
+      icon: Palette,
+      action: () => navigate("/configuracion?tab=tema"),
+    },
+    {
+      id: "soporte",
+      label: translateKey("configuracion", "sidebar.soporte"),
+      icon: HelpCircle,
+      action: () => navigate("/configuracion?tab=soporte"),
+    },
+  ];
+
+  // Helper to resolve plan modules set synchronously
+  const resolvePlanModules = (): Set<string> => {
+    if (propEnabledModules) {
+      return new Set(propEnabledModules);
+    }
+    if (policy?.planModules) {
+      return new Set(policy.planModules);
+    }
+    return new Set([
+      "module:inicio",
+      "module:consumo",
+      "module:inventario",
+      "module:gestion",
+      "module:notificaciones",
+      "module:alertas",
+      "module:historial",
+      "module:analitica_rendimiento",
+      "module:panel_ejecutivo",
+      "module:panel_de_actividades",
+      "analytics",
+      "operations",
+      "inventory",
+      "catalog",
+      "recipes",
+      "procurement",
+      "rbac_audit",
+    ]);
+  };
 
   // Set of modules enabled by the contracted plan
-  const planModulesSet = useRef<Set<string>>(new Set());
+  const planModulesSet = useRef<Set<string>>(resolvePlanModules());
+  // Synchronously update on every render to avoid stale initial render
+  planModulesSet.current = resolvePlanModules();
   useEffect(() => {
-    if (propEnabledModules) {
-      planModulesSet.current = new Set(propEnabledModules);
-    } else if (policy?.planModules) {
-      planModulesSet.current = new Set(policy.planModules);
-    } else {
-      // Default: basic suite is enabled, advanced enterprise features might be locked
-      planModulesSet.current = new Set([
-        "module:inicio",
-        "module:consumo",
-        "module:inventario",
-        "module:gestion",
-        "module:notificaciones",
-        "module:alertas",
-        "module:historial",
-        "module:panel_ejecutivo",
-        "module:panel_de_actividades",
-      ]);
-    }
+    planModulesSet.current = resolvePlanModules();
   }, [propEnabledModules, policy?.planModules]);
 
   const hasModule = (slug?: string): boolean => {
     if (!slug) return true;
+
+    // 1. Si policy?.isSuperUser es true, retornar true inmediatamente
+    if (policy?.isSuperUser) return true;
+
+    const roleNameLower = (policy?.roleName ?? "").toLowerCase();
+    const isAdmin = Boolean(
+      policy?.isSuperUser ||
+      roleNameLower.includes("admin") ||
+      roleNameLower.includes("gerente")
+    );
+
     if (planModulesSet.current.has("*")) return true;
     if (planModulesSet.current.has(slug)) return true;
+
     // Map standard submodule prefixes
     const prefix = slug.replace("module:", "");
     if (planModulesSet.current.has(prefix)) return true;
+
+    // 2. Mapeo de prefijos:
+    // * Si slug === "module:analitica_rendimiento" o prefix === "analitica_rendimiento", comprobar también "analytics" en planModulesSet.current
+    if (slug === "module:analitica_rendimiento" || prefix === "analitica_rendimiento") {
+      if (planModulesSet.current.has("analytics")) return true;
+    }
+
+    // * Si slug === "module:panel_ejecutivo" o prefix === "panel_ejecutivo", comprobar también "rbac_audit" o "operations"
+    if (slug === "module:panel_ejecutivo" || prefix === "panel_ejecutivo") {
+      if (
+        planModulesSet.current.has("rbac_audit") ||
+        planModulesSet.current.has("rbac-and-audit") ||
+        planModulesSet.current.has("operations")
+      ) {
+        return true;
+      }
+    }
+
+    // * Si slug === "module:panel_de_actividades" o prefix === "panel_de_actividades", comprobar también "operations"
+    if (slug === "module:panel_de_actividades" || prefix === "panel_de_actividades") {
+      if (planModulesSet.current.has("operations")) return true;
+    }
+
+    // * Para cualquier módulo básico (inicio, consumo, inventario, etc.), permitirlo si coincide o si el usuario es admin
+    const basicModules = [
+      "inicio",
+      "consumo",
+      "ventas",
+      "inventario",
+      "gestion",
+      "notificaciones",
+      "alertas",
+      "eventos",
+      "proyeccion",
+      "historial",
+      "contabilidad",
+    ];
+
+    if (basicModules.includes(prefix)) {
+      if (isAdmin) return true;
+      if (
+        (prefix === "inicio" && (planModulesSet.current.has("analytics") || planModulesSet.current.has("inicio"))) ||
+        (prefix === "consumo" && (planModulesSet.current.has("operations") || planModulesSet.current.has("consumo"))) ||
+        (prefix === "ventas" && (planModulesSet.current.has("operations") || planModulesSet.current.has("ventas"))) ||
+        (prefix === "inventario" && (planModulesSet.current.has("inventory") || planModulesSet.current.has("inventario"))) ||
+        (prefix === "gestion" && (
+          planModulesSet.current.has("catalog") ||
+          planModulesSet.current.has("recipes") ||
+          planModulesSet.current.has("procurement") ||
+          planModulesSet.current.has("inventory") ||
+          planModulesSet.current.has("gestion")
+        )) ||
+        (prefix === "notificaciones" && (planModulesSet.current.has("operations") || planModulesSet.current.has("notificaciones"))) ||
+        (prefix === "alertas" && (planModulesSet.current.has("inventory") || planModulesSet.current.has("alertas"))) ||
+        (prefix === "eventos" && (planModulesSet.current.has("operations") || planModulesSet.current.has("eventos"))) ||
+        (prefix === "proyeccion" && (planModulesSet.current.has("analytics") || planModulesSet.current.has("proyeccion"))) ||
+        (prefix === "historial" && (
+          planModulesSet.current.has("rbac_audit") ||
+          planModulesSet.current.has("rbac-and-audit") ||
+          planModulesSet.current.has("inventory") ||
+          planModulesSet.current.has("historial")
+        )) ||
+        (prefix === "contabilidad" && (planModulesSet.current.has("procurement") || planModulesSet.current.has("contabilidad")))
+      ) {
+        return true;
+      }
+    }
+
     return false;
   };
 
@@ -307,21 +469,25 @@ export function Sidebar({
     { path: "/contabilidad/facturas", label: "Facturas", icon: FileText, color: "#6366f1", rgb: "99,102,241", slug: "module:contabilidad" },
   ];
 
-  // Panel Ejecutivo items
-  const panelEjecutivoItems = [
-    { path: "/reportes/resumen-general", label: "Resumen General", icon: LayoutDashboard, color: "#3b82f6", rgb: "59,130,246", slug: "module:panel_ejecutivo" },
-    { path: "/reportes/resumen-ejecutivo", label: "Resumen Ejecutivo", icon: BarChart3, color: "#a855f7", rgb: "168,85,247", slug: "module:panel_ejecutivo" },
-    { path: "/reportes/control-perdidas", label: "Control de Pérdidas", icon: AlertTriangle, color: "#ef4444", rgb: "239,68,68", slug: "module:panel_ejecutivo" },
-    { path: "/reportes/eficiencia-operacional", label: "Eficiencia Operacional", icon: TrendingUp, color: "#10b981", rgb: "16,185,129", slug: "module:panel_ejecutivo" },
-    { path: "/reportes/vision-financiera", label: "Visión Financiera", icon: DollarSign, color: "#22c55e", rgb: "34,197,94", slug: "module:panel_ejecutivo" },
+  // Analítica y Rendimiento items (5 reportes ejecutivos)
+  const analiticaRendimientoItems = [
+    { path: "/reportes/resumen-general", label: t("navigation:reports.general_summary", "Resumen General"), icon: LayoutDashboard, color: "#3b82f6", rgb: "59,130,246", slug: "module:analitica_rendimiento" },
+    { path: "/reportes/resumen-ejecutivo", label: t("navigation:reports.executive_summary", "Resumen Ejecutivo"), icon: BarChart3, color: "#a855f7", rgb: "168,85,247", slug: "module:analitica_rendimiento" },
+    { path: "/reportes/control-perdidas", label: t("navigation:reports.loss_control", "Control de Pérdidas"), icon: AlertTriangle, color: "#ef4444", rgb: "239,68,68", slug: "module:analitica_rendimiento" },
+    { path: "/reportes/eficiencia-operacional", label: t("navigation:reports.operational_efficiency", "Eficiencia Operacional"), icon: TrendingUp, color: "#10b981", rgb: "16,185,129", slug: "module:analitica_rendimiento" },
+    { path: "/reportes/vision-financiera", label: t("navigation:reports.financial_vision", "Visión Financiera"), icon: DollarSign, color: "#22c55e", rgb: "34,197,94", slug: "module:analitica_rendimiento" },
   ];
 
-  // Panel de Actividades items
+  // Panel Ejecutivo items (Usuarios)
+  const panelEjecutivoItems = [
+    { path: "/actividades/usuarios", label: t("navigation:executive.users", "Usuarios"), icon: Users, color: "#8b5cf6", rgb: "139,92,246", slug: "module:panel_ejecutivo" },
+  ];
+
+  // Panel de Actividades items (Notas, Tareas, Horarios)
   const panelActividadesItems = [
-    { path: "/actividades/notas", label: "Notas", icon: ClipboardList, color: "#3b82f6", rgb: "59,130,246", slug: "module:panel_de_actividades" },
-    { path: "/actividades/tareas", label: "Tareas", icon: ClipboardCheck, color: "#10b981", rgb: "16,185,129", slug: "module:panel_de_actividades" },
-    { path: "/actividades/horarios", label: "Horarios", icon: CalendarDays, color: "#ec4899", rgb: "236,72,153", slug: "module:panel_de_actividades" },
-    { path: "/actividades/usuarios", label: "Usuarios", icon: Users, color: "#3b82f6", rgb: "59,130,246", slug: "module:panel_de_actividades" },
+    { path: "/actividades/notas", label: t("navigation:activities.notes", "Notas"), icon: ClipboardList, color: "#3b82f6", rgb: "59,130,246", slug: "module:panel_de_actividades" },
+    { path: "/actividades/tareas", label: t("navigation:activities.tasks", "Tareas"), icon: ClipboardCheck, color: "#10b981", rgb: "16,185,129", slug: "module:panel_de_actividades" },
+    { path: "/actividades/horarios", label: t("navigation:activities.schedules", "Horarios"), icon: CalendarDays, color: "#ec4899", rgb: "236,72,153", slug: "module:panel_de_actividades" },
   ];
 
   // Automatically expand sections based on current location
@@ -331,8 +497,9 @@ export function Sidebar({
     if (p.startsWith("/inventario") || p === "/contar-inventario" || p === "/recuentos") setIsInventarioOpen(true);
     if (p.startsWith("/gestion") || p === "/proveedores") setIsGestionOpen(true);
     if (p.startsWith("/contabilidad")) setIsContabilidadOpen(true);
-    if (p.startsWith("/reportes")) setIsPanelEjecutivoOpen(true);
-    if (p.startsWith("/actividades")) setIsPanelActividadesOpen(true);
+    if (p.startsWith("/reportes")) setIsAnaliticaOpen(true);
+    if (p.startsWith("/actividades/usuarios") || p === "/usuarios") setIsPanelEjecutivoOpen(true);
+    if (p.startsWith("/actividades") && !p.startsWith("/actividades/usuarios")) setIsPanelActividadesOpen(true);
   }, [location.pathname]);
 
   const isSubActive = (path: string): boolean => {
@@ -398,6 +565,9 @@ export function Sidebar({
                   <Link
                     key={sub.path}
                     to={sub.path}
+                    onClick={() => {
+                      if (onClose) onClose();
+                    }}
                     className={cn(
                       "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors",
                       subActive
@@ -467,6 +637,9 @@ export function Sidebar({
                   <Link
                     key={sub.path}
                     to={sub.path}
+                    onClick={() => {
+                      if (onClose) onClose();
+                    }}
                     className={cn(
                       "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors",
                       subActive
@@ -536,6 +709,9 @@ export function Sidebar({
                   <Link
                     key={sub.path}
                     to={sub.path}
+                    onClick={() => {
+                      if (onClose) onClose();
+                    }}
                     className={cn(
                       "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors",
                       subActive
@@ -605,6 +781,9 @@ export function Sidebar({
                   <Link
                     key={sub.path}
                     to={sub.path}
+                    onClick={() => {
+                      if (onClose) onClose();
+                    }}
                     className={cn(
                       "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors",
                       subActive
@@ -786,30 +965,137 @@ export function Sidebar({
             )}
           </div>
 
-          {/* Panel Ejecutivo */}
+          {/* 1. Analítica y Rendimiento */}
           <div className="pt-0.5 pb-0.5">
             <div
+              data-testid="sidebar-accordion-analitica"
+              role="button"
+              tabIndex={0}
+              aria-expanded={isAnaliticaOpen}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (!hasModule("module:analitica_rendimiento")) {
+                    handleModuleClick("module:analitica_rendimiento", t("navigation:analytics_and_performance", "Analítica y Rendimiento"), () => {});
+                    return;
+                  }
+                  if (!isCollapsed || isOpen) {
+                    setIsAnaliticaOpen(!isAnaliticaOpen);
+                  } else {
+                    navigate("/reportes/resumen-general");
+                  }
+                }
+              }}
               onClick={() => {
-                if (!hasModule("module:panel_ejecutivo")) {
-                  handleModuleClick("module:panel_ejecutivo", "Panel Ejecutivo", () => {});
+                if (!hasModule("module:analitica_rendimiento")) {
+                  handleModuleClick("module:analitica_rendimiento", t("navigation:analytics_and_performance", "Analítica y Rendimiento"), () => {});
                   return;
                 }
-                setIsPanelEjecutivoOpen(!isPanelEjecutivoOpen);
+                if (!isCollapsed || isOpen) {
+                  setIsAnaliticaOpen(!isAnaliticaOpen);
+                } else {
+                  navigate("/reportes/resumen-general");
+                }
+              }}
+              className={cn(
+                "flex items-center gap-3 px-3 h-11 rounded-xl transition-all duration-200 group relative overflow-hidden cursor-pointer",
+                !hasModule("module:analitica_rendimiento") && "opacity-50 cursor-not-allowed",
+                isAnaliticaOpen
+                  ? "bg-[#3b82f6]/10 text-[#3b82f6] font-semibold"
+                  : "hover:bg-[#3b82f6]/10 text-muted-foreground hover:text-[#3b82f6]"
+              )}
+            >
+              <div className="relative shrink-0 w-8 flex justify-center">
+                <TrendingUp size={19} className="text-[#3b82f6]" />
+              </div>
+              {(!isCollapsed || isOpen) && (
+                <span className="font-semibold text-xs whitespace-nowrap flex-1 text-left truncate">
+                  {t("navigation:analytics_and_performance", "Analítica y Rendimiento")}
+                </span>
+              )}
+              {(!isCollapsed || isOpen) && (
+                !hasModule("module:analitica_rendimiento") ? (
+                  <Lock size={14} className="text-muted-foreground ml-auto shrink-0" />
+                ) : (
+                  <ChevronDown size={14} className={cn("transition-transform shrink-0", isAnaliticaOpen && "rotate-180")} />
+                )
+              )}
+            </div>
+
+            {isAnaliticaOpen && (!isCollapsed || isOpen) && hasModule("module:analitica_rendimiento") && (
+              <div className="pl-9 pr-2 py-1 space-y-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                {analiticaRendimientoItems.map((sub) => {
+                  const subActive = isSubActive(sub.path);
+                  const SubIcon = sub.icon;
+                  return (
+                    <Link
+                      key={sub.path}
+                      to={sub.path}
+                      onClick={() => {
+                        if (onClose) onClose();
+                      }}
+                      className={cn(
+                        "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors",
+                        subActive
+                          ? "bg-primary/15 text-primary font-bold"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                      )}
+                    >
+                      <SubIcon size={14} className={subActive ? "text-primary" : "text-muted-foreground"} />
+                      <span className="truncate">{sub.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 2. Panel Ejecutivo */}
+          <div className="pt-0.5 pb-0.5">
+            <div
+              data-testid="sidebar-accordion-ejecutivo"
+              role="button"
+              tabIndex={0}
+              aria-expanded={isPanelEjecutivoOpen}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (!hasModule("module:panel_ejecutivo")) {
+                    handleModuleClick("module:panel_ejecutivo", t("navigation:executive_panel", "Panel Ejecutivo"), () => {});
+                    return;
+                  }
+                  if (!isCollapsed || isOpen) {
+                    setIsPanelEjecutivoOpen(!isPanelEjecutivoOpen);
+                  } else {
+                    navigate("/actividades/usuarios");
+                  }
+                }
+              }}
+              onClick={() => {
+                if (!hasModule("module:panel_ejecutivo")) {
+                  handleModuleClick("module:panel_ejecutivo", t("navigation:executive_panel", "Panel Ejecutivo"), () => {});
+                  return;
+                }
+                if (!isCollapsed || isOpen) {
+                  setIsPanelEjecutivoOpen(!isPanelEjecutivoOpen);
+                } else {
+                  navigate("/actividades/usuarios");
+                }
               }}
               className={cn(
                 "flex items-center gap-3 px-3 h-11 rounded-xl transition-all duration-200 group relative overflow-hidden cursor-pointer",
                 !hasModule("module:panel_ejecutivo") && "opacity-50 cursor-not-allowed",
                 isPanelEjecutivoOpen
-                  ? "bg-blue-600/10 text-blue-500 font-semibold"
-                  : "hover:bg-blue-600/10 text-muted-foreground hover:text-blue-500"
+                  ? "bg-[#8b5cf6]/10 text-[#8b5cf6] font-semibold"
+                  : "hover:bg-[#8b5cf6]/10 text-muted-foreground hover:text-[#8b5cf6]"
               )}
             >
               <div className="relative shrink-0 w-8 flex justify-center">
-                <BarChart3 size={19} className="text-blue-500" />
+                <Briefcase size={19} className="text-[#8b5cf6]" />
               </div>
               {(!isCollapsed || isOpen) && (
-                <span className="font-semibold text-xs whitespace-nowrap flex-1 text-left">
-                  Panel Ejecutivo
+                <span className="font-semibold text-xs whitespace-nowrap flex-1 text-left truncate">
+                  {t("navigation:executive_panel", "Panel Ejecutivo")}
                 </span>
               )}
               {(!isCollapsed || isOpen) && (
@@ -830,6 +1116,9 @@ export function Sidebar({
                     <Link
                       key={sub.path}
                       to={sub.path}
+                      onClick={() => {
+                        if (onClose) onClose();
+                      }}
                       className={cn(
                         "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors",
                         subActive
@@ -846,30 +1135,52 @@ export function Sidebar({
             )}
           </div>
 
-          {/* Panel de Actividades */}
+          {/* 3. Panel de Actividades */}
           <div className="pt-0.5 pb-0.5">
             <div
+              data-testid="sidebar-accordion-actividades"
+              role="button"
+              tabIndex={0}
+              aria-expanded={isPanelActividadesOpen}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  if (!hasModule("module:panel_de_actividades")) {
+                    handleModuleClick("module:panel_de_actividades", t("navigation:activities_panel", "Panel de Actividades"), () => {});
+                    return;
+                  }
+                  if (!isCollapsed || isOpen) {
+                    setIsPanelActividadesOpen(!isPanelActividadesOpen);
+                  } else {
+                    navigate("/actividades/notas");
+                  }
+                }
+              }}
               onClick={() => {
                 if (!hasModule("module:panel_de_actividades")) {
-                  handleModuleClick("module:panel_de_actividades", "Panel de Actividades", () => {});
+                  handleModuleClick("module:panel_de_actividades", t("navigation:activities_panel", "Panel de Actividades"), () => {});
                   return;
                 }
-                setIsPanelActividadesOpen(!isPanelActividadesOpen);
+                if (!isCollapsed || isOpen) {
+                  setIsPanelActividadesOpen(!isPanelActividadesOpen);
+                } else {
+                  navigate("/actividades/notas");
+                }
               }}
               className={cn(
                 "flex items-center gap-3 px-3 h-11 rounded-xl transition-all duration-200 group relative overflow-hidden cursor-pointer",
                 !hasModule("module:panel_de_actividades") && "opacity-50 cursor-not-allowed",
                 isPanelActividadesOpen
-                  ? "bg-purple-600/10 text-purple-500 font-semibold"
-                  : "hover:bg-purple-600/10 text-muted-foreground hover:text-purple-500"
+                  ? "bg-[#a855f7]/10 text-[#a855f7] font-semibold"
+                  : "hover:bg-[#a855f7]/10 text-muted-foreground hover:text-[#a855f7]"
               )}
             >
               <div className="relative shrink-0 w-8 flex justify-center">
-                <Users size={19} className="text-purple-500" />
+                <CalendarDays size={19} className="text-[#a855f7]" />
               </div>
               {(!isCollapsed || isOpen) && (
-                <span className="font-semibold text-xs whitespace-nowrap flex-1 text-left">
-                  Panel de Actividades
+                <span className="font-semibold text-xs whitespace-nowrap flex-1 text-left truncate">
+                  {t("navigation:activities_panel", "Panel de Actividades")}
                 </span>
               )}
               {(!isCollapsed || isOpen) && (
@@ -890,6 +1201,9 @@ export function Sidebar({
                     <Link
                       key={sub.path}
                       to={sub.path}
+                      onClick={() => {
+                        if (onClose) onClose();
+                      }}
                       className={cn(
                         "flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors",
                         subActive
@@ -906,6 +1220,109 @@ export function Sidebar({
             )}
           </div>
         </nav>
+
+        {/* Footer Fijo: OppyTec + Settings Popover */}
+        <div className="h-[53px] p-4 border-t border-border mt-auto bg-background/50 flex items-center justify-between shrink-0 relative">
+          {(!isCollapsed || isOpen) ? (
+            <div className="flex items-center justify-between w-full transition-all duration-300 ease-in-out">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse ocean-star shrink-0" />
+                <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest whitespace-nowrap truncate">
+                  OPPYTEC
+                </span>
+              </div>
+              <div ref={settingsRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                  className="h-8 w-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground border border-transparent hover:border-border cursor-pointer"
+                  title={translateKey("configuracion", "sidebar.settings_button")}
+                  aria-label={translateKey("configuracion", "sidebar.settings_button")}
+                  data-testid="sidebar-settings-btn"
+                >
+                  <Settings size={18} />
+                </button>
+                {isSettingsOpen && (
+                  <div
+                    data-testid="sidebar-settings-popover"
+                    className="absolute bottom-10 right-0 w-56 bg-card rounded-2xl p-2 shadow-2xl border border-border z-50 mb-2"
+                  >
+                    <div className="px-3 py-2 border-b border-border mb-2">
+                      <span className="text-sm font-bold">
+                        {translateKey("configuracion", "sidebar.title")}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {configSections.map((section) => {
+                        const Icon = section.icon;
+                        return (
+                          <button
+                            key={section.id}
+                            type="button"
+                            onClick={() => {
+                              section.action();
+                              setIsSettingsOpen(false);
+                              if (onClose) onClose();
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-secondary transition-colors text-sm text-left cursor-pointer"
+                          >
+                            <Icon size={16} className="text-muted-foreground" />
+                            <span>{section.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div ref={settingsRef} className="relative w-full flex justify-center">
+              <button
+                type="button"
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className="h-8 w-8 rounded-lg hover:bg-secondary flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground border border-transparent hover:border-border cursor-pointer"
+                title={translateKey("configuracion", "sidebar.settings_button")}
+                aria-label={translateKey("configuracion", "sidebar.settings_button")}
+                data-testid="sidebar-settings-btn-collapsed"
+              >
+                <Settings size={18} />
+              </button>
+              {isSettingsOpen && (
+                <div
+                  data-testid="sidebar-settings-popover"
+                  className="absolute bottom-10 left-12 w-56 bg-card rounded-2xl p-2 shadow-2xl border border-border z-50 mb-2"
+                >
+                  <div className="px-3 py-2 border-b border-border mb-2">
+                    <span className="text-sm font-bold">
+                      {translateKey("configuracion", "sidebar.title")}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {configSections.map((section) => {
+                      const Icon = section.icon;
+                      return (
+                        <button
+                          key={section.id}
+                          type="button"
+                          onClick={() => {
+                            section.action();
+                            setIsSettingsOpen(false);
+                            if (onClose) onClose();
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-secondary transition-colors text-sm text-left cursor-pointer"
+                        >
+                          <Icon size={16} className="text-muted-foreground" />
+                          <span>{section.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </aside>
     </>
   );

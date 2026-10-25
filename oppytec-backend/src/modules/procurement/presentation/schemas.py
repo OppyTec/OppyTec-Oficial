@@ -75,13 +75,13 @@ class ThreeWayReconcileResponse(BaseModel):
 
 
 class InvoiceOcrUploadRequest(BaseModel):
-    """Subida de factura PDF/Imagen en Base64 para extracción OCR con validación de Magic Bytes."""
+    """Subida de factura PDF/XML/Imagen en Base64 para extracción OCR con validación de Magic Bytes."""
 
     model_config = ConfigDict(extra="forbid")
 
     filename: str = Field(..., min_length=3, max_length=180)
     po_number: str = Field(..., min_length=2, max_length=64)
-    content_base64: str = Field(..., min_length=4)
+    content_base64: str = Field(..., min_length=4, max_length=14 * 1024 * 1024)
 
 
 class InvoiceOcrResponse(BaseModel):

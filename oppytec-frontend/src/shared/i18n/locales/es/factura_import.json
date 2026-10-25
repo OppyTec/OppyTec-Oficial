@@ -1,0 +1,95 @@
+{
+  "modal": {
+    "title": "Ingreso de Factura Inteligente (PDF / XML DTE IA)",
+    "description": "Extracción automática de líneas de compra, asociación al catálogo y actualización de existencias."
+  },
+  "dialog": {
+    "title": "Ingreso de Factura Inteligente (PDF / XML DTE IA)",
+    "description": "Extracción automática de líneas de compra, asociación al catálogo y actualización de existencias."
+  },
+  "draft": {
+    "has_draft": "Hay una factura guardada en borrador.",
+    "restore": "Recuperar",
+    "discard": "Descartar",
+    "restored_success": "Borrador de factura recuperado",
+    "discarded_info": "Borrador descartado",
+    "restore_error": "Error al restaurar borrador"
+  },
+  "upload": {
+    "drag_drop": "Arrastra tu Factura en PDF o XML DTE aquí",
+    "analyzing": "Analizando documento con Inteligencia Artificial...",
+    "supported_formats": "Formatos compatibles: PDF estándar o XML DTE chileno (Servicio de Impuestos Internos).",
+    "select_button": "Seleccionar Factura",
+    "pdf_badge": "PDF Electrónico",
+    "xml_badge": "XML DTE (SII)",
+    "parse_success": "Factura analizada con éxito por IA"
+  },
+  "supplier": {
+    "unknown_supplier": "Proveedor Desconocido",
+    "rut": "RUT: {{rut}}",
+    "new_supplier_badge": "Nuevo Proveedor",
+    "registered_badge": "Registrado",
+    "quick_register_btn": "Dar de Alta Rápido",
+    "doc_label": "Documento",
+    "folio": "Factura N° {{folio}}",
+    "emission_label": "Emisión",
+    "today": "Hoy",
+    "net_amount": "Monto Neto",
+    "total_amount": "Total Factura"
+  },
+  "warehouse": {
+    "target_label": "Bodega para ingreso físico del stock:",
+    "warehouses": {
+      "central": "Bodega Principal / Central",
+      "kitchen": "Cocina Caliente",
+      "cold_room": "Cámara Fría -18°C",
+      "bar": "Barra & Cava"
+    }
+  },
+  "review_grid": {
+    "search_placeholder": "Buscar ítems en factura...",
+    "matched_count": "{{count}} Asociados al Catálogo",
+    "new_count": "{{count}} Nuevos a Crear",
+    "columns": {
+      "code": "Código / SKU",
+      "description": "Descripción Facturada",
+      "quantity": "Cantidad",
+      "unit": "Unidad",
+      "price": "Precio Neto Unit.",
+      "total": "Total Línea",
+      "association": "Asociar a Producto Catálogo",
+      "actions": "Acciones"
+    },
+    "new_product_option": "✨ + Crear como Nuevo Producto",
+    "existing_products_group": "Productos Existentes en Catálogo",
+    "empty_state": "No se encontraron líneas en el documento.",
+    "total_calculated": "Total Líneas Calculado ({{count}} ítems):",
+    "delete_line_tooltip": "Quitar línea"
+  },
+  "units": {
+    "labels": {
+      "kg": "Kilogramos",
+      "g": "Gramos",
+      "l": "Litros",
+      "ml": "Mililitros",
+      "un": "Unidades",
+      "pack": "Pack",
+      "caja": "Caja",
+      "botella": "Botella",
+      "lata": "Lata",
+      "saco": "Saco"
+    },
+    "factor_tooltip": "Factor de conversión a unidad base"
+  },
+  "confirm": {
+    "empty_lines_error": "La factura no tiene líneas válidas",
+    "submitting_btn": "Ingresando Factura...",
+    "confirm_btn": "Ingresar Factura ({{count}} Ítems)",
+    "confirm_success": "Factura N° {{folio}} ingresada. Stock actualizado en bodega.",
+    "confirm_error": "Ocurrió un error al procesar la factura"
+  },
+  "actions": {
+    "reupload": "Cargar Otro Documento",
+    "cancel": "Cancelar"
+  }
+}

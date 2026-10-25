@@ -1,0 +1,99 @@
+{
+  "header": {
+    "title": "Mi Perfil",
+    "subtitle": "Gestiona tu información personal, cargo y plantillas de trabajo en la plataforma"
+  },
+  "avatar": {
+    "change_photo": "Cambiar foto de perfil",
+    "approval_note": "Modificaciones requieren aprobación previa",
+    "uploading": "Subiendo imagen...",
+    "photo_loaded": "Foto de perfil cargada. Recuerda guardar los cambios."
+  },
+  "summary": {
+    "title": "Resumen Operativo",
+    "current_role": "Cargo Actual",
+    "operating_areas": "Áreas Operativas",
+    "total_access": "Acceso Total",
+    "areas_count": "{{count}} áreas",
+    "table_templates": "Plantillas de Tabla",
+    "consumption_templates": "Plantillas Consumo",
+    "saved_count": "{{count}} guardadas"
+  },
+  "info": {
+    "title": "Información Personal & Contacto",
+    "description": "Actualiza tus nombres, datos de contacto y posición en la empresa",
+    "first_name": "Nombre",
+    "last_name": "Apellido",
+    "first_name_placeholder": "Tu nombre",
+    "last_name_placeholder": "Tu apellido",
+    "email": "Correo Electrónico",
+    "email_placeholder": "correo@ejemplo.com",
+    "phone": "Teléfono",
+    "phone_placeholder": "+56 9 1234 5678",
+    "hide_email": "Ocultar correo para otros usuarios",
+    "show_email": "Correo visible para otros",
+    "hide_phone": "Ocultar teléfono para otros usuarios",
+    "show_phone": "Teléfono visible para otros",
+    "requires_approval": "(Requiere Aprobación)"
+  },
+  "voice": {
+    "title": "Comando de Voz Oppy (Modo Manos Libres)",
+    "description": "Tu apodo para dictar consumos y mermas en cocina diciendo: \"Oppy {{nickname}}, [orden]\"",
+    "label": "Apodo o Palabra Clave",
+    "placeholder": "ej: juan, chef, fénix, master",
+    "tip": "💡 Puedes elegir el nombre o apodo que gustes y cambiarlo cuando quieras. Cero biometría: Oppy solo interpreta lingüísticamente tu comando."
+  },
+  "areas": {
+    "title": "Áreas Operativas",
+    "read_only": "(Solo Lectura)",
+    "global_access": "Acceso Global",
+    "global_access_description": "Tienes control total sobre todas las áreas operativas del restaurante.",
+    "none_assigned": "Ninguna área operativa asignada"
+  },
+  "actions": {
+    "save": "Guardar Cambios",
+    "saving": "Sincronizando...",
+    "new_template": "+ Nueva Plantilla",
+    "delete": "Eliminar",
+    "make_public": "Hacer Pública",
+    "make_private": "Hacer Privada"
+  },
+  "templates": {
+    "title": "Mis Plantillas Personalizadas",
+    "subtitle": "Accede y gestiona tus plantillas de columnas, correos e inventarios",
+    "tab_tables": "Vista de Tablas",
+    "tab_consumption": "Consumo Interno",
+    "tab_emails": "Emails & Mensajes",
+    "empty_tables_title": "Aún no tienes plantillas personalizadas de tablas",
+    "empty_tables_desc": "Puedes guardar tus configuraciones de columnas haciendo click en el ícono de marcapáginas en el modal \"Personalizar Vista de Tabla\" en el módulo de Gestión.",
+    "empty_consumption_title": "Aún no tienes plantillas personalizadas de consumo",
+    "empty_consumption_desc": "Puedes crear y personalizar tus plantillas de consumo haciendo click en el selector de plantillas en la cabecera del módulo de Consumo Interno.",
+    "emails_title": "Plantillas de Email & Notificaciones",
+    "emails_desc": "Próximamente podrás gestionar y personalizar las plantillas de correo para notificaciones de stock y pedidos.",
+    "custom_badge": "Personalizada",
+    "cols_count": "{{count}} cols",
+    "no_description": "Sin descripción asignada",
+    "public_badge": "🌐 Pública",
+    "private_badge": "⭐ Privada",
+    "consumption_meta": "📦 {{count}} productos seleccionados • {{cols}} Cols"
+  },
+  "dialog": {
+    "new_title": "Crear Nueva Plantilla",
+    "new_description": "Guarda una configuración recurrente para tablas o consumos",
+    "type_label": "Tipo de Plantilla",
+    "name_label": "Nombre de la Plantilla",
+    "name_placeholder": "Ej: Auditoría Cierre Mensual",
+    "description_label": "Descripción",
+    "description_placeholder": "Describe el propósito de esta plantilla...",
+    "save_button": "Crear Plantilla"
+  },
+  "toast": {
+    "save_success": "Perfil actualizado correctamente",
+    "save_error": "Error al actualizar el perfil",
+    "photo_loaded": "Foto de perfil cargada. Recuerda guardar los cambios.",
+    "template_deleted": "Plantilla eliminada correctamente",
+    "template_visibility_updated": "Visibilidad de plantilla actualizada",
+    "template_created": "Plantilla creada correctamente",
+    "fill_required": "Por favor ingresa un nombre para la plantilla"
+  }
+}

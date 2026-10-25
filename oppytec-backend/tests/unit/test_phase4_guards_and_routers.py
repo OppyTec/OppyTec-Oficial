@@ -150,8 +150,11 @@ async def test_all_ten_module_routers_and_rbac_enforcement(
     async_client: httpx.AsyncClient,
 ) -> None:
     """Verifica autenticación, RBAC 3 niveles, bloqueo Cross-Tenant y endpoints de los 10 módulos."""
+    from src.modules.inventory.presentation.router import _inventory_service
+
     clear_revoked_sessions()
     get_rate_limiter().reset()
+    _inventory_service.reset()
 
     # 1. Sin token -> HTTP 401 RFC 7807
     unauth = await async_client.get("/api/v1/catalog/products")

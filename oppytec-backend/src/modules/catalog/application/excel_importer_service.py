@@ -10,10 +10,12 @@ from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from typing import Protocol
 
+from src.core.exceptions import SecurityValidationError
 from src.modules.catalog.domain.unit_conversion import UnitLayers
 
 JEV_CONFIDENCE_THRESHOLD = Decimal("0.85")
 REQUIRED_FIELDS: tuple[str, ...] = ("sku", "nombre", "unidad_compra", "costo_compra_neto")
+MAX_IMPORT_ROWS: int = 1500
 
 
 @dataclass(frozen=True)
@@ -62,6 +64,12 @@ class ExcelImporterService:
 
     def import_rows(self, headers: Sequence[str], rows: Sequence[Mapping[str, str]]) -> ImportReport:
         """Mapea columnas, valida cada fila y reporta; confianza baja => revisión humana."""
+        if len(rows) > MAX_IMPORT_ROWS:
+            raise SecurityValidationError(
+                f"Batch row limit exceeded ({len(rows)} > {MAX_IMPORT_ROWS}).",
+                i18n_key="security:errors.batch_row_limit_exceeded",
+                error_code="BATCH_ROW_LIMIT_EXCEEDED",
+            )
         decision = self._mapper.map_columns(headers)
         needs_review = decision.confidence < JEV_CONFIDENCE_THRESHOLD
         missing = [f for f in REQUIRED_FIELDS if f not in decision.mapping.values()]

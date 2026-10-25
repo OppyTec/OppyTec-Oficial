@@ -2,18 +2,95 @@
   "version": "2.0.0",
   "active_claims": [
     {
-      "file": "oppytec-frontend/src/shared/components/layout/AppLayout.tsx",
-      "symbol_path": "AppLayout",
+      "file": "oppytec-frontend/src/shared/components/layout/Sidebar.tsx",
+      "symbol_path": "Sidebar",
       "claimed_by": "05-frontend-senior-dev",
-      "intent": "Replicar layout exacto Legacy con AppBar, Sidebar y HomeLanding",
-      "claimed_at": "2026-10-24T14:27:28.044740+00:00"
+      "intent": "Reorganize collapsible navigation panels into Analitica, Panel Ejecutivo and Panel Actividades",
+      "claimed_at": "2026-10-24T19:24:35.509336+00:00"
     },
     {
-      "file": "oppytec-frontend/src/shared/components/layout/Navbar.tsx",
-      "symbol_path": "Navbar",
-      "claimed_by": "07-i18n-and-fx-currency-specialist",
-      "intent": "Integrar CurrencySelector y LanguageFlagSelector entre buscador y usuario",
-      "claimed_at": "2026-10-24T16:32:00.000000+00:00"
+      "file": "oppytec-frontend/src/app/router.tsx",
+      "symbol_path": "ClientAppShell",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Mount UsuariosPage on /actividades/usuarios and /usuarios",
+      "claimed_at": "2026-10-24T19:24:48.838997+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/shared/i18n/config.ts",
+      "symbol_path": "I18N_RESOURCES",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Register users and navigation namespaces",
+      "claimed_at": "2026-10-24T19:25:04.301807+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/users/UsuariosPage.tsx",
+      "symbol_path": "UsuariosPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Replicate pixel-perfect legacy UsuariosPage with Mobile-First, RBAC and i18n",
+      "claimed_at": "2026-10-24T19:32:26.232042+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/shared/i18n/i18n.test.tsx",
+      "symbol_path": "i18n.test",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Update i18n test to verify users and navigation namespaces",
+      "claimed_at": "2026-10-24T19:37:18.390032+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/users/UsuariosPage.test.tsx",
+      "symbol_path": "UsuariosPage.test",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Test suite for UsuariosPage component",
+      "claimed_at": "2026-10-24T19:38:02.227277+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/shared/auth/usePermissions.ts",
+      "symbol_path": "DEFAULT_RBAC_POLICY_STATE",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Add rbac_audit.users.manage permission to default policy",
+      "claimed_at": "2026-10-24T19:39:09.019913+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/App.test.tsx",
+      "symbol_path": "App.test",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Test Sidebar reorganization and UsuariosPage mounting",
+      "claimed_at": "2026-10-24T19:40:18.776494+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/gestion/types.ts",
+      "symbol_path": "useGestion",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Construir arquitectura de tipos y hook useGestion para Fase 1",
+      "claimed_at": "2026-10-24T21:19:39.637001+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/gestion/components/ToolbarGestion.tsx",
+      "symbol_path": "ToolbarGestion",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Construir toolbar, carrusel de categorias y paginador para Fase 2",
+      "claimed_at": "2026-10-24T21:39:45.266608+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/gestion/components/ProductTable.tsx",
+      "symbol_path": "ProductTable",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Construir tabla multidimensional de 30 columnas y vista movil adaptativa",
+      "claimed_at": "2026-10-24T21:56:02.587417+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/gestion/components/TableConfigModal.tsx",
+      "symbol_path": "TableConfigModal",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Construir modales de soporte para tabla, categorias, catalogos y transferencias",
+      "claimed_at": "2026-10-24T22:17:57.129949+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/gestion/components/ProductoWizardDialog.tsx",
+      "symbol_path": "ProductoWizardDialog",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Construir ProductoWizardDialog multipaso con drafting y nombre autogenerado",
+      "claimed_at": "2026-10-24T22:56:24.768140+00:00"
     }
   ]
 }

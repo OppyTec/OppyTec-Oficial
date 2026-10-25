@@ -29,15 +29,23 @@ import {
   translateKey,
 } from "./index";
 
-describe("Frontend i18n Suite (11 Namespaces, SVG Flags & Pollo King Proper Noun Guard)", () => {
+describe("Frontend i18n Suite (12 Namespaces, SVG Flags & Pollo King Proper Noun Guard)", () => {
   beforeEach(() => {
     window.localStorage.clear();
     setActiveLanguage("es");
   });
 
-  it("initializes all 11 namespaces for both es and en with 1:1 parity", () => {
+  it("initializes all 19 namespaces for both es and en with 1:1 parity", () => {
     expect(SUPPORTED_LANGUAGES).toEqual(["es", "en"]);
-    expect(I18N_NAMESPACES).toHaveLength(11);
+    expect(I18N_NAMESPACES).toHaveLength(19);
+    expect(I18N_NAMESPACES).toContain("configuracion");
+    expect(I18N_NAMESPACES).toContain("profile");
+    expect(I18N_NAMESPACES).toContain("users");
+    expect(I18N_NAMESPACES).toContain("navigation");
+    expect(I18N_NAMESPACES).toContain("gestion");
+    expect(I18N_NAMESPACES).toContain("products");
+    expect(I18N_NAMESPACES).toContain("excel_import");
+    expect(I18N_NAMESPACES).toContain("factura_import");
     expect(i18next.isInitialized).toBe(true);
 
     for (const ns of I18N_NAMESPACES) {
@@ -49,12 +57,28 @@ describe("Frontend i18n Suite (11 Namespaces, SVG Flags & Pollo King Proper Noun
     expect(translateKey("common", "app.welcome", vars)).toBe(
       "Bienvenido a OppyTec, Chef"
     );
+    expect(translateKey("gestion", "header.title")).toBe("Gestión de Productos");
+    expect(translateKey("products", "wizard.kpis.net_margin")).toBe("Margen Neto");
+    expect(translateKey("excel_import", "modal.title")).toBe(
+      "Importador Inteligente de Productos (Excel / CSV IA)"
+    );
+    expect(translateKey("factura_import", "modal.title")).toBe(
+      "Ingreso de Factura Inteligente (PDF / XML DTE IA)"
+    );
 
     setActiveLanguage("en");
     expect(getActiveLanguage()).toBe("en");
     expect(window.localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe("en");
     expect(translateKey("common", "app.welcome", vars)).toBe(
       "Welcome to OppyTec, Chef"
+    );
+    expect(translateKey("gestion", "header.title")).toBe("Product Management");
+    expect(translateKey("products", "wizard.kpis.net_margin")).toBe("Net Margin");
+    expect(translateKey("excel_import", "modal.title")).toBe(
+      "Smart Product Importer (Excel / CSV AI)"
+    );
+    expect(translateKey("factura_import", "modal.title")).toBe(
+      "Smart Invoice Ingestion (PDF / XML DTE AI)"
     );
   });
 
@@ -197,5 +221,90 @@ describe("Frontend i18n Suite (11 Namespaces, SVG Flags & Pollo King Proper Noun
     // Switch back to Spanish
     fireEvent.click(screen.getByTestId("lang-option-es"));
     expect(screen.getByTestId("reactive-title").textContent).toBe("Sin registros disponibles");
+  });
+
+  it("verifies 1:1 parity and full coverage for 'gestion', 'products', 'excel_import' and 'factura_import' namespaces", () => {
+    function extractLeafKeys(obj: unknown, prefix = ""): string[] {
+      if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+        return prefix ? [prefix] : [];
+      }
+      return Object.entries(obj).flatMap(([k, v]) =>
+        extractLeafKeys(v, prefix ? `${prefix}.${k}` : k)
+      );
+    }
+
+    for (const ns of ["gestion", "products", "excel_import", "factura_import"] as const) {
+      const esResource = I18N_RESOURCES.es?.[ns];
+      const enResource = I18N_RESOURCES.en?.[ns];
+
+      expect(esResource).toBeDefined();
+      expect(enResource).toBeDefined();
+
+      const esKeys = extractLeafKeys(esResource).sort();
+      const enKeys = extractLeafKeys(enResource).sort();
+
+      expect(esKeys).toEqual(enKeys);
+      expect(esKeys.length).toBeGreaterThan(50);
+    }
+
+    // Gestion specific keys
+    expect(translateKey("gestion", "header.subtitle")).toBe(
+      "Catálogo de productos e insumos"
+    );
+    expect(translateKey("gestion", "columns.labels.ultimo_costo_unidad_neto")).toBe(
+      "Último Costo Unitario Neto"
+    );
+    expect(translateKey("gestion", "modals.table_config.title")).toBe(
+      "Configuración de Tabla Analítica"
+    );
+    expect(translateKey("gestion", "modals.transfer.title")).toBe(
+      "Transferencia de Stock entre Bodegas"
+    );
+
+    // Products specific keys
+    expect(translateKey("products", "wizard.stepper.step_1")).toBe(
+      "1. Básico & Familia"
+    );
+    expect(translateKey("products", "wizard.stepper.step_4")).toBe(
+      "4. Precios & Costos"
+    );
+    expect(translateKey("products", "wizard.kpis.markup")).toBe("Markup %");
+    expect(translateKey("products", "wizard.kpis.food_cost")).toBe("Food Cost");
+    expect(translateKey("products", "wizard.draft.saving")).toBe(
+      "Guardando borrador..."
+    );
+
+    // Excel import specific keys
+    expect(translateKey("excel_import", "stepper.step_1")).toBe("Carga");
+    expect(translateKey("excel_import", "stepper.step_2")).toBe("Columnas");
+    expect(translateKey("excel_import", "columns.fields.costo_neto")).toBe("Costo Unitario Neto");
+
+    // Factura import specific keys
+    expect(translateKey("factura_import", "upload.select_button")).toBe("Seleccionar Factura");
+    expect(translateKey("factura_import", "supplier.new_supplier_badge")).toBe("Nuevo Proveedor");
+
+    // English switch
+    setActiveLanguage("en");
+    expect(translateKey("gestion", "header.subtitle")).toBe(
+      "Product and supplies catalog"
+    );
+    expect(translateKey("gestion", "columns.labels.ultimo_costo_unidad_neto")).toBe(
+      "Last Unit Cost Net"
+    );
+    expect(translateKey("gestion", "modals.table_config.title")).toBe(
+      "Analytical Table Configuration"
+    );
+    expect(translateKey("products", "wizard.stepper.step_1")).toBe(
+      "1. Basic & Family"
+    );
+    expect(translateKey("products", "wizard.kpis.markup")).toBe("Markup %");
+    expect(translateKey("products", "wizard.draft.saving")).toBe(
+      "Saving draft..."
+    );
+    expect(translateKey("excel_import", "stepper.step_1")).toBe("Upload");
+    expect(translateKey("excel_import", "stepper.step_2")).toBe("Columns");
+    expect(translateKey("excel_import", "columns.fields.costo_neto")).toBe("Net Unit Cost");
+    expect(translateKey("factura_import", "upload.select_button")).toBe("Select Invoice");
+    expect(translateKey("factura_import", "supplier.new_supplier_badge")).toBe("New Supplier");
   });
 });

@@ -13,7 +13,15 @@ export type I18nNamespace =
   | "operations"
   | "analytics"
   | "oppyfy"
-  | "platform_admin";
+  | "platform_admin"
+  | "configuracion"
+  | "profile"
+  | "users"
+  | "navigation"
+  | "gestion"
+  | "products"
+  | "excel_import"
+  | "factura_import";
 
 export type TranslationInterpolationVars = Readonly<
   Record<string, string | number>

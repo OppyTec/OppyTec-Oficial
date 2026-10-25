@@ -30,7 +30,7 @@ import {
   resolveQuotaSemaphoreStatus,
   ResponsiveDialog,
 } from "@/shared/components/ui";
-import { Navbar, PLAN_BASICO_10_NAV_ITEMS } from "@/shared/components/layout";
+import { Navbar, PLAN_BASICO_10_NAV_ITEMS, Sidebar } from "@/shared/components/layout";
 import {
   applyDocumentTheme,
   MOBILE_BREAKPOINT_PX,
@@ -546,5 +546,19 @@ describe("OppyTec v2.0 — Phase 5 Frontend Architecture & Paso 1 Auth Routing",
 
     // Verify User Profile Pill is rendered
     expect(screen.getByTestId("navbar-user-pill")).toBeTruthy();
+  });
+
+  it("renders Sidebar with reorganized collapsible groups: Analítica y Rendimiento, Panel Ejecutivo, and Panel de Actividades", () => {
+    render(
+      <BrowserRouter>
+        <AppProviders>
+          <Sidebar isOpen={true} />
+        </AppProviders>
+      </BrowserRouter>
+    );
+
+    expect(screen.getByText("Analítica y Rendimiento")).toBeTruthy();
+    expect(screen.getByText("Panel Ejecutivo")).toBeTruthy();
+    expect(screen.getByText("Panel de Actividades")).toBeTruthy();
   });
 });

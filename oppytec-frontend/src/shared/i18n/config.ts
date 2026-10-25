@@ -19,6 +19,14 @@ import platformAdminEn from "./locales/en/platform_admin.json";
 import procurementEn from "./locales/en/procurement.json";
 import rbacAuditEn from "./locales/en/rbac_audit.json";
 import recipesEn from "./locales/en/recipes.json";
+import configuracionEn from "./locales/en/configuracion.json";
+import profileEn from "./locales/en/profile.json";
+import usersEn from "./locales/en/users.json";
+import navigationEn from "./locales/en/navigation.json";
+import gestionEn from "./locales/en/gestion.json";
+import productsEn from "./locales/en/products.json";
+import excelImportEn from "./locales/en/excel_import.json";
+import facturaImportEn from "./locales/en/factura_import.json";
 
 import analyticsEs from "./locales/es/analytics.json";
 import authEs from "./locales/es/auth.json";
@@ -31,6 +39,14 @@ import platformAdminEs from "./locales/es/platform_admin.json";
 import procurementEs from "./locales/es/procurement.json";
 import rbacAuditEs from "./locales/es/rbac_audit.json";
 import recipesEs from "./locales/es/recipes.json";
+import configuracionEs from "./locales/es/configuracion.json";
+import profileEs from "./locales/es/profile.json";
+import usersEs from "./locales/es/users.json";
+import navigationEs from "./locales/es/navigation.json";
+import gestionEs from "./locales/es/gestion.json";
+import productsEs from "./locales/es/products.json";
+import excelImportEs from "./locales/es/excel_import.json";
+import facturaImportEs from "./locales/es/factura_import.json";
 
 export const LANGUAGE_STORAGE_KEY = "oppytec_lang";
 
@@ -58,6 +74,14 @@ export const I18N_NAMESPACES: readonly I18nNamespace[] = [
   "analytics",
   "oppyfy",
   "platform_admin",
+  "configuracion",
+  "profile",
+  "users",
+  "navigation",
+  "gestion",
+  "products",
+  "excel_import",
+  "factura_import",
 ] as const;
 
 /**
@@ -90,6 +114,14 @@ export const I18N_RESOURCES: Resource = {
     analytics: analyticsEs,
     oppyfy: oppyfyEs,
     platform_admin: platformAdminEs,
+    configuracion: configuracionEs,
+    profile: profileEs,
+    users: usersEs,
+    navigation: navigationEs,
+    gestion: gestionEs,
+    products: productsEs,
+    excel_import: excelImportEs,
+    factura_import: facturaImportEs,
   },
   en: {
     common: commonEn,
@@ -103,6 +135,14 @@ export const I18N_RESOURCES: Resource = {
     analytics: analyticsEn,
     oppyfy: oppyfyEn,
     platform_admin: platformAdminEn,
+    configuracion: configuracionEn,
+    profile: profileEn,
+    users: usersEn,
+    navigation: navigationEn,
+    gestion: gestionEn,
+    products: productsEn,
+    excel_import: excelImportEn,
+    factura_import: facturaImportEn,
   },
 };
 

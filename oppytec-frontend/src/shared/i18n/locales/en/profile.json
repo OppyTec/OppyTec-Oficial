@@ -1,0 +1,99 @@
+{
+  "header": {
+    "title": "My Profile",
+    "subtitle": "Manage your personal information, role, and workspace templates across the platform"
+  },
+  "avatar": {
+    "change_photo": "Change profile photo",
+    "approval_note": "Modifications require prior approval",
+    "uploading": "Uploading image...",
+    "photo_loaded": "Profile photo loaded. Remember to save changes."
+  },
+  "summary": {
+    "title": "Operational Summary",
+    "current_role": "Current Role",
+    "operating_areas": "Operating Areas",
+    "total_access": "Full Access",
+    "areas_count": "{{count}} areas",
+    "table_templates": "Table Templates",
+    "consumption_templates": "Consumption Templates",
+    "saved_count": "{{count}} saved"
+  },
+  "info": {
+    "title": "Personal & Contact Information",
+    "description": "Update your name, contact details, and company position",
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "first_name_placeholder": "Your first name",
+    "last_name_placeholder": "Your last name",
+    "email": "Email Address",
+    "email_placeholder": "email@example.com",
+    "phone": "Phone",
+    "phone_placeholder": "+56 9 1234 5678",
+    "hide_email": "Hide email from other users",
+    "show_email": "Email visible to others",
+    "hide_phone": "Hide phone from other users",
+    "show_phone": "Phone visible to others",
+    "requires_approval": "(Requires Approval)"
+  },
+  "voice": {
+    "title": "Oppy Voice Command (Hands-Free Mode)",
+    "description": "Your nickname to dictate consumptions and waste in the kitchen by saying: \"Oppy {{nickname}}, [order]\"",
+    "label": "Nickname or Keyword",
+    "placeholder": "e.g. john, chef, phoenix, master",
+    "tip": "💡 You can choose any name or nickname and change it anytime. Zero biometrics: Oppy only linguistically interprets your command."
+  },
+  "areas": {
+    "title": "Operating Areas",
+    "read_only": "(Read Only)",
+    "global_access": "Global Access",
+    "global_access_description": "You have full control over all restaurant operating areas.",
+    "none_assigned": "No operating areas assigned"
+  },
+  "actions": {
+    "save": "Save Changes",
+    "saving": "Syncing...",
+    "new_template": "+ New Template",
+    "delete": "Delete",
+    "make_public": "Make Public",
+    "make_private": "Make Private"
+  },
+  "templates": {
+    "title": "My Custom Templates",
+    "subtitle": "Access and manage your column, email, and inventory templates",
+    "tab_tables": "Table View",
+    "tab_consumption": "Internal Consumption",
+    "tab_emails": "Emails & Messages",
+    "empty_tables_title": "You do not have custom table templates yet",
+    "empty_tables_desc": "You can save column setups by clicking the bookmark icon in the 'Customize Table View' modal in the Management module.",
+    "empty_consumption_title": "You do not have custom consumption templates yet",
+    "empty_consumption_desc": "You can create and customize consumption templates by clicking the template selector in the Internal Consumption module header.",
+    "emails_title": "Email & Notification Templates",
+    "emails_desc": "Soon you will be able to manage and customize email templates for stock and order alerts.",
+    "custom_badge": "Custom",
+    "cols_count": "{{count}} cols",
+    "no_description": "No description assigned",
+    "public_badge": "🌐 Public",
+    "private_badge": "⭐ Private",
+    "consumption_meta": "📦 {{count}} products selected • {{cols}} Cols"
+  },
+  "dialog": {
+    "new_title": "Create New Template",
+    "new_description": "Save a recurring configuration for tables or consumptions",
+    "type_label": "Template Type",
+    "name_label": "Template Name",
+    "name_placeholder": "e.g. Monthly Closing Audit",
+    "description_label": "Description",
+    "description_placeholder": "Describe the purpose of this template...",
+    "save_button": "Create Template"
+  },
+  "toast": {
+    "save_success": "Profile updated successfully",
+    "save_error": "Error updating profile",
+    "photo_loaded": "Profile photo loaded. Remember to save changes.",
+    "template_deleted": "Template deleted successfully",
+    "template_visibility_updated": "Template visibility updated",
+    "template_created": "Template created successfully",
+    "fill_required": "Please provide a name for the template"
+  }
+}

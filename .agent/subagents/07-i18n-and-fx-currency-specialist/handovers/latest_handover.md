@@ -1,37 +1,56 @@
 # Reporte de Traspaso (`Handover`) — Agente 07: Especialista en i18n y Multi-Moneda FX
 
-- **Fecha UTC:** 2026-10-23T17:35:00Z
-- **Fase:** Transformación Dropdown Selectores (Idioma & Moneda) y Reactividad Global i18n.
-- **Estado de Certificación:** `I18N_DROPDOWNS_APPROVED` (100% interactividad dropdown, reactividad instantánea en todo el árbol de vistas, 39/39 pruebas pasando limpiamente).
+- **Fecha UTC:** 2026-10-25T01:25:00Z
+- **Fase / Hito:** FASE 7: Internacionalización Exhaustiva 100% es/en (Ingesta Inteligente Excel/CSV IA, Factura DTE PDF/XML IA y Gestión de Productos)
+- **Estado de Certificación:** `I18N_PHASE7_INGESTA_GESTION_CERTIFIED`
+  - Vitest i18n Suite: 7/7 tests aprobados (100% pass), verificando inicialización de 19 namespaces y paridad simétrica de claves.
+  - Vitest Gestión Suite: 8/8 suites aprobadas, 121/121 tests unitarios exitosos (100% pass), incluyendo ExcelImportModal y FacturaImportModal.
+  - TypeScript Estricto: `tsc --noEmit` con 0 errores y 0 advertencias.
+  - Producción Build: Vite bundling completado en 6.31s sin errores.
+  - Invariantes de Dominio: Regla 15 "Pollo King" y marcas comerciales protegidas intactas. Paridad 1:1 estricta entre `es` y `en`.
 
-## 1. Completed (Qué se hizo)
-- **Transformación de `LanguageFlagSelector.tsx` en Dropdown Estilizado:**
-  - Sustituida la botonera plana por un Dropdown accesible y estilizado con Tailwind CSS.
-  - El trigger muestra la bandera activa (`<ActiveFlag className="h-3.5 w-5 rounded-[2px]" />`), el nombre del idioma activo ("Español" o "English") y la flecha `<ChevronDown className="h-3.5 w-3.5" />` con rotación animada de 180° al abrir.
-  - Menú flotante / popover con las opciones disponibles (`es` y `en`), badges de bandera SVG nítidas, label en negrita e indicador `<Check className="h-3.5 w-3.5" />` en la opción seleccionada.
-  - Cierre automático al seleccionar una opción, al hacer click afuera (outside click) y con tecla `Escape`.
-  - Mantenimiento estricto de todos los atributos y testids requeridos: `data-testid="language-flag-selector"`, `data-testid="active-language-flag"`, `data-testid="lang-option-es"`, `data-testid="lang-option-en"`, `data-active-lang={activeLang}`.
+## 1. Completed (Qué se implementó)
 
-- **Transformar `CurrencySelector.tsx` en Dropdown Estilizado Compacto:**
-  - Sustituida la botonera plana de 5 botones por un Dropdown compacto y pulido.
-  - El trigger muestra el símbolo (`$`, `US$`, `€`, `R$`, `UF`), código de moneda activa (`CLP`, `USD`, `EUR`, `BRL`, `UF`) y `<ChevronDown className="h-3.5 w-3.5" />` con rotación animada.
-  - Popover flotante desplegable con todas las divisas soportadas, mostrando símbolo, código, nombre completo legible ("Peso Chileno", "Dólar USD", "Euro", etc.) y `<Check />` en la activa.
-  - Mantenimiento estricto de `data-testid="currency-selector"`, `data-testid="currency-option-{code}"`, `data-active-currency={currency}`, `data-rate-source`.
+### 1.1 Nuevos Módulos de Traducción para Ingesta Inteligente (100% Simetría 1:1)
+- **Namespace `excel_import` (`es/excel_import.json` y `en/excel_import.json` - 113 claves cada uno):**
+  * Título y descripción del modal (`modal.title`, `modal.description`, `dialog.title`).
+  * Stepper de 5 pasos: Carga, Columnas, Entidades, Revisión, Confirmar.
+  * Mapeo Inteligente de Columnas (`column_matcher`): Estados de confianza (exacta, sugerida, manual, sin mapear), indicadores de requeridos vs faltantes, etiquetas y descripciones de todos los campos destino (nombre, SKU, código de barra, categoría, marca, unidad base, envase, costo neto, precio venta neto, stock actual, stock mínimo, bodega).
+  * Detección de Entidades (`entity_matcher`): Alertas de categorías y marcas nuevas, botón "Crear Todas al Vuelo", opciones para crear como nueva o mapear a existente.
+  * Grilla de Revisión (`review_grid`): Buscador, filtros por estado (todos, válidos, alertas, errores), toggle neto/bruto, columnas, mensajes de validación en vivo (nombre obligatorio, costo inválido, categoría requerida, alerta sin SKU, alerta stock cero, listo para importar).
+  * Confirmación (`confirm`): Resumen con conteos consolidados, categorías y marcas a crear, valorización estimada, selector de bodega destino, botones de confirmación y toasts.
+  * Sistema de borrador (`draft`): Alerta de borrador existente, recuperar, descartar y notificaciones toast.
 
-- **Reactividad Global Instantánea del Idioma:**
-  - Implementación de `LanguageProvider`, `LanguageContext` y hook `useLanguage` en `shared/i18n`.
-  - `LanguageProvider` se suscribe a los eventos `i18next.on("languageChanged")` y provee un re-render garantizado a nivel de árbol de React (`key={language}` + Context), actualizando inmediatamente todas las funciones `translateKey` en vistas ya montadas (headers, sidebar, tablas, modales).
-  - Integración de `<LanguageProvider>` en `AppProviders.tsx` de la raíz de la aplicación.
-  - Subscripción reactiva agregada en `AdminLayout.tsx`, `AdminSidebar.tsx` y `Navbar.tsx` vía `useLanguage()`.
-  - Al cambiar de "Español" a "English" o viceversa, toda la pantalla (layout, menú lateral, vistas de administración y modales) cambia instantáneamente de idioma sin requerir recargar la página (`F5`).
+- **Namespace `factura_import` (`es/factura_import.json` y `en/factura_import.json` - 64 claves cada uno):**
+  * Título y descripción del modal para extracción IA de facturas PDF y XML DTE SII.
+  * Banner del Proveedor (`supplier`): RUT, razón social, giro, insignias "Nuevo Proveedor" y "Registrado", botón "Dar de Alta Rápido", folio, fecha de emisión, montos neto y total.
+  * Grilla de Revisión (`review_grid`): Buscador, insignias reactivas de productos asociados al catálogo vs nuevos a crear, tabla de líneas facturadas (código, descripción, cantidad, unidad con factor de conversión, precio unitario, total línea, asociación al catálogo), total consolidado de líneas.
+  * Selector de Bodega (`warehouse`): Bodega de recepción física del stock.
+  * Acciones de Confirmación (`confirm`): Ingreso de factura y actualización de stock en bodega, validaciones y estados de carga.
+  * Sistema de borrador (`draft`): Detección, restauración y descarte de borrador.
 
-- **Verificación y Pruebas Unitarias:**
-  - `tsc --noEmit` (`pnpm typecheck`): 0 errores de tipos en toda la base de código.
-  - `vitest run` (`pnpm test`): 39 pruebas unitarias ejecutadas y aprobadas (100% éxito en 6 suites de pruebas, incluyendo nuevos tests dedicados para interacciones dropdown y reactividad global).
-  - Filtro inviolable de marcas registradas gastronómicas ('Pollo King', 'Savory') verificado y 100% preservado.
+### 1.2 Expansión de Namespaces `gestion` y `products`
+- **`gestion.json` (140 claves con simetría 1:1):**
+  * Expandido el toolbar con acciones de importación inteligente (`import_excel`: "Importar Excel (IA)", `import_factura`: "Ingreso Factura (IA)").
+- **`products.json` (83 claves con simetría 1:1):**
+  * Mapeo completo de canales multicanal (Manual, Excel IA, Factura IA), stepper de 4 pasos, KPIs financieros y live drafting.
 
-## 2. Friction & Failures (Qué salió mal / Qué cuidar)
-- Ninguna fricción. Se aseguró total compatibilidad hacia atrás en los tests unitarios donde `screen.getByTestId` busca opciones de selector, garantizando que el DOM mantenga las opciones disponibles para las consultas de pruebas mientras visualmente se comportan como dropdown popovers animados.
+### 1.3 Registro de Namespaces en Arquitectura Central i18n
+- Actualizado [i18next.d.ts](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-frontend/src/shared/i18n/i18next.d.ts):
+  * Registrados los tipos `"excel_import"` y `"factura_import"` en el tipo `I18nNamespace` (total 19 namespaces).
+- Actualizado [config.ts](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-frontend/src/shared/i18n/config.ts):
+  * Importación de archivos JSON: `excelImportEn`, `facturaImportEn`, `excelImportEs`, `facturaImportEs`.
+  * Integración en arreglo `I18N_NAMESPACES`.
+  * Mapeo simétrico en `I18N_RESOURCES.es` y `I18N_RESOURCES.en`.
 
-## 3. Next Exact Action (Siguiente paso exacto)
-- Notificar al agente caller con el reporte detallado de implementación y estado verde de la suite.
+### 1.4 Suite de Pruebas Automatizadas
+- Actualizado [i18n.test.tsx](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-frontend/src/shared/i18n/i18n.test.tsx):
+  * Aserción de 19 namespaces con verificación explícita de `excel_import` y `factura_import`.
+  * Prueba formal exhaustiva de paridad simétrica de claves para los 4 namespaces de Gestión (`gestion`, `products`, `excel_import`, `factura_import`), totalizando 400 claves con 0 faltantes.
+  * 7/7 tests aprobados al 100%.
+
+## 2. Friction & Failures
+- Cero fallas. `npm run build`, `tsc --noEmit` y `vitest` ejecutados limpiamente.
+
+## 3. Next Exact Action
+- Reportar finalización de la Fase 7 al orquestador (caller).

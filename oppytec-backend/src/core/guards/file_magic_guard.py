@@ -21,6 +21,7 @@ DEFAULT_MAX_UPLOAD_BYTES: int = 10 * 1024 * 1024  # 10 MB
 MAX_ZIP_UNCOMPRESSED_BYTES: int = 25 * 1024 * 1024  # 25 MB
 MAX_ZIP_COMPRESSION_RATIO: int = 50
 MAX_ZIP_ENTRIES: int = 2000
+MAX_BATCH_ROWS: int = 1500
 
 ALLOWED_MIME_BY_EXTENSION: dict[str, str] = {
     ".pdf": "application/pdf",
@@ -29,7 +30,16 @@ ALLOWED_MIME_BY_EXTENSION: dict[str, str] = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".csv": "text/csv",
+    ".xml": "application/xml",
 }
+
+DANGEROUS_EXECUTABLE_EXTENSIONS: frozenset[str] = frozenset({
+    ".exe", ".sh", ".bat", ".cmd", ".bin", ".msi", ".dll", ".com",
+    ".scr", ".pif", ".vbs", ".js", ".wsf", ".ps1", ".py", ".php",
+    ".pl", ".elf", ".jar", ".vbe", ".jse", ".hta", ".cpl", ".msc",
+    ".apk", ".app", ".dmg", ".iso", ".cgi",
+})
 
 FORBIDDEN_EXECUTABLE_SIGNATURES: tuple[bytes, ...] = (
     b"MZ",
@@ -37,6 +47,8 @@ FORBIDDEN_EXECUTABLE_SIGNATURES: tuple[bytes, ...] = (
     b"<?php",
     b"<script",
     b"#!/",
+    b"eval(",
+    b"<html",
 )
 
 DANGEROUS_DDE_PATTERNS: tuple[str, ...] = (
@@ -60,7 +72,8 @@ def detect_magic_mime_type(content: bytes) -> str | None:
     """Detecta el tipo MIME real inspeccionando los primeros bytes binarios (Magic Bytes)."""
     if len(content) < 4:
         return None
-    if content.startswith(b"%PDF-"):
+    # PDF: %PDF- (0x25 0x50 0x44 0x46)
+    if content.startswith(b"%PDF-") or content[:4] == b"\x25\x50\x44\x46":
         return "application/pdf"
     if content.startswith(b"\x89PNG\r\n\x1a\n"):
         return "image/png"
@@ -68,8 +81,20 @@ def detect_magic_mime_type(content: bytes) -> str | None:
         return "image/webp"
     if content.startswith(b"\xff\xd8\xff"):
         return "image/jpeg"
-    if content.startswith(b"PK\x03\x04"):
+    # Excel XLSX: PK\x03\x04 (0x50 0x4b 0x03 0x04 ZIP container)
+    if content.startswith(b"PK\x03\x04") or content[:4] == b"\x50\x4b\x03\x04":
         return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    # XML DTE: <?xml (con soporte UTF-8 BOM y espacios en blanco)
+    stripped_xml = content.lstrip(b"\xef\xbb\xbf \t\r\n")
+    if stripped_xml.startswith(b"<?xml"):
+        return "application/xml"
+    # CSV: texto plano UTF-8 / ASCII (sin bytes nulos ni firmas ejecutables)
+    if b"\x00" not in content[:4096]:
+        try:
+            content[:4096].decode("utf-8")
+            return "text/csv"
+        except UnicodeDecodeError:
+            pass
     return None
 
 
@@ -169,6 +194,22 @@ def validate_file_magic_bytes(
             error_code="UNSAFE_FILENAME",
         )
 
+    # File Upload Hardening: Rechazo de extensiones ejecutables y doble extensión (.pdf.exe, .xlsx.sh, etc.)
+    suffixes = [s.lower() for s in Path(cleaned_name).suffixes]
+    for sfx in suffixes:
+        if sfx in DANGEROUS_EXECUTABLE_EXTENSIONS:
+            raise SecurityValidationError(
+                f"Executable file extension '{sfx}' rejected.",
+                i18n_key="security:errors.executable_extension_blocked",
+                error_code="EXECUTABLE_EXTENSION_BLOCKED",
+            )
+    if len(suffixes) > 1:
+        raise SecurityValidationError(
+            f"Double file extension blocked for '{cleaned_name}'.",
+            i18n_key="security:errors.double_extension_blocked",
+            error_code="DOUBLE_EXTENSION_BLOCKED",
+        )
+
     head_sample = content[:64].lstrip()
     for bad_sig in FORBIDDEN_EXECUTABLE_SIGNATURES:
         if content.startswith(bad_sig) or head_sample.lower().startswith(bad_sig.lower()):
@@ -214,14 +255,17 @@ def sanitize_spreadsheet_cell(
     reject_dde_payloads: bool = True,
 ) -> str:
     """
-    Neutraliza vectores de CSV / Excel Formula Injection (`=`, `+`, `-`, `@`, `\t`, `\r`).
+    Neutraliza vectores de CSV / Excel Formula Injection (`=`, `+`, `-`, `@`, `\t`, `\r`) - CWE-1236.
+    Todo campo importado o exportado que comience con '=', '+', '-', '@', '\t', '\r'
+    DEBE ser sanitizado (prefijar con comilla simple o escapar) para evitar ejecución de fórmulas.
     Si detecta un payload DDE malicioso (`=cmd|`, `=IMPORTXML`, etc.) y `reject_dde_payloads=True`,
     lanza `SecurityValidationError`; en caso contrario antepone comilla simple `'`.
     """
     if not value:
         return value
 
-    lower_trimmed = value.strip().lower()
+    stripped = value.lstrip()
+    lower_trimmed = stripped.lower()
     for dde_pattern in DANGEROUS_DDE_PATTERNS:
         if lower_trimmed.startswith(dde_pattern) or dde_pattern in lower_trimmed:
             if reject_dde_payloads:
@@ -232,9 +276,22 @@ def sanitize_spreadsheet_cell(
                 )
             return f"'{value}"
 
-    if value.startswith(FORMULA_PREFIX_CHARS):
+    if value.startswith(FORMULA_PREFIX_CHARS) or stripped.startswith(FORMULA_PREFIX_CHARS):
         return f"'{value}"
     return value
+
+
+def sanitize_spreadsheet_export_value(value: object) -> str:
+    """Sanitiza cualquier valor antes de ser exportado a CSV o Excel contra CWE-1236."""
+    if value is None:
+        return ""
+    str_val = str(value)
+    if not str_val:
+        return ""
+    stripped = str_val.lstrip()
+    if str_val.startswith(FORMULA_PREFIX_CHARS) or stripped.startswith(FORMULA_PREFIX_CHARS):
+        return f"'{str_val}"
+    return str_val
 
 
 @dataclass(frozen=True)

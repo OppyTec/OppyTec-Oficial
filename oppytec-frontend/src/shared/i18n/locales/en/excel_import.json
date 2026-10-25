@@ -1,0 +1,190 @@
+{
+  "modal": {
+    "title": "Smart Product Importer (Excel / CSV AI)",
+    "description": "Bulk upload with automatic column detection, entities and live validation."
+  },
+  "dialog": {
+    "title": "Smart Product Importer (Excel / CSV AI)",
+    "description": "Bulk upload with automatic column detection, entities and live validation."
+  },
+  "stepper": {
+    "step_1": "Upload",
+    "step_2": "Columns",
+    "step_3": "Entities",
+    "step_4": "Review",
+    "step_5": "Confirm"
+  },
+  "columns": {
+    "fields": {
+      "costo_neto": "Net Unit Cost",
+      "precio_venta_neto": "Net Sales Price",
+      "nombre": "Commercial Name",
+      "sku": "SKU Code",
+      "categoria": "Category",
+      "marca": "Commercial Brand",
+      "unidad_base": "Base Unit",
+      "stock_actual": "Initial Stock"
+    }
+  },
+  "steps": {
+    "upload": "Upload",
+    "columns": "Columns",
+    "entities": "Entities",
+    "review": "Review",
+    "confirm": "Confirm"
+  },
+  "draft": {
+    "has_draft": "There is a saved import draft.",
+    "restore": "Restore Draft",
+    "discard": "Discard",
+    "restored_success": "Import draft successfully recovered",
+    "discarded_info": "Draft discarded",
+    "restore_error": "Error restoring draft"
+  },
+  "upload": {
+    "drag_drop": "Drag your Excel or CSV file here",
+    "supported_formats": "Supported formats: .XLSX, .XLS, .CSV (up to 10 MB and 1,500 products per batch).",
+    "select_file": "Select File",
+    "template_title": "Don't have the standard format?",
+    "template_desc": "Download our official template with ERP headers and sample items.",
+    "download_template": "Download Official Template",
+    "processing": "Processing file...",
+    "empty_file_error": "File is empty",
+    "batch_limit_error": "File exceeds the batch limit of {{limit}} rows ({{count}} rows found).",
+    "read_error": "Could not read file",
+    "invalid_format_error": "Error processing file. Please check format.",
+    "processed_success": "File processed: {{count}} rows detected"
+  },
+  "column_matcher": {
+    "title": "Smart Column Mapping (AI)",
+    "subtitle": "Assign each column from your file to the ERP catalog fields.",
+    "required_ready": "{{mapped}}/{{total}} Required fields ready",
+    "required_missing": "{{mapped}}/{{total}} Required ({{missing}} missing)",
+    "required_tag": "* Required",
+    "ignore_option": "-- Ignore / Do not map --",
+    "example_prefix": "Example:",
+    "confidence": {
+      "exact": "Exact",
+      "suggested": "Suggested",
+      "manual": "Manual",
+      "none": "Unmapped"
+    },
+    "fields": {
+      "nombre": {
+        "label": "Commercial Name",
+        "description": "Product or ingredient name"
+      },
+      "sku": {
+        "label": "SKU Code",
+        "description": "Unique internal identifier"
+      },
+      "codigo_barra": {
+        "label": "Barcode / PLU",
+        "description": "EAN-13, UPC or scale barcode"
+      },
+      "categoria": {
+        "label": "Category",
+        "description": "Main family or category"
+      },
+      "marca": {
+        "label": "Commercial Brand",
+        "description": "Manufacturer or brand"
+      },
+      "unidad_base": {
+        "label": "Base Unit",
+        "description": "kg, g, L, mL, unit, bottle"
+      },
+      "tipo_envase": {
+        "label": "Packaging Type",
+        "description": "Bottle, Box, Bag, Can, Bulk"
+      },
+      "costo_neto": {
+        "label": "Net Unit Cost",
+        "description": "Purchase cost excluding VAT"
+      },
+      "precio_venta_neto": {
+        "label": "Net Sales Price",
+        "description": "Selling price excluding VAT"
+      },
+      "stock_actual": {
+        "label": "Initial Stock",
+        "description": "Available physical quantity"
+      },
+      "stock_minimo": {
+        "label": "Minimum Alert Stock",
+        "description": "Threshold for low stock warnings"
+      },
+      "bodega": {
+        "label": "Assigned Warehouse",
+        "description": "Storage warehouse location"
+      }
+    }
+  },
+  "entity_matcher": {
+    "all_matched": "All categories ({{catCount}}) and brands ({{brandCount}}) detected in the file already exist in your master catalog.",
+    "new_detected_title": "New Entities Detected ({{total}})",
+    "new_detected_desc": "Found {{catCount}} category(ies) and {{brandCount}} brand(s) in the spreadsheet that do not exist in the system.",
+    "auto_create_all": "Create All On the Fly",
+    "all_created_toast": "All entities will be created automatically",
+    "missing_categories": "Missing Categories",
+    "missing_brands": "Missing Brands",
+    "create_new_option": "✨ Create as New Entity",
+    "map_to_existing": "Or map to existing:"
+  },
+  "review_grid": {
+    "search_placeholder": "Search in grid...",
+    "filter_all": "All",
+    "filter_valid": "Valid",
+    "filter_warning": "Warnings",
+    "filter_error": "Errors",
+    "view_neto": "Net",
+    "view_bruto": "Gross (incl. VAT)",
+    "columns": {
+      "status": "Status",
+      "nombre": "Commercial Name *",
+      "sku": "SKU",
+      "categoria": "Category *",
+      "marca": "Brand",
+      "costo_neto": "Net Cost *",
+      "costo_bruto": "Gross Cost *",
+      "precio_neto": "Net Price",
+      "precio_bruto": "Gross Price",
+      "stock": "Stock",
+      "actions": "Actions"
+    },
+    "empty_state": "No rows match the selected filters.",
+    "delete_row_tooltip": "Delete row",
+    "validations": {
+      "nombre_required": "Name is required",
+      "costo_invalid": "Invalid or negative unit cost",
+      "categoria_required": "Category is required",
+      "sku_warning": "No SKU (will be autogenerated upon saving)",
+      "stock_zero_warning": "Initial stock at zero",
+      "ready": "Ready to import"
+    }
+  },
+  "confirm": {
+    "title": "Smart Ingestion Final Summary",
+    "subtitle": "Review consolidated totals before synchronizing with the master catalog.",
+    "valid_products": "Valid Products",
+    "categories_to_create": "Categories to Create",
+    "brands_to_create": "Brands to Create",
+    "estimated_valuation": "Estimated Valuation",
+    "target_warehouse_label": "Warehouse for Initial Stock assignment:",
+    "warehouses": {
+      "central": "Main / Central Warehouse",
+      "kitchen": "Hot Kitchen",
+      "cold_room": "Cold Room -18°C",
+      "bar": "Bar & Cellar"
+    },
+    "confirm_btn": "Confirm and Import",
+    "importing_btn": "Importing...",
+    "import_success": "Success! {{count}} products imported into catalog",
+    "import_error": "An error occurred during import"
+  },
+  "actions": {
+    "prev": "Previous",
+    "next": "Next",
+    "cancel": "Cancel"
+  }
+}

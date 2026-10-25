@@ -1,4 +1,5 @@
 export * from "./utils";
+export * from "./security";
 
 import {
   formatScaledDecimal,

@@ -1,0 +1,20 @@
+{
+  "analytics_and_performance": "Analytics & Performance",
+  "executive_panel": "Executive Panel",
+  "activities_panel": "Activities Panel",
+  "reports": {
+    "general_summary": "General Summary",
+    "executive_summary": "Executive Summary",
+    "loss_control": "Loss Control",
+    "operational_efficiency": "Operational Efficiency",
+    "financial_vision": "Financial Vision"
+  },
+  "executive": {
+    "users": "Users"
+  },
+  "activities": {
+    "notes": "Notes",
+    "tasks": "Tasks",
+    "schedules": "Schedules"
+  }
+}

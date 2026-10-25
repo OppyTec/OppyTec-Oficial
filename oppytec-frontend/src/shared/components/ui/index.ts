@@ -23,3 +23,29 @@ export {
   ResponsiveDialog,
   type ResponsiveDialogProps,
 } from "./ResponsiveDialog";
+export {
+  SectionHeader,
+  type SectionHeaderProps,
+} from "./SectionHeader";
+export {
+  CategoryIcon,
+  type CategoryIconProps,
+  ICON_MAP,
+} from "./CategoryIcon";
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioGroup,
+} from "./dropdown-menu";
+

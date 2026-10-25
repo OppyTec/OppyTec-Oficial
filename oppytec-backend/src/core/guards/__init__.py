@@ -7,12 +7,14 @@ from __future__ import annotations
 from src.core.guards.file_magic_guard import (
     ALLOWED_MIME_BY_EXTENSION,
     DEFAULT_MAX_UPLOAD_BYTES,
+    MAX_BATCH_ROWS,
     MAX_ZIP_COMPRESSION_RATIO,
     MAX_ZIP_UNCOMPRESSED_BYTES,
     RequireSafeFileUpload,
     ValidatedUploadPayload,
     detect_magic_mime_type,
     sanitize_spreadsheet_cell,
+    sanitize_spreadsheet_export_value,
     validate_file_magic_bytes,
 )
 from src.core.guards.rate_limiter import (
@@ -41,6 +43,7 @@ from src.core.guards.xss_sanitizer import (
 __all__ = [
     "ALLOWED_MIME_BY_EXTENSION",
     "DEFAULT_MAX_UPLOAD_BYTES",
+    "MAX_BATCH_ROWS",
     "MAX_ZIP_COMPRESSION_RATIO",
     "MAX_ZIP_UNCOMPRESSED_BYTES",
     "RATE_LIMIT_PROFILES",
@@ -61,6 +64,7 @@ __all__ = [
     "restore_revoked_user_session",
     "revoke_session_token",
     "sanitize_spreadsheet_cell",
+    "sanitize_spreadsheet_export_value",
     "sanitize_text_input",
     "validate_file_magic_bytes",
     "validate_no_path_traversal",

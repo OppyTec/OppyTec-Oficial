@@ -157,7 +157,7 @@ async def upload_invoice_ocr_endpoint(
     verified_mime = validate_file_magic_bytes(
         content=raw_bytes,
         filename=payload.filename,
-        allowed_types=frozenset({"application/pdf", "image/png", "image/webp", "image/jpeg"}),
+        allowed_types=frozenset({"application/pdf", "application/xml", "image/png", "image/webp", "image/jpeg"}),
     )
     return InvoiceOcrResponse(
         po_number=payload.po_number,

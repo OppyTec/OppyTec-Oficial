@@ -1,0 +1,95 @@
+{
+  "modal": {
+    "title": "Smart Invoice Ingestion (PDF / XML DTE AI)",
+    "description": "Automatic extraction of purchase lines, catalog association and stock updates."
+  },
+  "dialog": {
+    "title": "Smart Invoice Ingestion (PDF / XML DTE AI)",
+    "description": "Automatic extraction of purchase lines, catalog association and stock updates."
+  },
+  "draft": {
+    "has_draft": "There is an invoice saved as a draft.",
+    "restore": "Restore",
+    "discard": "Discard",
+    "restored_success": "Invoice draft recovered",
+    "discarded_info": "Draft discarded",
+    "restore_error": "Error restoring draft"
+  },
+  "upload": {
+    "drag_drop": "Drag your PDF or XML DTE Invoice here",
+    "analyzing": "Analyzing document with Artificial Intelligence...",
+    "supported_formats": "Supported formats: Standard PDF or Chilean XML DTE (Internal Revenue Service).",
+    "select_button": "Select Invoice",
+    "pdf_badge": "Electronic PDF",
+    "xml_badge": "XML DTE (Tax Agency)",
+    "parse_success": "Invoice successfully analyzed by AI"
+  },
+  "supplier": {
+    "unknown_supplier": "Unknown Supplier",
+    "rut": "RUT: {{rut}}",
+    "new_supplier_badge": "New Supplier",
+    "registered_badge": "Registered",
+    "quick_register_btn": "Quick Register",
+    "doc_label": "Document",
+    "folio": "Invoice No. {{folio}}",
+    "emission_label": "Issue Date",
+    "today": "Today",
+    "net_amount": "Net Amount",
+    "total_amount": "Invoice Total"
+  },
+  "warehouse": {
+    "target_label": "Warehouse for physical stock entry:",
+    "warehouses": {
+      "central": "Main / Central Warehouse",
+      "kitchen": "Hot Kitchen",
+      "cold_room": "Cold Room -18°C",
+      "bar": "Bar & Cellar"
+    }
+  },
+  "review_grid": {
+    "search_placeholder": "Search items in invoice...",
+    "matched_count": "{{count}} Linked to Catalog",
+    "new_count": "{{count}} New to Create",
+    "columns": {
+      "code": "Code / SKU",
+      "description": "Invoiced Description",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "price": "Net Unit Price",
+      "total": "Line Total",
+      "association": "Link to Catalog Product",
+      "actions": "Actions"
+    },
+    "new_product_option": "✨ + Create as New Product",
+    "existing_products_group": "Existing Products in Catalog",
+    "empty_state": "No lines found in the document.",
+    "total_calculated": "Calculated Lines Total ({{count}} items):",
+    "delete_line_tooltip": "Remove line"
+  },
+  "units": {
+    "labels": {
+      "kg": "Kilograms",
+      "g": "Grams",
+      "l": "Liters",
+      "ml": "Milliliters",
+      "un": "Units",
+      "pack": "Pack",
+      "caja": "Box",
+      "botella": "Bottle",
+      "lata": "Can",
+      "saco": "Sack"
+    },
+    "factor_tooltip": "Conversion factor to base unit"
+  },
+  "confirm": {
+    "empty_lines_error": "Invoice does not have valid lines",
+    "submitting_btn": "Ingressing Invoice...",
+    "confirm_btn": "Ingress Invoice ({{count}} Items)",
+    "confirm_success": "Invoice No. {{folio}} recorded. Warehouse stock updated.",
+    "confirm_error": "An error occurred while processing the invoice"
+  },
+  "actions": {
+    "reupload": "Upload Another Document",
+    "cancel": "Cancel"
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "modal": {
+    "title": "Importador Inteligente de Productos (Excel / CSV IA)",
+    "description": "Carga masiva con detección automática de columnas, entidades y validación en vivo."
+  },
+  "dialog": {
+    "title": "Importador Inteligente de Productos (Excel / CSV IA)",
+    "description": "Carga masiva con detección automática de columnas, entidades y validación en vivo."
+  },
+  "stepper": {
+    "step_1": "Carga",
+    "step_2": "Columnas",
+    "step_3": "Entidades",
+    "step_4": "Revisión",
+    "step_5": "Confirmar"
+  },
+  "columns": {
+    "fields": {
+      "costo_neto": "Costo Unitario Neto",
+      "precio_venta_neto": "Precio Venta Neto",
+      "nombre": "Nombre Comercial",
+      "sku": "Código SKU",
+      "categoria": "Categoría",
+      "marca": "Marca Comercial",
+      "unidad_base": "Unidad Base",
+      "stock_actual": "Stock Inicial"
+    }
+  },
+  "steps": {
+    "upload": "Carga",
+    "columns": "Columnas",
+    "entities": "Entidades",
+    "review": "Revisión",
+    "confirm": "Confirmar"
+  },
+  "draft": {
+    "has_draft": "Hay un borrador de importación guardado.",
+    "restore": "Recuperar Borrador",
+    "discard": "Descartar",
+    "restored_success": "Borrador de importación recuperado exitosamente",
+    "discarded_info": "Borrador descartado",
+    "restore_error": "Error al restaurar borrador"
+  },
+  "upload": {
+    "drag_drop": "Arrastra tu archivo Excel o CSV aquí",
+    "supported_formats": "Formatos soportados: .XLSX, .XLS, .CSV (hasta 10 MB y 1.500 productos por lote).",
+    "select_file": "Seleccionar Archivo",
+    "template_title": "¿No tienes el formato estándar?",
+    "template_desc": "Descarga nuestra plantilla oficial con encabezados ERP y ejemplos gastronómicos.",
+    "download_template": "Descargar Plantilla Oficial",
+    "processing": "Procesando archivo...",
+    "empty_file_error": "El archivo está vacío",
+    "batch_limit_error": "El archivo supera el límite máximo de {{limit}} filas por lote ({{count}} filas encontradas).",
+    "read_error": "No se pudo leer el archivo",
+    "invalid_format_error": "Error al procesar el archivo. Verifica el formato.",
+    "processed_success": "Archivo procesado: {{count}} filas detectadas"
+  },
+  "column_matcher": {
+    "title": "Mapeo Inteligente de Columnas (IA)",
+    "subtitle": "Asigna cada columna de tu archivo a los campos del catálogo ERP.",
+    "required_ready": "{{mapped}}/{{total}} Campos requeridos listos",
+    "required_missing": "{{mapped}}/{{total}} Requeridos (Faltan {{missing}})",
+    "required_tag": "* Requerido",
+    "ignore_option": "-- Ignorar / No mapear --",
+    "example_prefix": "Ejemplo:",
+    "confidence": {
+      "exact": "Exacta",
+      "suggested": "Sugerida",
+      "manual": "Manual",
+      "none": "Sin mapear"
+    },
+    "fields": {
+      "nombre": {
+        "label": "Nombre Comercial",
+        "description": "Nombre del producto o insumo"
+      },
+      "sku": {
+        "label": "Código SKU",
+        "description": "Identificador interno único"
+      },
+      "codigo_barra": {
+        "label": "Código de Barra / PLU",
+        "description": "EAN-13, UPC o código de balanza"
+      },
+      "categoria": {
+        "label": "Categoría",
+        "description": "Familia o categoría principal"
+      },
+      "marca": {
+        "label": "Marca Comercial",
+        "description": "Fabricante o marca"
+      },
+      "unidad_base": {
+        "label": "Unidad Base",
+        "description": "kg, g, L, mL, unidad, botella"
+      },
+      "tipo_envase": {
+        "label": "Tipo de Envase",
+        "description": "Botella, Caja, Bolsa, Lata, Granel"
+      },
+      "costo_neto": {
+        "label": "Costo Unitario Neto",
+        "description": "Costo de compra sin IVA"
+      },
+      "precio_venta_neto": {
+        "label": "Precio Venta Neto",
+        "description": "Precio de venta sin IVA"
+      },
+      "stock_actual": {
+        "label": "Stock Inicial",
+        "description": "Cantidad física disponible"
+      },
+      "stock_minimo": {
+        "label": "Stock Mínimo Alerta",
+        "description": "Umbral mínimo para alertas"
+      },
+      "bodega": {
+        "label": "Bodega Asignada",
+        "description": "Bodega de almacenamiento"
+      }
+    }
+  },
+  "entity_matcher": {
+    "all_matched": "Todas las categorías ({{catCount}}) y marcas ({{brandCount}}) detectadas en el archivo ya existen en tu catálogo maestro.",
+    "new_detected_title": "Detección de Nuevas Entidades ({{total}})",
+    "new_detected_desc": "Encontramos {{catCount}} categoría(s) y {{brandCount}} marca(s) en la planilla que no existen en el sistema.",
+    "auto_create_all": "Crear Todas al Vuelo",
+    "all_created_toast": "Todas las entidades serán creadas automáticamente",
+    "missing_categories": "Categorías Inexistentes",
+    "missing_brands": "Marcas Inexistentes",
+    "create_new_option": "✨ Crear como Nueva Entidad",
+    "map_to_existing": "O mapear a existente:"
+  },
+  "review_grid": {
+    "search_placeholder": "Buscar en la grilla...",
+    "filter_all": "Todos",
+    "filter_valid": "Válidos",
+    "filter_warning": "Alertas",
+    "filter_error": "Errores",
+    "view_neto": "Neto",
+    "view_bruto": "Bruto (c/IVA)",
+    "columns": {
+      "status": "Estado",
+      "nombre": "Nombre Comercial *",
+      "sku": "SKU",
+      "categoria": "Categoría *",
+      "marca": "Marca",
+      "costo_neto": "Costo Neto *",
+      "costo_bruto": "Costo Bruto *",
+      "precio_neto": "Precio Neto",
+      "precio_bruto": "Precio Bruto",
+      "stock": "Stock",
+      "actions": "Acciones"
+    },
+    "empty_state": "No hay filas que coincidan con los filtros seleccionados.",
+    "delete_row_tooltip": "Eliminar fila",
+    "validations": {
+      "nombre_required": "El nombre es obligatorio",
+      "costo_invalid": "Costo unitario inválido o negativo",
+      "categoria_required": "La categoría es obligatoria",
+      "sku_warning": "Sin SKU (se autogenerará al guardar)",
+      "stock_zero_warning": "Stock inicial en cero",
+      "ready": "Listo para importar"
+    }
+  },
+  "confirm": {
+    "title": "Resumen Final de Ingesta Inteligente",
+    "subtitle": "Revisa los totales consolidados antes de sincronizar con el catálogo maestro.",
+    "valid_products": "Productos Válidos",
+    "categories_to_create": "Categorías a Crear",
+    "brands_to_create": "Marcas a Crear",
+    "estimated_valuation": "Valorización Estimada",
+    "target_warehouse_label": "Bodega para asignación de Stock Inicial:",
+    "warehouses": {
+      "central": "Bodega Principal / Central",
+      "kitchen": "Cocina Caliente",
+      "cold_room": "Cámara Fría -18°C",
+      "bar": "Barra & Cava"
+    },
+    "confirm_btn": "Confirmar e Importar",
+    "importing_btn": "Importando...",
+    "import_success": "¡Éxito! Se han importado {{count}} productos al catálogo",
+    "import_error": "Ocurrió un error durante la importación"
+  },
+  "actions": {
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "cancel": "Cancelar"
+  }
+}

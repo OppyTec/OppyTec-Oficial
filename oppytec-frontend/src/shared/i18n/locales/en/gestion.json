@@ -1,0 +1,172 @@
+{
+  "header": {
+    "title": "Product Management",
+    "subtitle": "Product and supplies catalog"
+  },
+  "toolbar": {
+    "area_selector_label": "Operational Area",
+    "warehouse_selector_label": "Active Warehouse",
+    "table_dropdown": "Table",
+    "public_presets": "Public Presets",
+    "private_presets": "My Private Presets",
+    "no_private_presets": "You have no saved private presets",
+    "customize_table": "Customize Table View",
+    "categories_dropdown": "Categories",
+    "hide_categories": "Hide Categories Carousel",
+    "show_categories": "Show Categories Carousel",
+    "manage_categories": "Manage Categories",
+    "catalogs_dropdown": "Catalogs",
+    "manage_catalogs": "Families, Brands & Packaging",
+    "transfer_button": "Transfer",
+    "transfer_tooltip": "Transfer stock between warehouses",
+    "import_excel": "Import Excel (AI)",
+    "import_factura": "Invoice Ingestion (AI)",
+    "new_product_button": "New Product",
+    "search_placeholder": "Search by name, SKU or barcode...",
+    "presets": {
+      "general": {
+        "name": "General View",
+        "description": "Essential catalog and stock columns"
+      },
+      "costs": {
+        "name": "Costs & Profitability",
+        "description": "Financial analysis, PPP and margin"
+      },
+      "inventory": {
+        "name": "Inventory Control",
+        "description": "Warehouses, current, minimum and valued stock"
+      }
+    }
+  },
+  "columns": {
+    "sections": {
+      "stock_logistics": "Stock & Logistics",
+      "purchase_costs": "Purchase Costs",
+      "sales_margins": "Sales & Margins",
+      "sales_valuation": "Sales & Valuation",
+      "turnover_autonomy": "Turnover & Autonomy"
+    },
+    "subsections": {
+      "physical_location": "Physical Location",
+      "stock_level": "Stock Level",
+      "last_acquisition_cost": "Last Acquisition Cost",
+      "historical_inflation": "Historical & Inflation",
+      "inventory_valuation": "Inventory Valuation (PPP)",
+      "historical_avg_cost": "Historical Average Cost (10 purchases)",
+      "sales_prices": "Sales Prices",
+      "profit_margins": "Profit Margins",
+      "inventory_value": "Inventory Value",
+      "supplies_movement": "Supplies Movement"
+    },
+    "labels": {
+      "bodega": "Warehouse",
+      "ubicacion": "Location (Aisle/Shelf)",
+      "stock_actual": "Current Stock (Packs)",
+      "stock_min": "Minimum Stock (Packs)",
+      "contenido_total": "Total Content (Equiv)",
+      "ultimo_costo_unidad_neto": "Last Unit Cost Net",
+      "ultimo_costo_unidad_bruto": "Last Unit Cost Gross",
+      "ultimo_costo_embalaje_neto": "Last Package Cost Net",
+      "ultimo_costo_embalaje_bruto": "Last Package Cost Gross",
+      "penultimo_costo_unidad_neto": "Penultimate Unit Cost Net",
+      "penultimo_costo_unidad_bruto": "Penultimate Unit Cost Gross",
+      "penultimo_costo_embalaje_neto": "Penultimate Package Cost Net",
+      "penultimo_costo_embalaje_bruto": "Penultimate Package Cost Gross",
+      "variacion_costo": "Inflationary Variation (%)",
+      "costo_prom_inv_unidad_neto": "PPP Unit Cost Net",
+      "costo_prom_inv_unidad_bruto": "PPP Unit Cost Gross",
+      "costo_prom_inv_embalaje_neto": "PPP Package Cost Net",
+      "costo_prom_inv_embalaje_bruto": "PPP Package Cost Gross",
+      "costo_prom_hist_unidad_neto": "Hist. Avg. Unit Cost Net",
+      "costo_prom_hist_unidad_bruto": "Hist. Avg. Unit Cost Gross",
+      "costo_prom_hist_embalaje_neto": "Hist. Avg. Package Cost Net",
+      "costo_prom_hist_embalaje_bruto": "Hist. Avg. Package Cost Gross",
+      "precio_venta_neto": "Unit Sale Price Net",
+      "precio_venta_bruto": "Unit Sale Price Gross",
+      "margen_bruto": "Gross Margin (%)",
+      "margen_neto": "Net Margin (%)",
+      "valor_inventario_neto": "Inventory Value Net",
+      "valor_inventario_bruto": "Inventory Value Gross",
+      "dias_cobertura": "Days of Coverage",
+      "indice_rotacion": "Turnover Rate (Monthly)"
+    }
+  },
+  "modals": {
+    "table_config": {
+      "title": "Analytical Table Configuration",
+      "description": "Customize visible columns, order, and display preferences.",
+      "tab_columns": "Columns",
+      "tab_sort": "Sorting",
+      "tab_view_mode": "View Mode",
+      "tab_presets": "Presets",
+      "search_placeholder": "Search column by name or section...",
+      "all_sections": "All sections",
+      "active_columns_count": "{{count}} active columns",
+      "sort_field": "Sort field",
+      "sort_direction_asc": "Ascending (A-Z, Low to High)",
+      "sort_direction_desc": "Descending (Z-A, High to Low)",
+      "view_mode_grouped": "Grouped by Category View",
+      "view_mode_simple": "Flat / Simple View",
+      "save_button": "Save Configuration",
+      "reset_button": "Reset to Default",
+      "save_as_preset": "Save as New Preset",
+      "preset_name_label": "Preset name",
+      "preset_name_placeholder": "E.g.: My custom view",
+      "preset_desc_label": "Description (optional)",
+      "preset_desc_placeholder": "Describe the purpose of this preset...",
+      "preset_saved_success": "Preset saved successfully",
+      "preset_deleted_success": "Preset deleted"
+    },
+    "categories_admin": {
+      "title": "Categories Manager",
+      "description": "Organize your supplies and products into gastronomic categories and link them to operational areas.",
+      "tab_catalog": "Categories Catalog",
+      "tab_areas": "Operational Areas Assignment",
+      "new_category_button": "New Category",
+      "edit_category_title": "Edit Category",
+      "create_category_title": "Create Category",
+      "name_label": "Category name",
+      "name_placeholder": "E.g.: Dairy & Cheeses",
+      "color_label": "Distinctive color",
+      "icon_label": "Representative icon",
+      "search_placeholder": "Search category...",
+      "delete_confirm_title": "Delete category?",
+      "delete_confirm_desc": "This action cannot be undone. It will be unlinked from existing products.",
+      "save_category_button": "Save Category",
+      "cancel_button": "Cancel"
+    },
+    "catalogs_manager": {
+      "title": "Auxiliary Catalogs Manager",
+      "description": "Manage product families, trade brands and packaging types.",
+      "tab_families": "Families",
+      "tab_brands": "Brands",
+      "tab_packaging": "Packaging Types",
+      "new_item_button": "Add",
+      "search_placeholder": "Search in catalog...",
+      "name_label": "Name",
+      "name_placeholder": "Item name...",
+      "logo_url_label": "Logo URL (optional)",
+      "icon_label": "Icon",
+      "delete_confirm_title": "Delete item?",
+      "delete_confirm_desc": "Are you sure you want to delete this item from the catalog?",
+      "associated_products": "{{count}} linked product(s)"
+    },
+    "transfer": {
+      "title": "Stock Transfer Between Warehouses",
+      "description": "Move product stock from an origin warehouse to a destination warehouse.",
+      "origin_warehouse_label": "Origin Warehouse",
+      "destination_warehouse_label": "Destination Warehouse",
+      "select_origin_placeholder": "Select origin warehouse...",
+      "select_destination_placeholder": "Select destination warehouse...",
+      "same_warehouse_error": "Origin and destination warehouses must be different",
+      "add_item_button": "Add Product",
+      "product_column": "Product",
+      "available_stock_column": "Available Stock",
+      "transfer_qty_column": "Quantity to Transfer",
+      "actions_column": "Actions",
+      "no_items_selected": "Add at least one product to transfer.",
+      "confirm_transfer_button": "Confirm Transfer",
+      "transfer_success": "Transfer completed successfully"
+    }
+  }
+}

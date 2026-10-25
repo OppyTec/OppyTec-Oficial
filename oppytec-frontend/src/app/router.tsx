@@ -28,6 +28,10 @@ import {
 import { ProcurementFeatureView } from "@/features/procurement";
 import { RbacAndAuditFeatureView } from "@/features/rbac-and-audit";
 import { RecipesFeatureView } from "@/features/recipes";
+import { ConfiguracionPage } from "@/features/configuracion";
+import { ProfilePage } from "@/features/profile";
+import { UsuariosPage } from "@/features/users";
+import { GestionPage } from "@/features/gestion";
 import { useAuth } from "@/shared/auth/usePermissions";
 import { HomeDashboard } from "@/features/home";
 import {
@@ -169,7 +173,8 @@ export function ClientAppShell() {
         <Route path="/inventario/*" element={<ModulePlaceholderView title="Inventario y Kardex Multi-Bodega" moduleSlug="module:inventario" />} />
         <Route path="/contar-inventario" element={<ModulePlaceholderView title="Recuento Físico Ciego" moduleSlug="module:inventario:recuento" />} />
         <Route path="/recuentos" element={<ModulePlaceholderView title="Historial de Recuentos" moduleSlug="module:inventario:historial" />} />
-        <Route path="/gestion/*" element={<ModulePlaceholderView title="Gestión de Catálogo y Recetas" moduleSlug="module:gestion" />} />
+        <Route path="/gestion/*" element={<GestionPage />} />
+        <Route path="/gestion" element={<GestionPage />} />
         <Route path="/proveedores" element={<ModulePlaceholderView title="Directorio de Proveedores" moduleSlug="module:gestion:proveedores" />} />
         <Route path="/notificaciones/*" element={<ModulePlaceholderView title="Centro de Notificaciones y Solicitudes" moduleSlug="module:notificaciones" />} />
         <Route path="/alertas/*" element={<ModulePlaceholderView title="Alertas Críticas de Stock & Vencimiento" moduleSlug="module:alertas" />} />
@@ -178,11 +183,13 @@ export function ClientAppShell() {
         <Route path="/historial/*" element={<ModulePlaceholderView title="Historial de Movimientos y Auditoría" moduleSlug="module:historial" />} />
         <Route path="/contabilidad/*" element={<ModulePlaceholderView title="Contabilidad y Facturas DTE" moduleSlug="module:contabilidad" />} />
         <Route path="/reportes/*" element={<ModulePlaceholderView title="Panel Ejecutivo y Reportes Estratégicos" moduleSlug="module:panel_ejecutivo" />} />
+        <Route path="/actividades/usuarios" element={<UsuariosPage />} />
+        <Route path="/usuarios" element={<UsuariosPage />} />
         <Route path="/actividades/*" element={<ModulePlaceholderView title="Panel de Actividades y Turnos" moduleSlug="module:panel_de_actividades" />} />
         <Route path="/oppybot" element={<ModulePlaceholderView title="OppyBot Workspace (Copiloto IA)" moduleSlug="module:oppybot" />} />
-        <Route path="/perfil" element={<ModulePlaceholderView title="Perfil de Usuario y Preferencias" moduleSlug="module:perfil" />} />
+        <Route path="/perfil" element={<ProfilePage />} />
         <Route path="/holding-hub" element={<ModulePlaceholderView title="Holding Hub — Visión Consolidada" moduleSlug="module:holding_hub" />} />
-        <Route path="/configuracion" element={<ModulePlaceholderView title="Configuración del Negocio" moduleSlug="module:configuracion" />} />
+        <Route path="/configuracion" element={<ConfiguracionPage />} />
         <Route path="*" element={<ModulePlaceholderView title="Módulo en preparación" />} />
       </Routes>
     </AppLayout>

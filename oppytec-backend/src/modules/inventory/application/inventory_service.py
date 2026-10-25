@@ -31,6 +31,11 @@ class InventoryService:
         self._balances: dict[tuple[int, int], Decimal] = {}
         self._ledger: list[KardexEntry] = []
 
+    def reset(self) -> None:
+        """Limpia balances y ledger en memoria para aislamiento de pruebas."""
+        self._balances.clear()
+        self._ledger.clear()
+
     def balance(self, producto_id: int, bodega_id: int) -> Decimal:
         """Saldo actual del producto en la bodega."""
         return self._balances.get((producto_id, bodega_id), Decimal(0))

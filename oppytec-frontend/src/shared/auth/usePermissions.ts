@@ -100,9 +100,11 @@ export const DEFAULT_RBAC_POLICY_STATE: RbacPolicyState = {
   rolePermissions: [
     "auth.session.manage",
     "rbac_audit.roles.manage",
+    "rbac_audit.users.manage",
     "rbac_audit.audit.read",
     "catalog.products.create",
     "catalog.products.edit",
+    "catalog.products.delete",
     "catalog.importer.execute",
     "inventory.stock.read",
     "inventory.counts.execute",
@@ -220,6 +222,16 @@ export interface AuthenticatedUser {
   readonly role: string;
   readonly isSuperuser: boolean;
   readonly isGlobalAdmin: boolean;
+  readonly occupation?: string | null;
+  readonly userImage?: string | null;
+  readonly phone?: string | null;
+  readonly voiceCommand?: string | null;
+  readonly areasOperativas?: readonly { id: string; nombre: string }[];
+  readonly settings?: {
+    hide_email?: boolean;
+    hide_phone?: boolean;
+    [key: string]: unknown;
+  };
 }
 
 export interface AuthSession {
@@ -238,6 +250,8 @@ export interface AuthContextValue {
     isAdminLogin?: boolean
   ) => Promise<{ error: string | null }>;
   readonly signOut: () => Promise<void>;
+  readonly updateUser: (updated: Partial<AuthenticatedUser>) => void;
+  readonly refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -448,6 +462,22 @@ export function AuthProvider({
     setUser(null);
   }, []);
 
+  const updateUser = useCallback((updated: Partial<AuthenticatedUser>): void => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const nextUser = { ...prev, ...updated };
+      safeSetStorageItem(AUTH_USER_STORAGE_KEY, JSON.stringify(nextUser));
+      return nextUser;
+    });
+  }, []);
+
+  const refreshProfile = useCallback(async (): Promise<void> => {
+    const stored = readStoredAuthSession();
+    if (stored.user) {
+      setUser(stored.user);
+    }
+  }, []);
+
   const isGlobalAdmin = Boolean(user?.isGlobalAdmin || user?.isSuperuser);
 
   const value = useMemo<AuthContextValue>(
@@ -458,8 +488,10 @@ export function AuthProvider({
       isGlobalAdmin,
       signIn,
       signOut,
+      updateUser,
+      refreshProfile,
     }),
-    [session, user, loading, isGlobalAdmin, signIn, signOut]
+    [session, user, loading, isGlobalAdmin, signIn, signOut, updateUser, refreshProfile]
   );
 
   return createElement(AuthContext.Provider, { value }, children);
@@ -477,6 +509,8 @@ export function useAuth(): AuthContextValue {
         error: translateKey("auth", "login.error_invalid"),
       }),
       signOut: async () => undefined,
+      updateUser: () => undefined,
+      refreshProfile: async () => undefined,
     };
   }
   return ctx;

@@ -1,0 +1,107 @@
+{
+  "wizard": {
+    "title_new": "Nuevo Producto",
+    "title_edit": "Editar Producto",
+    "description": "Completa la ficha técnica multidimensional del producto en 4 sencillos pasos.",
+    "channels": {
+      "manual": "Wizard Manual",
+      "excel": "Importar Excel (IA)",
+      "invoice": "Factura (IA)"
+    },
+    "stepper": {
+      "step_1": "1. Básico & Familia",
+      "step_2": "2. Envases & Packs",
+      "step_3": "3. Bodegas & Stock",
+      "step_4": "4. Precios & Costos"
+    },
+    "step_1": {
+      "product_name": "Nombre del Producto",
+      "product_name_placeholder": "Ej: Pechuga de Pollo Deshuesada",
+      "product_name_required": "El nombre del producto es obligatorio (Paso 1)",
+      "brand": "Marca",
+      "brand_placeholder": "Seleccionar marca...",
+      "new_brand_button": "Nueva Marca",
+      "category": "Categoría Gastronómica",
+      "category_placeholder": "Seleccionar categoría...",
+      "family": "Familia",
+      "family_placeholder": "Ej: Carnes Blancas",
+      "sku": "Código SKU",
+      "sku_placeholder": "Ej: POL-001",
+      "barcode": "Código de Barra (EAN/UPC)",
+      "barcode_placeholder": "7801234567890",
+      "product_type": "Tipo de Producto",
+      "types": {
+        "insumo": "Insumo (Cocina / Barra)",
+        "venta_directa": "Venta Directa (Retail / Bar)",
+        "mixto": "Mixto (Insumo + Venta)"
+      },
+      "image_url": "URL de Imagen",
+      "image_url_placeholder": "https://ejemplo.com/imagen.jpg",
+      "operational_areas": "Áreas Operativas Destino",
+      "preview_full_name": "Nombre Comercial Compuesto"
+    },
+    "step_2": {
+      "base_unit": "Unidad Base de Medida",
+      "packaging_type": "Tipo de Envase Principal",
+      "packaging_type_placeholder": "Seleccionar envase...",
+      "new_packaging_button": "Nuevo Envase",
+      "net_content": "Contenido Neto por Envase",
+      "net_content_placeholder": "Ej: 1000",
+      "content_unit": "Unidad del Contenido",
+      "purchase_presentations": "Presentaciones de Compra (Packs / Cajas)",
+      "add_presentation": "Agregar Presentación",
+      "presentation_name": "Nombre de Presentación",
+      "presentation_equiv": "Equivalencia (Unidades Base)",
+      "presentation_cost": "Costo Compra",
+      "no_presentations": "Sin presentaciones adicionales configuradas."
+    },
+    "step_3": {
+      "warehouses_distribution": "Distribución por Bodega",
+      "warehouse_enabled": "Activa",
+      "warehouse_disabled": "Inactiva",
+      "initial_stock": "Stock Inicial ({{unit}})",
+      "min_stock_alert": "Stock Mínimo Alerta",
+      "aisle_letter": "Pasillo / Letra",
+      "shelf_number": "Estante / Número",
+      "total_stock": "Stock Total Consolidado"
+    },
+    "step_4": {
+      "acquisition_costs_title": "Costo Unitario de Adquisición ({{unit}})",
+      "net_cost": "Costo Neto",
+      "gross_cost": "Costo Bruto (IVA)",
+      "vat_rate": "Tasa IVA (%)",
+      "sales_prices_title": "Precio de Venta Sugerido",
+      "net_sale_price": "Precio Venta Neto",
+      "gross_sale_price": "Precio Venta Bruto"
+    },
+    "kpis": {
+      "net_margin": "Margen Neto",
+      "gross_margin": "Margen Bruto",
+      "markup": "Markup %",
+      "food_cost": "Food Cost",
+      "net_margin_tooltip": "Rentabilidad neta sobre precio venta sin impuestos",
+      "gross_margin_tooltip": "Margen comercial considerando precios brutos",
+      "markup_tooltip": "Porcentaje de recargo sobre el costo neto",
+      "food_cost_tooltip": "Porcentaje de costo de materia prima sobre precio de venta"
+    },
+    "draft": {
+      "saving": "Guardando borrador...",
+      "saved": "Borrador autoguardado",
+      "discard": "Descartar",
+      "discarded": "Borrador descartado",
+      "recovery_banner_title": "Tienes un borrador de producto sin guardar",
+      "recovery_banner_desc": "¿Deseas reanudar la edición de este producto?",
+      "recovery_resume": "Reanudar Borrador",
+      "recovery_dismiss": "Descartar"
+    },
+    "actions": {
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "save": "Guardar Producto",
+      "saving": "Guardando...",
+      "saved_success": "Producto guardado con éxito",
+      "save_error": "Ocurrió un error al guardar el producto",
+      "cancel": "Cancelar"
+    }
+  }
+}

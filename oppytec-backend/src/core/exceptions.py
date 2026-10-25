@@ -200,3 +200,13 @@ class CrossTenantAccessError(OppyTecError):
     default_error_code = "CROSS_TENANT_ACCESS_VIOLATION"
     default_i18n_key = "tenancy:errors.cross_tenant_forbidden"
     default_title = "Cross-Tenant Access Violation"
+
+
+class DomainValidationError(OppyTecError):
+    """Violación de reglas de validación de negocio o dominio."""
+
+    default_status_code = 400
+    default_error_code = "DOMAIN_VALIDATION_ERROR"
+    default_i18n_key = "common:errors.validation_error"
+    default_title = "Domain Validation Error"
+

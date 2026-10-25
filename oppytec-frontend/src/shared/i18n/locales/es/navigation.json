@@ -1,0 +1,20 @@
+{
+  "analytics_and_performance": "Analítica y Rendimiento",
+  "executive_panel": "Panel Ejecutivo",
+  "activities_panel": "Panel de Actividades",
+  "reports": {
+    "general_summary": "Resumen General",
+    "executive_summary": "Resumen Ejecutivo",
+    "loss_control": "Control de Pérdidas",
+    "operational_efficiency": "Eficiencia Operacional",
+    "financial_vision": "Visión Financiera"
+  },
+  "executive": {
+    "users": "Usuarios"
+  },
+  "activities": {
+    "notes": "Notas",
+    "tasks": "Tareas",
+    "schedules": "Horarios"
+  }
+}

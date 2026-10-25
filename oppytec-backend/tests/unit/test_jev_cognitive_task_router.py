@@ -17,7 +17,7 @@ SKILLS_DIR = ROOT_DIR.parent / ".agent" / "skills" / "jev-decision-engine"
 if str(SKILLS_DIR) not in sys.path:
     sys.path.insert(0, str(SKILLS_DIR))
 
-from jev_router import (  # type: ignore
+from jev_router import (  # noqa: E402  # type: ignore
     ExecutionMode,
     SquadAgentId,
     classify_user_request,
@@ -52,7 +52,7 @@ def test_jev_router_cross_layer_dag_pipeline() -> None:
 
     assert result.mode == ExecutionMode.DAG_PIPELINE
     # Verifica que intervengan tanto frontend como backend
-    involved = [result.primary_agent] + result.supporting_agents
+    involved = [result.primary_agent, *result.supporting_agents]
     assert SquadAgentId.BACKEND in involved or SquadAgentId.FRONTEND in involved
     assert SquadAgentId.I18N_FX in involved
 
@@ -69,6 +69,6 @@ def test_jev_router_cybersecurity_detection() -> None:
     prompt = "Auditar vulnerabilidades de inyeccion SQL e IDOR multi-tenant con semgrep y trivy"
     result = classify_user_request(prompt)
 
-    involved = [result.primary_agent] + result.supporting_agents
+    involved = [result.primary_agent, *result.supporting_agents]
     assert SquadAgentId.RED_TEAM in involved
     assert result.confidence >= Decimal("0.80")

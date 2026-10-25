@@ -1,0 +1,172 @@
+{
+  "header": {
+    "title": "Gestión de Productos",
+    "subtitle": "Catálogo de productos e insumos"
+  },
+  "toolbar": {
+    "area_selector_label": "Área Operativa",
+    "warehouse_selector_label": "Bodega Activa",
+    "table_dropdown": "Tabla",
+    "public_presets": "Plantillas Públicas",
+    "private_presets": "Mis Plantillas Privadas",
+    "no_private_presets": "No tienes plantillas privadas guardadas",
+    "customize_table": "Personalizar Vista de Tabla",
+    "categories_dropdown": "Categorías",
+    "hide_categories": "Ocultar Carrusel de Categorías",
+    "show_categories": "Mostrar Carrusel de Categorías",
+    "manage_categories": "Administrar Categorías",
+    "catalogs_dropdown": "Catálogos",
+    "manage_catalogs": "Familias, Marcas & Envases",
+    "transfer_button": "Transferir",
+    "transfer_tooltip": "Transferir stock entre bodegas",
+    "import_excel": "Importar Excel (IA)",
+    "import_factura": "Ingreso Factura (IA)",
+    "new_product_button": "Nuevo Producto",
+    "search_placeholder": "Buscar por nombre, SKU o código de barra...",
+    "presets": {
+      "general": {
+        "name": "Vista General",
+        "description": "Columnas esenciales de catálogo y stock"
+      },
+      "costs": {
+        "name": "Costos y Rentabilidad",
+        "description": "Análisis financiero, PPP y margen"
+      },
+      "inventory": {
+        "name": "Control de Inventario",
+        "description": "Bodegas, stock actual, mínimo y valorizado"
+      }
+    }
+  },
+  "columns": {
+    "sections": {
+      "stock_logistics": "Stock y Logística",
+      "purchase_costs": "Costos de Compra",
+      "sales_margins": "Ventas y Márgenes",
+      "sales_valuation": "Ventas y Valorización",
+      "turnover_autonomy": "Rotación y Autonomía"
+    },
+    "subsections": {
+      "physical_location": "Ubicación Física",
+      "stock_level": "Nivel de Stock",
+      "last_acquisition_cost": "Último Costo de Adquisición",
+      "historical_inflation": "Histórico & Inflación",
+      "inventory_valuation": "Valorización de Inventario (PPP)",
+      "historical_avg_cost": "Costo Promedio Histórico (10 compras)",
+      "sales_prices": "Precios de Venta",
+      "profit_margins": "Márgenes de Ganancia",
+      "inventory_value": "Valor del Inventario",
+      "supplies_movement": "Movimiento de Insumos"
+    },
+    "labels": {
+      "bodega": "Bodega",
+      "ubicacion": "Ubicación (Pasillo/Estante)",
+      "stock_actual": "Stock Actual (Envases)",
+      "stock_min": "Stock Mínimo (Envases)",
+      "contenido_total": "Contenido Total (Equiv)",
+      "ultimo_costo_unidad_neto": "Último Costo Unitario Neto",
+      "ultimo_costo_unidad_bruto": "Último Costo Unitario Bruto",
+      "ultimo_costo_embalaje_neto": "Último Costo Embalaje Neto",
+      "ultimo_costo_embalaje_bruto": "Último Costo Embalaje Bruto",
+      "penultimo_costo_unidad_neto": "Penúltimo Costo Unitario Neto",
+      "penultimo_costo_unidad_bruto": "Penúltimo Costo Unitario Bruto",
+      "penultimo_costo_embalaje_neto": "Penúltimo Costo Embalaje Neto",
+      "penultimo_costo_embalaje_bruto": "Penúltimo Costo Embalaje Bruto",
+      "variacion_costo": "Variación Inflacionaria (%)",
+      "costo_prom_inv_unidad_neto": "Costo PPP Unitario Neto",
+      "costo_prom_inv_unidad_bruto": "Costo PPP Unitario Bruto",
+      "costo_prom_inv_embalaje_neto": "Costo PPP Embalaje Neto",
+      "costo_prom_inv_embalaje_bruto": "Costo PPP Embalaje Bruto",
+      "costo_prom_hist_unidad_neto": "Costo Prom. Hist. Unitario Neto",
+      "costo_prom_hist_unidad_bruto": "Costo Prom. Hist. Unitario Bruto",
+      "costo_prom_hist_embalaje_neto": "Costo Prom. Hist. Embalaje Neto",
+      "costo_prom_hist_embalaje_bruto": "Costo Prom. Hist. Embalaje Bruto",
+      "precio_venta_neto": "Precio Venta Unitario Neto",
+      "precio_venta_bruto": "Precio Venta Unitario Bruto",
+      "margen_bruto": "Margen Bruto (%)",
+      "margen_neto": "Margen Neto (%)",
+      "valor_inventario_neto": "Valor Inventario Neto",
+      "valor_inventario_bruto": "Valor Inventario Bruto",
+      "dias_cobertura": "Días de Cobertura",
+      "indice_rotacion": "Índice de Rotación (Mensual)"
+    }
+  },
+  "modals": {
+    "table_config": {
+      "title": "Configuración de Tabla Analítica",
+      "description": "Personaliza las columnas visibles, el orden y las preferencias de visualización.",
+      "tab_columns": "Columnas",
+      "tab_sort": "Ordenamiento",
+      "tab_view_mode": "Modo de Vista",
+      "tab_presets": "Plantillas",
+      "search_placeholder": "Buscar columna por nombre o sección...",
+      "all_sections": "Todas las secciones",
+      "active_columns_count": "{{count}} columnas activas",
+      "sort_field": "Campo de ordenamiento",
+      "sort_direction_asc": "Ascendente (A-Z, Menor a Mayor)",
+      "sort_direction_desc": "Descendente (Z-A, Mayor a Menor)",
+      "view_mode_grouped": "Vista Agrupada por Categoría",
+      "view_mode_simple": "Vista Plana / Simple",
+      "save_button": "Guardar Configuración",
+      "reset_button": "Restaurar Predeterminados",
+      "save_as_preset": "Guardar como Nueva Plantilla",
+      "preset_name_label": "Nombre de la plantilla",
+      "preset_name_placeholder": "Ej: Mi vista personalizada",
+      "preset_desc_label": "Descripción (opcional)",
+      "preset_desc_placeholder": "Describe el objetivo de esta plantilla...",
+      "preset_saved_success": "Plantilla guardada correctamente",
+      "preset_deleted_success": "Plantilla eliminada"
+    },
+    "categories_admin": {
+      "title": "Administrador de Categorías",
+      "description": "Organiza tus insumos y productos en categorías gastronómicas y vincúlalas con áreas operativas.",
+      "tab_catalog": "Catálogo de Categorías",
+      "tab_areas": "Asignación a Áreas Operativas",
+      "new_category_button": "Nueva Categoría",
+      "edit_category_title": "Editar Categoría",
+      "create_category_title": "Crear Categoría",
+      "name_label": "Nombre de la categoría",
+      "name_placeholder": "Ej: Lácteos & Quesos",
+      "color_label": "Color distintivo",
+      "icon_label": "Icono representativo",
+      "search_placeholder": "Buscar categoría...",
+      "delete_confirm_title": "¿Eliminar categoría?",
+      "delete_confirm_desc": "Esta acción no se puede deshacer. Se desvinculará de los productos existentes.",
+      "save_category_button": "Guardar Categoría",
+      "cancel_button": "Cancelar"
+    },
+    "catalogs_manager": {
+      "title": "Administrador de Catálogos Auxiliares",
+      "description": "Gestiona familias de productos, marcas comerciales y tipos de envase.",
+      "tab_families": "Familias",
+      "tab_brands": "Marcas",
+      "tab_packaging": "Tipos de Envase",
+      "new_item_button": "Agregar",
+      "search_placeholder": "Buscar en catálogo...",
+      "name_label": "Nombre",
+      "name_placeholder": "Nombre del elemento...",
+      "logo_url_label": "URL del Logo (opcional)",
+      "icon_label": "Icono",
+      "delete_confirm_title": "¿Eliminar elemento?",
+      "delete_confirm_desc": "¿Estás seguro de que deseas eliminar este elemento del catálogo?",
+      "associated_products": "{{count}} producto(s) vinculado(s)"
+    },
+    "transfer": {
+      "title": "Transferencia de Stock entre Bodegas",
+      "description": "Mueve existencias de productos de una bodega de origen a una bodega de destino.",
+      "origin_warehouse_label": "Bodega de Origen",
+      "destination_warehouse_label": "Bodega de Destino",
+      "select_origin_placeholder": "Selecciona bodega de origen...",
+      "select_destination_placeholder": "Selecciona bodega de destino...",
+      "same_warehouse_error": "La bodega de origen y destino deben ser distintas",
+      "add_item_button": "Agregar Producto",
+      "product_column": "Producto",
+      "available_stock_column": "Stock Disponible",
+      "transfer_qty_column": "Cantidad a Transferir",
+      "actions_column": "Acciones",
+      "no_items_selected": "Agrega al menos un producto para transferir.",
+      "confirm_transfer_button": "Confirmar Transferencia",
+      "transfer_success": "Transferencia realizada con éxito"
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "wizard": {
+    "title_new": "New Product",
+    "title_edit": "Edit Product",
+    "description": "Complete the multidimensional technical product sheet in 4 simple steps.",
+    "channels": {
+      "manual": "Manual Wizard",
+      "excel": "Import Excel (AI)",
+      "invoice": "Invoice (AI)"
+    },
+    "stepper": {
+      "step_1": "1. Basic & Family",
+      "step_2": "2. Packaging & Packs",
+      "step_3": "3. Warehouses & Stock",
+      "step_4": "4. Prices & Costs"
+    },
+    "step_1": {
+      "product_name": "Product Name",
+      "product_name_placeholder": "E.g.: Boneless Chicken Breast",
+      "product_name_required": "Product name is required (Step 1)",
+      "brand": "Brand",
+      "brand_placeholder": "Select brand...",
+      "new_brand_button": "New Brand",
+      "category": "Gastronomic Category",
+      "category_placeholder": "Select category...",
+      "family": "Family",
+      "family_placeholder": "E.g.: White Meats",
+      "sku": "SKU Code",
+      "sku_placeholder": "E.g.: POL-001",
+      "barcode": "Barcode (EAN/UPC)",
+      "barcode_placeholder": "7801234567890",
+      "product_type": "Product Type",
+      "types": {
+        "insumo": "Supply (Kitchen / Bar)",
+        "venta_directa": "Direct Sale (Retail / Bar)",
+        "mixto": "Mixed (Supply + Sale)"
+      },
+      "image_url": "Image URL",
+      "image_url_placeholder": "https://example.com/image.jpg",
+      "operational_areas": "Destination Operational Areas",
+      "preview_full_name": "Compound Commercial Name"
+    },
+    "step_2": {
+      "base_unit": "Base Unit of Measure",
+      "packaging_type": "Main Packaging Type",
+      "packaging_type_placeholder": "Select packaging...",
+      "new_packaging_button": "New Packaging",
+      "net_content": "Net Content per Package",
+      "net_content_placeholder": "E.g.: 1000",
+      "content_unit": "Content Unit",
+      "purchase_presentations": "Purchase Presentations (Packs / Boxes)",
+      "add_presentation": "Add Presentation",
+      "presentation_name": "Presentation Name",
+      "presentation_equiv": "Equivalence (Base Units)",
+      "presentation_cost": "Purchase Cost",
+      "no_presentations": "No additional presentations configured."
+    },
+    "step_3": {
+      "warehouses_distribution": "Distribution by Warehouse",
+      "warehouse_enabled": "Active",
+      "warehouse_disabled": "Inactive",
+      "initial_stock": "Initial Stock ({{unit}})",
+      "min_stock_alert": "Minimum Stock Alert",
+      "aisle_letter": "Aisle / Letter",
+      "shelf_number": "Shelf / Number",
+      "total_stock": "Total Consolidated Stock"
+    },
+    "step_4": {
+      "acquisition_costs_title": "Acquisition Unit Cost ({{unit}})",
+      "net_cost": "Net Cost",
+      "gross_cost": "Gross Cost (VAT)",
+      "vat_rate": "VAT Rate (%)",
+      "sales_prices_title": "Suggested Sale Price",
+      "net_sale_price": "Net Sale Price",
+      "gross_sale_price": "Gross Sale Price"
+    },
+    "kpis": {
+      "net_margin": "Net Margin",
+      "gross_margin": "Gross Margin",
+      "markup": "Markup %",
+      "food_cost": "Food Cost",
+      "net_margin_tooltip": "Net profitability on sales price excluding taxes",
+      "gross_margin_tooltip": "Commercial margin considering gross prices",
+      "markup_tooltip": "Markup percentage over net cost",
+      "food_cost_tooltip": "Raw material cost percentage over sales price"
+    },
+    "draft": {
+      "saving": "Saving draft...",
+      "saved": "Draft autosaved",
+      "discard": "Discard",
+      "discarded": "Draft discarded",
+      "recovery_banner_title": "You have an unsaved product draft",
+      "recovery_banner_desc": "Do you want to resume editing this product?",
+      "recovery_resume": "Resume Draft",
+      "recovery_dismiss": "Discard"
+    },
+    "actions": {
+      "previous": "Previous",
+      "next": "Next",
+      "save": "Save Product",
+      "saving": "Saving...",
+      "saved_success": "Product saved successfully",
+      "save_error": "An error occurred while saving the product",
+      "cancel": "Cancel"
+    }
+  }
+}
