@@ -18,6 +18,7 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
+import re
 
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
@@ -45,6 +46,21 @@ SENSITIVE_KEY_TOKENS: tuple[str, ...] = (
     "cvv",
     "dsn",
     "private_key",
+)
+
+AUDIT_USER_PII_TOKENS: tuple[str, ...] = (
+    "email",
+    "mail",
+    "correo",
+    "username",
+    "user_name",
+    "nombre_usuario",
+    "user_display_name",
+    "nombre_visible",
+)
+
+_EMAIL_PATTERN: re.Pattern[str] = re.compile(
+    r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
 )
 
 
@@ -165,6 +181,58 @@ def get_in_memory_inventory_metrics() -> list[InventoryOperationMetric]:
 def clear_in_memory_inventory_metrics() -> None:
     """Limpia las métricas de inventario en memoria."""
     _in_memory_inventory_metrics.clear()
+
+
+@dataclass(frozen=True)
+class AlertOperationalMetric:
+    """Métrica determinista del consolidado y salud de alertas de inventario."""
+
+    tenant_id: str
+    total_alerts_count: int
+    critical_count: int
+    expired_count: int
+    upcoming_count: int
+    total_financial_risk: str
+    has_critical: bool
+    timestamp: str = ""
+
+
+_in_memory_alerts_metrics: list[AlertOperationalMetric] = []
+
+
+def get_in_memory_alerts_metrics() -> list[AlertOperationalMetric]:
+    """Devuelve las métricas operativas de alertas registradas en memoria."""
+    return list(_in_memory_alerts_metrics)
+
+
+def clear_in_memory_alerts_metrics() -> None:
+    """Limpia las métricas operativas de alertas en memoria."""
+    _in_memory_alerts_metrics.clear()
+
+
+def record_alert_operational_metric(
+    *,
+    tenant_id: str,
+    total_alerts_count: int,
+    critical_count: int,
+    expired_count: int,
+    upcoming_count: int,
+    total_financial_risk: str,
+    has_critical: bool,
+) -> AlertOperationalMetric:
+    """Registra una métrica operativa de alertas en memoria."""
+    metric = AlertOperationalMetric(
+        tenant_id=tenant_id,
+        total_alerts_count=total_alerts_count,
+        critical_count=critical_count,
+        expired_count=expired_count,
+        upcoming_count=upcoming_count,
+        total_financial_risk=total_financial_risk,
+        has_critical=has_critical,
+        timestamp=datetime.now(UTC).isoformat(),
+    )
+    _in_memory_alerts_metrics.append(metric)
+    return metric
 
 
 _current_trace_id_var: ContextVar[str] = ContextVar("oppytec_trace_id", default="")

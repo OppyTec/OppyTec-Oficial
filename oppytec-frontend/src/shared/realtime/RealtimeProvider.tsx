@@ -19,10 +19,16 @@ export interface RealtimePushEvent {
   readonly eventType:
     | "inventory.stock.updated"
     | "inventory.merma.threshold_alert"
+    | "inventory.alerts.changed"
     | "operations.alert.triggered"
     | "operations.notification.created"
+    | "operations.notification.resolved"
+    | "notification.created"
+    | "notification.resolved"
+    | "notification.matrix_updated"
     | "procurement.invoice.processed"
-    | "oppyfy.credits.updated";
+    | "oppyfy.credits.updated"
+    | (string & {});
   readonly holdingId: string;
   readonly tenantId: string;
   readonly requiredPermission: `${string}.${string}.${string}`;
@@ -117,13 +123,36 @@ export function RealtimeProvider({
       setLastEventId(event.eventId);
 
       // Invalidate corresponding TanStack Query v5 keys immediately on push event
-      if (event.eventType.startsWith("inventory.")) {
+      if (
+        event.eventType.startsWith("inventory.") ||
+        event.eventType === "consumption.recorded"
+      ) {
         void queryClient.invalidateQueries({
           queryKey: queryKeys.inventory.stock({ holdingId, tenantId }),
         });
-      } else if (event.eventType.startsWith("operations.")) {
+        void queryClient.invalidateQueries({
+          queryKey: ["inventory", "history"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["oppytec", "operations", "consumption"],
+        });
+      } else if (event.eventType === "voice.order_pending") {
+        void queryClient.invalidateQueries({
+          queryKey: ["oppytec", "operations", "voice"],
+        });
+      } else if (event.eventType === "buffet.session_changed") {
+        void queryClient.invalidateQueries({
+          queryKey: ["oppytec", "operations", "buffet"],
+        });
+      } else if (
+        event.eventType.startsWith("operations.") ||
+        event.eventType.startsWith("notification.")
+      ) {
         void queryClient.invalidateQueries({
           queryKey: queryKeys.operations.alerts(tenantId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.approvals.all(),
         });
       } else if (event.eventType.startsWith("procurement.")) {
         void queryClient.invalidateQueries({

@@ -1,0 +1,86 @@
+{
+  "header": {
+    "title": "History",
+    "subtitle": "Inventory Audit and Traceability"
+  },
+  "toolbar": {
+    "badge_immutable": "Immutable Audit",
+    "badge_immutable_mobile": "IMMUTABLE",
+    "export_csv": "Export CSV"
+  },
+  "filters": {
+    "user_search_placeholder": "Search by user...",
+    "user_search_aria": "Search by user",
+    "user_search_clear_title": "Clear search",
+    "product_select_aria": "Filter by product",
+    "all_products": "All products",
+    "type_select_aria": "Filter by type",
+    "types": {
+      "all": "All",
+      "conteo": "Count",
+      "consumo": "Consumption",
+      "merma": "Waste",
+      "ajuste": "Adjustment",
+      "transferencia": "Transfer",
+      "compra": "Purchase",
+      "entrada": "Inbound",
+      "salida": "Outbound",
+      "reversion": "Reversal",
+      "redo": "Redo",
+      "ajuste_auditoria": "Audit Adjustment",
+      "ajuste_positivo": "Positive Adjustment",
+      "ajuste_negativo": "Negative Adjustment"
+    },
+    "date_from_label": "From",
+    "date_from_aria": "From",
+    "date_from_clear_title": "Clear from date",
+    "date_to_label": "To",
+    "date_to_aria": "To",
+    "date_to_clear_title": "Clear to date",
+    "clear_filters": "Clear filters"
+  },
+  "table": {
+    "headers": {
+      "datetime": "Date and time",
+      "product": "Product",
+      "type": "Type",
+      "warehouse": "Warehouse",
+      "quantity": "Quantity",
+      "user": "User",
+      "reason": "Reason",
+      "unit_cost": "Unit Cost",
+      "total_cost": "Total Cost",
+      "balance": "Resulting Balance"
+    },
+    "transfer": {
+      "outbound_tooltip": "Outbound Transfer",
+      "inbound_tooltip": "Inbound Transfer"
+    },
+    "user_system": "System",
+    "no_reason": "—",
+    "empty_state": "No records match the applied filters.",
+    "loading": "Loading history..."
+  },
+  "pagination": {
+    "summary": "Showing {{count}} records on this page (Total in database: {{total}})",
+    "prev": "Previous",
+    "page_indicator": "Page {{page}}",
+    "next": "Next"
+  },
+  "export": {
+    "toast_success": "Audit successfully exported",
+    "toast_no_records": "No records to export",
+    "filename_prefix": "inventory_audit",
+    "columns": {
+      "datetime": "Date and Time",
+      "warehouse": "Warehouse",
+      "product": "Product",
+      "movement_type": "Movement Type",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "user": "User",
+      "reason_notes": "Reason / Notes",
+      "resulting_balance": "Resulting Balance"
+    }
+  }
+}

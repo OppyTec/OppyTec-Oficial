@@ -2,6 +2,7 @@
 
 from src.core.config import EnvironmentType, Settings, get_settings
 from src.core.observability import (
+    AlertOperationalMetric,
     InMemorySpanExporter,
     InventoryOperationMetric,
     ObservabilityMiddleware,
@@ -9,6 +10,7 @@ from src.core.observability import (
     SpanRecord,
     TenantTelemetryContext,
     bind_tenant_telemetry_context,
+    clear_in_memory_alerts_metrics,
     clear_in_memory_inventory_metrics,
     clear_in_memory_quota_metrics,
     emit_plan_audit_log,
@@ -16,10 +18,12 @@ from src.core.observability import (
     emit_tenant_provisioning_audit_log,
     format_structured_log,
     get_current_trace_id,
+    get_in_memory_alerts_metrics,
     get_in_memory_exporter,
     get_in_memory_inventory_metrics,
     get_in_memory_quota_metrics,
     get_tenant_telemetry_context,
+    record_alert_operational_metric,
     record_quota_semaphore_metric,
     reset_tenant_telemetry_context,
     scrub_telemetry_payload,
@@ -27,6 +31,7 @@ from src.core.observability import (
 )
 
 __all__ = [
+    "AlertOperationalMetric",
     "EnvironmentType",
     "InMemorySpanExporter",
     "InventoryOperationMetric",
@@ -36,6 +41,7 @@ __all__ = [
     "SpanRecord",
     "TenantTelemetryContext",
     "bind_tenant_telemetry_context",
+    "clear_in_memory_alerts_metrics",
     "clear_in_memory_inventory_metrics",
     "clear_in_memory_quota_metrics",
     "emit_plan_audit_log",
@@ -43,11 +49,13 @@ __all__ = [
     "emit_tenant_provisioning_audit_log",
     "format_structured_log",
     "get_current_trace_id",
+    "get_in_memory_alerts_metrics",
     "get_in_memory_exporter",
     "get_in_memory_inventory_metrics",
     "get_in_memory_quota_metrics",
     "get_settings",
     "get_tenant_telemetry_context",
+    "record_alert_operational_metric",
     "record_quota_semaphore_metric",
     "reset_tenant_telemetry_context",
     "scrub_telemetry_payload",

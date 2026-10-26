@@ -18,16 +18,19 @@ Snapshot de Stock con Semáforos, Undo/Redo Transaccional, Mermas e Ingesta de F
 """
 from __future__ import annotations
 
+import logging
 from contextlib import suppress
+from datetime import date
 from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
+from fastapi.responses import StreamingResponse
 
 from src.core.exceptions import (
-    CrossTenantAccessError,
     DomainValidationError,
+    PermissionDeniedError,
     ResourceNotFoundError,
     SecurityValidationError,
     TransferSameWarehouseError,
@@ -38,9 +41,15 @@ from src.core.guards.rbac_dependencies import (
 )
 from src.core.realtime.router import get_realtime_publisher
 from src.core.realtime.schemas import RealtimeEventEnvelope
+from src.modules.inventory.application.alerts_service import InventoryAlertsService
+from src.modules.inventory.application.history_service import KardexHistoryService
 from src.modules.inventory.application.inventory_service import InventoryService
 from src.modules.inventory.application.physical_count_service import PhysicalCountService
 from src.modules.inventory.application.waste_service import WasteService
+from src.modules.inventory.domain.alerts import (
+    AlertBadgeSummary,
+    AlertsConsolidatedSummary,
+)
 from src.modules.inventory.domain.entities import PhysicalCountSession
 from src.modules.inventory.presentation.schemas import (
     BulkTransferItemResult,
@@ -58,6 +67,7 @@ from src.modules.inventory.presentation.schemas import (
     MermaApproveRequest,
     MermaReportRequest,
     MermaResponse,
+    PaginatedKardexHistoryResponse,
     PhysicalCountItemDetailResponse,
     PhysicalCountSaveItemsRequest,
     PhysicalCountSessionDetailResponse,
@@ -67,8 +77,17 @@ from src.modules.inventory.presentation.schemas import (
     StockStatusItemResponse,
     StockUndoRequest,
 )
+from src.modules.inventory.presentation.schemas_alerts import (
+    AlertsBadgeResponse,
+    AlertsSummaryResponse,
+    CriticalStockAlertResponse,
+    ExpiredLotAlertResponse,
+    StockHealthRatioResponse,
+    UpcomingExpiryAlertResponse,
+)
 
 router = APIRouter(tags=["inventory"])
+logger = logging.getLogger("oppytec.inventory.router")
 
 _inventory_service = InventoryService()
 _waste_service = WasteService(
@@ -76,6 +95,8 @@ _waste_service = WasteService(
     approval_threshold=Decimal("50000.00"),
 )
 _physical_count_service = PhysicalCountService(inventory=_inventory_service)
+_alerts_service = InventoryAlertsService()
+_history_service = KardexHistoryService(inventory=_inventory_service)
 
 
 def _parse_optional_uuid(val: str | None) -> UUID | None:
@@ -164,6 +185,9 @@ async def register_kardex_movement_endpoint(
                 query_keys_to_invalidate=[
                     ["inventory", "stock", "status"],
                     ["inventory", "kardex", "movements"],
+                    ["inventory", "history"],
+                    ["inventory", "alerts"],
+                    ["inventory", "alerts", "badge"],
                 ],
                 payload={
                     "producto_id": entry.producto_id,
@@ -221,6 +245,154 @@ async def list_kardex_movements_endpoint(
         )
         for e in _inventory_service.ledger(tenant_id=principal.tenant_id)
     ]
+
+
+# ============================================================================
+# HISTORIAL AUDITABLE Y LIBRO MAYOR KARDEX (/historial)
+# ============================================================================
+
+
+@router.get(
+    "/api/v1/inventory/history/paginated",
+    response_model=PaginatedKardexHistoryResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_history_paginated_endpoint(
+    bodega_id: Annotated[str, Query()] = "all",
+    producto_id: Annotated[str, Query()] = "all",
+    tipo_movimiento: Annotated[str, Query()] = "all",
+    fecha_desde: Annotated[date | None, Query()] = None,
+    fecha_hasta: Annotated[date | None, Query()] = None,
+    user_search: Annotated[str | None, Query()] = None,
+    usuario_busqueda: Annotated[str | None, Query()] = None,
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.history.read", fallback_permission="inventory.kardex.read")),
+    ] = None,  # type: ignore[assignment]
+) -> PaginatedKardexHistoryResponse:
+    """
+    Retorna el historial detallado de movimientos de Kardex con filtros multi-criterio y paginación.
+    Protege la identidad de usuarios anonimizando a 'Operador Autorizado' si falta el permiso 'inventory.history.view_users'.
+    """
+    can_view_users = (
+        principal.is_superuser_god
+        or principal.is_holding_owner
+        or "inventory.history.view_users" in principal.role_grants
+        or "inventory.history.view_users" in principal.temp_grants
+    )
+    search_term = user_search or usuario_busqueda
+
+    return _history_service.get_filtered_history(
+        tenant_id=principal.tenant_id,
+        bodega_id=bodega_id,
+        producto_id=producto_id,
+        tipo_movimiento=tipo_movimiento,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        user_search=search_term,
+        skip=skip,
+        limit=limit,
+        can_view_users=can_view_users,
+        actor_user_id=principal.user_id,
+    )
+
+
+@router.get(
+    "/api/v1/inventory/history/export-csv",
+    status_code=status.HTTP_200_OK,
+)
+async def export_history_csv_endpoint(
+    bodega_id: Annotated[str, Query()] = "all",
+    producto_id: Annotated[str, Query()] = "all",
+    tipo_movimiento: Annotated[str, Query()] = "all",
+    fecha_desde: Annotated[date | None, Query()] = None,
+    fecha_hasta: Annotated[date | None, Query()] = None,
+    user_search: Annotated[str | None, Query()] = None,
+    usuario_busqueda: Annotated[str | None, Query()] = None,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.history.export", fallback_permission="inventory.kardex.read")),
+    ] = None,  # type: ignore[assignment]
+) -> StreamingResponse:
+    """
+    Exportación streaming segura del historial de Kardex en formato CSV.
+    Incluye BOM UTF-8 (\\uFEFF) para compatibilidad con Microsoft Excel y sanitización anti-fórmulas CWE-1236.
+    """
+    can_view_users = (
+        principal.is_superuser_god
+        or principal.is_holding_owner
+        or "inventory.history.view_users" in principal.role_grants
+        or "inventory.history.view_users" in principal.temp_grants
+    )
+    search_term = user_search or usuario_busqueda
+
+    if fecha_desde is not None and fecha_hasta is not None and fecha_desde > fecha_hasta:
+        raise DomainValidationError(
+            f"Rango de fechas inválido: fecha_desde ({fecha_desde}) no puede ser posterior a fecha_hasta ({fecha_hasta})",
+            i18n_key="inventory:history.invalid_date_range",
+        )
+
+    stream_gen = _history_service.generate_csv_stream(
+        tenant_id=principal.tenant_id,
+        bodega_id=bodega_id,
+        producto_id=producto_id,
+        tipo_movimiento=tipo_movimiento,
+        fecha_desde=fecha_desde,
+        fecha_hasta=fecha_hasta,
+        user_search=search_term,
+        can_view_users=can_view_users,
+        actor_user_id=principal.user_id,
+    )
+
+    filename = f"auditoria_inventario_{date.today().isoformat()}.csv"
+    headers = {
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        "Content-Type": "text/csv; charset=utf-8",
+    }
+    return StreamingResponse(
+        stream_gen,
+        media_type="text/csv",
+        headers=headers,
+    )
+
+
+@router.delete(
+    "/api/v1/inventory/history/purge",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+@router.delete(
+    "/api/v1/inventory/history",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def clear_history_endpoint(
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.history.purge")),
+    ],
+) -> Response:
+    """
+    Elimina TODO el historial de movimientos de auditoría para el tenant.
+    Operación crítica restringida exclusivamente al Propietario del tenant (rank 0 / is_holding_owner).
+    """
+    if not (principal.is_holding_owner or principal.hierarchy_rank == 0 or principal.is_superuser_god):
+        raise PermissionDeniedError(
+            "Solo el Propietario del tenant puede eliminar el historial",
+            i18n_key="inventory:errors.purge_history_forbidden",
+            status_code=403,
+        )
+
+    purged_count = _history_service.purge_history(tenant_id=principal.tenant_id)
+    logger.critical(
+        "CRITICAL SECURITY AUDIT: Tenant '%s' Kardex history purged (%d records) by user %s (rank=%s, is_owner=%s)",
+        principal.tenant_id,
+        purged_count,
+        principal.user_id,
+        principal.hierarchy_rank,
+        principal.is_holding_owner,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # ============================================================================
@@ -310,6 +482,9 @@ async def undo_stock_movement_endpoint(
                 query_keys_to_invalidate=[
                     ["inventory", "stock", "status"],
                     ["inventory", "kardex", "movements"],
+                    ["inventory", "history"],
+                    ["inventory", "alerts"],
+                    ["inventory", "alerts", "badge"],
                 ],
                 payload={
                     "action": "undo",
@@ -370,6 +545,9 @@ async def redo_stock_movement_endpoint(
                 query_keys_to_invalidate=[
                     ["inventory", "stock", "status"],
                     ["inventory", "kardex", "movements"],
+                    ["inventory", "history"],
+                    ["inventory", "alerts"],
+                    ["inventory", "alerts", "badge"],
                 ],
                 payload={
                     "action": "redo",
@@ -575,6 +753,8 @@ async def approve_count_session_endpoint(
                     ["inventory", "stock", "status"],
                     ["inventory", "kardex", "movements"],
                     ["inventory", "counts"],
+                    ["inventory", "alerts"],
+                    ["inventory", "alerts", "badge"],
                 ],
                 payload={
                     "conteo_id": conteo_id,
@@ -769,6 +949,9 @@ async def bulk_transfer_stock_endpoint(
                 query_keys_to_invalidate=[
                     ["inventory", "stock", "status"],
                     ["inventory", "kardex", "movements"],
+                    ["inventory", "history"],
+                    ["inventory", "alerts"],
+                    ["inventory", "alerts", "badge"],
                 ],
                 payload={
                     "bodega_origen_id": payload.bodega_origen_id,
@@ -1084,3 +1267,149 @@ async def confirm_invoice_endpoint(
         total_registered_cost=total_cost,
         kardex_movements=movements,
     )
+
+
+def _to_alerts_summary_response(summary: AlertsConsolidatedSummary) -> AlertsSummaryResponse:
+    """Mapea el agregado raíz de Dominio `AlertsConsolidatedSummary` a su esquema REST Pydantic v2."""
+    critical_items = [
+        CriticalStockAlertResponse(
+            producto_id=c.producto_id,
+            bodega_id=c.bodega_id,
+            bodega_nombre=c.bodega_nombre,
+            producto_nombre=c.producto_nombre,
+            stock_actual=c.stock_actual,
+            stock_minimo=c.stock_minimo,
+            unidad_medida=c.unidad_medida,
+            ratio=StockHealthRatioResponse(
+                stock_actual=c.ratio.stock_actual,
+                stock_minimo=c.ratio.stock_minimo,
+                raw_ratio=c.ratio.raw_ratio,
+                clamped_ratio=c.ratio.clamped_ratio,
+                status=c.ratio.status,
+            ),
+            is_depleted=c.is_depleted,
+            bodega_color=c.bodega_color,
+            bodega_icono=c.bodega_icono,
+            costo_promedio=c.costo_promedio,
+        )
+        for c in summary.critical_stock
+    ]
+
+    expired_items = [
+        ExpiredLotAlertResponse(
+            producto_id=e.producto_id,
+            bodega_id=e.bodega_id,
+            bodega_nombre=e.bodega_nombre,
+            producto_nombre=e.producto_nombre,
+            lote_codigo=e.lote_codigo,
+            fecha_vencimiento=e.fecha_vencimiento,
+            cantidad_vencida=e.cantidad_vencida,
+            dias_vencido=e.dias_vencido,
+            costo_ppp=e.costo_ppp,
+            valor_total_riesgo=e.valor_total_riesgo,
+            unidad_medida=e.unidad_medida,
+            bodega_color=e.bodega_color,
+            bodega_icono=e.bodega_icono,
+        )
+        for e in summary.expired_lots
+    ]
+
+    upcoming_items = [
+        UpcomingExpiryAlertResponse(
+            producto_id=u.producto_id,
+            bodega_id=u.bodega_id,
+            bodega_nombre=u.bodega_nombre,
+            producto_nombre=u.producto_nombre,
+            lote_codigo=u.lote_codigo,
+            fecha_vencimiento=u.fecha_vencimiento,
+            cantidad_en_riesgo=u.cantidad_en_riesgo,
+            dias_restantes=u.dias_restantes,
+            costo_ppp=u.costo_ppp,
+            valor_total_riesgo=u.valor_total_riesgo,
+            unidad_medida=u.unidad_medida,
+            bodega_color=u.bodega_color,
+            bodega_icono=u.bodega_icono,
+        )
+        for u in summary.upcoming_expiries
+    ]
+
+    return AlertsSummaryResponse(
+        total_count=summary.total_count,
+        critical_count=summary.critical_count,
+        expired_count=summary.expired_count,
+        upcoming_count=summary.upcoming_count,
+        has_critical=summary.has_critical,
+        total_financial_risk=summary.total_financial_risk,
+        critical_stock=critical_items,
+        expired_lots=expired_items,
+        upcoming_expiries=upcoming_items,
+    )
+
+
+def _to_alerts_badge_response(badge: AlertBadgeSummary) -> AlertsBadgeResponse:
+    """Mapea el resumen numérico ultraliviano a su esquema REST Pydantic v2."""
+    return AlertsBadgeResponse(
+        total_count=badge.total_count,
+        has_critical=badge.has_critical,
+        critical_stock_count=badge.critical_stock_count,
+        expired_count=badge.expired_count,
+        upcoming_count=badge.upcoming_count,
+    )
+
+
+@router.get(
+    "/api/v1/inventory/alerts",
+    response_model=AlertsSummaryResponse,
+    summary="Obtiene el consolidado de alertas operativas (stock crítico, lotes caducados y próximos a vencer)",
+)
+async def get_inventory_alerts(
+    bodega_id: Annotated[list[int] | None, Query(description="Filtrar por identificadores de bodega")] = None,
+    area_operativa_id: Annotated[int | None, Query(description="Filtrar por área operativa")] = None,
+    tipo: Annotated[str | None, Query(description="Tipo de alerta: all, stock, upcoming, expired")] = None,
+    upcoming_days: Annotated[int, Query(ge=1, description="Ventana de días FEFO para próximos a vencer")] = 30,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.alerts.read")),
+    ] = None,  # type: ignore[assignment]
+) -> AlertsSummaryResponse:
+    """
+    Retorna el consolidado analítico de alertas de inventario evaluado directamente en PostgreSQL (< 20ms).
+    Incluye:
+    - Insumos en quiebre o stock bajo mínimo con ratios cromáticos de salud.
+    - Lotes caducados que conservan saldo físico para su inmediata baja o merma.
+    - Lotes próximos a vencer dentro de la ventana de urgencia FEFO.
+    """
+    summary = await _alerts_service.get_alerts(
+        tenant_id=principal.tenant_id,
+        bodega_ids=bodega_id,
+        area_operativa_id=area_operativa_id,
+        filter_type=tipo,
+        upcoming_days=upcoming_days,
+    )
+    return _to_alerts_summary_response(summary)
+
+
+@router.get(
+    "/api/v1/inventory/alerts/badge",
+    response_model=AlertsBadgeResponse,
+    summary="Obtiene el resumen numérico ultraliviano para el Sidebar institucional (< 5ms)",
+)
+async def get_inventory_alerts_badge(
+    bodega_id: Annotated[list[int] | None, Query(description="Filtrar por identificadores de bodega")] = None,
+    area_operativa_id: Annotated[int | None, Query(description="Filtrar por área operativa")] = None,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.alerts.read")),
+    ] = None,  # type: ignore[assignment]
+) -> AlertsBadgeResponse:
+    """
+    Retorna el conteo analítico resumido y el indicador de pulsación crítica para el menú lateral
+    y la barra de cabecera en tiempo de respuesta inferior a 5ms.
+    """
+    badge = await _alerts_service.get_badge_summary(
+        tenant_id=principal.tenant_id,
+        bodega_ids=bodega_id,
+        area_operativa_id=area_operativa_id,
+    )
+    return _to_alerts_badge_response(badge)
+

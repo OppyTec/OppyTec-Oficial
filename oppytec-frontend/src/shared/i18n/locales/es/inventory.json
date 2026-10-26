@@ -428,5 +428,94 @@
       "sun": "Dom"
     },
     "ok_24h": "24h OK"
+  },
+  "alerts": {
+    "title": "Alertas",
+    "subtitle": "Estado de Stock y Vencimientos del Sistema",
+    "loading": "Cargando Alertas...",
+    "toolbar": {
+      "filter_label": "Filtrar Alertas",
+      "filter_all": "Todas las alertas",
+      "filter_all_short": "Todas",
+      "filter_stock": "Stock Crítico",
+      "filter_upcoming": "Próximos a vencer",
+      "filter_upcoming_short": "Por Vencer",
+      "filter_expired": "Productos Vencidos",
+      "filter_expired_short": "Vencidos",
+      "view_cards": "Tarjetas",
+      "view_list": "Listado",
+      "aria_cards": "Tarjetas",
+      "aria_list": "Listado"
+    },
+    "sections": {
+      "critical_stock": "Stock Crítico",
+      "expired_products": "Productos Vencidos",
+      "upcoming_expiry": "Próximos a Vencer"
+    },
+    "status": {
+      "depleted": "Agotado",
+      "critical": "Bajo Mínimo"
+    },
+    "cards": {
+      "actual": "Actual",
+      "minimo": "Mínimo",
+      "add_to_cart": "Agregar al carrito de compras",
+      "buy_product": "Comprar {{name}}",
+      "expiration": "Vencimiento",
+      "lot_prefix": "Lote: {{code}}",
+      "lot_prefix_short": "Lote",
+      "affected_stock": "Stock Afectado",
+      "affected_stock_label": "Stock afectado:",
+      "risk_stock_label": "Stock en riesgo:",
+      "total_stock": "Stock Total",
+      "report_merma": "Reportar Merma",
+      "report_merma_for": "Reportar merma para {{name}}",
+      "manage": "Gestionar",
+      "manage_for": "Gestionar {{name}}",
+      "merma_recommendation": "Se recomienda realizar una baja de inventario (Merma) para estos productos.",
+      "financial_risk": "Riesgo Financiero"
+    },
+    "table": {
+      "title": "Productos bajo Stock Mínimo",
+      "active_alert_one": "{{count}} alerta activa",
+      "active_alert_other": "{{count}} alertas activas",
+      "col_product": "Producto",
+      "col_health": "Estado / Salud",
+      "col_actual": "Actual",
+      "col_min": "Mínimo",
+      "col_action": "Acción",
+      "empty": "Todo bajo control. No hay productos en stock crítico."
+    },
+    "empty": {
+      "stock_critico": "Todo bajo control. No hay productos en stock crítico.",
+      "expired": "No hay productos vencidos en este período.",
+      "upcoming": "No hay lotes próximos a vencer dentro del rango establecido.",
+      "page": "Sin ítems en esta página.",
+      "no_records": "No hay registros para mostrar"
+    },
+    "relative_time": {
+      "today": "hoy",
+      "ago_days_one": "hace 1 día",
+      "ago_days_other": "hace {{count}} días",
+      "ago_days_exact_one": "1 día",
+      "ago_days_exact_other": "{{count}} días",
+      "ago_months_one": "hace 1 mes",
+      "ago_months_other": "hace {{count}} meses",
+      "ago_years_one": "hace 1 año",
+      "ago_years_other": "hace {{count}} años",
+      "in_days_one": "en 1 día",
+      "in_days_other": "en {{count}} días",
+      "in_months_one": "en 1 mes",
+      "in_months_other": "en {{count}} meses",
+      "in_years_one": "en 1 año",
+      "in_years_other": "en {{count}} años"
+    },
+    "toast": {
+      "cart_added": "{{product}} agregado al carrito de compras",
+      "cart_added_with_warehouse": "{{product}} ({{warehouse}}) agregado al carrito de compras"
+    },
+    "pagination": {
+      "item_label": "alertas"
+    }
   }
 }

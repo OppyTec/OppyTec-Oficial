@@ -15,7 +15,9 @@ from src.modules.inventory.domain.exceptions import (
     TransferSameWarehouseError,
 )
 from src.modules.inventory.domain.value_objects import (
+    AuditDelta,
     MoneyAmount,
+    MovementSign,
     MovementType,
     StockQuantity,
     StorageLocation,
@@ -112,6 +114,10 @@ class KardexMovement:
     fecha_vencimiento_lote: date | None = None
     documento_referencia: str | None = None
     transfer_id: UUID | str | None = None
+    motivo_merma: str | None = None
+    descripcion_merma: str | None = None
+    fecha_recuento: date | None = None
+    user_display_name: str | None = None
 
     def __post_init__(self) -> None:
         if self.producto_id <= 0:
@@ -120,6 +126,22 @@ class KardexMovement:
             raise ValueError(f"Invalid bodega_id: {self.bodega_id}")
         if self.cantidad.is_zero() or self.cantidad.is_negative():
             raise ValueError(f"Kardex movement quantity must be strictly positive: {self.cantidad}")
+
+    def compute_audit_delta(self, unit: str = "") -> AuditDelta:
+        """Calcula el Value Object AuditDelta para este movimiento."""
+        from src.modules.inventory.domain.kardex_math import compute_audit_delta
+
+        return compute_audit_delta(
+            resulting_balance=self.saldo_resultante.value,
+            quantity=self.cantidad.value,
+            movement_type=self.tipo_movimiento,
+            unit=unit,
+        )
+
+    @property
+    def movement_sign(self) -> MovementSign:
+        """Determina el signo algebraico del movimiento (+, -, 0)."""
+        return MovementSign.from_movement_type(self.tipo_movimiento, self.cantidad.value)
 
 
 @dataclass
@@ -252,7 +274,104 @@ class StockTransfer:
             raise ValueError(f"Invalid transfer status: {self.estado}. Allowed: {sorted(self.VALID_STATES)}")
 
 
+@dataclass(frozen=True)
+class KardexAuditRecord:
+    """
+    Entidad inmutable de auditoría forense y visor de historial (/historial).
+    Encapsula el asiento inmutable del Kardex enriquecido con relaciones resueltas
+    (producto, bodega, usuario), cálculo de deltas Before/After y metadatos operativos.
+    Clean Architecture estricta: aislada al 100% de frameworks o infraestructura.
+    """
+
+    id: int | str
+    created_at: datetime
+    fecha_recuento: date
+    producto_id: int
+    nombre_producto: str
+    unidad_medida: str
+    bodega_id: int
+    nombre_bodega: str
+    tipo_movimiento: str
+    cantidad: Decimal
+    saldo_resultante: Decimal
+    costo_unitario_ppp: Decimal
+    costo_total_movimiento: Decimal
+    actor_user_id: int
+    user_display_name: str
+    motivo_merma: str | None = None
+    descripcion_merma: str | None = None
+    lote_codigo: str | None = None
+    fecha_vencimiento_lote: date | None = None
+    transfer_id: UUID | str | None = None
+    delta_before: Decimal | None = None
+    delta_after: Decimal | None = None
+    tenant_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if type(self.cantidad).__name__ == "float" or type(self.saldo_resultante).__name__ == "float":
+            raise TypeError("Float precision IEEE-754 is strictly forbidden for KardexAuditRecord; use Decimal, int, or str")
+        if type(self.costo_unitario_ppp).__name__ == "float" or type(self.costo_total_movimiento).__name__ == "float":
+            raise TypeError("Float precision IEEE-754 is strictly forbidden for KardexAuditRecord; use Decimal, int, or str")
+
+    @property
+    def audit_delta(self) -> AuditDelta:
+        """Calcula o recupera el Value Object AuditDelta."""
+        if self.delta_before is not None and self.delta_after is not None:
+            return AuditDelta(
+                before=self.delta_before,
+                after=self.delta_after,
+                delta=self.delta_after - self.delta_before,
+                unit=self.unidad_medida,
+            )
+        from src.modules.inventory.domain.kardex_math import compute_audit_delta
+
+        return compute_audit_delta(
+            resulting_balance=self.saldo_resultante,
+            quantity=self.cantidad,
+            movement_type=self.tipo_movimiento,
+            unit=self.unidad_medida,
+        )
+
+    @property
+    def movement_sign(self) -> MovementSign:
+        """Determina el signo algebraico canónico del movimiento (+, -, 0)."""
+        return MovementSign.from_movement_type(self.tipo_movimiento, self.cantidad)
+
+    def to_dict(self) -> dict[str, object]:
+        """Serializa a diccionario limpio preservando tipos Decimal para capas superiores."""
+        delta = self.audit_delta
+        return {
+            "id": self.id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "fecha_recuento": self.fecha_recuento.isoformat() if self.fecha_recuento else None,
+            "producto_id": self.producto_id,
+            "nombre_producto": self.nombre_producto,
+            "unidad_medida": self.unidad_medida,
+            "bodega_id": self.bodega_id,
+            "nombre_bodega": self.nombre_bodega,
+            "tipo_movimiento": self.tipo_movimiento,
+            "cantidad": self.cantidad,
+            "saldo_resultante": self.saldo_resultante,
+            "costo_unitario_ppp": self.costo_unitario_ppp,
+            "costo_total_movimiento": self.costo_total_movimiento,
+            "actor_user_id": self.actor_user_id,
+            "user_display_name": self.user_display_name,
+            "motivo_merma": self.motivo_merma,
+            "descripcion_merma": self.descripcion_merma,
+            "lote_codigo": self.lote_codigo,
+            "fecha_vencimiento_lote": (
+                self.fecha_vencimiento_lote.isoformat() if self.fecha_vencimiento_lote else None
+            ),
+            "transfer_id": str(self.transfer_id) if self.transfer_id else None,
+            "delta_before": delta.before,
+            "delta_after": delta.after,
+            "movement_sign": self.movement_sign.value,
+            "tenant_id": self.tenant_id,
+        }
+
+
 __all__ = [
+    "KardexAuditRecord",
     "KardexMovement",
     "PhysicalCountItem",
     "PhysicalCountSession",

@@ -1,15 +1,34 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Sidebar } from "./Sidebar";
 import { PermissionsProvider, type RbacPolicyState } from "@/shared/auth/usePermissions";
 import { setActiveLanguage } from "@/shared/i18n";
 
 describe("Sidebar Component Suite — Panel Unlocking and Accordions", () => {
+  let queryClient: QueryClient;
+
   beforeEach(() => {
     localStorage.clear();
     setActiveLanguage("es");
     vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+          gcTime: 0,
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    if (typeof localStorage !== "undefined") {
+      localStorage.clear();
+    }
   });
 
   const basePolicy: RbacPolicyState = {
@@ -23,11 +42,13 @@ describe("Sidebar Component Suite — Panel Unlocking and Accordions", () => {
 
   const renderSidebar = (policy: RbacPolicyState = basePolicy, props = {}) => {
     return render(
-      <MemoryRouter>
-        <PermissionsProvider initialPolicy={policy}>
-          <Sidebar isOpen={true} {...props} />
-        </PermissionsProvider>
-      </MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>
+          <PermissionsProvider initialPolicy={policy}>
+            <Sidebar isOpen={true} {...props} />
+          </PermissionsProvider>
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 

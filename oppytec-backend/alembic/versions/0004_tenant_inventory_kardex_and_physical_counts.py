@@ -3,7 +3,7 @@
 Migración correlativa 0004 para el alcance `tenant`:
 Enriquece el modelo de Inventario en esquemas `tenant_*`:
 - `producto_bodegas`: stock_minimo, stock_maximo, punto_reorden, pasillo, estante, nivel.
-- `registro_stock`: costo_unitario_ppp, costo_total_movimiento, lote_codigo, fecha_vencimiento_lote, transfer_id e índices.
+- `registro_stock`: costo_unitario_ppp, costo_total_movimiento, lote_codigo, fecha_vencimiento_lote, transfer_id, motivo_merma, descripcion_merma, fecha_recuento e índices (bodega_producto, created_tipo, transfer_id, fecha_recuento, actor_created).
 - `stock_transfers`: tabla nueva para transferencias inter-bodegas con transfer_uuid e historial de responsables.
 - `conteos_inventario`: area_operativa_id, aprobador_user_id, notas, completed_at.
 - `conteo_items`: lote_codigo, fecha_vencimiento, costo_unitario_ppp, valorizacion_diferencia.
@@ -186,6 +186,24 @@ def upgrade() -> None:
             sa.Column("transfer_id", sa.Uuid(as_uuid=True), nullable=True),
             schema=current_schema,
         )
+    if _has_column("registro_stock", "motivo_merma", schema=current_schema) is not True:
+        op.add_column(
+            "registro_stock",
+            sa.Column("motivo_merma", sa.String(length=64), nullable=True),
+            schema=current_schema,
+        )
+    if _has_column("registro_stock", "descripcion_merma", schema=current_schema) is not True:
+        op.add_column(
+            "registro_stock",
+            sa.Column("descripcion_merma", sa.String(length=500), nullable=True),
+            schema=current_schema,
+        )
+    if _has_column("registro_stock", "fecha_recuento", schema=current_schema) is not True:
+        op.add_column(
+            "registro_stock",
+            sa.Column("fecha_recuento", sa.Date(), nullable=False, server_default=sa.func.current_date()),
+            schema=current_schema,
+        )
 
     # Índices en `registro_stock`
     if _has_index("registro_stock", "ix_registro_stock_bodega_producto", schema=current_schema) is not True:
@@ -207,6 +225,20 @@ def upgrade() -> None:
             "ix_registro_stock_transfer_id",
             "registro_stock",
             ["transfer_id"],
+            schema=current_schema,
+        )
+    if _has_index("registro_stock", "ix_registro_stock_fecha_recuento", schema=current_schema) is not True:
+        op.create_index(
+            "ix_registro_stock_fecha_recuento",
+            "registro_stock",
+            ["fecha_recuento"],
+            schema=current_schema,
+        )
+    if _has_index("registro_stock", "ix_registro_stock_actor_created", schema=current_schema) is not True:
+        op.create_index(
+            "ix_registro_stock_actor_created",
+            "registro_stock",
+            ["actor_user_id", "created_at"],
             schema=current_schema,
         )
 
@@ -304,12 +336,22 @@ def downgrade() -> None:
         op.drop_column("conteos_inventario", "area_operativa_id", schema=current_schema)
 
     # 3. Revertir `registro_stock`
+    if _has_index("registro_stock", "ix_registro_stock_actor_created", schema=current_schema) is not False:
+        op.drop_index("ix_registro_stock_actor_created", table_name="registro_stock", schema=current_schema)
+    if _has_index("registro_stock", "ix_registro_stock_fecha_recuento", schema=current_schema) is not False:
+        op.drop_index("ix_registro_stock_fecha_recuento", table_name="registro_stock", schema=current_schema)
     if _has_index("registro_stock", "ix_registro_stock_transfer_id", schema=current_schema) is not False:
         op.drop_index("ix_registro_stock_transfer_id", table_name="registro_stock", schema=current_schema)
     if _has_index("registro_stock", "ix_registro_stock_created_tipo", schema=current_schema) is not False:
         op.drop_index("ix_registro_stock_created_tipo", table_name="registro_stock", schema=current_schema)
     if _has_index("registro_stock", "ix_registro_stock_bodega_producto", schema=current_schema) is not False:
         op.drop_index("ix_registro_stock_bodega_producto", table_name="registro_stock", schema=current_schema)
+    if _has_column("registro_stock", "fecha_recuento", schema=current_schema) is not False:
+        op.drop_column("registro_stock", "fecha_recuento", schema=current_schema)
+    if _has_column("registro_stock", "descripcion_merma", schema=current_schema) is not False:
+        op.drop_column("registro_stock", "descripcion_merma", schema=current_schema)
+    if _has_column("registro_stock", "motivo_merma", schema=current_schema) is not False:
+        op.drop_column("registro_stock", "motivo_merma", schema=current_schema)
     if _has_column("registro_stock", "transfer_id", schema=current_schema) is not False:
         op.drop_column("registro_stock", "transfer_id", schema=current_schema)
     if _has_column("registro_stock", "fecha_vencimiento_lote", schema=current_schema) is not False:

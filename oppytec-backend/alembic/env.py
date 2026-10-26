@@ -106,7 +106,7 @@ def do_run_migrations_for_schema(
         target_meta = PublicBase.metadata
     else:
         valid_schema = validate_tenant_schema_name(target_schema)
-        connection.execute(text(f'SET LOCAL search_path TO "{valid_schema}", public'))
+        connection.execute(text(f'SET search_path TO "{valid_schema}", public'))
         connection.execute(
             text(
                 f'CREATE TABLE IF NOT EXISTS "{valid_schema}".alembic_version '
@@ -144,6 +144,22 @@ async def run_async_migrations() -> None:
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations_for_schema, "public")
         await connection.commit()
+
+        def _get_tenant_schemas(conn: Connection) -> list[str]:
+            res = conn.execute(
+                text(
+                    "SELECT schema_name FROM information_schema.schemata "
+                    "WHERE schema_name LIKE 'tenant_%' ORDER BY schema_name"
+                )
+            )
+            return [row[0] for row in res.fetchall()]
+
+        tenant_schemas = await connection.run_sync(_get_tenant_schemas)
+
+    for schema_name in tenant_schemas:
+        async with connectable.connect() as t_conn:
+            await t_conn.run_sync(do_run_migrations_for_schema, schema_name)
+            await t_conn.commit()
 
     await connectable.dispose()
 

@@ -6,8 +6,10 @@ Cumple Regla 02 (Clean Architecture), Regla 15 (i18n / DDD) y Certificación Dec
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
+from zoneinfo import ZoneInfo
 
 from src.modules.inventory.domain.exceptions import (
     InsufficientStockError,
@@ -18,6 +20,222 @@ from src.modules.inventory.domain.exceptions import (
 ZERO = Decimal(0)
 QTY_QUANT = Decimal("0.0001")
 MONEY_QUANT = Decimal("0.01")
+SANTIAGO_TZ = ZoneInfo("America/Santiago")
+UTC_TZ = ZoneInfo("UTC")
+
+
+class MovementSign(StrEnum):
+    """
+    Value Object semántico que modela la dirección de impacto de un movimiento en Kardex:
+    - POSITIVE (+): Movimientos de entrada, compras o adiciones.
+    - NEGATIVE (-): Movimientos de salida, consumo, merma o reducciones.
+    - NEUTRAL (0): Movimientos sin variación física o discrepancia neutra de auditoría.
+    """
+
+    POSITIVE = "+"
+    NEGATIVE = "-"
+    NEUTRAL = "0"
+
+    @property
+    def is_positive(self) -> bool:
+        return self == MovementSign.POSITIVE
+
+    @property
+    def is_negative(self) -> bool:
+        return self == MovementSign.NEGATIVE
+
+    @property
+    def is_neutral(self) -> bool:
+        return self == MovementSign.NEUTRAL
+
+    @property
+    def multiplier(self) -> Decimal:
+        """Multiplicador algebraico canónico: +1, -1, o 0."""
+        if self == MovementSign.POSITIVE:
+            return Decimal(1)
+        if self == MovementSign.NEGATIVE:
+            return Decimal(-1)
+        return Decimal(0)
+
+    @classmethod
+    def from_movement_type(
+        cls,
+        movement_type: MovementType | str,
+        quantity: Decimal | StockQuantity | int | str | None = None,
+    ) -> MovementSign:
+        """
+        Determina de forma pura el signo del movimiento según el tipo y/o la discrepancia auditada.
+        Compatible con los 12 tipos canónicos de OppyTec v2.0 + 'AJUSTE_AUDITORIA'.
+        """
+        raw_str = movement_type.value if isinstance(movement_type, MovementType) else str(movement_type)
+        normalized = raw_str.strip().upper()
+
+        # Tipos siempre positivos (entradas/adiciones)
+        if normalized in {
+            "ENTRADA",
+            "COMPRA",
+            "AJUSTE_POSITIVO",
+            "TRASPASO_IN",
+        }:
+            return cls.POSITIVE
+
+        # Tipos siempre negativos (salidas/consumos/mermas)
+        if normalized in {
+            "SALIDA",
+            "CONSUMO",
+            "MERMA",
+            "VENTA",
+            "AJUSTE_NEGATIVO",
+            "TRASPASO_OUT",
+        }:
+            return cls.NEGATIVE
+
+        # Tipos dependientes de la discrepancia o dirección contextual
+        # ("CONTEO", "AJUSTE_AUDITORIA", "AJUSTE", "TRANSFERENCIA", "REVERSION", "REDO")
+        if quantity is not None:
+            if type(quantity).__name__ == "float":
+                raise TypeError("Float precision IEEE-754 is strictly forbidden for MovementSign; use Decimal, int, or str")
+            dec_qty = quantity.value if isinstance(quantity, StockQuantity) else Decimal(str(quantity))
+            if dec_qty > ZERO:
+                return cls.POSITIVE
+            if dec_qty < ZERO:
+                return cls.NEGATIVE
+            return cls.NEUTRAL
+
+        return cls.NEUTRAL
+
+    def apply_to(self, quantity: Decimal | StockQuantity | int | str) -> Decimal:
+        """Aplica la regla de signo a una magnitud numérica absoluta."""
+        if type(quantity).__name__ == "float":
+            raise TypeError("Float precision IEEE-754 is strictly forbidden for MovementSign; use Decimal, int, or str")
+        dec_qty = quantity.value if isinstance(quantity, StockQuantity) else Decimal(str(quantity))
+        abs_qty = abs(dec_qty)
+        if self == MovementSign.POSITIVE:
+            return abs_qty
+        if self == MovementSign.NEGATIVE:
+            return -abs_qty
+        return ZERO
+
+
+@dataclass(frozen=True)
+class AuditDelta:
+    """
+    Value Object inmutable que encapsula la transición de estados de stock (Before / After / Delta)
+    para trazabilidad en el visor de auditoría y reportes del Kardex.
+    Cumple Certificación Decimal Estricta (0% float).
+    """
+
+    before: Decimal
+    after: Decimal
+    delta: Decimal
+    unit: str = ""
+
+    def __init__(
+        self,
+        before: Decimal | int | str | StockQuantity,
+        after: Decimal | int | str | StockQuantity,
+        delta: Decimal | int | str | StockQuantity | None = None,
+        unit: str = "",
+    ) -> None:
+        if type(before).__name__ == "float" or type(after).__name__ == "float":
+            raise TypeError("Float precision IEEE-754 is strictly forbidden for AuditDelta; use Decimal, int, or str")
+        if delta is not None and type(delta).__name__ == "float":
+            raise TypeError("Float precision IEEE-754 is strictly forbidden for AuditDelta; use Decimal, int, or str")
+
+        def _to_dec(v: Decimal | int | str | StockQuantity) -> Decimal:
+            if isinstance(v, StockQuantity):
+                return v.value
+            if isinstance(v, Decimal):
+                return v
+            try:
+                return Decimal(str(v))
+            except Exception as exc:
+                raise ValueError(f"Invalid decimal value for AuditDelta: {v}") from exc
+
+        dec_before = _to_dec(before).quantize(QTY_QUANT, ROUND_HALF_UP)
+        dec_after = _to_dec(after).quantize(QTY_QUANT, ROUND_HALF_UP)
+
+        if delta is not None:
+            dec_delta = _to_dec(delta).quantize(QTY_QUANT, ROUND_HALF_UP)
+        else:
+            dec_delta = (dec_after - dec_before).quantize(QTY_QUANT, ROUND_HALF_UP)
+
+        object.__setattr__(self, "before", dec_before)
+        object.__setattr__(self, "after", dec_after)
+        object.__setattr__(self, "delta", dec_delta)
+        object.__setattr__(self, "unit", str(unit).strip())
+
+    @property
+    def has_change(self) -> bool:
+        """Indica si hubo variación entre el saldo anterior y el resultante."""
+        return self.before != self.after
+
+    @property
+    def is_positive(self) -> bool:
+        """Indica si el delta representa un incremento neto de existencias."""
+        return self.delta > ZERO
+
+    @property
+    def is_negative(self) -> bool:
+        """Indica si el delta representa una reducción neta de existencias."""
+        return self.delta < ZERO
+
+    @property
+    def is_neutral(self) -> bool:
+        """Indica si el delta es exactamente cero."""
+        return self.delta == ZERO
+
+    def format_transition(self) -> str:
+        """Retorna la representación legible de transición 'before -> after unit'."""
+        suffix = f" {self.unit}" if self.unit else ""
+        return f"{self.before:.4f}{suffix} -> {self.after:.4f}{suffix}".strip()
+
+    def to_dict(self) -> dict[str, str | Decimal]:
+        """Serializa los deltas numéricos preservando tipo Decimal."""
+        return {
+            "before": self.before,
+            "after": self.after,
+            "delta": self.delta,
+            "unit": self.unit,
+        }
+
+    def __str__(self) -> str:
+        suffix = f" {self.unit}" if self.unit else ""
+        return f"{self.before:.4f}{suffix} -> {self.after:.4f}{suffix} (Δ {self.delta:+.4f})"
+
+    def __repr__(self) -> str:
+        return (
+            f"AuditDelta(before={self.before:.4f}, after={self.after:.4f}, "
+            f"delta={self.delta:.4f}, unit='{self.unit}')"
+        )
+
+
+class TimezoneConverter:
+    """
+    Conversor y proyector determinista de huso horario para trazabilidad de auditoría.
+    Garantiza consistencia entre UTC persistido en PostgreSQL y la visualización
+    operativa oficial en Chile (America/Santiago).
+    Clean Architecture pura: sin dependencias de frameworks ni infraestructura.
+    """
+
+    @staticmethod
+    def to_chile(dt: datetime) -> datetime:
+        """Convierte un objeto datetime a la zona horaria 'America/Santiago'."""
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=UTC_TZ)
+        return dt.astimezone(SANTIAGO_TZ)
+
+    @staticmethod
+    def format_chile_datetime(dt: datetime) -> str:
+        """Formatea fecha y hora en formato legible 'DD/MM/YYYY HH:mm:ss' (America/Santiago)."""
+        chile_dt = TimezoneConverter.to_chile(dt)
+        return chile_dt.strftime("%d/%m/%Y %H:%M:%S")
+
+    @staticmethod
+    def format_chile_date(dt: datetime) -> str:
+        """Formatea fecha en formato 'DD/MM/YYYY' (America/Santiago)."""
+        chile_dt = TimezoneConverter.to_chile(dt)
+        return chile_dt.strftime("%d/%m/%Y")
 
 
 class MovementType(StrEnum):
@@ -394,9 +612,14 @@ __all__ = [
     "EXIT_MOVEMENTS",
     "MONEY_QUANT",
     "QTY_QUANT",
+    "SANTIAGO_TZ",
+    "UTC_TZ",
     "ZERO",
+    "AuditDelta",
     "MoneyAmount",
+    "MovementSign",
     "MovementType",
     "StockQuantity",
     "StorageLocation",
+    "TimezoneConverter",
 ]

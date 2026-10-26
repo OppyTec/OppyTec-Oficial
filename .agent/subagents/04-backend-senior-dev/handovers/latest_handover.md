@@ -1,49 +1,59 @@
 # Reporte de Traspaso (`Handover`) — Agente 04: Programador Senior Backend, RBAC Dual y Almacenamiento R2
 
-- **Fecha UTC:** 2026-10-25T14:30:00Z
-- **Fase:** FASE 2 — Motor Backend FastAPI & Kardex Inmutable por Eventos (`PLAN_MAESTRO_INVENTARIO.md`)
+- **Fecha UTC:** 2026-10-25T17:15:00Z
+- **Fase:** FASE 2 — Motor Backend FastAPI: Endpoints Paginados, Schemas RFC 7807, RBAC 3-Niveles y Streaming CSV (`PLAN_MAESTRO_HISTORIAL.md`)
 - **Rama / Worktree:** `master`
 
-## 1. Completed (Fase 2: Motor Backend FastAPI & Kardex Inmutable por Eventos)
+## 1. Completed (Fase 2: Motor Backend FastAPI de Historial y Auditoría de Kardex)
 
-1. **Servicios de Aplicación Transaccionales (`src/modules/inventory/application/`):**
-   - `InventoryService` (`inventory_service.py`):
-     - Invariante estricta: todo cambio de existencias ocurre exclusivamente vía asientos inmutables en Kardex (`register_movement`).
-     - Transferencias atómicas inter-bodega (`transfer_stock_bulk`): adquisición pesimista de locks en orden canónico ascendente (`canonical_lock_order`), validación previa de saldos suficientes en origen y creación balanceada de pares `TRASPASO_OUT` y `TRASPASO_IN` vinculados con `transfer_id`.
-     - Snapshot consolidado de stock (`get_stock_status(bodega_id, area_operativa_id)`): cálculo de semáforos de stock (`is_below_minimum`, `is_critical`, `needs_reorder`), ubicaciones físicas (`StorageLocation`), y desglose de lotes vigentes con `Decimal(12, 4)`.
-     - Soporte transaccional de reversión y reaplicación (`undo_movement` y `redo_movement`): auditoría append-only sin eliminación de registros (`documento_referencia='UNDO:<id>'` y `'REDO:<id>'`).
-   - `PhysicalCountService` (`physical_count_service.py`):
-     - `start_count_session`: Apertura de sesión ciega en estado `EN_PROGRESO`.
-     - `save_count_items`: Guardado incremental de líneas contadas (`producto_id`, `stock_fisico_contado`, `costo_unitario_ppp`, `lote_codigo`, `fecha_vencimiento`).
-     - `finalize_count_session`: Cierre formal, captura del stock teórico del sistema, cálculo de actas de discrepancia en unidades y valor monetario PPP, transición a `PENDIENTE_APROBACION`.
-     - `approve_and_reconcile`: Aprobación administrativa con conciliación automática en Kardex (`AJUSTE_AUDITORIA`) bajo orden canónico anti-deadlock.
-     - `reject_session`: Rechazo con observaciones para reconteo.
-     - `delete_session`: Eliminación protegida (solo no aprobadas).
+1. **Esquemas Pydantic v2 Estrictos (`src/modules/inventory/presentation/schemas.py`):**
+   - Configurados con `model_config = ConfigDict(extra="forbid")`, protegiendo la API contra inyecciones y fuzzing OpenAPI.
+   - `KardexHistoryItemResponse`: Proyección completa del libro mayor de auditoría (`id`, `created_at`, `fecha_recuento`, `producto_id`, `nombre_producto`, `unidad_medida`, `bodega_id`, `nombre_bodega`, `tipo_movimiento`, `cantidad`, `saldo_resultante`, `costo_unitario_ppp`, `costo_total_movimiento`, `lote_codigo`, `fecha_vencimiento_lote`, `actor_user_id`, `user_display_name`, `motivo_merma`, `descripcion_merma`, `transfer_id`, `delta_before`, `delta_after`).
+   - `PaginatedKardexHistoryResponse`: Paginación con metadatos calculados de navegación (`total`, `skip`, `limit`, `page`, `total_pages`, `items`).
 
-2. **Endpoints REST y Enrutadores FastAPI (`src/modules/inventory/presentation/`):**
-   - `GET /api/v1/inventory/stock/status`: Snapshot consolidado con semáforos y lotes (`inventory.stock.read`).
-   - `POST /api/v1/inventory/stock/undo` y `POST /api/v1/inventory/stock/redo`: Reversión y reaplicación (`inventory.stock.undo`, `inventory.stock.redo`).
-   - `POST /api/v1/inventory/counts/start`: Apertura de sesión de recuento (`inventory.counts.create`).
-   - `GET /api/v1/inventory/counts` y `GET /api/v1/inventory/counts/{conteo_id}`: Listado y detalle (`inventory.counts.read`).
-   - `PUT /api/v1/inventory/counts/{conteo_id}/items`: Guardado incremental (`inventory.counts.execute`).
-   - `POST /api/v1/inventory/counts/{conteo_id}/finalize`: Finalización y cuadraturas (`inventory.counts.execute`).
-   - `POST /api/v1/inventory/counts/{conteo_id}/approve`: Conciliación automática en Kardex (`inventory.counts.approve`).
-   - `POST /api/v1/inventory/counts/{conteo_id}/reject`: Rechazo de acta (`inventory.counts.approve`).
-   - `DELETE /api/v1/inventory/counts/{conteo_id}`: Eliminación (`inventory.counts.delete`).
-   - Emisión reactiva de eventos WebSocket (`inventory.stock.updated`, `inventory.counts.approved`) vía `RealtimePublisher` para invalidación quirúrgica en TanStack Query v5 sin polling.
-   - Preservación íntegra de `POST /api/v1/inventory/counts` (direct submit), mermas (`/mermas`), transferencias masivas (`/stock/bulk-transfer`) e ingesta de facturas IA (`/import/parse-invoice`, `/import/confirm-invoice`).
+2. **Servicio de Aplicación de Historial y Auditoría (`src/modules/inventory/application/history_service.py`):**
+   - `KardexHistoryService`:
+     - Consulta paginada y filtrada multi-criterio (`bodega_id`, `producto_id`, `tipo_movimiento`, `fecha_desde`, `fecha_hasta`, `user_search`, `skip`, `limit`).
+     - Ordenamiento determinista estricto: `created_at DESC, id DESC`.
+     - Proyección de campos enriquecidos con fallback inteligente de nombres (`nombre_visible` $\rightarrow$ `first_name + last_name` $\rightarrow$ `username` $\rightarrow$ local part de `email` $\rightarrow$ `"Sistema"`).
+     - Anonimización automática de privacidad: si el usuario no posee permiso `inventory.history.view_users`, el nombre de usuario se proyecta como `"Operador Autorizado"`.
+     - Reconstrucción de estados matemáticos before/after calculados mediante `compute_audit_delta` (cero floats IEEE-754, `Decimal` puro).
+     - Generador streaming para descarga CSV con UTF-8 BOM (`\uFEFF`) y sanitización preventiva contra Formula Injection / CWE-1236 anteponiendo comilla simple `'` a valores que inicien con `=`, `+`, `-`, `@`, `\t` o `\r`.
+     - Purga histórica (`purge_history`) vinculada al ledger inmutable.
+   - Enriquecimiento en `src/modules/inventory/application/inventory_service.py` (`get_filtered_history` y `purge_history`).
 
-3. **Pruebas y Verificación:**
-   - Creada suite HTTP exhaustiva en `tests/unit/modules/test_inventory_router.py` (5 tests HTTP pasando al 100%).
-   - Verificación de arquitectura RBAC AST: `test_rbac_and_audit_coverage.py` pasando al 100% (cero violaciones de permisos de 3 niveles).
-   - Verificación de suite completa de inventario: `pytest tests/ -k inventory` -> **51 passed (100% verde)**.
-   - Verificación de suite completa del backend: `pytest tests/` -> **277 passed, 0 failed (100% verde)**.
-   - Calidad de código: `ruff check` -> **All checks passed!**; `mypy` estricto -> **Success: no issues found in 16 source files**.
-   - Grafo AST Graphify sincronizado: `python scripts/harness.py sync-graph` -> 84 nodos, 111 aristas.
+3. **Endpoints REST en Router FastAPI (`src/modules/inventory/presentation/router.py`):**
+   - `GET /api/v1/inventory/history/paginated`:
+     - Guardia RBAC: `RequireTenantPermission("inventory.history.read", fallback_permission="inventory.kardex.read")`.
+     - Parámetros query: `bodega_id`, `producto_id`, `tipo_movimiento`, `fecha_desde`, `fecha_hasta`, `user_search`, `skip`, `limit`.
+     - Respuestas de error normalizadas en RFC 7807 (`ProblemDetails`).
+   - `GET /api/v1/inventory/history/export-csv`:
+     - Guardia RBAC: `RequireTenantPermission("inventory.history.export", fallback_permission="inventory.kardex.read")`.
+     - Retorna `StreamingResponse(stream_generator, media_type="text/csv")` con cabecera `Content-Disposition: attachment; filename="auditoria_inventario_{fecha}.csv"`.
+   - `DELETE /api/v1/inventory/history`:
+     - Restringido exclusivamente al Propietario del tenant (`RequireTenantPermission("inventory.history.purge")` y validación de rango Propietario: `is_holding_owner=True` o `hierarchy_rank=0` o `is_superuser_god=True`).
+     - Status code: `HTTP_204_NO_CONTENT`. Emisión de evento de auditoría de seguridad crítico en logs (`logger.critical`).
+   - Invalidación reactiva WebSockets: Inclusión de `["inventory", "history"]` en `query_keys_to_invalidate` de todos los eventos de Kardex en tiempo real (`inventory.stock.updated`).
+
+4. **Suite de Pruebas Automatizadas (`tests/modules/inventory/test_history_endpoints.py`):**
+   - `test_history_paginated_and_deltas`: Paginación server-side, límites, páginas y deltas matemáticos before/after con `compute_audit_delta`.
+   - `test_history_multi_criteria_filters`: Filtros por bodega, producto, tipo, rango de fechas y búsqueda predictiva de usuario.
+   - `test_user_privacy_anonymization`: Anonimización a `"Operador Autorizado"` ante ausencia de `inventory.history.view_users`.
+   - `test_csv_export_bom_and_formula_sanitization`: Verificación binaria del BOM UTF-8 (`\uFEFF` / `0xEF 0xBB 0xBF`) y neutralización de payloads maliciosos CWE-1236 (`'=cmd`, `'+Bodega`, `'@admin`, `'-DDE`).
+   - `test_rbac_and_purge_history_authorization`: 401 Unauthorized, 403 Forbidden RFC 7807, fallback con `inventory.kardex.read`, rechazo de purga a usuarios sin rol Propietario y 204 No Content exitoso para Propietario con verificación de purga efectiva.
+
+5. **Verificación de Calidad y Puertas de Arquitectura:**
+   - Pytest suite de historial: **5 passed (100% verde)**.
+   - Pytest suites de arquitectura, seguridad redteam y módulos: **243 passed (100% verde)**.
+   - `ruff check src/modules/inventory/ tests/modules/inventory/test_history_endpoints.py` $\rightarrow$ **All checks passed!**
+   - `mypy --strict src/modules/inventory/` $\rightarrow$ **Success: no issues found in 20 source files**.
+   - `mypy --strict src/core/guards/rbac_dependencies.py` $\rightarrow$ **Success: no issues found in 1 source file**.
+   - Verificación de arneses: `python scripts/harness.py verify-evals` $\rightarrow$ **100% verificado (Cero Reward Hacking)**.
+   - Sincronización AST Graphify: `python scripts/harness.py sync-graph` $\rightarrow$ **91 nodos, 116 aristas**.
 
 ## 2. Friction & Failures (Qué cuidar)
-- En Pydantic v2 bajo `mypy --strict` (`disallow_any_explicit = true`), añadir `# mypy: disable-error-code="explicit-any"` en schemas y application services que reciben payloads heterogéneos (`dict[str, Any]` o Pydantic models).
-- Para `RealtimeEventEnvelope`, `holding_id` y `tenant_id` deben convertirse de forma segura con `_parse_optional_uuid(principal.holding_id)` ya que `AuthenticatedPrincipal` almacena identificadores en formato string.
+- En FastAPI, para evitar advertencias de Ruff `B008` (Do not perform function call `Query` in argument defaults), utilizar la anotación moderna `Annotated[T, Query(...)] = default`.
+- En `RequireTenantPermission`, el parámetro opcional `fallback_permission` permite que clientes y roles de versiones legadas con `inventory.kardex.read` accedan a los nuevos endpoints de historial sin violar la restricción AST de 3 niveles exigida por la gobernanza de arquitectura.
 
 ## 3. Next Exact Action
-- Notificar al Agente Orquestador (Parent) la culminación exitosa de la Fase 2 para que proceda a convocar al Agente 05 (Frontend Senior Dev) para la **Fase 3: Frontend Feature Core & Hooks Reactivos (`types.ts`, `useStock.ts`, `useContarInventario.ts`, `useRecuentos.ts`, TanStack Query v5 + WebSockets realtime)**.
+- Notificar al Agente Orquestador (`parent`) la finalización exitosa de la Fase 2 para que proceda a convocar al Agente 05 (Frontend Senior Dev) para la **FASE 3: Frontend Feature Core & Hooks Reactivos (`types.ts`, `useHistorial.ts`, TanStack Query v5 + WebSockets Realtime `inventory.stock.updated`)**.

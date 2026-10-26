@@ -30,7 +30,9 @@ from src.modules.inventory.domain.value_objects import (
     EXIT_MOVEMENTS,
     MONEY_QUANT,
     QTY_QUANT,
+    AuditDelta,
     MoneyAmount,
+    MovementSign,
     MovementType,
     StockQuantity,
     StorageLocation,
@@ -373,6 +375,145 @@ def packaging_cost(
     return (unit_cost * units_per_package).quantize(COST_QUANT, ROUND_HALF_UP)
 
 
+def compute_audit_delta(
+    resulting_balance: Decimal | StockQuantity | int | str,
+    quantity: Decimal | StockQuantity | int | str,
+    movement_type: MovementType | str,
+    unit: str = "",
+    theoretical_stock: Decimal | StockQuantity | int | str | None = None,
+    is_positive_adjustment: bool | None = None,
+) -> AuditDelta:
+    """
+    Calcula matemáticamente el delta de auditoría (`AuditDelta`: before, after, delta, unit)
+    a partir del saldo resultante y la cantidad registrada en el asiento del Kardex.
+
+    Reglas algebraicas canónicas:
+    - Salidas regulares (SALIDA, CONSUMO, MERMA, VENTA, TRASPASO_OUT, AJUSTE_NEGATIVO):
+      before = resulting_balance + abs(quantity)
+      after  = resulting_balance
+      delta  = after - before = -abs(quantity)
+
+    - Entradas regulares (ENTRADA, COMPRA, TRASPASO_IN, AJUSTE_POSITIVO):
+      before = resulting_balance - abs(quantity)
+      after  = resulting_balance
+      delta  = after - before = +abs(quantity)
+
+    - Conteos y conciliaciones (CONTEO, AJUSTE_AUDITORIA, AJUSTE):
+      Calcula de acuerdo a la discrepancia de unidades respecto al stock teórico original:
+      * Si se proporciona `theoretical_stock`:
+        before = theoretical_stock
+        after  = resulting_balance
+        delta  = after - before
+      * Si no se proporciona `theoretical_stock`:
+        before = resulting_balance - discrepancy
+        after  = resulting_balance
+        delta  = discrepancy
+        (donde discrepancy es +abs(quantity) si es sobrante/positivo, -abs(quantity) si faltante/negativo, o quantity con su signo).
+
+    - Transferencias inter-bodega (TRANSFERENCIA):
+      * Si quantity < 0: computa como salida (before = resulting_balance + abs(quantity))
+      * Si quantity > 0: computa como entrada (before = resulting_balance - abs(quantity))
+      * Si quantity == 0: before = resulting_balance, after = resulting_balance, delta = 0
+
+    Invariante matemática estricta:
+    before + delta == after
+    Cero floats IEEE-754. Precisión exacta con Decimal.
+    """
+    if type(resulting_balance).__name__ == "float" or type(quantity).__name__ == "float":
+        raise TypeError("Float precision IEEE-754 is strictly forbidden for compute_audit_delta; use Decimal, int, or str")
+    if theoretical_stock is not None and type(theoretical_stock).__name__ == "float":
+        raise TypeError("Float precision IEEE-754 is strictly forbidden for compute_audit_delta; use Decimal, int, or str")
+
+    dec_balance = (
+        resulting_balance.value
+        if isinstance(resulting_balance, StockQuantity)
+        else Decimal(str(resulting_balance)).quantize(QTY_QUANT, ROUND_HALF_UP)
+    )
+    dec_qty = (
+        quantity.value
+        if isinstance(quantity, StockQuantity)
+        else Decimal(str(quantity)).quantize(QTY_QUANT, ROUND_HALF_UP)
+    )
+    dec_abs_qty = abs(dec_qty)
+
+    mov_str = movement_type.value if isinstance(movement_type, MovementType) else str(movement_type)
+    mov_norm = mov_str.strip().upper()
+
+    # 1. Movimientos regulares de salida
+    if mov_norm in {
+        "SALIDA",
+        "CONSUMO",
+        "MERMA",
+        "VENTA",
+        "TRASPASO_OUT",
+        "AJUSTE_NEGATIVO",
+    }:
+        before = dec_balance + dec_abs_qty
+        after = dec_balance
+        delta = -dec_abs_qty
+
+    # 2. Movimientos regulares de entrada
+    elif mov_norm in {
+        "ENTRADA",
+        "COMPRA",
+        "TRASPASO_IN",
+        "AJUSTE_POSITIVO",
+    }:
+        before = dec_balance - dec_abs_qty
+        after = dec_balance
+        delta = dec_abs_qty
+
+    # 3. Conteos físicos y reconciliaciones de inventario
+    elif mov_norm in {"CONTEO", "AJUSTE_AUDITORIA", "AJUSTE"}:
+        if theoretical_stock is not None:
+            dec_theo = (
+                theoretical_stock.value
+                if isinstance(theoretical_stock, StockQuantity)
+                else Decimal(str(theoretical_stock)).quantize(QTY_QUANT, ROUND_HALF_UP)
+            )
+            before = dec_theo
+            after = dec_balance
+            delta = after - before
+        elif is_positive_adjustment is not None:
+            discrepancy = dec_abs_qty if is_positive_adjustment else -dec_abs_qty
+            before = dec_balance - discrepancy
+            after = dec_balance
+            delta = discrepancy
+        else:
+            discrepancy = dec_qty
+            before = dec_balance - discrepancy
+            after = dec_balance
+            delta = discrepancy
+
+    # 4. Transferencias inter-bodega con signo
+    elif mov_norm == "TRANSFERENCIA":
+        if dec_qty < ZERO:
+            before = dec_balance + dec_abs_qty
+            after = dec_balance
+            delta = -dec_abs_qty
+        elif dec_qty > ZERO:
+            before = dec_balance - dec_abs_qty
+            after = dec_balance
+            delta = dec_abs_qty
+        else:
+            before = dec_balance
+            after = dec_balance
+            delta = ZERO
+
+    # 5. Otros movimientos
+    else:
+        if dec_qty < ZERO:
+            before = dec_balance + dec_abs_qty
+            after = dec_balance
+            delta = -dec_abs_qty
+        else:
+            before = dec_balance - dec_abs_qty
+            after = dec_balance
+            delta = dec_abs_qty
+
+    return AuditDelta(before=before, after=after, delta=delta, unit=unit)
+
+
 calculate_gross_amount = gross_from_net
 calculate_net_amount = net_from_gross
 calculate_packaging_cost = packaging_cost
@@ -389,12 +530,14 @@ __all__ = [
     "QTY_QUANT",
     "TURNOVER_QUANT",
     "ZERO",
+    "AuditDelta",
     "InsufficientStockError",
     "InvalidMovementTypeError",
     "InventoryDomainError",
     "KardexMovement",
     "LotAllocation",
     "MoneyAmount",
+    "MovementSign",
     "MovementType",
     "NegativeStockNotAllowedError",
     "PhysicalCountItem",
@@ -420,6 +563,7 @@ __all__ = [
     "calculate_packaging_cost",
     "calculate_weighted_average_cost",
     "canonical_lock_order",
+    "compute_audit_delta",
     "fefo_allocate",
     "fefo_sort",
     "gross_from_net",

@@ -210,6 +210,118 @@
       "claimed_by": "05-frontend-senior-dev",
       "intent": "Implementar vista de historial de recuentos y auditoria",
       "claimed_at": "2026-10-25T16:39:10.684680+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/inventory/domain/alerts.py",
+      "symbol_path": "AlertsConsolidatedSummary",
+      "claimed_by": "02-software-architect",
+      "intent": "Implement DDD alerts domain and repository contract",
+      "claimed_at": "2026-10-25T19:20:38.474686+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/inventory/infrastructure/alerts_repository.py",
+      "symbol_path": "PostgresAlertsRepository",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Implement Postgres and In-Memory alerts repository",
+      "claimed_at": "2026-10-25T19:30:02.376680+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/inventory/application/alerts_service.py",
+      "symbol_path": "InventoryAlertsService",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Implement InventoryAlertsService with WebSocket realtime broadcast",
+      "claimed_at": "2026-10-25T19:30:08.207967+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/inventory/presentation/schemas_alerts.py",
+      "symbol_path": "AlertsSummaryResponse",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Pydantic v2 presentation schemas for inventory alerts",
+      "claimed_at": "2026-10-25T19:30:13.635241+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/inventory/presentation/router.py",
+      "symbol_path": "get_inventory_alerts",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Implement GET /api/v1/inventory/alerts and badge endpoints",
+      "claimed_at": "2026-10-25T19:30:19.266176+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/alerts/types.ts",
+      "symbol_path": "frontend:feature_inventory_alerts",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Construir modulo Core de Alertas Fase 3 (types, mockData, hooks)",
+      "claimed_at": "2026-10-25T19:49:18.946302+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/alerts/AlertasPage.tsx",
+      "symbol_path": "frontend:inventory_alerts_page",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implement AlertasPage view and unified AlertasToolbar with paridad legacy",
+      "claimed_at": "2026-10-25T20:09:16.451079+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/alerts/AlertasPage.tsx",
+      "symbol_path": "AlertasPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implementacion paritaria 1:1 de vistas tarjetas y listado en Alertas (Fase 5)",
+      "claimed_at": "2026-10-25T20:34:40.656453+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/inventory/alerts/AlertasPage.tsx",
+      "symbol_path": "AlertasPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implementar y certificar Fase 6: Flujos Operativos y Paginacion",
+      "claimed_at": "2026-10-25T22:09:48.540542+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/shared/components/layout/Sidebar.tsx",
+      "symbol_path": "Sidebar",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Integrar badge reactivo de alertas en Sidebar",
+      "claimed_at": "2026-10-25T22:31:48.637348+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/historial/TablaHistorial.tsx",
+      "symbol_path": "TablaHistorial",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implementacion Fase 6 Tabla Multidimensional de Trazabilidad",
+      "claimed_at": "2026-10-25T23:39:56.381057+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/historial/HistorialPage.tsx",
+      "symbol_path": "HistorialPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Integracion de TablaHistorial en HistorialPage",
+      "claimed_at": "2026-10-25T23:40:03.992291+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/historial/index.ts",
+      "symbol_path": "HistorialIndex",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Exportar TablaHistorial",
+      "claimed_at": "2026-10-25T23:40:08.204945+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/historial/HistorialPage.tsx",
+      "symbol_path": "HistorialPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Fase 7: Consolidar handleExportCSV con columnas canonicas, sanitizacion, UTF-8 BOM y toast sonner",
+      "claimed_at": "2026-10-25T23:55:51.333918+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/historial/FiltrosHistorial.tsx",
+      "symbol_path": "FiltrosHistorial",
+      "claimed_by": "09-qa-parity-and-test-engineer",
+      "intent": "Fix unused t variable for TypeScript 0 errors",
+      "claimed_at": "2026-10-26T00:58:29.469520+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/notifications/components/NotificationsPage.tsx",
+      "symbol_path": "NotificationsPage",
+      "claimed_by": "09-qa-parity-and-test-engineer",
+      "intent": "Fix unused t variable for TypeScript 0 errors",
+      "claimed_at": "2026-10-26T00:58:34.272258+00:00"
     }
   ]
 }

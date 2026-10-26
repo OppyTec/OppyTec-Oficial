@@ -318,6 +318,24 @@
       "path": "oppytec-backend/alembic/versions/0004_tenant_inventory_kardex_and_physical_counts.py"
     },
     {
+      "id": "migration:0005_tenant_approval_requests",
+      "label": "Alembic 0005 Migration: Tenant approval requests and notification matrix",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0005_tenant_approval_requests_and_notification_matrix.py"
+    },
+    {
+      "id": "migration:0005_tenant_consumption_buffet",
+      "label": "Alembic 0005 Migration: Tenant consumption buffet and voice tables",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0005_tenant_consumption_buffet_and_voice_tables.py"
+    },
+    {
+      "id": "migration:0006_tenant_approval_requests",
+      "label": "Alembic 0006 Migration: Tenant approval requests and notification matrix",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0006_tenant_approval_requests_and_notification_matrix.py"
+    },
+    {
       "id": "module:analytics",
       "label": "Analytics Module (Executive Margins, Kasavana Menu Engineering, Loss Control & Projections)",
       "type": "backend_module",
@@ -1143,11 +1161,11 @@
     "load_test_target_rps": 500,
     "load_test_p95_budget_ms": 120,
     "rubric_score": "10/10",
-    "nodes_count": 88,
+    "nodes_count": 91,
     "edges_count": 116,
     "frontend_admin_views": 4,
     "backend_routers": 11,
-    "alembic_migrations": 4,
-    "updated_at": "2026-10-25T18:52:37.935412+00:00"
+    "alembic_migrations": 7,
+    "updated_at": "2026-10-26T01:31:49.347479+00:00"
   }
 }

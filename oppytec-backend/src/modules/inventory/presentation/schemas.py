@@ -61,6 +61,48 @@ class KardexMovementResponse(BaseModel):
     transfer_id: str | None = None
 
 
+class KardexHistoryItemResponse(BaseModel):
+    """Línea enriquecida del libro mayor de auditoría e historial del Kardex."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: int | str
+    created_at: datetime
+    fecha_recuento: date
+    producto_id: int | str
+    nombre_producto: str
+    unidad_medida: str
+    bodega_id: int | str
+    nombre_bodega: str
+    tipo_movimiento: str
+    cantidad: Decimal
+    saldo_resultante: Decimal
+    costo_unitario_ppp: Decimal
+    costo_total_movimiento: Decimal
+    lote_codigo: str | None = None
+    fecha_vencimiento_lote: date | None = None
+    actor_user_id: int
+    user_display_name: str
+    motivo_merma: str | None = None
+    descripcion_merma: str | None = None
+    transfer_id: str | None = None
+    delta_before: Decimal | None = None
+    delta_after: Decimal | None = None
+
+
+class PaginatedKardexHistoryResponse(BaseModel):
+    """Respuesta paginada del historial de Kardex con metadatos de conteo y navegación."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    total: int
+    skip: int
+    limit: int
+    page: int
+    total_pages: int
+    items: list[KardexHistoryItemResponse]
+
+
 # ============================================================================
 # ESTADO DE STOCK Y SEMÁFOROS
 # ============================================================================
@@ -440,11 +482,13 @@ __all__ = [
     "InvoiceLineItemParsed",
     "InvoiceParseRequest",
     "InvoiceParseResponse",
+    "KardexHistoryItemResponse",
     "KardexMovementCreateRequest",
     "KardexMovementResponse",
     "MermaApproveRequest",
     "MermaReportRequest",
     "MermaResponse",
+    "PaginatedKardexHistoryResponse",
     "PhysicalCountItemDetailResponse",
     "PhysicalCountItemInput",
     "PhysicalCountSaveItemsRequest",

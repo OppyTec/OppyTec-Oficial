@@ -52,6 +52,43 @@ export const queryKeys = {
       ["oppytec", "inventory", "counts", tenantId] as const,
     mermas: (tenantId: string) =>
       ["oppytec", "inventory", "mermas", tenantId] as const,
+    alerts: (params?: {
+      holdingId?: string;
+      tenantId?: string;
+      bodegaIds?: string;
+      areaOperativaId?: string;
+      filterType?: string;
+      upcomingDays?: number;
+    }) =>
+      [
+        "oppytec",
+        "inventory",
+        "alerts",
+        params?.holdingId ?? "default",
+        params?.tenantId ?? "default",
+        params?.bodegaIds ?? "all",
+        params?.areaOperativaId ?? "all",
+        params?.filterType ?? "all",
+        String(params?.upcomingDays ?? 30),
+      ] as const,
+    alertsBadge: (params?: {
+      holdingId?: string;
+      tenantId?: string;
+      bodegaIds?: string;
+      areaOperativaId?: string;
+    }) =>
+      [
+        "oppytec",
+        "inventory",
+        "alerts",
+        "badge",
+        params?.holdingId ?? "default",
+        params?.tenantId ?? "default",
+        params?.bodegaIds ?? "all",
+        params?.areaOperativaId ?? "all",
+      ] as const,
+    history: (params?: Record<string, unknown>) =>
+      ["inventory", "history", params ?? {}] as const,
   },
   recipes: {
     escandallos: (tenantId: string) =>
@@ -74,13 +111,159 @@ export const queryKeys = {
       ["oppytec", "operations", "events", tenantId] as const,
     buffet: (tenantId: string) =>
       ["oppytec", "operations", "buffet", tenantId] as const,
+    buffetSessions: (
+      tenantId: string,
+      bodegaId?: number | string | null,
+      estado?: string | null
+    ) =>
+      [
+        "oppytec",
+        "operations",
+        "buffet",
+        "sessions",
+        tenantId,
+        String(bodegaId ?? "all"),
+        estado ?? "all",
+      ] as const,
+    buffetSessionDetail: (tenantId: string, id: number | string) =>
+      ["oppytec", "operations", "buffet", "detail", tenantId, String(id)] as const,
+    buffetTemplates: (tenantId: string) =>
+      ["oppytec", "operations", "buffet", "templates", tenantId] as const,
+    consumption: {
+      all: (tenantId: string) =>
+        ["oppytec", "operations", "consumption", tenantId] as const,
+      history: (tenantId: string, params?: Record<string, unknown>) =>
+        [
+          "oppytec",
+          "operations",
+          "consumption",
+          "history",
+          tenantId,
+          JSON.stringify(params ?? {}),
+        ] as const,
+      detail: (tenantId: string, id: number | string) =>
+        [
+          "oppytec",
+          "operations",
+          "consumption",
+          "detail",
+          tenantId,
+          String(id),
+        ] as const,
+      templates: (tenantId: string) =>
+        [
+          "oppytec",
+          "operations",
+          "consumption",
+          "templates",
+          tenantId,
+        ] as const,
+    },
+    voice: {
+      all: (tenantId: string) =>
+        ["oppytec", "operations", "voice", tenantId] as const,
+      stations: (tenantId: string, areaOperativaId?: number | null) =>
+        [
+          "oppytec",
+          "operations",
+          "voice",
+          "stations",
+          tenantId,
+          String(areaOperativaId ?? "all"),
+        ] as const,
+      orders: (tenantId: string) =>
+        ["oppytec", "operations", "voice", "orders", tenantId] as const,
+    },
     activities: (tenantId: string) =>
       ["oppytec", "operations", "activities", tenantId] as const,
     alerts: (tenantId: string) =>
       ["oppytec", "operations", "alerts", tenantId] as const,
     notifications: (tenantId: string) =>
       ["oppytec", "operations", "notifications", tenantId] as const,
+    approvals: (params?: {
+      tenantId?: string;
+      estado?: string;
+      categoria?: string;
+      areaId?: string;
+      bodegaId?: number;
+      search?: string;
+      page?: number;
+    }) =>
+      [
+        "oppytec",
+        "operations",
+        "approvals",
+        params?.tenantId ?? "default",
+        params?.estado ?? "all",
+        params?.categoria ?? "all",
+        params?.areaId ?? "all",
+        params?.bodegaId !== undefined ? String(params.bodegaId) : "all",
+        params?.search ?? "",
+        String(params?.page ?? 1),
+      ] as const,
+    pendingCount: (params?: { tenantId?: string; areaId?: string }) =>
+      [
+        "oppytec",
+        "operations",
+        "pendingCount",
+        params?.tenantId ?? "default",
+        params?.areaId ?? "all",
+      ] as const,
+    notificationMatrix: (tenantId?: string) =>
+      [
+        "oppytec",
+        "operations",
+        "notificationMatrix",
+        tenantId ?? "default",
+      ] as const,
   },
+  approvals: {
+    all: () => ["oppytec", "approvals"] as const,
+    list: (params?: {
+      tenantId?: string;
+      estado?: string;
+      categoria?: string;
+      areaId?: string;
+      bodegaId?: number;
+      search?: string;
+      page?: number;
+    }) =>
+      [
+        "oppytec",
+        "approvals",
+        "list",
+        params?.tenantId ?? "default",
+        params?.estado ?? "all",
+        params?.categoria ?? "all",
+        params?.areaId ?? "all",
+        params?.bodegaId !== undefined ? String(params.bodegaId) : "all",
+        params?.search ?? "",
+        String(params?.page ?? 1),
+      ] as const,
+    detail: (id: string) => ["oppytec", "approvals", "detail", id] as const,
+    pendingCount: (params?: { tenantId?: string; areaId?: string }) =>
+      [
+        "oppytec",
+        "approvals",
+        "pendingCount",
+        params?.tenantId ?? "default",
+        params?.areaId ?? "all",
+      ] as const,
+    matrix: (tenantId?: string) =>
+      ["oppytec", "approvals", "matrix", tenantId ?? "default"] as const,
+    buffetDetail: (solicitudId: string) =>
+      ["oppytec", "approvals", "buffetDetail", solicitudId] as const,
+  },
+  pendingCount: (params?: { tenantId?: string; areaId?: string }) =>
+    [
+      "oppytec",
+      "approvals",
+      "pendingCount",
+      params?.tenantId ?? "default",
+      params?.areaId ?? "all",
+    ] as const,
+  notificationMatrix: (tenantId?: string) =>
+    ["oppytec", "approvals", "matrix", tenantId ?? "default"] as const,
   analytics: {
     kpis: (tenantId: string, period: string) =>
       ["oppytec", "analytics", "kpis", tenantId, period] as const,

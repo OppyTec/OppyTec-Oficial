@@ -115,7 +115,7 @@ class RequireGlobalPermission:
     en el Plano Global (`public.*`).
     """
 
-    def __init__(self, permission_code: str) -> None:
+    def __init__(self, permission_code: str, fallback_permission: str | None = None) -> None:
         cleaned = permission_code.strip()
         if not THREE_LEVEL_PERMISSION_REGEX.match(cleaned):
             raise ValueError(
@@ -123,6 +123,16 @@ class RequireGlobalPermission:
                 "Expected '<modulo>.<submodulo>.<funcion>'."
             )
         self.permission_code: str = cleaned
+        if fallback_permission is not None:
+            cleaned_fb = fallback_permission.strip()
+            if not THREE_LEVEL_PERMISSION_REGEX.match(cleaned_fb):
+                raise ValueError(
+                    f"Invalid 3-level fallback RBAC permission '{fallback_permission}'. "
+                    "Expected '<modulo>.<submodulo>.<funcion>'."
+                )
+            self.fallback_permission: str | None = cleaned_fb
+        else:
+            self.fallback_permission = None
 
     async def __call__(self, request: Request) -> AuthenticatedPrincipal:
         if not is_valid_three_level_permission(self.permission_code):
@@ -158,6 +168,21 @@ class RequireGlobalPermission:
                 is_holding_owner=False,
                 is_superuser_god=claims.is_superuser_god,
             )
+            if not decision.allowed and self.fallback_permission:
+                fallback_decision = evaluate_effective_permission(
+                    required_permission=self.fallback_permission,
+                    contracted_modules=(
+                        claims.contracted_modules if claims.contracted_modules_explicit else None
+                    ),
+                    role_grants=claims.role_grants,
+                    temp_grants=claims.temp_grants,
+                    explicit_denies=claims.explicit_denies,
+                    actor_user_id=claims.user_id,
+                    is_holding_owner=False,
+                    is_superuser_god=claims.is_superuser_god,
+                )
+                if fallback_decision.allowed:
+                    decision = fallback_decision
             if not decision.allowed:
                 raise PermissionDeniedError(
                     f"Global permission '{self.permission_code}' denied ({decision.reason_code}).",
@@ -192,7 +217,7 @@ class RequireTenantPermission:
     en el Plano Cliente (`tenant_*`), validando aislamiento estricto de `X-Tenant-ID` / `tenant_id`.
     """
 
-    def __init__(self, permission_code: str) -> None:
+    def __init__(self, permission_code: str, fallback_permission: str | None = None) -> None:
         cleaned = permission_code.strip()
         if not THREE_LEVEL_PERMISSION_REGEX.match(cleaned):
             raise ValueError(
@@ -200,6 +225,16 @@ class RequireTenantPermission:
                 "Expected '<modulo>.<submodulo>.<funcion>'."
             )
         self.permission_code: str = cleaned
+        if fallback_permission is not None:
+            cleaned_fb = fallback_permission.strip()
+            if not THREE_LEVEL_PERMISSION_REGEX.match(cleaned_fb):
+                raise ValueError(
+                    f"Invalid 3-level fallback RBAC permission '{fallback_permission}'. "
+                    "Expected '<modulo>.<submodulo>.<funcion>'."
+                )
+            self.fallback_permission: str | None = cleaned_fb
+        else:
+            self.fallback_permission = None
 
     async def __call__(self, request: Request) -> AuthenticatedPrincipal:
         if not is_valid_three_level_permission(self.permission_code):
@@ -245,6 +280,21 @@ class RequireTenantPermission:
             is_holding_owner=claims.is_holding_owner,
             is_superuser_god=claims.is_superuser_god,
         )
+        if not decision.allowed and self.fallback_permission:
+            fallback_decision = evaluate_effective_permission(
+                required_permission=self.fallback_permission,
+                contracted_modules=(
+                    claims.contracted_modules if claims.contracted_modules_explicit else None
+                ),
+                role_grants=claims.role_grants,
+                temp_grants=claims.temp_grants,
+                explicit_denies=claims.explicit_denies,
+                actor_user_id=claims.user_id,
+                is_holding_owner=claims.is_holding_owner,
+                is_superuser_god=claims.is_superuser_god,
+            )
+            if fallback_decision.allowed:
+                decision = fallback_decision
         if not decision.allowed:
             raise PermissionDeniedError(
                 f"Tenant permission '{self.permission_code}' denied ({decision.reason_code}).",

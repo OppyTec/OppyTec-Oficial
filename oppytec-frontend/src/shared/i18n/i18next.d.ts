@@ -21,7 +21,10 @@ export type I18nNamespace =
   | "gestion"
   | "products"
   | "excel_import"
-  | "factura_import";
+  | "factura_import"
+  | "alerts"
+  | "history"
+  | "notifications";
 
 export type TranslationInterpolationVars = Readonly<
   Record<string, string | number>

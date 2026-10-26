@@ -1,0 +1,300 @@
+{
+  "header": {
+    "title": "Centro de Notificaciones y Aprobaciones",
+    "subtitle": "Gobernanza operativa, control jerárquico de mermas, conteos y auditorías"
+  },
+  "views": {
+    "bandeja": "Bandeja",
+    "historial": "Historial",
+    "configuracion": "Configuración"
+  },
+  "toolbar": {
+    "search_placeholder": "Buscar notificaciones por producto, usuario, área, motivo o descripción...",
+    "clear_search": "Limpiar búsqueda",
+    "toggle_view_compact": "Cambiar a vista compacta (Tabla)",
+    "toggle_view_cards": "Cambiar a vista de tarjetas",
+    "all_areas": "Todas las áreas",
+    "all_warehouses": "Todas las bodegas"
+  },
+  "categories": {
+    "all": "Todas",
+    "operaciones": "Operaciones",
+    "inventario": "Inventario",
+    "compras": "Compras",
+    "equipo": "Equipo",
+    "descriptions": {
+      "operaciones": "Operaciones y Cocina",
+      "inventario": "Inventario y Recetas",
+      "compras": "Compras y Pedidos",
+      "equipo": "Equipo y Actividades"
+    }
+  },
+  "types": {
+    "merma": "Merma",
+    "merma_receta": "Merma Receta",
+    "consumo": "Consumo",
+    "consumo_buffet": "Buffet",
+    "conteo": "Conteo Físico",
+    "producto_borrador_receta": "Borrador Insumo",
+    "recibir_pedido": "Recepción Pedido",
+    "solicitud_compra": "Solicitud Compra",
+    "vinculacion_proveedor": "Vincular Proveedor",
+    "mencion_nota": "Mención / Nota",
+    "perfil": "Perfil Usuario",
+    "color_turno": "Color Turno"
+  },
+  "states": {
+    "pendiente": "Pendiente",
+    "aprobado": "Aprobado",
+    "rechazado": "Rechazado",
+    "aprobado_temporal": "Aprobado Temporal"
+  },
+  "card": {
+    "unknown_user": "Usuario desconocido",
+    "just_now": "recién",
+    "ago_minutes": "hace {{count}} min",
+    "ago_hours": "hace {{count}} h",
+    "ago_days": "hace {{count}} d",
+    "approve": "Aprobar",
+    "reject": "Rechazar",
+    "inspect": "Inspeccionar",
+    "approving": "Aprobando...",
+    "rejecting": "Rechazando...",
+    "quantity": "Cantidad",
+    "unit_cost": "Costo Unitario",
+    "total_cost": "Costo Total",
+    "observations": "Observaciones",
+    "reason": "Motivo",
+    "lot": "Lote",
+    "expiration": "Vencimiento",
+    "pax_attended": "Pax Atendidos",
+    "items_counted": "Ítems Contados",
+    "discrepancies": "Discrepancias",
+    "supplier": "Proveedor",
+    "invoice_amount": "Monto Factura",
+    "invoice_number": "Factura / Guía",
+    "package_discrepancy": "Discrepancia Bultos",
+    "shift_color": "Color Solicitado",
+    "profile_update": "Actualización de datos personales",
+    "edit_inline": "Editar antes de aprobar",
+    "cancel_edit": "Cancelar edición",
+    "save_and_approve": "Guardar y Aprobar",
+    "reclassified_as": "Reclasificado a",
+    "original_type": "Tipo Original"
+  },
+  "table": {
+    "columns": {
+      "type": "Tipo",
+      "emitter": "Emisor",
+      "details": "Detalles",
+      "location": "Ubicación",
+      "date": "Fecha",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "no_amount": "Sin monto",
+    "unspecified": "No especificado"
+  },
+  "empty": {
+    "inbox_title": "Bandeja al día",
+    "inbox_all_clear": "Excelente trabajo. Todas las mermas, consumos y auditorías han sido resueltas.",
+    "inbox_category_clear": "No hay solicitudes pendientes en la categoría {{category}}.",
+    "history_title": "Historial sin registros",
+    "history_clear": "No hay registros históricos que coincidan con los filtros aplicados.",
+    "error_title": "No se pudieron sincronizar las solicitudes",
+    "error_desc": "Verifica tu conexión a internet o el estado del servicio central.",
+    "retry": "Reintentar"
+  },
+  "pagination": {
+    "showing": "Mostrando",
+    "of": "de",
+    "items": "solicitudes",
+    "per_page": "Filas por página"
+  },
+  "popover": {
+    "title": "Notificaciones",
+    "pending_badge": "{{count}} pendientes",
+    "empty_title": "No hay solicitudes pendientes",
+    "empty_desc": "Todo el flujo operacional está al día",
+    "view_all": "Ver todas en /notificaciones"
+  },
+  "modals": {
+    "reject": {
+      "title": "Rechazar Solicitud Operativa",
+      "warning": "Esta acción es irreversible y notificará al emisor inmediatamente.",
+      "involved_item": "Elemento involucrado",
+      "request_id": "ID",
+      "type": "Tipo",
+      "requester": "Solicitante",
+      "reason_label": "Motivo o Justificación Obligatoria *",
+      "min_chars": "{{count}} / 5 mín",
+      "placeholder": "Especifica claramente la causa del rechazo (ej: 'Las cantidades no corresponden al turno de noche')...",
+      "validation_required": "La justificación de rechazo debe contener al menos 5 caracteres.",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar Rechazo",
+      "confirming": "Rechazando..."
+    },
+    "conteo": {
+      "title": "Auditoría de Conteo Físico #{{id}}",
+      "no_discrepancy": "Sin Discrepancias",
+      "minor_discrepancy": "Discrepancia Menor",
+      "critical_discrepancy": "Discrepancia Crítica",
+      "summary": {
+        "items_audited": "Insumos Auditados",
+        "items_with_diff": "Con Diferencias",
+        "delta_units": "Diferencia Neta Unidades",
+        "net_financial_delta": "Impacto Financiero Neto"
+      },
+      "table": {
+        "item": "Insumo / Código",
+        "lot_exp": "Lote & Vencimiento",
+        "theoretical": "Teórico (Kardex)",
+        "physical": "Físico Contado",
+        "delta": "Diferencia (Δ)",
+        "cost_ppp": "Costo PPP",
+        "financial_impact": "Impacto Monetario"
+      },
+      "exact_stock": "Exacto",
+      "approve_and_adjust": "Aprobar y Ajustar Kardex",
+      "reject_count": "Rechazar Conteo",
+      "reject_reason_placeholder": "Ingresa el motivo del rechazo del acta...",
+      "confirm_reject": "Confirmar Rechazo",
+      "cancel": "Cancelar"
+    },
+    "buffet": {
+      "title": "Auditoría de Buffet #{{id}} — {{name}}",
+      "tabs": {
+        "balance": "Balance Consolidado",
+        "split_view": "Auditoría Split-View"
+      },
+      "summary": {
+        "pax": "Pax Atendidos",
+        "initial_stock": "Stock Apertura",
+        "replenishments": "Reposiciones",
+        "final_counted": "Cierre Contado",
+        "net_consumed": "Consumo Neto",
+        "financial_ppp": "Valorización Financiera PPP",
+        "return_to_warehouse": "Retornar a Bodega",
+        "waste": "Merma Sanitaria"
+      },
+      "table": {
+        "item": "Insumo / Receta",
+        "opening": "Apertura",
+        "replenish": "Reposición",
+        "closing": "Cierre",
+        "net": "Consumo Neto",
+        "unit_ppp": "PPP Unitario",
+        "subtotal_ppp": "Subtotal Consumo PPP",
+        "destination": "Destino Sobrante",
+        "action_return": "Retornar a Bodega",
+        "action_waste": "Merma Sanitaria",
+        "waste_reason": "Motivo Merma Sanitaria"
+      },
+      "split": {
+        "assembly": "1. Apertura / Montaje",
+        "disassembly": "2. Cierre / Desmontaje",
+        "annotated_photos": "Fotos Anotadas de Estaciones",
+        "no_photos": "Sin fotos adjuntas para esta sesión"
+      },
+      "confirm_button": "Confirmar y Cerrar Auditoría Buffet",
+      "reject_button": "Rechazar Auditoría",
+      "closing_audit": "Cerrando Auditoría...",
+      "close": "Cerrar"
+    }
+  },
+  "governance": {
+    "title": "Matriz de Notificaciones y Gobernanza",
+    "subtitle": "Configura las notificaciones permitidas por cargo y tus preferencias personales",
+    "back": "Volver",
+    "tabs": {
+      "my_notifications": "Mis Notificaciones",
+      "role_governance": "Gobernanza de Cargos"
+    },
+    "my_prefs": {
+      "description": "Personaliza las alertas que deseas recibir. Algunas alertas pueden estar restringidas según tu cargo.",
+      "role_badge": "Tu cargo actual: {{role}}"
+    },
+    "role_gov": {
+      "description": "Administra qué tipos de notificaciones y solicitudes de aprobación están habilitadas para cada cargo.",
+      "select_role": "Selecciona un cargo para configurar",
+      "approver_authority": "Facultad de Aprobador",
+      "approver_desc": "Este cargo tiene autoridad para resolver y aprobar solicitudes de este tipo",
+      "channels": {
+        "in_app": "En la App",
+        "email": "Correo",
+        "push": "Push Móvil"
+      },
+      "save_changes": "Guardar Cambios de Gobernanza",
+      "saving": "Guardando...",
+      "save_success": "Matriz de gobernanza guardada exitosamente"
+    },
+    "catalog": {
+      "merma": {
+        "label": "Mermas Operativas",
+        "desc": "Descartes de insumos por vencimiento, rotura o merma de cocina"
+      },
+      "consumo": {
+        "label": "Consumo de Cocina",
+        "desc": "Retiros de cocina para degustaciones, pruebas o preparación"
+      },
+      "buffet": {
+        "label": "Liquidación de Buffet",
+        "desc": "Aprobación y cierre de consumo por comensales (Pax)"
+      },
+      "conteo": {
+        "label": "Conteos de Inventario",
+        "desc": "Ajustes de inventario físico, mermas teóricas y actas de recuento"
+      },
+      "stock_critico": {
+        "label": "Stock Crítico y Quiebres",
+        "desc": "Alertas tempranas de insumos bajo punto de reposición"
+      },
+      "recibir_pedido": {
+        "label": "Recepción de Mercadería",
+        "desc": "Llegada de insumos desde proveedores con o sin discrepancias"
+      },
+      "orden_compra": {
+        "label": "Órdenes de Compra",
+        "desc": "Emisión y confirmación de pedidos a proveedores externos"
+      },
+      "turno_cambio": {
+        "label": "Cambios de Turno",
+        "desc": "Solicitudes de relevos y rotaciones de cocineros y personal"
+      },
+      "asistencia": {
+        "label": "Asistencia y Novedades",
+        "desc": "Reporte de retardos, ausencias y novedades de dotación de sala"
+      }
+    },
+    "roles": {
+      "administrador": {
+        "role_name": "Administrador General",
+        "desc": "Supervisión total y control de costos"
+      },
+      "supervisor": {
+        "role_name": "Supervisor de Turno",
+        "desc": "Control de piso y autorizaciones"
+      },
+      "chef": {
+        "role_name": "Chef Ejecutivo",
+        "desc": "Operaciones de cocina y recetas"
+      },
+      "cocinero": {
+        "role_name": "Cocinero de Estación",
+        "desc": "Elaboración y despacho de platos"
+      },
+      "bodeguero": {
+        "role_name": "Encargado de Bodega",
+        "desc": "Control de entradas, salidas y conteos"
+      },
+      "garzon": {
+        "role_name": "Garzón de Sala",
+        "desc": "Atención a comensales y pedidos"
+      },
+      "cajero": {
+        "role_name": "Cajero / POS",
+        "desc": "Cobro, cierres y liquidaciones de caja"
+      }
+    }
+  }
+}

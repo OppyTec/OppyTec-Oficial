@@ -27,8 +27,9 @@ from sqlalchemy import (
     Uuid,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from src.modules.catalog.infrastructure.models import Producto
 from src.shared.models_base import (
     AuditTimestampsMixin,
     TenantBase,
@@ -129,6 +130,8 @@ class RegistroStock(TenantBase):
         Index("ix_registro_stock_bodega_producto", "bodega_id", "producto_id"),
         Index("ix_registro_stock_created_tipo", "created_at", "tipo_movimiento"),
         Index("ix_registro_stock_transfer_id", "transfer_id"),
+        Index("ix_registro_stock_fecha_recuento", "fecha_recuento"),
+        Index("ix_registro_stock_actor_created", "actor_user_id", "created_at"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
@@ -138,6 +141,12 @@ class RegistroStock(TenantBase):
         server_default=func.now(),
         nullable=False,
         index=True,
+    )
+    fecha_recuento: Mapped[date] = mapped_column(
+        Date,
+        default=date.today,
+        server_default=func.current_date(),
+        nullable=False,
     )
     producto_id: Mapped[int] = mapped_column(
         Integer,
@@ -185,11 +194,25 @@ class RegistroStock(TenantBase):
         nullable=True,
     )
     actor_user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    motivo_merma: Mapped[str | None] = mapped_column(
+        String(64),
+        default=None,
+        nullable=True,
+    )
+    descripcion_merma: Mapped[str | None] = mapped_column(
+        String(500),
+        default=None,
+        nullable=True,
+    )
     referencia_documento: Mapped[str | None] = mapped_column(
         String(128),
         default=None,
         nullable=True,
     )
+
+    # Relaciones para estrategia anti-N+1:
+    producto: Mapped[Producto] = relationship("Producto", foreign_keys=[producto_id], lazy="raise")
+    bodega: Mapped[Bodega] = relationship("Bodega", foreign_keys=[bodega_id], lazy="raise")
 
 
 class StockTransfer(TenantBase, AuditTimestampsMixin):
@@ -315,19 +338,7 @@ class Merma(TenantBase, AuditTimestampsMixin, SoftDeleteMixin):
     reportado_por_user_id: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
-class SolicitudAprobacion(TenantBase, AuditTimestampsMixin):
-    """Flujo de aprobación para mermas sobre umbral o ajustes críticos de inventario."""
-
-    __tablename__ = "solicitudes_aprobacion"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    merma_id: Mapped[int | None] = mapped_column(
-        Integer,
-        ForeignKey("mermas.id", ondelete="CASCADE"),
-        default=None,
-        nullable=True,
-    )
-    estado: Mapped[str] = mapped_column(String(32), default="PENDIENTE", nullable=False)
-    solicitante_user_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    aprobador_user_id: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True)
-    comentario_resolucion: Mapped[str | None] = mapped_column(Text, default=None, nullable=True)
+# SolicitudAprobacion centralizada en módulo Operations (governance & multi-module approvals)
+from src.modules.operations.infrastructure.approval_models import (  # noqa: E402, F401
+    SolicitudAprobacionModel as SolicitudAprobacion,
+)

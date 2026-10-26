@@ -67,7 +67,23 @@ export function resolveApiEndpointUrl(path: string): string {
   const env = getRuntimeEnv();
   const normalizedBase = env.VITE_API_BASE_URL.replace(/\/+$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${normalizedBase}${normalizedPath}`;
+  const fullPath =
+    normalizedPath === normalizedBase ||
+    normalizedPath.startsWith(`${normalizedBase}/`)
+      ? normalizedPath
+      : `${normalizedBase}${normalizedPath}`;
+
+  if (fullPath.startsWith("http://") || fullPath.startsWith("https://")) {
+    return fullPath;
+  }
+  if (
+    typeof window !== "undefined" &&
+    window.location?.origin &&
+    window.location.origin !== "null"
+  ) {
+    return `${window.location.origin}${fullPath}`;
+  }
+  return `http://localhost:8000${fullPath}`;
 }
 
 export async function apiRequest<TResponse>(

@@ -33,6 +33,11 @@ export function SectionHeader({
 
   // Cursor blink effect
   useEffect(() => {
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+      setShowCursor(true);
+      return;
+    }
+
     let active = true;
     let timerId: ReturnType<typeof setTimeout>;
     const tick = () => {

@@ -8,7 +8,12 @@ import {
 import { AnalyticsFeatureView } from "@/features/analytics";
 import { AdminLoginPage, LoginPage } from "@/features/auth";
 import { CatalogFeatureView } from "@/features/catalog";
-import { StockRegistroPage, ContarInventarioPage, RecuentosPage } from "@/features/inventory";
+import {
+  StockRegistroPage,
+  ContarInventarioPage,
+  RecuentosPage,
+  AlertasPage,
+} from "@/features/inventory";
 import { OperationsFeatureView } from "@/features/operations";
 import { OppyFyFeatureView } from "@/features/oppyfy";
 import {
@@ -32,6 +37,9 @@ import { ConfiguracionPage } from "@/features/configuracion";
 import { ProfilePage } from "@/features/profile";
 import { UsuariosPage } from "@/features/users";
 import { GestionPage } from "@/features/gestion";
+import { HistorialPage } from "@/features/historial";
+import { RegistroConsumoPage, ManosLibresPage, BuffetPage } from "@/features/consumo";
+import { NotificationsPage } from "@/features/notifications";
 import { useAuth } from "@/shared/auth/usePermissions";
 import { HomeDashboard } from "@/features/home";
 import {
@@ -167,8 +175,11 @@ export function ClientAppShell() {
       <Routes>
         <Route index element={<HomeDashboard />} />
         <Route path="/" element={<HomeDashboard />} />
-        <Route path="/consumo/*" element={<ModulePlaceholderView title="Consumo y Operaciones" moduleSlug="module:consumo" />} />
-        <Route path="/registro-de-consumo" element={<ModulePlaceholderView title="Registro de Consumo" moduleSlug="module:consumo:registro_de_consumo" />} />
+        <Route path="/consumo/manos-libres" element={<ManosLibresPage />} />
+        <Route path="/consumo/buffet" element={<BuffetPage />} />
+        <Route path="/consumo/*" element={<RegistroConsumoPage />} />
+        <Route path="/consumo" element={<RegistroConsumoPage />} />
+        <Route path="/registro-de-consumo" element={<RegistroConsumoPage />} />
         <Route path="/ventas/*" element={<ModulePlaceholderView title="Punto de Venta (Ventas Comerciales)" moduleSlug="module:ventas" />} />
         <Route path="/inventario/stock" element={<StockRegistroPage />} />
         <Route path="/inventario" element={<StockRegistroPage />} />
@@ -178,11 +189,14 @@ export function ClientAppShell() {
         <Route path="/gestion/*" element={<GestionPage />} />
         <Route path="/gestion" element={<GestionPage />} />
         <Route path="/proveedores" element={<ModulePlaceholderView title="Directorio de Proveedores" moduleSlug="module:gestion:proveedores" />} />
-        <Route path="/notificaciones/*" element={<ModulePlaceholderView title="Centro de Notificaciones y Solicitudes" moduleSlug="module:notificaciones" />} />
-        <Route path="/alertas/*" element={<ModulePlaceholderView title="Alertas Críticas de Stock & Vencimiento" moduleSlug="module:alertas" />} />
+        <Route path="/notificaciones" element={<NotificationsPage />} />
+        <Route path="/notificaciones/*" element={<NotificationsPage />} />
+        <Route path="/alertas" element={<AlertasPage />} />
+        <Route path="/alertas/*" element={<AlertasPage />} />
         <Route path="/eventos/*" element={<ModulePlaceholderView title="Planificación de Eventos y Banquetes" moduleSlug="module:eventos" />} />
         <Route path="/proyeccion/*" element={<ModulePlaceholderView title="Proyección de Demanda y Análisis Financiero" moduleSlug="module:proyeccion" />} />
-        <Route path="/historial/*" element={<ModulePlaceholderView title="Historial de Movimientos y Auditoría" moduleSlug="module:historial" />} />
+        <Route path="/historial" element={<HistorialPage />} />
+        <Route path="/historial/*" element={<HistorialPage />} />
         <Route path="/contabilidad/*" element={<ModulePlaceholderView title="Contabilidad y Facturas DTE" moduleSlug="module:contabilidad" />} />
         <Route path="/reportes/*" element={<ModulePlaceholderView title="Panel Ejecutivo y Reportes Estratégicos" moduleSlug="module:panel_ejecutivo" />} />
         <Route path="/actividades/usuarios" element={<UsuariosPage />} />

@@ -45,6 +45,8 @@ import { cn, getImageUrl } from "@/shared/lib";
 import { usePermissions } from "@/shared/auth/usePermissions";
 import { useTheme } from "@/shared/hooks";
 import { translateKey, useLanguage } from "@/shared/i18n";
+import { useAlertBadge } from "@/features/inventory/alerts/hooks/useAlertBadge";
+import { usePendingCount } from "@/features/notifications/hooks/usePendingCount";
 
 export const FEATURE_MODULE_ROUTES = [
   { id: "analytics", labelEs: "Analítica & KPIs", labelEn: "Analytics & KPIs" },
@@ -221,6 +223,12 @@ export function Sidebar({
     controlledIsCollapsed !== undefined ? controlledIsCollapsed : localIsCollapsed;
 
   const resolvedTipo = businessType?.nombre || tipoNegocio;
+
+  // Hook reactivo de alertas de inventario (TanStack Query + localStorage + WebSocket push)
+  const { totalCount: alertTotalCount, hasCritical: alertHasCritical } = useAlertBadge();
+
+  // Hook reactivo de notificaciones pendientes (TanStack Query + WebSocket push)
+  const { total: pendingNotificationsCount } = usePendingCount();
 
   const setIsCollapsed = (val: boolean | ((prev: boolean) => boolean)) => {
     const nextVal = typeof val === "function" ? val(isCollapsed) : val;
@@ -804,6 +812,13 @@ export function Sidebar({
 
     // Direct single nav item
     const Icon = item.icon;
+    const isAlertas = item.path === "/alertas";
+    const showAlertBadge = Boolean(item.hasBadge && isAlertas && alertTotalCount > 0);
+    const isNotificaciones = item.path === "/notificaciones";
+    const showNotificationsBadge = Boolean(
+      item.hasBadge && isNotificaciones && pendingNotificationsCount > 0
+    );
+
     return (
       <div key={item.path} className="pt-0.5 pb-0.5">
         <div
@@ -828,6 +843,29 @@ export function Sidebar({
         >
           <div className="relative shrink-0 w-8 flex justify-center">
             <Icon size={19} className={isActive ? "text-white" : "text-[var(--item-color)]"} />
+            {showAlertBadge && (
+              <span
+                data-testid="sidebar-alerts-badge"
+                className={cn(
+                  "absolute -top-1.5 -right-1.5 min-w-[16px] h-4 flex items-center justify-center rounded-full text-[9px] font-bold border-2 border-background px-0.5 pointer-events-none select-none",
+                  alertHasCritical
+                    ? "bg-red-500 text-white animate-pulse shadow-sm shadow-red-500/50"
+                    : "bg-amber-500 text-white shadow-sm shadow-amber-500/30"
+                )}
+                aria-label={`Alertas: ${alertTotalCount}`}
+              >
+                {alertTotalCount > 9 ? "9+" : alertTotalCount}
+              </span>
+            )}
+            {showNotificationsBadge && (
+              <span
+                data-testid="sidebar-notifications-badge"
+                className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 flex items-center justify-center rounded-full text-[9px] font-bold border-2 border-background px-0.5 pointer-events-none select-none bg-[#fbbf24] text-black shadow-sm shadow-amber-500/30 animate-pulse"
+                aria-label={`Notificaciones: ${pendingNotificationsCount}`}
+              >
+                {pendingNotificationsCount > 9 ? "9+" : pendingNotificationsCount}
+              </span>
+            )}
           </div>
 
           {(!isCollapsed || isOpen) && (

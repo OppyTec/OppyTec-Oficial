@@ -82,6 +82,7 @@ def test_inventory_kardex_append_only_and_decimal_stock() -> None:
         fecha_vencimiento_lote=date(2027, 6, 30),
         transfer_id=mov_uuid,
         actor_user_id=5,
+        fecha_recuento=date(2026, 10, 25),
     )
     assert mov.saldo_resultante == Decimal("52.5000")
     assert mov.costo_unitario_ppp == Decimal("1820.50")
@@ -89,6 +90,11 @@ def test_inventory_kardex_append_only_and_decimal_stock() -> None:
     assert mov.lote_codigo == "LOT-2026-X1"
     assert mov.fecha_vencimiento_lote == date(2027, 6, 30)
     assert mov.transfer_id == mov_uuid
+    assert mov.motivo_merma is None
+    assert mov.descripcion_merma is None
+    assert mov.fecha_recuento == date(2026, 10, 25)
+    assert "producto" in RegistroStock.__mapper__.relationships
+    assert "bodega" in RegistroStock.__mapper__.relationships
 
     merma = Merma(
         producto_id=1,
@@ -126,6 +132,8 @@ def test_stock_transfer_model_and_indexes() -> None:
     assert "ix_registro_stock_bodega_producto" in index_names
     assert "ix_registro_stock_created_tipo" in index_names
     assert "ix_registro_stock_transfer_id" in index_names
+    assert "ix_registro_stock_fecha_recuento" in index_names
+    assert "ix_registro_stock_actor_created" in index_names
 
 
 def test_conteo_inventario_and_items_enrichment() -> None:
@@ -209,8 +217,8 @@ def test_alembic_migration_0004_spec_and_reversibility() -> None:
         m.upgrade()
 
     assert created_tables == ["stock_transfers"]
-    assert len(added_cols) == 19  # 6 producto_bodegas + 5 registro_stock + 4 conteos_inventario + 4 conteo_items
-    assert len(created_indices) == 4  # 3 en registro_stock + 1 en conteos_inventario (y transfers si no está creada)
+    assert len(added_cols) == 22  # 6 producto_bodegas + 8 registro_stock + 4 conteos_inventario + 4 conteo_items
+    assert len(created_indices) == 6  # 5 en registro_stock + 1 en conteos_inventario (y transfers si no está creada)
 
     with (
         patch.object(m, "_get_current_schema", return_value="tenant_testing"),
@@ -224,6 +232,6 @@ def test_alembic_migration_0004_spec_and_reversibility() -> None:
         m.downgrade()
 
     assert dropped_tables == ["stock_transfers"]
-    assert len(dropped_cols) == 19
+    assert len(dropped_cols) == 22
     # Reversibilidad simétrica de columnas dropeadas
     assert set(dropped_cols) == set(added_cols)

@@ -20,12 +20,21 @@ import {
   Truck,
   ClipboardCheck,
   Palette,
-  Layers,
   MessageSquare,
-  Warehouse,
   Send,
   Square,
+  Flame,
+  UtensilsCrossed,
+  CookingPot,
+  ShoppingCart,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
+import { toast } from "sonner";
+import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { usePendingCount } from "@/features/notifications/hooks/usePendingCount";
+import { useApprovals } from "@/features/notifications/hooks/useApprovals";
+import type { Solicitud } from "@/features/notifications/types";
 import { cn, getImageUrl } from "@/shared/lib";
 import { useAuth } from "@/shared/auth/usePermissions";
 import { useTheme } from "@/shared/hooks";
@@ -110,6 +119,253 @@ const DEFAULT_DB_ROLES = [
   { id: 6, name: "Auditor" },
 ];
 
+function formatRelativeTime(dateString?: string): string {
+  if (!dateString) return "";
+  try {
+    const now = Date.now();
+    const then = new Date(dateString).getTime();
+    if (isNaN(then)) return dateString;
+    const diffSec = Math.max(0, Math.floor((now - then) / 1000));
+    if (diffSec < 60) return "recién";
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `hace ${diffMin} min`;
+    const diffHour = Math.floor(diffMin / 60);
+    if (diffHour < 24) return `hace ${diffHour} h`;
+    const diffDay = Math.floor(diffHour / 24);
+    return `hace ${diffDay} d`;
+  } catch {
+    return dateString;
+  }
+}
+
+function getSolicitudDisplayInfo(solicitud: Solicitud) {
+  const tipo = solicitud.tipo;
+  const detalles = solicitud.detalles || {};
+  const user = solicitud.usuario;
+  const userName = user
+    ? (user.first_name || user.username || "").trim()
+    : "";
+
+  let title = "Notificación";
+  let subtitle = "Pendiente de revisión";
+  let Icon = Info;
+  let colorClass = "bg-secondary text-muted-foreground";
+
+  switch (tipo) {
+    case "merma":
+    case "merma_receta": {
+      title = tipo === "merma_receta" ? "Merma en Receta" : "Registro de Merma";
+      Icon = AlertTriangle;
+      colorClass = "bg-rose-500/10 text-rose-500";
+      const item = detalles.producto_nombre || detalles.insumo || "Insumo";
+      const qty = detalles.cantidad ? `${detalles.cantidad} ${detalles.unidad || ""}` : "";
+      subtitle = [item, qty, userName].filter(Boolean).join(" • ");
+      break;
+    }
+    case "consumo": {
+      title = "Registro de Consumo";
+      Icon = Flame;
+      colorClass = "bg-amber-500/10 text-amber-500";
+      const item = detalles.producto_nombre || detalles.insumo || detalles.motivo || "Consumo";
+      const qty = detalles.cantidad ? `${detalles.cantidad} ${detalles.unidad || ""}` : "";
+      subtitle = [item, qty, userName].filter(Boolean).join(" • ");
+      break;
+    }
+    case "consumo_buffet": {
+      title = "Cierre de Buffet";
+      Icon = UtensilsCrossed;
+      colorClass = "bg-cyan-500/10 text-cyan-500";
+      const sesion = detalles.sesion_nombre || "Sesión buffet";
+      const est = detalles.estaciones_count ? `${detalles.estaciones_count} estaciones` : "";
+      subtitle = [sesion, est, userName].filter(Boolean).join(" • ");
+      break;
+    }
+    case "conteo": {
+      title = "Recuento de Inventario";
+      Icon = ClipboardCheck;
+      colorClass = "bg-emerald-500/10 text-emerald-500";
+      const bodega = detalles.bodega_nombre || "Bodega Central";
+      subtitle = [bodega, userName].filter(Boolean).join(" • ");
+      break;
+    }
+    case "producto_borrador_receta": {
+      title = "Nuevo Insumo (Borrador)";
+      Icon = CookingPot;
+      colorClass = "bg-emerald-500/10 text-emerald-500";
+      const item = detalles.nombre_producto || detalles.insumo || "Insumo nuevo";
+      subtitle = [item, userName].filter(Boolean).join(" • ");
+      break;
+    }
+    case "recibir_pedido": {
+      title = "Recepción de Pedido";
+      Icon = Truck;
+      colorClass = "bg-indigo-500/10 text-indigo-500";
+      const prov = detalles.proveedor_nombre || "Proveedor";
+      const doc = detalles.numero_documento ? `Doc #${detalles.numero_documento}` : "";
+      subtitle = [prov, doc].filter(Boolean).join(" • ");
+      break;
+    }
+    case "solicitud_compra": {
+      title = "Solicitud de Compra";
+      Icon = ShoppingCart;
+      colorClass = "bg-indigo-500/10 text-indigo-500";
+      const prov = detalles.proveedor_nombre || "Compras";
+      subtitle = [prov, userName].filter(Boolean).join(" • ");
+      break;
+    }
+    case "vinculacion_proveedor": {
+      title = "Vinculación de Proveedor";
+      Icon = Building2;
+      colorClass = "bg-indigo-500/10 text-indigo-500";
+      const prov = detalles.proveedor_nombre || "Proveedor nuevo";
+      subtitle = [prov, userName].filter(Boolean).join(" • ");
+      break;
+    }
+    case "perfil": {
+      title = "Cambio de Perfil";
+      Icon = User;
+      colorClass = "bg-purple-500/10 text-purple-500";
+      subtitle = userName ? `Solicitado por ${userName}` : "Actualización de datos";
+      break;
+    }
+    case "color_turno": {
+      title = "Color de Turno";
+      Icon = Palette;
+      colorClass = "bg-purple-500/10 text-purple-500";
+      subtitle = userName ? `Turno de ${userName}` : "Cambio de turno";
+      break;
+    }
+    case "mencion_nota": {
+      title = "Mención en Nota";
+      Icon = MessageSquare;
+      colorClass = "bg-purple-500/10 text-purple-500";
+      subtitle = detalles.nota || "Has sido mencionado";
+      break;
+    }
+    default: {
+      Icon = Info;
+      colorClass = "bg-secondary text-muted-foreground";
+      subtitle = "Pendiente de revisión";
+      break;
+    }
+  }
+
+  return {
+    title,
+    subtitle: subtitle || "Pendiente de revisión",
+    time: formatRelativeTime(solicitud.creado_at),
+    Icon,
+    colorClass,
+  };
+}
+
+interface NotificationsPopoverProps {
+  readonly total: number;
+  readonly solicitudes: readonly Solicitud[];
+  readonly onClose: () => void;
+  readonly onNavigate: (path: string) => void;
+  readonly isMobile?: boolean;
+}
+
+function NotificationsPopover({
+  total,
+  solicitudes,
+  onClose,
+  onNavigate,
+  isMobile = false,
+}: NotificationsPopoverProps) {
+  const displayItems = total === 0 ? [] : solicitudes.slice(0, 5);
+
+  return (
+    <div
+      data-testid={isMobile ? "navbar-notifications-popover-mobile" : "navbar-notifications-popover"}
+      className={cn(
+        "absolute right-0 mt-2 bg-card rounded-2xl p-2 shadow-2xl border border-border z-50 animate-in fade-in slide-in-from-top-2 duration-150",
+        isMobile ? "w-80" : "w-80 md:w-96"
+      )}
+    >
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border mb-2">
+        <span className="text-sm font-bold text-foreground">Notificaciones</span>
+        <span
+          data-testid="navbar-notifications-count-label"
+          className="text-xs bg-amber-500/15 text-amber-500 font-semibold px-2 py-0.5 rounded-full"
+        >
+          {total} pendientes
+        </span>
+      </div>
+
+      {total === 0 || displayItems.length === 0 ? (
+        <div
+          data-testid="navbar-notifications-empty"
+          className="py-8 px-4 flex flex-col items-center justify-center text-center"
+        >
+          <div className="h-10 w-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-2">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+          <p className="text-sm font-medium text-foreground">
+            No hay solicitudes pendientes
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Todo el flujo operacional está al día
+          </p>
+        </div>
+      ) : (
+        <div className="max-h-80 overflow-y-auto space-y-1">
+          {displayItems.map((req) => {
+            const info = getSolicitudDisplayInfo(req);
+            const { Icon } = info;
+            return (
+              <button
+                key={req.id}
+                type="button"
+                data-testid={`navbar-notification-item-${req.id}`}
+                onClick={() => {
+                  onNavigate(`/notificaciones?highlight=${req.id}`);
+                  onClose();
+                }}
+                className="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-secondary/60 transition-colors text-left group cursor-pointer"
+              >
+                <div className={cn("p-2 rounded-lg shrink-0 mt-0.5", info.colorClass)}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-xs font-semibold text-foreground truncate group-hover:text-amber-500 transition-colors">
+                      {info.title}
+                    </p>
+                    {info.time && (
+                      <span className="text-[10px] text-muted-foreground shrink-0 flex items-center gap-0.5">
+                        <Clock className="h-2.5 w-2.5" />
+                        {info.time}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                    {info.subtitle}
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1.5 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <button
+        type="button"
+        data-testid="navbar-notifications-view-all"
+        onClick={() => {
+          onNavigate("/notificaciones");
+          onClose();
+        }}
+        className="w-full text-center text-xs text-amber-500 font-medium py-2.5 border-t border-border mt-2 hover:bg-secondary/60 rounded-xl transition-colors cursor-pointer"
+      >
+        Ver todas en /notificaciones
+      </button>
+    </div>
+  );
+}
+
 export function Navbar({
   brandName = "OppyTec v2.0",
   environmentLabel = "PROD:SaaS",
@@ -126,6 +382,60 @@ export function Navbar({
   const { user, signOut, isGlobalAdmin } = useAuth();
   const { theme: hookTheme, toggleTheme, setTheme } = useTheme(propTheme || "ocean-blue");
   const theme = propTheme || hookTheme;
+
+  const userName = user?.firstName
+    ? `${user.firstName} ${user.lastName || ""}`.trim()
+    : user?.username || "Usuario";
+  const userRole = user?.role || (isGlobalAdmin ? "ADMIN" : "PROPIETARIO");
+  const initials = user?.firstName
+    ? `${user.firstName[0]}${user.lastName?.[0] || ""}`.toUpperCase()
+    : user?.username?.slice(0, 2).toUpperCase() || "OP";
+
+  // Hook reactivo de notificaciones pendientes y solicitudes (TanStack Query + WebSocket)
+  const { total: pendingTotal } = usePendingCount();
+  const { solicitudes: pendingSolicitudes } = useApprovals({
+    mainView: "bandeja",
+    pageSize: 5,
+  });
+
+  // Suscripción WebSocket para notificaciones toast sutiles en rol supervisor
+  let realtimeEvents: ReturnType<typeof useRealtimeSync>["authorizedEvents"] = [];
+  try {
+    const rt = useRealtimeSync();
+    realtimeEvents = rt.authorizedEvents;
+  } catch {
+    // Desacoplado o unit tests
+  }
+  const lastProcessedEventIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!realtimeEvents || realtimeEvents.length === 0) return;
+    const lastEvent = realtimeEvents[0];
+    const eventId =
+      (lastEvent as any)?.eventId ||
+      (lastEvent as any)?.id ||
+      `${lastEvent?.eventType}-${Date.now()}`;
+    if (lastProcessedEventIdRef.current === eventId) return;
+    lastProcessedEventIdRef.current = eventId;
+
+    if (
+      lastEvent?.eventType === "notification.created" ||
+      lastEvent?.eventType === "operations.notification.created"
+    ) {
+      const isSupervisor = [
+        "ADMIN",
+        "PROPIETARIO",
+        "SUPERVISOR",
+        "CHEF",
+        "ADMINISTRADOR",
+      ].includes(userRole.toUpperCase());
+      if (isSupervisor) {
+        toast.info("Nueva solicitud pendiente", {
+          description: "Se ha recibido una solicitud de aprobación en tiempo real.",
+        });
+      }
+    }
+  }, [realtimeEvents, userRole]);
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -170,45 +480,6 @@ export function Navbar({
     "¿Cómo funciona el costeo FIFO por capas?",
     "¿Cómo uso el importador de Excel?",
   ];
-
-  // Classified notifications
-  const [solicitudes] = useState([
-    {
-      id: "req-1",
-      tipo: "conteo",
-      title: "Recuento de Inventario",
-      subtitle: "Bodega Cocina Central • Pendiente de revisión",
-      route: "/notificaciones",
-    },
-    {
-      id: "req-2",
-      tipo: "merma",
-      title: "Registro de Merma",
-      subtitle: "Merma: Pechuga Pollo (2.5 kg) • Carlos M. • Hoy",
-      route: "/notificaciones",
-    },
-    {
-      id: "req-3",
-      tipo: "recibir_pedido",
-      title: "Recepción de Pedido",
-      subtitle: "Distribuidora Mayorista Alimentos S.A. en ruta",
-      route: "/notificaciones",
-    },
-    {
-      id: "req-4",
-      tipo: "receta",
-      title: "Solicitud de Receta",
-      subtitle: "Nueva versión Salsa BBQ Ahumada • Pendiente",
-      route: "/notificaciones",
-    },
-    {
-      id: "req-5",
-      tipo: "bodega",
-      title: "Solicitud de Bodega",
-      subtitle: "Reabastecimiento Bodega Barra • Hoy",
-      route: "/notificaciones",
-    },
-  ]);
 
   useEffect(() => {
     setIsMac(typeof navigator !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0);
@@ -381,39 +652,6 @@ export function Navbar({
       },
     ]);
   };
-
-  const getNotificationIconInfo = (tipo: string) => {
-    switch (tipo) {
-      case "perfil":
-        return { Icon: User, colorClass: "text-blue-500", defaultTitle: "Cambio de Perfil" };
-      case "merma":
-        return { Icon: AlertTriangle, colorClass: "text-amber-500", defaultTitle: "Registro de Merma" };
-      case "bodega":
-        return { Icon: Warehouse, colorClass: "text-amber-500", defaultTitle: "Solicitud de Bodega" };
-      case "recibir_pedido":
-      case "proveedor":
-        return { Icon: Truck, colorClass: "text-indigo-500", defaultTitle: "Recepción de Pedido" };
-      case "color_turno":
-        return { Icon: Palette, colorClass: "text-fuchsia-500", defaultTitle: "Color de Turno" };
-      case "conteo":
-      case "receta":
-        return { Icon: ClipboardCheck, colorClass: "text-emerald-500", defaultTitle: "Recuento de Inventario" };
-      case "ajuste_stock":
-        return { Icon: Layers, colorClass: "text-primary", defaultTitle: "Ajuste de Stock" };
-      case "mencion_nota":
-        return { Icon: MessageSquare, colorClass: "text-primary", defaultTitle: "Te mencionaron" };
-      default:
-        return { Icon: Info, colorClass: "text-muted-foreground", defaultTitle: "Notificación" };
-    }
-  };
-
-  const userName = user?.firstName
-    ? `${user.firstName} ${user.lastName || ""}`.trim()
-    : user?.username || "Usuario";
-  const userRole = user?.role || (isGlobalAdmin ? "ADMIN" : "PROPIETARIO");
-  const initials = user?.firstName
-    ? `${user.firstName[0]}${user.lastName?.[0] || ""}`.toUpperCase()
-    : user?.username?.slice(0, 2).toUpperCase() || "OP";
 
   return (
     <>
@@ -681,71 +919,40 @@ export function Navbar({
               <div className="relative shrink-0">
                 <button
                   type="button"
+                  data-testid="navbar-notifications-bell-mobile"
                   onClick={() => toggleDropdown("notif-mobile")}
                   className={cn(
-                    "touch-target h-10 w-10 rounded-xl flex items-center justify-center relative transition-colors",
+                    "touch-target h-10 w-10 rounded-xl flex items-center justify-center relative transition-colors cursor-pointer",
                     theme === "light" ? "hover:bg-white/10" : "hover:bg-secondary"
                   )}
                   aria-label="Notificaciones"
+                  title="Notificaciones"
                 >
                   <Bell
                     size={18}
                     className={cn(
                       theme === "light" ? "text-white" : "text-muted-foreground",
-                      solicitudes.length > 0 && (theme === "light" ? "text-white" : "text-primary")
+                      pendingTotal > 0 && (theme === "light" ? "text-white" : "text-amber-400")
                     )}
                   />
-                  {solicitudes.length > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-primary text-primary-foreground text-[10px] font-bold rounded-full px-1 border-2 border-background animate-pulse">
-                      {solicitudes.length > 9 ? "9+" : solicitudes.length}
+                  {pendingTotal > 0 && (
+                    <span
+                      data-testid="navbar-notifications-badge-mobile"
+                      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-[#fbbf24] text-black text-[10px] font-bold rounded-full px-1 border-2 border-background animate-pulse pointer-events-none select-none"
+                    >
+                      {pendingTotal > 9 ? "9+" : pendingTotal}
                     </span>
                   )}
                 </button>
 
                 {openDropdown === "notif-mobile" && (
-                  <div className="absolute right-0 mt-2 w-80 bg-card rounded-2xl p-2 shadow-2xl border border-border z-50">
-                    <div className="flex items-center justify-between px-3 py-2 border-b border-border mb-2">
-                      <span className="text-sm font-bold text-foreground">Notificaciones</span>
-                      <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-foreground font-semibold">
-                        {solicitudes.length} pendientes
-                      </span>
-                    </div>
-                    <div className="max-h-80 overflow-y-auto space-y-1">
-                      {solicitudes.map((req) => {
-                        const { Icon, colorClass, defaultTitle } = getNotificationIconInfo(req.tipo);
-                        return (
-                          <button
-                            key={req.id}
-                            type="button"
-                            onClick={() => {
-                              navigate(req.route);
-                              setOpenDropdown(null);
-                            }}
-                            className="w-full flex items-start gap-3 p-2.5 rounded-lg hover:bg-secondary transition-colors text-left"
-                          >
-                            <div className={cn("p-1.5 rounded-lg bg-secondary shrink-0", colorClass)}>
-                              <Icon className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-foreground truncate">{req.title || defaultTitle}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{req.subtitle}</p>
-                            </div>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigate("/notificaciones");
-                        setOpenDropdown(null);
-                      }}
-                      className="w-full text-center text-xs text-primary font-medium py-2 border-t border-border mt-2 hover:bg-secondary rounded-lg"
-                    >
-                      Ver todas las notificaciones
-                    </button>
-                  </div>
+                  <NotificationsPopover
+                    total={pendingTotal}
+                    solicitudes={pendingSolicitudes}
+                    onClose={() => setOpenDropdown(null)}
+                    onNavigate={(route) => navigate(route)}
+                    isMobile={true}
+                  />
                 )}
               </div>
             </div>
@@ -1043,66 +1250,27 @@ export function Navbar({
                     size={20}
                     className={cn(
                       theme === "light" ? "text-white" : "text-muted-foreground",
-                      solicitudes.length > 0 && (theme === "light" ? "text-white" : "text-primary")
+                      pendingTotal > 0 && (theme === "light" ? "text-white" : "text-amber-400")
                     )}
                   />
-                  {solicitudes.length > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-primary text-primary-foreground text-[10px] font-bold rounded-full px-1 border-2 border-background animate-pulse">
-                      {solicitudes.length > 9 ? "9+" : solicitudes.length}
+                  {pendingTotal > 0 && (
+                    <span
+                      data-testid="navbar-notifications-badge"
+                      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-[#fbbf24] text-black text-[10px] font-bold rounded-full px-1 border-2 border-background animate-pulse pointer-events-none select-none"
+                    >
+                      {pendingTotal > 9 ? "9+" : pendingTotal}
                     </span>
                   )}
                 </button>
 
                 {openDropdown === "notif-desktop" && (
-                  <div className="absolute right-0 mt-2 w-80 bg-card rounded-2xl p-2 shadow-2xl border border-border z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                    <div className="flex items-center justify-between px-3 py-2 border-b border-border mb-2">
-                      <span className="text-sm font-bold text-foreground">Notificaciones</span>
-                      <span className="text-xs bg-secondary px-2 py-0.5 rounded-full text-foreground font-semibold">
-                        {solicitudes.length} pendientes
-                      </span>
-                    </div>
-
-                    <div className="max-h-80 overflow-y-auto space-y-1">
-                      {solicitudes.map((req) => {
-                        const { Icon, colorClass, defaultTitle } = getNotificationIconInfo(req.tipo);
-                        return (
-                          <button
-                            key={req.id}
-                            type="button"
-                            onClick={() => {
-                              navigate(req.route);
-                              setOpenDropdown(null);
-                            }}
-                            className="w-full flex items-start gap-3 p-3 rounded-lg hover:bg-secondary transition-colors text-left"
-                          >
-                            <div className={cn("p-2 rounded-lg bg-secondary shrink-0", colorClass)}>
-                              <Icon className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-foreground truncate">
-                                {req.title || defaultTitle}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground truncate">
-                                {req.subtitle}
-                              </p>
-                            </div>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigate("/notificaciones");
-                        setOpenDropdown(null);
-                      }}
-                      className="w-full text-center text-xs text-primary font-medium py-2 border-t border-border mt-2 hover:bg-secondary rounded-lg"
-                    >
-                      Ver todas las notificaciones
-                    </button>
-                  </div>
+                  <NotificationsPopover
+                    total={pendingTotal}
+                    solicitudes={pendingSolicitudes}
+                    onClose={() => setOpenDropdown(null)}
+                    onNavigate={(route) => navigate(route)}
+                    isMobile={false}
+                  />
                 )}
               </div>
 

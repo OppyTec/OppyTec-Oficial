@@ -1,0 +1,86 @@
+{
+  "header": {
+    "title": "Historial",
+    "subtitle": "Auditoría y Trazabilidad de Inventario"
+  },
+  "toolbar": {
+    "badge_immutable": "Auditoría Inmutable",
+    "badge_immutable_mobile": "INMUTABLE",
+    "export_csv": "Exportar CSV"
+  },
+  "filters": {
+    "user_search_placeholder": "Buscar por usuario...",
+    "user_search_aria": "Buscar por usuario",
+    "user_search_clear_title": "Limpiar búsqueda",
+    "product_select_aria": "Filtrar por producto",
+    "all_products": "Todos los productos",
+    "type_select_aria": "Filtrar por tipo",
+    "types": {
+      "all": "Todos",
+      "conteo": "Conteo",
+      "consumo": "Consumo",
+      "merma": "Merma",
+      "ajuste": "Ajuste",
+      "transferencia": "Transferencia",
+      "compra": "Compra",
+      "entrada": "Entrada",
+      "salida": "Salida",
+      "reversion": "Reversión",
+      "redo": "Rehacer",
+      "ajuste_auditoria": "Ajuste Auditoría",
+      "ajuste_positivo": "Ajuste Positivo",
+      "ajuste_negativo": "Ajuste Negativo"
+    },
+    "date_from_label": "Desde",
+    "date_from_aria": "Desde",
+    "date_from_clear_title": "Limpiar fecha desde",
+    "date_to_label": "Hasta",
+    "date_to_aria": "Hasta",
+    "date_to_clear_title": "Limpiar fecha hasta",
+    "clear_filters": "Limpiar filtros"
+  },
+  "table": {
+    "headers": {
+      "datetime": "Fecha y hora",
+      "product": "Producto",
+      "type": "Tipo",
+      "warehouse": "Bodega",
+      "quantity": "Cantidad",
+      "user": "Usuario",
+      "reason": "Motivo",
+      "unit_cost": "Costo Unitario",
+      "total_cost": "Costo Total",
+      "balance": "Saldo Resultante"
+    },
+    "transfer": {
+      "outbound_tooltip": "Traspaso Saliente",
+      "inbound_tooltip": "Traspaso Entrante"
+    },
+    "user_system": "Sistema",
+    "no_reason": "—",
+    "empty_state": "No hay registros que coincidan con los filtros aplicados.",
+    "loading": "Cargando historial..."
+  },
+  "pagination": {
+    "summary": "Mostrando {{count}} registros en esta página (Total en base de datos: {{total}})",
+    "prev": "Anterior",
+    "page_indicator": "Página {{page}}",
+    "next": "Siguiente"
+  },
+  "export": {
+    "toast_success": "Auditoría exportada exitosamente",
+    "toast_no_records": "No hay registros para exportar",
+    "filename_prefix": "auditoria_inventario",
+    "columns": {
+      "datetime": "Fecha y Hora",
+      "warehouse": "Bodega",
+      "product": "Producto",
+      "movement_type": "Tipo de Movimiento",
+      "quantity": "Cantidad",
+      "unit": "Unidad",
+      "user": "Usuario",
+      "reason_notes": "Motivo / Notas",
+      "resulting_balance": "Saldo Resultante"
+    }
+  }
+}

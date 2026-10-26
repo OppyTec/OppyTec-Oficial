@@ -428,5 +428,94 @@
       "sun": "Sun"
     },
     "ok_24h": "24h OK"
+  },
+  "alerts": {
+    "title": "Alerts",
+    "subtitle": "System Stock Status and Expirations",
+    "loading": "Loading Alerts...",
+    "toolbar": {
+      "filter_label": "Filter Alerts",
+      "filter_all": "All Alerts",
+      "filter_all_short": "All",
+      "filter_stock": "Critical Stock",
+      "filter_upcoming": "Near Expiration",
+      "filter_upcoming_short": "Expiring Soon",
+      "filter_expired": "Expired Products",
+      "filter_expired_short": "Expired",
+      "view_cards": "Cards",
+      "view_list": "List",
+      "aria_cards": "Cards",
+      "aria_list": "List"
+    },
+    "sections": {
+      "critical_stock": "Critical Stock",
+      "expired_products": "Expired Products",
+      "upcoming_expiry": "Near Expiration"
+    },
+    "status": {
+      "depleted": "Out of Stock",
+      "critical": "Below Minimum"
+    },
+    "cards": {
+      "actual": "Current",
+      "minimo": "Minimum",
+      "add_to_cart": "Add to shopping cart",
+      "buy_product": "Buy {{name}}",
+      "expiration": "Expiration",
+      "lot_prefix": "Lot: {{code}}",
+      "lot_prefix_short": "Lot",
+      "affected_stock": "Affected Stock",
+      "affected_stock_label": "Affected stock:",
+      "risk_stock_label": "Stock at risk:",
+      "total_stock": "Total Stock",
+      "report_merma": "Report Waste",
+      "report_merma_for": "Report waste for {{name}}",
+      "manage": "Manage",
+      "manage_for": "Manage {{name}}",
+      "merma_recommendation": "It is recommended to write off inventory (Waste) for these products.",
+      "financial_risk": "Financial Risk"
+    },
+    "table": {
+      "title": "Products below Minimum Stock",
+      "active_alert_one": "{{count}} active alert",
+      "active_alert_other": "{{count}} active alerts",
+      "col_product": "Product",
+      "col_health": "Status / Health",
+      "col_actual": "Current",
+      "col_min": "Minimum",
+      "col_action": "Action",
+      "empty": "Everything under control. No products in critical stock."
+    },
+    "empty": {
+      "stock_critico": "Everything under control. No products in critical stock.",
+      "expired": "No expired products in this period.",
+      "upcoming": "No lots near expiration within the established range.",
+      "page": "No items on this page.",
+      "no_records": "No records to display"
+    },
+    "relative_time": {
+      "today": "today",
+      "ago_days_one": "1 day ago",
+      "ago_days_other": "{{count}} days ago",
+      "ago_days_exact_one": "1 day",
+      "ago_days_exact_other": "{{count}} days",
+      "ago_months_one": "1 month ago",
+      "ago_months_other": "{{count}} months ago",
+      "ago_years_one": "1 year ago",
+      "ago_years_other": "{{count}} years ago",
+      "in_days_one": "in 1 day",
+      "in_days_other": "in {{count}} days",
+      "in_months_one": "in 1 month",
+      "in_months_other": "in {{count}} months",
+      "in_years_one": "in 1 year",
+      "in_years_other": "in {{count}} years"
+    },
+    "toast": {
+      "cart_added": "{{product}} added to shopping cart",
+      "cart_added_with_warehouse": "{{product}} ({{warehouse}}) added to shopping cart"
+    },
+    "pagination": {
+      "item_label": "alerts"
+    }
   }
 }

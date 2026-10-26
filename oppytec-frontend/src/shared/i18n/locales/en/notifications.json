@@ -1,0 +1,300 @@
+{
+  "header": {
+    "title": "Notifications & Approvals Center",
+    "subtitle": "Operational governance, hierarchical waste control, physical counts & audits"
+  },
+  "views": {
+    "bandeja": "Inbox",
+    "historial": "History",
+    "configuracion": "Configuration"
+  },
+  "toolbar": {
+    "search_placeholder": "Search notifications by product, user, area, reason or description...",
+    "clear_search": "Clear search",
+    "toggle_view_compact": "Switch to compact view (Table)",
+    "toggle_view_cards": "Switch to cards view",
+    "all_areas": "All areas",
+    "all_warehouses": "All warehouses"
+  },
+  "categories": {
+    "all": "All",
+    "operaciones": "Operations",
+    "inventario": "Inventory",
+    "compras": "Purchasing",
+    "equipo": "Team",
+    "descriptions": {
+      "operaciones": "Operations & Kitchen",
+      "inventario": "Inventory & Recipes",
+      "compras": "Purchasing & Orders",
+      "equipo": "Team & Activities"
+    }
+  },
+  "types": {
+    "merma": "Waste",
+    "merma_receta": "Recipe Waste",
+    "consumo": "Consumption",
+    "consumo_buffet": "Buffet",
+    "conteo": "Physical Count",
+    "producto_borrador_receta": "Draft Ingredient",
+    "recibir_pedido": "Order Receipt",
+    "solicitud_compra": "Purchase Request",
+    "vinculacion_proveedor": "Link Supplier",
+    "mencion_nota": "Mention / Note",
+    "perfil": "User Profile",
+    "color_turno": "Shift Color"
+  },
+  "states": {
+    "pendiente": "Pending",
+    "aprobado": "Approved",
+    "rechazado": "Rejected",
+    "aprobado_temporal": "Temporarily Approved"
+  },
+  "card": {
+    "unknown_user": "Unknown user",
+    "just_now": "just now",
+    "ago_minutes": "{{count}} min ago",
+    "ago_hours": "{{count}} h ago",
+    "ago_days": "{{count}} d ago",
+    "approve": "Approve",
+    "reject": "Reject",
+    "inspect": "Inspect",
+    "approving": "Approving...",
+    "rejecting": "Rejecting...",
+    "quantity": "Quantity",
+    "unit_cost": "Unit Cost",
+    "total_cost": "Total Cost",
+    "observations": "Observations",
+    "reason": "Reason",
+    "lot": "Lot",
+    "expiration": "Expiration",
+    "pax_attended": "Pax Served",
+    "items_counted": "Items Counted",
+    "discrepancies": "Discrepancies",
+    "supplier": "Supplier",
+    "invoice_amount": "Invoice Amount",
+    "invoice_number": "Invoice / Waybill",
+    "package_discrepancy": "Package Discrepancy",
+    "shift_color": "Requested Color",
+    "profile_update": "Personal details update",
+    "edit_inline": "Edit before approving",
+    "cancel_edit": "Cancel edit",
+    "save_and_approve": "Save & Approve",
+    "reclassified_as": "Reclassified to",
+    "original_type": "Original Type"
+  },
+  "table": {
+    "columns": {
+      "type": "Type",
+      "emitter": "Issuer",
+      "details": "Details",
+      "location": "Location",
+      "date": "Date",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "no_amount": "No amount",
+    "unspecified": "Unspecified"
+  },
+  "empty": {
+    "inbox_title": "Inbox up to date",
+    "inbox_all_clear": "Great job. All waste reports, consumptions and audits have been resolved.",
+    "inbox_category_clear": "There are no pending requests in the {{category}} category.",
+    "history_title": "No history records",
+    "history_clear": "No historical records match the applied filters.",
+    "error_title": "Could not sync requests",
+    "error_desc": "Please check your internet connection or core service status.",
+    "retry": "Retry"
+  },
+  "pagination": {
+    "showing": "Showing",
+    "of": "of",
+    "items": "requests",
+    "per_page": "Rows per page"
+  },
+  "popover": {
+    "title": "Notifications",
+    "pending_badge": "{{count}} pending",
+    "empty_title": "No pending requests",
+    "empty_desc": "All operational workflows are up to date",
+    "view_all": "View all at /notificaciones"
+  },
+  "modals": {
+    "reject": {
+      "title": "Reject Operational Request",
+      "warning": "This action is irreversible and will notify the issuer immediately.",
+      "involved_item": "Involved item",
+      "request_id": "ID",
+      "type": "Type",
+      "requester": "Requester",
+      "reason_label": "Mandatory Reason or Justification *",
+      "min_chars": "{{count}} / 5 min",
+      "placeholder": "Clearly specify the reason for rejection (e.g. 'Quantities do not match the night shift')...",
+      "validation_required": "The rejection justification must contain at least 5 characters.",
+      "cancel": "Cancel",
+      "confirm": "Confirm Rejection",
+      "confirming": "Rejecting..."
+    },
+    "conteo": {
+      "title": "Physical Count Audit #{{id}}",
+      "no_discrepancy": "No Discrepancies",
+      "minor_discrepancy": "Minor Discrepancy",
+      "critical_discrepancy": "Critical Discrepancy",
+      "summary": {
+        "items_audited": "Audited Items",
+        "items_with_diff": "With Discrepancies",
+        "delta_units": "Net Difference Units",
+        "net_financial_delta": "Net Financial Impact"
+      },
+      "table": {
+        "item": "Item / Code",
+        "lot_exp": "Lot & Expiration",
+        "theoretical": "Theoretical (Kardex)",
+        "physical": "Physical Counted",
+        "delta": "Difference (Δ)",
+        "cost_ppp": "WAC Cost",
+        "financial_impact": "Monetary Impact"
+      },
+      "exact_stock": "Exact",
+      "approve_and_adjust": "Approve & Adjust Kardex",
+      "reject_count": "Reject Count",
+      "reject_reason_placeholder": "Enter the reason for rejecting the count audit...",
+      "confirm_reject": "Confirm Rejection",
+      "cancel": "Cancel"
+    },
+    "buffet": {
+      "title": "Buffet Audit #{{id}} — {{name}}",
+      "tabs": {
+        "balance": "Consolidated Balance",
+        "split_view": "Split-View Audit"
+      },
+      "summary": {
+        "pax": "Pax Served",
+        "initial_stock": "Opening Stock",
+        "replenishments": "Replenishments",
+        "final_counted": "Closing Counted",
+        "net_consumed": "Net Consumption",
+        "financial_ppp": "WAC Financial Valuation",
+        "return_to_warehouse": "Return to Warehouse",
+        "waste": "Sanitary Waste"
+      },
+      "table": {
+        "item": "Item / Recipe",
+        "opening": "Opening",
+        "replenish": "Replenish",
+        "closing": "Closing",
+        "net": "Net Consumed",
+        "unit_ppp": "Unit WAC",
+        "subtotal_ppp": "WAC Consumption Subtotal",
+        "destination": "Leftover Destination",
+        "action_return": "Return to Warehouse",
+        "action_waste": "Sanitary Waste",
+        "waste_reason": "Sanitary Waste Reason"
+      },
+      "split": {
+        "assembly": "1. Opening / Assembly",
+        "disassembly": "2. Closing / Disassembly",
+        "annotated_photos": "Station Annotated Photos",
+        "no_photos": "No photos attached for this session"
+      },
+      "confirm_button": "Confirm & Close Buffet Audit",
+      "reject_button": "Reject Audit",
+      "closing_audit": "Closing Audit...",
+      "close": "Close"
+    }
+  },
+  "governance": {
+    "title": "Notification & Governance Matrix",
+    "subtitle": "Configure allowed notifications by role and your personal preferences",
+    "back": "Back",
+    "tabs": {
+      "my_notifications": "My Notifications",
+      "role_governance": "Role Governance"
+    },
+    "my_prefs": {
+      "description": "Customize the alerts you wish to receive. Some alerts may be restricted based on your role.",
+      "role_badge": "Your current role: {{role}}"
+    },
+    "role_gov": {
+      "description": "Manage which notification types and approval requests are enabled for each job title.",
+      "select_role": "Select a role to configure",
+      "approver_authority": "Approver Authority",
+      "approver_desc": "This role has authority to resolve and approve requests of this type",
+      "channels": {
+        "in_app": "In-App",
+        "email": "Email",
+        "push": "Mobile Push"
+      },
+      "save_changes": "Save Governance Changes",
+      "saving": "Saving...",
+      "save_success": "Governance matrix successfully saved"
+    },
+    "catalog": {
+      "merma": {
+        "label": "Operational Waste",
+        "desc": "Discarded items due to expiration, breakage or kitchen waste"
+      },
+      "consumo": {
+        "label": "Kitchen Consumption",
+        "desc": "Kitchen withdrawals for tastings, tests or food prep"
+      },
+      "buffet": {
+        "label": "Buffet Liquidation",
+        "desc": "Approval and closing of diner (Pax) consumption"
+      },
+      "conteo": {
+        "label": "Inventory Counts",
+        "desc": "Physical inventory adjustments, theoretical waste and count reports"
+      },
+      "stock_critico": {
+        "label": "Critical Stock & Outages",
+        "desc": "Early warnings for items below reorder point"
+      },
+      "recibir_pedido": {
+        "label": "Order Receipt",
+        "desc": "Supplier item arrivals with or without discrepancies"
+      },
+      "orden_compra": {
+        "label": "Purchase Orders",
+        "desc": "Issuance and confirmation of orders to external vendors"
+      },
+      "turno_cambio": {
+        "label": "Shift Changes",
+        "desc": "Cover requests and rotations for cooks and staff"
+      },
+      "asistencia": {
+        "label": "Attendance & News",
+        "desc": "Reporting delays, absences and dining room staffing updates"
+      }
+    },
+    "roles": {
+      "administrador": {
+        "role_name": "General Administrator",
+        "desc": "Total supervision and cost control"
+      },
+      "supervisor": {
+        "role_name": "Shift Supervisor",
+        "desc": "Floor control and authorizations"
+      },
+      "chef": {
+        "role_name": "Executive Chef",
+        "desc": "Kitchen operations and recipes"
+      },
+      "cocinero": {
+        "role_name": "Station Cook",
+        "desc": "Preparation and dispatch of dishes"
+      },
+      "bodeguero": {
+        "role_name": "Warehouse Keeper",
+        "desc": "Control of receipts, dispatches and counts"
+      },
+      "garzon": {
+        "role_name": "Dining Room Waiter",
+        "desc": "Diner customer service and orders"
+      },
+      "cajero": {
+        "role_name": "Cashier / POS",
+        "desc": "Billing, register closing and settlements"
+      }
+    }
+  }
+}

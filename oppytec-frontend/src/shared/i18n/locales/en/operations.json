@@ -8,5 +8,261 @@
   "counts": {
     "blind_inventory": "Blind physical inventory count",
     "variance_summary": "Detected variance: {{delta}} {{unit}}"
+  },
+  "consumption": {
+    "registro": {
+      "title": "Consumption Register",
+      "subtitle": "Log product outputs, staff meals and waste in real time",
+      "modes": {
+        "productos": "Products",
+        "recetas": "Recipes",
+        "combos": "Combos"
+      },
+      "toolbar": {
+        "categories": "Categories",
+        "merma": "Waste",
+        "templates": "Templates",
+        "history": "History",
+        "all_templates": "View All",
+        "create_template": "+ Create / Configure...",
+        "no_templates": "No templates created",
+        "public_badge": "Public",
+        "private_badge": "Private"
+      },
+      "search": {
+        "placeholder_products": "Search product or SKU...",
+        "placeholder_recipes": "Search recipe...",
+        "placeholder_combos": "Search combo...",
+        "clear": "Clear search",
+        "clear_filters": "Clear Filter"
+      },
+      "badges": {
+        "critical": "Critical",
+        "warning": "Warning",
+        "normal": "Normal",
+        "portions": "serv.",
+        "combos_count": "comb.",
+        "yield_tooltip": "Yield: {{count}} servings",
+        "out_of_stock": "Out of stock"
+      },
+      "states": {
+        "loading": "Loading Consumption Catalog...",
+        "empty_title": "No {{mode}} found",
+        "empty_subtitle": "Try changing the search term or clearing selected categories.",
+        "empty_no_items": "No {{mode}} available in assigned warehouses."
+      }
+    },
+    "pagination": {
+      "showing": "Showing {{from}} - {{to}}",
+      "of": "of",
+      "show_label": "Show:",
+      "per_page": "{{count}} per page",
+      "first_page": "First page",
+      "prev_page": "Previous page",
+      "next_page": "Next page",
+      "last_page": "Last page"
+    },
+    "manos_libres": {
+      "title": "Hands-Free Consumption",
+      "subtitle": "Voice operational logging for kitchen, bar and prep",
+      "listening": {
+        "listening_badge": "Listening...",
+        "muted_badge": "Muted",
+        "activate_mic": "Activate Microphone",
+        "pause_mic": "Pause Listening",
+        "feedback_paused": "Listening paused",
+        "feedback_active": "Station {{station}}, listening"
+      },
+      "tts": {
+        "label": "Text-to-Speech (TTS)",
+        "active": "TTS Active",
+        "disabled": "TTS Disabled",
+        "feedback_manual_order": "Manual order registered"
+      },
+      "console": {
+        "title": "Transcription Console & Manual Input",
+        "placeholder": "Waiting for voice command or type here...",
+        "manual_placeholder": "E.g.: 2 chicken breasts consumption...",
+        "send_button": "Send",
+        "success_manual": "Voice order manually registered",
+        "error_manual": "Error registering manual command"
+      },
+      "orders": {
+        "title": "Voice Orders Feed",
+        "empty": "No pending voice orders",
+        "confidence": "AI Confidence: {{confidence}}%",
+        "confirm": "Confirm",
+        "reject": "Discard",
+        "confirming": "Confirming...",
+        "rejecting": "Discarding...",
+        "status_pending": "Pending",
+        "status_confirmed": "Confirmed",
+        "status_rejected": "Rejected"
+      },
+      "stations": {
+        "title": "Workstations and Operators",
+        "active_operator": "Active Operator",
+        "command_hint": "Command: '{{cmd}}'",
+        "all_stations": "All stations"
+      }
+    },
+    "buffet": {
+      "title": "Smart Buffet",
+      "subtitle": "Station control, weighing and consumption conciliation per guest",
+      "tabs": {
+        "active_session": "Active Session",
+        "history": "Session History"
+      },
+      "stages": {
+        "apertura": "Opening",
+        "reposicion": "Replenishment",
+        "cierre": "Closing",
+        "desc_apertura": "Initial tray staging",
+        "desc_reposicion": "Live refills during service",
+        "desc_cierre": "Leftover weighing and settlement"
+      },
+      "metrics": {
+        "total_montaje": "Initial Staging Cost",
+        "total_sobrante": "Reusable Leftover Value",
+        "total_consumido": "Total Net Consumed",
+        "costo_pax": "Net Cost per Pax",
+        "pax_count": "Guests (Pax)"
+      },
+      "scanner": {
+        "title": "Gastronorm Tray Scanner",
+        "start_camera": "Start Camera",
+        "stop_camera": "Stop Camera",
+        "capture": "Capture Tray",
+        "analyzing": "Analyzing tare and volume with AI...",
+        "simulation_mode": "AI Simulation Mode Active",
+        "confidence": "Detection Confidence: {{pct}}%",
+        "confirm_batch": "Add Detections to Buffet",
+        "camera_permission_denied": "Camera permission denied. AI-assisted simulation mode will be used."
+      },
+      "table": {
+        "empty": "No products scanned yet",
+        "empty_desc": "Use the visual camera scanner to record buffet stations or add supplies to the balance.",
+        "col_item": "Product / Recipe",
+        "col_apertura": "Opening",
+        "col_reposicion": "Replenishment",
+        "col_cierre": "Closing / Leftover",
+        "col_consumo_neto": "Net Consumption",
+        "col_action": "Leftover Destination",
+        "action_return": "Return to Warehouse",
+        "action_waste": "Waste / Discard"
+      },
+      "conciliation": {
+        "title": "Buffet Settlement & Conciliation",
+        "pax_label": "Number of Guests (Pax)",
+        "pax_error": "Number of guests (Pax) must be greater than 0",
+        "leftover_value_label": "Total Reusable Leftover Value",
+        "finalize_btn": "Finalize and Settle Buffet",
+        "finalizing": "Settling in Kardex...",
+        "kardex_impact_notice": "Corresponding consumption and waste entries will be posted to inventory Kardex.",
+        "success_toast": "Buffet session settled successfully"
+      },
+      "templates": {
+        "title": "Buffet Templates",
+        "btn_new": "New Buffet Template",
+        "modal_title": "Manage Station Templates",
+        "save_btn": "Save Buffet Template"
+      }
+    },
+    "modals": {
+      "cart": {
+        "title": "Consumption Cart",
+        "empty": "The consumption cart is empty",
+        "clear": "Clear Cart",
+        "clear_confirm": "Are you sure you want to clear the cart?",
+        "warehouse": "Warehouse: {{name}}",
+        "lot_label": "Lot: {{code}}",
+        "expires_on": "Expires: {{date}}",
+        "expired_warning": "⚠ Expired Lot",
+        "expires_today": "Expires today",
+        "days_left": "{{days}}d",
+        "no_date": "No date",
+        "recipe_breakdown": "Recipe breakdown:",
+        "custom_options": "Selected options:",
+        "subtotal": "Estimated net subtotal",
+        "total": "Total to consume",
+        "submit_btn": "Register Consumption",
+        "processing": "Processing Kardex...",
+        "success_toast": "Consumption registered successfully"
+      },
+      "templates": {
+        "title": "Consumption Catalog Templates",
+        "create_title": "Create New Template",
+        "edit_title": "Edit Template",
+        "name_label": "Template Name *",
+        "name_placeholder": "E.g.: Morning Shift / Kitchen Crew",
+        "desc_label": "Description (Optional)",
+        "desc_placeholder": "E.g.: Critical supplies for morning prep",
+        "cols_label": "Catalog Columns ({{count}} cols)",
+        "visibility_label": "Template Visibility",
+        "public": "Public (Entire team)",
+        "private": "Private (Only you)",
+        "search_products": "Search product to add...",
+        "selected_products": "Selected products ({{count}})",
+        "save_btn": "Save Template",
+        "delete_btn": "Delete Template",
+        "saving": "Saving...",
+        "save_success": "Template saved successfully",
+        "delete_success": "Template deleted successfully"
+      },
+      "contingency": {
+        "title": "Stock Contingency Alert",
+        "subtitle": "Critical anomalies detected before logging inventory output",
+        "expired_lot_notice": "Expired lot expiration dates were detected.",
+        "out_of_stock_notice": "Insufficient or unavailable stock in this warehouse.",
+        "opt_force": "Force consumption under audit",
+        "opt_force_desc": "Logs output with special traceability and operational justification.",
+        "opt_waste": "Waste expired lot",
+        "opt_waste_desc": "Automatically routes product to unrecoverable waste record.",
+        "opt_locate": "Locate stock in other warehouses",
+        "opt_locate_desc": "Checks available stock in satellite or central warehouses."
+      },
+      "locate_stock": {
+        "title": "Inter-Warehouse Stock Locator",
+        "subtitle": "Available stock in other warehouses for {{product}}",
+        "request_transfer": "Request Transfer",
+        "requesting": "Requesting...",
+        "transfer_success": "Replenishment request sent to supervision",
+        "available": "Available: {{qty}} {{unit}}",
+        "no_stock_elsewhere": "No stock available in other warehouses"
+      },
+      "log": {
+        "title": "Consumption & Waste History",
+        "filter_date": "Date:",
+        "filter_range": "Date range",
+        "from": "From:",
+        "to": "To:",
+        "search_placeholder": "Search by receipt or product...",
+        "empty": "No consumption records in this period",
+        "btn_edit": "Edit",
+        "btn_delete": "Void",
+        "total_cost": "Total Cost:",
+        "operator": "Operator: {{name}}",
+        "area": "Area: {{name}}",
+        "warehouse": "Warehouse: {{name}}",
+        "revert_confirm": "Are you sure you want to void and reverse this consumption in Kardex?"
+      },
+      "edit": {
+        "title": "Edit Consumption Record",
+        "subtitle": "Modify quantity or record adjustment justification",
+        "quantity_label": "Deducted quantity:",
+        "reason_label": "Reason / Waste Justification:",
+        "save_btn": "Save Adjustment",
+        "saving": "Updating Kardex...",
+        "save_success": "Record updated successfully"
+      },
+      "options": {
+        "title": "Customize Options",
+        "subtitle": "Select required variants for preparation",
+        "min_required": "Select at least {{min}}",
+        "max_allowed": "Maximum allowed: {{max}}",
+        "confirm_btn": "Confirm Selection",
+        "add_price": "+{{price}}"
+      }
+    }
   }
 }

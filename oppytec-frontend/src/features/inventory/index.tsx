@@ -12,6 +12,7 @@ export * from "./stock/StockRegistroPage";
 export * from "./stock/components";
 export * from "./conteo";
 export * from "./recuentos";
+export * from "./alerts";
 
 const INVENTORY_TABS = [
   "StockRegistro",

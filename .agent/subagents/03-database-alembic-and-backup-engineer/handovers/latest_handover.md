@@ -1,45 +1,66 @@
 # Reporte de Traspaso (`Handover`) — Agente 03: Especialista en Base de Datos, Alembic y Backups 4-Capas
 
-- **Fecha UTC:** 2026-10-25T13:45:00+00:00
-- **Fase / Tarea:** Módulo de Inventario — Fase 1: Esquemas PostgreSQL `tenant_*` y Migración Alembic Correlativa `0004`
-- **Estado:** ✅ Culminado con Éxito (100% Verificado en PostgreSQL Docker y Suite de Arquitectura)
+- **Fecha UTC:** 2026-10-25T19:40:00+00:00
+- **Fase / Tarea:** Módulo de Consumo, Manos Libres y Buffet Inteligente (`/registro-de-consumo`, `/consumo/manos-libres`, `/consumo/buffet`) — FASE 1: Tareas 1.1 y 1.2 de `PLAN_MAESTRO_CONSUMO.md`
+- **Estado:** ✅ Culminado con Éxito (100% Verificado con Pytest y Ruff en verde)
 
 ## 1. Completed (Qué se hizo)
-- **Consulta Previa Obligatoria Graphify y Reserva AST:**
-  - Ejecutada exitosamente: `python scripts/harness.py nav "inventory"`.
-  - Mapeo confirmado: `module:inventory`, `router:inventory`, `frontend:feature_inventory`, relaciones con `catalog`, `operations`, `procurement` y `analytics`.
-  - Reserva atómica (`fcntl.flock`) realizada para `oppytec-backend/src/modules/inventory/infrastructure/models.py`.
-- **Modelos SQLAlchemy 2.0 (`oppytec-backend/src/modules/inventory/infrastructure/models.py`):**
-  - Heredan de `TenantBase` para residir en esquemas aislados `tenant_*`.
-  - **`ProductoBodega` Enriquecido:**
-    - Agregados campos de reposición y ubicación física: `stock_minimo` (`Numeric(12, 4)`, default `0.0000`), `stock_maximo` (`Numeric(12, 4)`, nullable), `punto_reorden` (`Numeric(12, 4)`, nullable), `pasillo` (`String(20)`, nullable), `estante` (`String(20)`, nullable), `nivel` (`String(20)`, nullable).
-  - **`RegistroStock` Enriquecido (Kardex Append-Only Inmutable):**
-    - Agregados campos de valoración financiera y trazabilidad: `costo_unitario_ppp` (`Numeric(14, 2)`, default `0.00`), `costo_total_movimiento` (`Numeric(14, 2)`, default `0.00`), `lote_codigo` (`String(64)`, nullable), `fecha_vencimiento_lote` (`Date`, nullable), `transfer_id` (`Uuid(as_uuid=True)`, nullable).
-    - Índices compuestos de alta velocidad:
-      * `ix_registro_stock_bodega_producto`: `("bodega_id", "producto_id")`
-      * `ix_registro_stock_created_tipo`: `("created_at", "tipo_movimiento")`
-      * `ix_registro_stock_transfer_id`: `("transfer_id")`
-  - **`StockTransfer` Creado:**
-    - Tabla `stock_transfers` en `tenant_*` con ciclo de vida (SOLICITADA -> EN_TRANSITO -> RECIBIDA/CANCELADA).
-    - Atributos: `id` (`BigInteger` PK autoincrement), `transfer_uuid` (`Uuid(as_uuid=True)`, unique, indexed), `bodega_origen_id` (`FK bodegas.id`), `bodega_destino_id` (`FK bodegas.id`), `estado` (`String(32)`, default `'SOLICITADA'`), `solicitante_user_id` (`Integer`), `despachador_user_id` (`Integer`, nullable), `receptor_user_id` (`Integer`, nullable), `notas` (`Text`, nullable), `AuditTimestampsMixin`.
-  - **`ConteoInventario` Enriquecido:**
-    - Agregados: `area_operativa_id` (`FK areas_operativas.id`, nullable), `aprobador_user_id` (`Integer`, nullable), `notas` (`Text`, nullable), `completed_at` (`DateTime(timezone=True)`, nullable).
-  - **`ConteoItem` Enriquecido:**
-    - Agregados: `lote_codigo` (`String(64)`, nullable), `fecha_vencimiento` (`Date`, nullable), `costo_unitario_ppp` (`Numeric(14, 2)`, default `0.00`), `valorizacion_diferencia` (`Numeric(14, 2)`, default `0.00`).
-- **Migración Alembic Correlativa Lineal `0004`:**
-  - Archivo: `oppytec-backend/alembic/versions/0004_tenant_inventory_kardex_and_physical_counts.py`.
-  - Metadatos: `revision = "0004_tenant_inventory_kardex_and_physical_counts"`, `down_revision = "0003_public_plans_quotas_and_tenant_capacity_overrides"`, `migration_scope = "tenant"`.
-  - DDL idempotente: comprueba `_has_table`, `_has_column` y `_has_index` para aplicar únicamente en esquemas `tenant_*` y actuar como no-op seguro en `public`.
-  - Reversibilidad LIFO simétrica garantizada en `downgrade()`.
-  - Verificada en CLI: `.venv/bin/alembic upgrade head` culminó con éxito llevando la base de datos a `0004_tenant_inventory_kardex_and_physical_counts (head)`.
-  - Verificada con `scripts/db_migration.py verify`: cadena correlativa 0001..0004 OK.
-- **Pruebas y Verificación:**
-  - `tests/architecture/`: 26 passed (integridad Alembic correlativa, cero float, scope de migraciones).
-  - `tests/unit/modules/test_inventory_services.py` & `test_inventory_domain.py`: 38 passed.
-  - Test DDL real en PostgreSQL (`oppytec-postgres`): creación, inserción y downgrade verificados contra la base de datos viva.
+
+### 1.1 Modelos de Persistencia SQLAlchemy 2.0 en `oppytec-backend/src/modules/operations/infrastructure/models.py`:
+- Todos heredan estrictamente de `TenantBase` para operar en esquemas dinámicos `tenant_*` aislados con `SET LOCAL search_path`.
+- **`ConsumptionRecord` (`consumption_records`):**
+  - Cabecera transaccional de consumo directo, salidas operativas y mermas.
+  - Campos: `id` (BigInteger PK), `codigo_folio` (String(64) unique), `folio_ticket` (String(64) nullable), `area_operativa_id` (FK `areas_operativas.id` ondelete SET NULL), `bodega_id` (FK `bodegas.id` ondelete SET NULL), `usuario_id` (Integer), `tipo_origen` (String(32), default "MANUAL_TERMINAL", enum: MANUAL_TERMINAL, MANOS_LIBRES_VOZ, BUFFET_LIQUIDACION, VENTA_POS), `costo_total` (Numeric(14, 2)), `notas` (Text nullable).
+  - Mixins: `AuditTimestampsMixin`, `SoftDeleteMixin`.
+  - Relación: `items` con cascada `all, delete-orphan`.
+- **`ConsumptionRecordItem` (`consumption_record_items`):**
+  - Desglose detallado de insumos/productos/recetas/combos consumidos por transacción.
+  - Campos: `id` (BigInteger PK), `consumption_record_id` (FK `consumption_records.id` ondelete CASCADE), `tipo_item` (String(20): PRODUCTO, RECETA, COMBO), `item_id` (Integer), `cantidad` (Numeric(12, 4)), `unidad_medida` (String(20)), `costo_unitario_ppp` (Numeric(14, 2)), `costo_total` (Numeric(14, 2)), `lote_codigo` (String(64) nullable), `fecha_vencimiento_lote` (Date nullable), `kardex_movement_id` (BigInteger FK `registro_stock.id` ondelete SET NULL), `opciones_seleccionadas` (JSONDictType / JSONB).
+  - Mixin: `AuditTimestampsMixin`.
+  - Relación: `consumption_record`.
+- **`ConsumptionTemplate` (`consumption_templates`):**
+  - Plantillas de catálogo configurables por turno, cuadrilla o área operativa.
+  - Campos: `id` (BigInteger PK), `slug` (String(64) unique), `nombre` (String(128)), `descripcion` (Text nullable), `usuario_creador_id` (Integer), `is_public` (Boolean default False), `columnas_count` (Integer default 8), `sort_mode` (String(32) default "alpha_asc"), `product_ids` (JSONDictType), `custom_product_order` (JSONDictType nullable).
+  - Mixins: `AuditTimestampsMixin`, `SoftDeleteMixin`, `TranslatableI18nMixin`.
+- **`BuffetTemplate` (Enriquecido):**
+  - Campos agregados: `descripcion` (Text nullable), `estaciones_json` (JSONDictType nullable), `is_system` (Boolean default False), `is_public` (Boolean default True).
+- **`BuffetSession` (Enriquecida):**
+  - Campos agregados: `area_operativa_id` (FK `areas_operativas.id` ondelete SET NULL), `bodega_id` (FK `bodegas.id` ondelete SET NULL), `usuario_creador_id` (Integer nullable), `tipo_servicio` (String(64) default "DESAYUNO"), `pax_comensales` (Integer default 0), `costo_total_montaje` (Numeric(14, 2)), `valor_sobrante_reutilizable` (Numeric(14, 2)), `costo_neto_pax` (Numeric(14, 2)).
+  - Relaciones: `stations`, `items` (ambas con cascade `all, delete-orphan`).
+- **`BuffetStation` (Enriquecida):**
+  - Campo agregado: `orden` (Integer default 0).
+  - Relaciones: `session`, `items`.
+- **`BuffetSessionItem` (`buffet_session_items`):**
+  - Campos: `id` (BigInteger PK), `session_id` (FK `buffet_sessions.id` ondelete CASCADE), `station_id` (FK `buffet_stations.id` ondelete CASCADE), `tipo_item` (String(20): PRODUCTO, RECETA), `item_id` (Integer), `cantidad_montada` (Numeric(12, 4)), `cantidad_sobrante` (Numeric(12, 4)), `cantidad_merma` (Numeric(12, 4)), `cantidad_neta_consumida` (Numeric(12, 4)), `costo_unitario_ppp` (Numeric(14, 2)), `costo_total` (Numeric(14, 2)).
+  - Mixin: `AuditTimestampsMixin`.
+- **`VoiceStation` (`voice_stations`):**
+  - Campos: `id` (BigInteger PK), `area_operativa_id` (FK `areas_operativas.id` ondelete SET NULL), `nombre_estacion` (String(64)), `voice_command` (String(64) clave fonética), `usuario_asignado_id` (Integer nullable), `is_active` (Boolean default True).
+  - Mixins: `AuditTimestampsMixin`, `SoftDeleteMixin`.
+  - Relación: `order_logs`.
+- **`VoiceOrderLog` (`voice_order_logs`):**
+  - Campos: `id` (BigInteger PK), `station_id` (FK `voice_stations.id` ondelete CASCADE), `texto_transcrito` (Text), `accion_detectada` (String(32): CONSUMO, MERMA), `confianza_ia` (Numeric(5, 4)), `items_interpretados_json` (JSONDictType), `estado` (String(32): PENDIENTE, CONFIRMADO, RECHAZADO, EJECUTADO), `consumption_record_id` (FK `consumption_records.id` ondelete SET NULL).
+  - Mixin: `AuditTimestampsMixin`.
+  - Relaciones: `station`, `consumption_record`.
+
+### 1.2 Migración Correlativa Alembic Lineal `0005`:
+- Archivo: `oppytec-backend/alembic/versions/0005_tenant_consumption_buffet_and_voice_tables.py`.
+- `revision = "0005_tenant_consumption_buffet_and_voice_tables"`.
+- `down_revision = "0004_tenant_inventory_kardex_and_physical_counts"`.
+- `migration_scope = "tenant"`.
+- Enlace lineal continuo asegurado con `0006_tenant_approval_requests_and_notification_matrix.py` (`down_revision = "0005_tenant_consumption_buffet_and_voice_tables"`).
+- Funciones seguras e idempotentes: `_has_table`, `_has_column`, `_has_index`, `_get_tenant_schemas(bind)`.
+- Crea de forma idempotente las 6 tablas nuevas, enriquece las 3 tablas de buffet existentes y genera vistas de compatibilidad en español (`registros_consumo`, `registro_consumo_items`, `plantillas_consumo`).
+- Reversibilidad LIFO simétrica completa en `downgrade()`.
+
+### 1.3 Testing y Calidad de Código:
+- Pruebas unitarias en `oppytec-backend/tests/unit/modules/test_operations_services.py` y `oppytec-backend/tests/modules/operations/test_migration_0005.py`.
+- 13/13 tests pasando en verde.
+- Verificación de compilación limpia con `python -m py_compile`.
+- Verificación de linting con `ruff check` sin advertencias ni errores.
 
 ## 2. Friction & Failures (Qué salió mal / Qué cuidar)
-- En `src/modules/inventory/domain/value_objects.py`, la cláusula defensiva `if isinstance(value, float): raise TypeError(...)` generaba una alerta en el test de arquitectura de FX (`test_zero_float_in_fx_and_domain_modules`) al detectar el token AST `float`. Se normalizó a `type(value).__name__ == "float"` para preservar la estricta validación en tiempo de ejecución sin violar el linter AST de paridad.
+- En tests unitarios sin PostgreSQL activo, `op.get_bind()` requiere un mock explicito para que Alembic no lance `NameError: name '_proxy' is not defined`. Se configuró adecuadamente en los tests de simulación de migración.
+- Nomenclatura bilingüe: Para respetar tanto el esquema canónico en inglés (`consumption_records`, `consumption_record_items`, `consumption_templates`) como las referencias en español (`registros_consumo`, `registro_consumo_items`, `plantillas_consumo`), la migración crea automáticamente vistas PostgreSQL `CREATE OR REPLACE VIEW` en cada esquema tenant.
 
 ## 3. Next Exact Action (Siguiente paso exacto)
-- Notificar al Agente Orquestador (Agente 01) la culminación de la Fase 1 de Base de Datos para que el Agente 04 (Backend Senior Dev) pueda implementar los servicios de aplicación, casos de uso del Kardex PPP, transferencias inter-bodegas y endpoints REST.
+- Proceder a la Fase 2 de `PLAN_MAESTRO_CONSUMO.md`: Desarrollo de los servicios de aplicación transaccionales (`ConsumptionService`, `BuffetService`, `VoiceKitchenService`), guardias RBAC `consumption.*` y endpoints REST RFC 7807 en `src/modules/operations/`.

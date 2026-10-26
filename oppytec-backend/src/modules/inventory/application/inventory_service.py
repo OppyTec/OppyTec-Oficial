@@ -80,12 +80,17 @@ class KardexEntry:
     actor_user_id: int
     id: int = 1
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    fecha_recuento: date = field(default_factory=date.today)
     lote_codigo: str | None = None
     fecha_vencimiento_lote: date | None = None
     transfer_id: UUID | None = None
     documento_referencia: str | None = None
     is_undone: bool = False
     tenant_id: str | None = None
+    motivo_merma: str | None = None
+    descripcion_merma: str | None = None
+    costo_unitario_ppp: Decimal = Decimal("0.00")
+    costo_total_movimiento: Decimal = Decimal("0.00")
 
 
 class InventoryService:
@@ -157,6 +162,11 @@ class InventoryService:
         transfer_id: UUID | None = None,
         is_positive_adjustment: bool | None = None,
         tenant_id: str | None = None,
+        fecha_recuento: date | None = None,
+        motivo_merma: str | None = None,
+        descripcion_merma: str | None = None,
+        costo_unitario_ppp: Decimal | None = None,
+        costo_total_movimiento: Decimal | None = None,
     ) -> KardexEntry:
         """
         Registra un movimiento Append-Only inmutable en el Kardex y actualiza el saldo atómicamente.
@@ -203,6 +213,16 @@ class InventoryService:
             entry_id = self._next_id
             self._next_id += 1
 
+            resolved_costo_ppp = (
+                costo_unitario_ppp if costo_unitario_ppp is not None else unit_cost
+            )
+            resolved_costo_total = (
+                costo_total_movimiento
+                if costo_total_movimiento is not None
+                else (abs(quantity) * resolved_costo_ppp).quantize(Decimal("0.01"))
+            )
+            resolved_fecha_recuento = fecha_recuento or date.today()
+
             entry = KardexEntry(
                 id=entry_id,
                 producto_id=producto_id,
@@ -212,11 +232,17 @@ class InventoryService:
                 resulting_balance=new_balance,
                 unit_cost=unit_cost,
                 actor_user_id=actor_user_id,
+                created_at=datetime.now(UTC),
+                fecha_recuento=resolved_fecha_recuento,
                 lote_codigo=lote_codigo,
                 fecha_vencimiento_lote=fecha_vencimiento_lote,
                 documento_referencia=documento_referencia,
                 transfer_id=transfer_id,
                 tenant_id=resolved_tenant,
+                motivo_merma=motivo_merma,
+                descripcion_merma=descripcion_merma,
+                costo_unitario_ppp=resolved_costo_ppp,
+                costo_total_movimiento=resolved_costo_total,
             )
 
             self._balances[(producto_id, bodega_id)] = new_balance
@@ -543,6 +569,58 @@ class InventoryService:
         if tenant_id is not None:
             return tuple(e for e in self._ledger if e.tenant_id == tenant_id)
         return tuple(self._ledger)
+
+    def purge_history(self, tenant_id: str | None = None) -> int:
+        """
+        Elimina los movimientos del ledger para el tenant especificado.
+        Solo invocado por Propietario bajo auditoría crítica.
+        Retorna la cantidad de registros purgados.
+        """
+        if tenant_id is None:
+            count = len(self._ledger)
+            self._ledger.clear()
+            self._balances.clear()
+            self._lots.clear()
+            self._undone_entry_ids.clear()
+            return count
+
+        remaining = [e for e in self._ledger if e.tenant_id != tenant_id]
+        purged = len(self._ledger) - len(remaining)
+        self._ledger = remaining
+        return purged
+
+    def get_filtered_history(
+        self,
+        *,
+        tenant_id: str | None = None,
+        bodega_id: str | int = "all",
+        producto_id: str | int = "all",
+        tipo_movimiento: str = "all",
+        fecha_desde: date | None = None,
+        fecha_hasta: date | None = None,
+        user_search: str | None = None,
+        skip: int = 0,
+        limit: int = 50,
+        can_view_users: bool = True,
+        actor_user_id: int | None = None,
+    ) -> Any:
+        """Consulta paginada y filtrada del historial de Kardex delegando a KardexHistoryService."""
+        from src.modules.inventory.application.history_service import KardexHistoryService
+
+        history_svc = KardexHistoryService(self)
+        return history_svc.get_filtered_history(
+            tenant_id=tenant_id,
+            bodega_id=bodega_id,
+            producto_id=producto_id,
+            tipo_movimiento=tipo_movimiento,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            user_search=user_search,
+            skip=skip,
+            limit=limit,
+            can_view_users=can_view_users,
+            actor_user_id=actor_user_id,
+        )
 
 
 __all__ = [

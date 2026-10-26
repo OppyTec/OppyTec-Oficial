@@ -1,37 +1,62 @@
 # Reporte de Traspaso (`Handover`) — Agente 02: Arquitecto de Software DDD & Clean Architecture
 
-- **Fecha UTC:** 2026-10-22T20:33:00+00:00
-- **Fase:** Plan Maestro de Refactorización Admin Legacy (Auditoría Arquitectónica: Panel Global + Plan Básico 10 Módulos + Cuotas Paramétricas)
+- **Fecha UTC:** 2026-10-25T19:35:00+00:00
+- **Fase:** FASE 1 — Tarea 1.2 de `PLAN_MAESTRO_HISTORIAL.md`: Dominio DDD, Value Objects de Auditoría e Invariantes de Kardex Inmutable
 
-## 1. Completed (Qué se hizo)
-- **Auditoría de Clean Architecture y DDD:**
-  - Auditados todos los archivos de dominio en `oppytec-backend/src/modules/*/domain/` comprobando pureza al 100% (cero dependencias de `fastapi`, `sqlalchemy`, `redis`, `httpx`, `asyncpg`, `uvicorn`, `starlette`).
-  - Verificada la pureza estricta de `src/modules/tenancy/domain/quotas.py` y `src/modules/identity/domain/rbac_evaluator.py` utilizando tipos puros de Python, `dataclasses` y `decimal.Decimal`.
-  - Auditado el frontend (`oppytec-frontend`): arquitectura guiada por features validada con 0 violaciones circulares o de frontera en `dependency-cruiser` (103 módulos, 273 dependencias), `tsc --noEmit` limpio, ESLint sin advertencias, Vitest 31/31 passed y build Vite exitoso.
-- **Paridad OppyTec-Legacy:**
-  - Inspección del árbol `OppyTec-Legacy/`: confirmado 100% inalterado y en modo de solo lectura estricta. Paridad de fórmulas de negocio (kardex promedio ponderado, escandallos BOM recursivos, mermas con umbrales y conversión de unidades 3-capas) preservada.
-- **Jerarquía Corporativa `Holding -> LegalEntity (1:1) -> Tenant` y Cuotas Paramétricas:**
-  - Verificada la cardinalidad estricta en base de datos (`legal_entity_id UNIQUE` en `public.tenants`) y reforzada la validación activa en `POST /api/v1/tenancy/tenants` invocando `validate_holding_legal_entity_tenant_cardinality`.
-  - Verificada la definición de los 10 módulos del Plan Básico ("Núcleo Base de Control"):
-    1. `inicio` (dashboard adaptativo)
-    2. `operations.consumption_log` (registro de consumos)
-    3. `inventory.stock` (stock y bodegas)
-    4. `catalog.products` (productos e insumos)
-    5. `inventory.mermas` (mermas 7x24 y umbrales)
-    6. `inventory.counts` (recuento unificado)
-    7. `notifications` (bandeja operativa)
-    8. `alerts` (alertas preventivas FEFO/stock)
-    9. `audit.history` (kardex forense inmutable)
-    10. `identity.users` (usuarios clientes, cupos y roles)
-  - Comprobado el motor de semáforos de cuotas (`NORMAL` <80%, `WARNING` 80-94%, `CRITICAL` 95-99%, `OVER_QUOTA` >=100% o límite 0), la precedencia de overrides (`tenant -> holding -> plan`) y la liberación instantánea de cupos por Soft-Delete.
-- **Quality Gates Certificados:**
-  - `make fast-gate`: 105 passed en backend, Ruff 0 errores, Mypy strict 0 errores en 234 archivos.
-  - Frontend: 31 tests passed, lint 0 warnings, depcruise 0 violaciones, build exitoso.
+## 1. Completed (Qué se realizó)
+
+1. **Value Object `AuditDelta` (`value_objects.py`):**
+   - Implementado como dataclass inmutable (`frozen=True`) con precisión exacta cuantizada a 4 decimales (`0.0001`).
+   - Atributos requeridos: `before: Decimal`, `after: Decimal`, `delta: Decimal`, `unit: str`.
+   - Propiedades semánticas: `has_change`, `is_positive`, `is_negative`, `is_neutral`.
+   - Formateador de transición auditada (`format_transition()` -> `"before -> after unit"`).
+   - Certificación Decimal Estricta: prohibición y rechazo inmediato de tipos `float` (IEEE 754).
+
+2. **Value Object `MovementSign` (`value_objects.py`):**
+   - Modelado como `StrEnum` con valores algebraicos semánticos: `POSITIVE = "+"`, `NEGATIVE = "-"`, `NEUTRAL = "0"`.
+   - Lógica pura de inferencia:
+     - Positivos: `ENTRADA`, `COMPRA`, `AJUSTE_POSITIVO`, `TRASPASO_IN`.
+     - Negativos: `SALIDA`, `CONSUMO`, `MERMA`, `VENTA`, `AJUSTE_NEGATIVO`, `TRASPASO_OUT`.
+     - Contextuales/Neutros: `CONTEO`, `AJUSTE_AUDITORIA`, `AJUSTE`, `TRANSFERENCIA` (determinados por la cantidad/discrepancia).
+   - Métodos: `multiplier` (`Decimal(1)`, `Decimal(-1)`, `Decimal(0)`), `apply_to(quantity)`.
+
+3. **Value Object `TimezoneConverter` (`value_objects.py`):**
+   - Proyección determinista de marcas de tiempo UTC hacia el huso horario oficial de operaciones `America/Santiago`.
+   - Métodos de formateo: `to_chile(dt)`, `format_chile_datetime(dt)`, `format_chile_date(dt)` con cero librerías externas (solo `zoneinfo`).
+
+4. **Helper Matemático Puro `compute_audit_delta` (`kardex_math.py`):**
+   - Algoritmo de reconstrucción before/after y cálculo de delta exacto:
+     - **Salidas regulares:** `before = resulting_balance + abs(quantity)`, `after = resulting_balance`, `delta = -abs(quantity)`.
+     - **Entradas regulares:** `before = resulting_balance - abs(quantity)`, `after = resulting_balance`, `delta = +abs(quantity)`.
+     - **Conteos y Ajustes de Auditoría (`CONTEO`, `AJUSTE_AUDITORIA`):**
+       - Con `theoretical_stock`: `before = theoretical_stock`, `after = resulting_balance`, `delta = after - before`.
+       - Por discrepancia / flag: `before = resulting_balance - discrepancy`, `after = resulting_balance`, `delta = discrepancy`.
+     - **Transferencias:** Dirección condicionada por el signo de la cantidad en bodega origen vs destino.
+   - Invariante estricta garantizada al 100%: $\text{before} + \text{delta} = \text{after}$.
+
+5. **Entidades de Dominio Enriquecidas (`entities.py`):**
+   - `KardexMovement`: incorporados atributos opcionales de auditoría `motivo_merma: str | None`, `descripcion_merma: str | None`, `fecha_recuento: date | None`, `user_display_name: str | None`, junto con el método `compute_audit_delta()` y la property `movement_sign`.
+   - `KardexAuditRecord`: entidad inmutable (`frozen=True`) para el libro mayor enriquecido del visor `/historial` con resolución de producto, bodega, usuario, deltas before/after, y exportación a diccionario.
+
+6. **Capa de Dominio Clean Architecture (`__init__.py`):**
+   - Exportación limpia de `AuditDelta`, `MovementSign`, `TimezoneConverter`, `KardexAuditRecord`, `compute_audit_delta`.
+   - Aislamiento total: 0 imports de `FastAPI`, `SQLAlchemy`, `Pydantic` o `Starlette` en `domain/`.
+
+7. **Suite de Pruebas Unitarias 5D (`test_kardex_audit_domain.py`):**
+   - Creados 58 tests unitarios exhaustivos:
+     - Inmutabilidad y rechazo estricto de floats.
+     - Pruebas paramétricas de tipos de movimiento y signos algebraicos.
+     - Reconstrucción Before/After en salidas, entradas, mermas, conteos y transferencias.
+     - Hypothesis Property Testing con 200 iteraciones validando invariante $\text{before} + \text{delta} = \text{after}$.
+     - Gate AST automatizado comprobando 0 imports prohibidos en `domain/`.
+   - **Resultado:** 58/58 passed (137/137 tests de dominio totales passed en backend).
 
 ## 2. Friction & Failures (Qué salió mal / Qué cuidar)
-- Se detectó que el endpoint de aprovisionamiento de tenants (`create_tenant_endpoint`) no llamaba activamente al validador de cardinalidad `validate_holding_legal_entity_tenant_cardinality`, lo cual fue corregido para bloquear asignaciones duplicadas de entidad legal o esquemas colisionantes en el plano de control en memoria.
-- Se detectó y subsanó un desajuste menor en `router.py` donde `plan_max_storage_mb` usaba un valor estático en lugar de la resolución dinámica del plan/holding (`plan_mb`).
-- Se añadieron los métodos y typing faltantes en `TenantCapacityQuotaService` (`evaluate = evaluate_resource`) e imports en la suite de pruebas unitarias.
+
+- Durante la verificación inicial, `test_fx_currency_precision_and_governance.py` falló debido a una comprobación `isinstance(value, float)` en `alerts.py` que activaba el scanner de AST para el identificador `float`. Se corrigió inmediatamente a `type(value).__name__ == "float"` para respetar la política de cero tokens `float` en código fuente de dominio.
+- Se mantuvo 100% de retrocompatibilidad con los 10 valores previos del enum `MovementType`, permitiendo alias fluidos para `CONTEO` y `TRANSFERENCIA` a nivel de helper matemático.
 
 ## 3. Next Exact Action (Siguiente paso exacto)
-- Proceder con el Paso 3 del Plan Maestro de Refactorización Admin Legacy: consolidación del motor `DynamicAdminTable` y `DynamicAdminForm` para CRUDs avanzados en `/admin/users` y gestión de clientes.
+
+- Proceder con la Tarea 1.3 / FASE 2 de `PLAN_MAESTRO_HISTORIAL.md`:
+  - Agente 03 / Agente 04: Estrategia de carga eager anti-$N+1$ (`joinedload`) en `history_service.py` / `inventory_service.py`, paginación server-side (`/api/v1/inventory/history/paginated`), schemas Pydantic v2 RFC 7807 y streaming CSV con UTF-8 BOM.

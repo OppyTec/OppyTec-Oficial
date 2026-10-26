@@ -1,6 +1,7 @@
 import { Warehouse } from "lucide-react";
 import { setHttpRequestContext } from "@/shared/api/httpClient";
 import { translateKey } from "@/shared/i18n";
+import { cn } from "@/shared/lib";
 
 export interface WarehouseOption {
   readonly id: string;
@@ -16,11 +17,15 @@ export const OFFICIAL_WAREHOUSES: readonly WarehouseOption[] = [
 export interface BodegaSelectorProps {
   readonly activeWarehouseId: string;
   readonly onSelectWarehouse: (warehouseId: string) => void;
+  readonly className?: string;
+  readonly allowAll?: boolean;
 }
 
 export function BodegaSelector({
   activeWarehouseId,
   onSelectWarehouse,
+  className,
+  allowAll = false,
 }: BodegaSelectorProps) {
   const handleSelect = (warehouseId: string): void => {
     setHttpRequestContext({ warehouseId });
@@ -30,7 +35,10 @@ export function BodegaSelector({
   return (
     <div
       data-testid="bodega-selector"
-      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary/40 px-2.5 py-1"
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary/40 px-2.5 py-1",
+        className
+      )}
     >
       <Warehouse className="h-4 w-4 text-primary" aria-hidden="true" />
       <select
@@ -42,6 +50,9 @@ export function BodegaSelector({
         onChange={(e) => handleSelect(e.target.value)}
         className="touch-target min-h-[44px] rounded bg-transparent text-xs font-semibold text-foreground focus:outline-none"
       >
+        {allowAll && (
+          <option value="all">Todas las Bodegas</option>
+        )}
         {OFFICIAL_WAREHOUSES.map((wh) => (
           <option key={wh.id} value={wh.id}>
             {wh.label}

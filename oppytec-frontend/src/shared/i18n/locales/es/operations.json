@@ -8,5 +8,261 @@
   "counts": {
     "blind_inventory": "Toma de inventario físico ciego",
     "variance_summary": "Diferencia detectada: {{delta}} {{unit}}"
+  },
+  "consumption": {
+    "registro": {
+      "title": "Registro de Consumo",
+      "subtitle": "Registra salidas de productos, consumo de personal y mermas en tiempo real",
+      "modes": {
+        "productos": "Productos",
+        "recetas": "Recetas",
+        "combos": "Combos"
+      },
+      "toolbar": {
+        "categories": "Categorías",
+        "merma": "Merma",
+        "templates": "Plantillas",
+        "history": "Historial",
+        "all_templates": "Ver Todo",
+        "create_template": "+ Crear / Configurar...",
+        "no_templates": "Sin plantillas creadas",
+        "public_badge": "Pública",
+        "private_badge": "Privada"
+      },
+      "search": {
+        "placeholder_products": "Buscar producto o SKU...",
+        "placeholder_recipes": "Buscar receta...",
+        "placeholder_combos": "Buscar combo...",
+        "clear": "Limpiar búsqueda",
+        "clear_filters": "Limpiar Filtro"
+      },
+      "badges": {
+        "critical": "Crítico",
+        "warning": "Advertencia",
+        "normal": "Normal",
+        "portions": "porc.",
+        "combos_count": "comb.",
+        "yield_tooltip": "Rendimiento: {{count}} porciones",
+        "out_of_stock": "Sin stock"
+      },
+      "states": {
+        "loading": "Cargando Catálogo de Consumo...",
+        "empty_title": "No se encontraron {{mode}}",
+        "empty_subtitle": "Prueba cambiando el término de búsqueda o limpiando las categorías seleccionadas.",
+        "empty_no_items": "No hay {{mode}} disponibles en las bodegas asignadas."
+      }
+    },
+    "pagination": {
+      "showing": "Mostrando {{from}} - {{to}}",
+      "of": "de",
+      "show_label": "Mostrar:",
+      "per_page": "{{count}} por página",
+      "first_page": "Primera página",
+      "prev_page": "Página anterior",
+      "next_page": "Página siguiente",
+      "last_page": "Última página"
+    },
+    "manos_libres": {
+      "title": "Consumo Manos Libres",
+      "subtitle": "Registro operativo por voz para cocina, barra y preparación",
+      "listening": {
+        "listening_badge": "Escuchando...",
+        "muted_badge": "Silenciado",
+        "activate_mic": "Activar Micrófono",
+        "pause_mic": "Pausar Escucha",
+        "feedback_paused": "Escucha pausada",
+        "feedback_active": "Estación {{station}}, escuchando"
+      },
+      "tts": {
+        "label": "Síntesis de Voz (TTS)",
+        "active": "TTS Activo",
+        "disabled": "TTS Desactivado",
+        "feedback_manual_order": "Comanda manual ingresada"
+      },
+      "console": {
+        "title": "Consola de Transcripción & Entrada Manual",
+        "placeholder": "Esperando comando de voz o escribe aquí...",
+        "manual_placeholder": "Ej: 2 pechugas pollo consumo...",
+        "send_button": "Enviar",
+        "success_manual": "Comanda de voz ingresada manualmente",
+        "error_manual": "Error al registrar comando manual"
+      },
+      "orders": {
+        "title": "Feed de Órdenes Verbales",
+        "empty": "Sin órdenes verbales pendientes",
+        "confidence": "Confianza IA: {{confidence}}%",
+        "confirm": "Confirmar",
+        "reject": "Descartar",
+        "confirming": "Confirmando...",
+        "rejecting": "Descartando...",
+        "status_pending": "Pendiente",
+        "status_confirmed": "Confirmado",
+        "status_rejected": "Rechazado"
+      },
+      "stations": {
+        "title": "Estaciones de Trabajo y Operarios",
+        "active_operator": "Operario Activo",
+        "command_hint": "Comando: '{{cmd}}'",
+        "all_stations": "Todas las estaciones"
+      }
+    },
+    "buffet": {
+      "title": "Buffet Inteligente",
+      "subtitle": "Control de estaciones, pesaje y liquidación de consumo por comensal",
+      "tabs": {
+        "active_session": "Sesión Activa",
+        "history": "Historial de Sesiones"
+      },
+      "stages": {
+        "apertura": "Apertura",
+        "reposicion": "Reposición",
+        "cierre": "Cierre",
+        "desc_apertura": "Montaje inicial de bandejas",
+        "desc_reposicion": "Recargas en vivo durante el servicio",
+        "desc_cierre": "Pesaje de sobrantes y liquidación"
+      },
+      "metrics": {
+        "total_montaje": "Costo Montaje Inicial",
+        "total_sobrante": "Valor Sobrante Reutilizable",
+        "total_consumido": "Total Neto Consumido",
+        "costo_pax": "Costo Neto por Pax",
+        "pax_count": "Comensales (Pax)"
+      },
+      "scanner": {
+        "title": "Escáner de Bandejas Gastronorm",
+        "start_camera": "Iniciar Cámara",
+        "stop_camera": "Detener Cámara",
+        "capture": "Capturar Bandeja",
+        "analyzing": "Analizando tara y volumen con IA...",
+        "simulation_mode": "Modo Simulación IA Activo",
+        "confidence": "Confianza de Detección: {{pct}}%",
+        "confirm_batch": "Agregar Detecciones al Buffet",
+        "camera_permission_denied": "Permiso de cámara denegado. Se utilizará modo simulación asistida por IA."
+      },
+      "table": {
+        "empty": "Sin productos escaneados aún",
+        "empty_desc": "Utiliza el escáner visual con cámara para registrar las estaciones del buffet o agrega insumos al balance.",
+        "col_item": "Producto / Receta",
+        "col_apertura": "Apertura",
+        "col_reposicion": "Reposición",
+        "col_cierre": "Cierre / Sobrante",
+        "col_consumo_neto": "Consumo Neto",
+        "col_action": "Destino Sobrante",
+        "action_return": "Retornar a Bodega",
+        "action_waste": "Mermar / Desechar"
+      },
+      "conciliation": {
+        "title": "Liquidación y Conciliación de Buffet",
+        "pax_label": "Número de Comensales (Pax)",
+        "pax_error": "El número de comensales (Pax) debe ser mayor a 0",
+        "leftover_value_label": "Valor Total Sobrante Reutilizable",
+        "finalize_btn": "Finalizar y Liquidar Buffet",
+        "finalizing": "Liquidando en Kardex...",
+        "kardex_impact_notice": "Se generarán los asientos de consumo y merma correspondientes en el Kardex de inventario.",
+        "success_toast": "Sesión de buffet liquidada exitosamente"
+      },
+      "templates": {
+        "title": "Plantillas de Buffet",
+        "btn_new": "Nueva Plantilla Buffet",
+        "modal_title": "Gestionar Plantillas de Estaciones",
+        "save_btn": "Guardar Plantilla Buffet"
+      }
+    },
+    "modals": {
+      "cart": {
+        "title": "Carrito de Consumo",
+        "empty": "Tu carrito está vacío",
+        "clear": "Vaciar Carrito",
+        "clear_confirm": "¿Estás seguro de que deseas vaciar el carrito?",
+        "warehouse": "Bodega: {{name}}",
+        "lot_label": "Lote: {{code}}",
+        "expires_on": "Vence: {{date}}",
+        "expired_warning": "⚠ Lote Vencido",
+        "expires_today": "Vence hoy",
+        "days_left": "{{days}}d",
+        "no_date": "Sin fecha",
+        "recipe_breakdown": "Desglose de receta:",
+        "custom_options": "Opciones seleccionadas:",
+        "subtotal": "Subtotal neto estimado",
+        "total": "Total a consumir",
+        "submit_btn": "Registrar Consumo",
+        "processing": "Procesando Kardex...",
+        "success_toast": "Consumo registrado correctamente"
+      },
+      "templates": {
+        "title": "Plantillas de Catálogo de Consumo",
+        "create_title": "Crear Nueva Plantilla",
+        "edit_title": "Editar Plantilla",
+        "name_label": "Nombre de la Plantilla *",
+        "name_placeholder": "Ej: Turno Mañana / Cuadrilla Cocina",
+        "desc_label": "Descripción (Opcional)",
+        "desc_placeholder": "Ej: Insumos críticos para montaje matutino",
+        "cols_label": "Columnas de Catálogo ({{count}} cols)",
+        "visibility_label": "Visibilidad de Plantilla",
+        "public": "Pública (Todo el equipo)",
+        "private": "Privada (Solo tú)",
+        "search_products": "Buscar producto para agregar...",
+        "selected_products": "Productos seleccionados ({{count}})",
+        "save_btn": "Guardar Plantilla",
+        "delete_btn": "Eliminar Plantilla",
+        "saving": "Guardando...",
+        "save_success": "Plantilla guardada exitosamente",
+        "delete_success": "Plantilla eliminada correctamente"
+      },
+      "contingency": {
+        "title": "Alerta de Contingencia de Stock",
+        "subtitle": "Se detectaron anomalías críticas antes de registrar la salida de insumos",
+        "expired_lot_notice": "Se detectaron lotes con fecha de caducidad vencida.",
+        "out_of_stock_notice": "Stock insuficiente o no disponible en esta bodega.",
+        "opt_force": "Forzar consumo bajo auditoría",
+        "opt_force_desc": "Registra la salida con trazabilidad especial y justificación operativa.",
+        "opt_waste": "Mermar lote vencido",
+        "opt_waste_desc": "Desvía automáticamente el producto a registro de merma no recuperable.",
+        "opt_locate": "Localizar stock en otras bodegas",
+        "opt_locate_desc": "Consulta existencias disponibles en almacenes satélites o centrales."
+      },
+      "locate_stock": {
+        "title": "Localizador de Stock entre Bodegas",
+        "subtitle": "Existencias en otras bodegas para {{product}}",
+        "request_transfer": "Solicitar Transferencia",
+        "requesting": "Solicitando...",
+        "transfer_success": "Solicitud de reposición enviada a supervisión",
+        "available": "Disponible: {{qty}} {{unit}}",
+        "no_stock_elsewhere": "No hay existencias disponibles en otras bodegas"
+      },
+      "log": {
+        "title": "Historial de Consumo y Mermas",
+        "filter_date": "Fecha:",
+        "filter_range": "Rango de fechas",
+        "from": "Desde:",
+        "to": "Hasta:",
+        "search_placeholder": "Buscar por folio o producto...",
+        "empty": "Sin registros de consumo en este período",
+        "btn_edit": "Editar",
+        "btn_delete": "Anular",
+        "total_cost": "Costo Total:",
+        "operator": "Operario: {{name}}",
+        "area": "Área: {{name}}",
+        "warehouse": "Bodega: {{name}}",
+        "revert_confirm": "¿Estás seguro de que deseas anular y revertir este consumo en el Kardex?"
+      },
+      "edit": {
+        "title": "Editar Registro de Consumo",
+        "subtitle": "Modifica la cantidad o registra la justificación de ajuste",
+        "quantity_label": "Cantidad descontada:",
+        "reason_label": "Motivo / Justificación de Merma:",
+        "save_btn": "Guardar Ajuste",
+        "saving": "Actualizando Kardex...",
+        "save_success": "Registro actualizado correctamente"
+      },
+      "options": {
+        "title": "Personalizar Opciones",
+        "subtitle": "Selecciona las variantes requeridas para la preparación",
+        "min_required": "Selecciona al menos {{min}}",
+        "max_allowed": "Máximo permitido: {{max}}",
+        "confirm_btn": "Confirmar Selección",
+        "add_price": "+{{price}}"
+      }
+    }
   }
 }
