@@ -134,6 +134,9 @@ export function RealtimeProvider({
           queryKey: ["inventory", "history"],
         });
         void queryClient.invalidateQueries({
+          queryKey: ["oppytec", "inventory", "mermas"],
+        });
+        void queryClient.invalidateQueries({
           queryKey: ["oppytec", "operations", "consumption"],
         });
       } else if (event.eventType === "voice.order_pending") {
@@ -157,6 +160,9 @@ export function RealtimeProvider({
       } else if (event.eventType.startsWith("procurement.")) {
         void queryClient.invalidateQueries({
           queryKey: queryKeys.procurement.invoices(tenantId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["oppytec", "procurement"],
         });
       } else if (event.eventType.startsWith("oppyfy.")) {
         void queryClient.invalidateQueries({

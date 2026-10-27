@@ -23,8 +23,7 @@ import {
   BarChart3,
   DollarSign,
   FileText,
-  CookingPot,
-  ListPlus,
+  ChefHat,
   Lock,
   Calculator,
   Mic,
@@ -464,9 +463,8 @@ export function Sidebar({
   // Gestión sub-items
   const gestionSubItems = [
     { path: "/gestion?tab=productos", label: "Productos", icon: Package, color: "#eab308", rgb: "234,179,8", slug: "module:gestion" },
-    { path: "/gestion?tab=recetas", label: "Recetas", icon: CookingPot, color: "#a855f7", rgb: "168,85,247", slug: "module:gestion" },
-    { path: "/gestion?tab=combos", label: "Combos", icon: Boxes, color: "#1c4c96", rgb: "28,76,150", slug: "module:gestion" },
-    { path: "/gestion?tab=grupos-opciones", label: "Grupos Opciones", icon: ListPlus, color: "#4338ca", rgb: "67,56,202", slug: "module:gestion" },
+    { path: "/gestion?tab=recetas", label: "Recetas", icon: ChefHat, color: "#f59e0b", rgb: "245,158,11", slug: "module:gestion" },
+    { path: "/gestion?tab=combos", label: "Combos", icon: Boxes, color: "#ec4899", rgb: "236,72,153", slug: "module:gestion" },
     { path: "/gestion?tab=pedidos", label: "Pedidos", icon: ShoppingCart, color: "#10b981", rgb: "16,185,129", slug: "module:gestion" },
     { path: "/proveedores", label: "Proveedores", icon: Truck, color: "#06b6d4", rgb: "6,182,212", slug: "module:gestion" },
     { path: "/gestion?tab=mermas", label: "Mermas", icon: AlertTriangle, color: "#ef4444", rgb: "239,68,68", slug: "module:gestion" },

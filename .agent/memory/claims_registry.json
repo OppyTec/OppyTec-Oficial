@@ -322,6 +322,76 @@
       "claimed_by": "09-qa-parity-and-test-engineer",
       "intent": "Fix unused t variable for TypeScript 0 errors",
       "claimed_at": "2026-10-26T00:58:34.272258+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/platform-admin/types.ts",
+      "symbol_path": "platform_admin_contracts",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Frontend Core Types and Reactive Hooks for Plans and Token Consumption",
+      "claimed_at": "2026-10-26T14:50:24.203899+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/platform-admin/plans/PlansPage.tsx",
+      "symbol_path": "PlansPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implement PlansPage with Legacy Visual DNA and SaaS Policy",
+      "claimed_at": "2026-10-26T15:32:19.742165+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/platform-admin/tokens/TokenConsumptionPage.tsx",
+      "symbol_path": "TokenConsumptionPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implement FinOps Token and Credit Monitoring Console",
+      "claimed_at": "2026-10-26T16:16:05.833205+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/platform-admin/tokens/TokenConsumptionPage.tsx",
+      "symbol_path": "TokenConsumptionPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implementar Fase 6 Acordeon 3 niveles TablePagination modales",
+      "claimed_at": "2026-10-26T17:04:55.467126+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/platform-admin/tokens/TokenConsumptionPage.tsx",
+      "symbol_path": "TokenConsumptionPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implement Phase 6 3-level accordion, canonical pagination and credit modals",
+      "claimed_at": "2026-10-26T17:07:23.553394+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/platform-admin/AdminSidebar.tsx",
+      "symbol_path": "AdminSidebar",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Integracion Navegacion Fase 7 Planes y Tokens",
+      "claimed_at": "2026-10-26T18:07:55.690366+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/shared/i18n/locales/es/platform_admin.json",
+      "symbol_path": "platform_admin_i18n",
+      "claimed_by": "07-i18n-and-fx-currency-specialist",
+      "intent": "Fase 8 i18n y FX Multi-Moneda",
+      "claimed_at": "2026-10-26T19:31:03.113092+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/tenancy/application/admin_plans_service.py",
+      "symbol_path": "admin_plans_service_otel",
+      "claimed_by": "08-environments-and-observability-engineer",
+      "intent": "Fase 8 OpenTelemetry Spans",
+      "claimed_at": "2026-10-26T19:31:32.886944+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/tenancy/application/admin_plans_service.py",
+      "symbol_path": "AdminPlansService",
+      "claimed_by": "08-environments-and-observability-engineer",
+      "intent": "Instrument OpenTelemetry spans for commercial plans management",
+      "claimed_at": "2026-10-26T19:34:53.607448+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/tenancy/application/credit_quota_adjustment_service.py",
+      "symbol_path": "CreditQuotaAdjustmentService",
+      "claimed_by": "08-environments-and-observability-engineer",
+      "intent": "Ensure OpenTelemetry spans platform_admin.tokens.quota_adjust",
+      "claimed_at": "2026-10-26T19:35:13.431375+00:00"
     }
   ]
 }

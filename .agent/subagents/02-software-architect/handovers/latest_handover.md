@@ -1,62 +1,56 @@
 # Reporte de Traspaso (`Handover`) — Agente 02: Arquitecto de Software DDD & Clean Architecture
 
-- **Fecha UTC:** 2026-10-25T19:35:00+00:00
-- **Fase:** FASE 1 — Tarea 1.2 de `PLAN_MAESTRO_HISTORIAL.md`: Dominio DDD, Value Objects de Auditoría e Invariantes de Kardex Inmutable
+- **Fecha UTC:** 2026-10-26T20:50:00+00:00
+- **Fase:** FASE 1 de `PLAN_MAESTRO_OPPYFY_AI.md`: Arquitectura DDD, Primitivas de Dominio Puro, Billetera de Créditos y Semáforo de Contexto Anti-Alucinación para OppyFy
 
 ## 1. Completed (Qué se realizó)
 
-1. **Value Object `AuditDelta` (`value_objects.py`):**
-   - Implementado como dataclass inmutable (`frozen=True`) con precisión exacta cuantizada a 4 decimales (`0.0001`).
-   - Atributos requeridos: `before: Decimal`, `after: Decimal`, `delta: Decimal`, `unit: str`.
-   - Propiedades semánticas: `has_change`, `is_positive`, `is_negative`, `is_neutral`.
-   - Formateador de transición auditada (`format_transition()` -> `"before -> after unit"`).
-   - Certificación Decimal Estricta: prohibición y rechazo inmediato de tipos `float` (IEEE 754).
+1. **Diseño y Formalización de `context_meter.py` (`src/modules/oppy_ai/domain/context_meter.py`):**
+   - Límite de seguridad canónico: `MAX_SAFE_THREAD_TOKENS = 8192` (con alias `DEFAULT_MAX_SAFE_THREAD_TOKENS` retrocompatible).
+   - Semáforo de salud de contexto en `Decimal`:
+     * 🟢 **Verde** (`<= 65.00%`): `OPTIMAL_GREEN`, sin alerta ni bloqueo.
+     * 🟡 **Ámbar** (`65.01% - 85.00%`): `WARNING_AMBER`, con alerta preventiva `preventive_alert=True` configurable desde `> 80.00%`.
+     * 🔴 **Rojo** (`> 85.00%`): `CRITICAL_RED`, con `requires_auto_compaction=True` y bloqueo estricto anti-alucinación `is_anti_hallucination_blocked=True` para prevenir el *Context Rot*.
+   - Compactación y rollover al 5.00%:
+     * `calculate_safe_rollover_token_budget`: calcula el 5% seguro del límite (`int(8192 * 0.05) = 410 tokens`).
+     * `compact_thread_for_fresh_handover`: genera un `ThreadCompactionSummary` inicializado al `5.00%` de contexto con resumen sintetizado verificado.
 
-2. **Value Object `MovementSign` (`value_objects.py`):**
-   - Modelado como `StrEnum` con valores algebraicos semánticos: `POSITIVE = "+"`, `NEGATIVE = "-"`, `NEUTRAL = "0"`.
-   - Lógica pura de inferencia:
-     - Positivos: `ENTRADA`, `COMPRA`, `AJUSTE_POSITIVO`, `TRASPASO_IN`.
-     - Negativos: `SALIDA`, `CONSUMO`, `MERMA`, `VENTA`, `AJUSTE_NEGATIVO`, `TRASPASO_OUT`.
-     - Contextuales/Neutros: `CONTEO`, `AJUSTE_AUDITORIA`, `AJUSTE`, `TRANSFERENCIA` (determinados por la cantidad/discrepancia).
-   - Métodos: `multiplier` (`Decimal(1)`, `Decimal(-1)`, `Decimal(0)`), `apply_to(quantity)`.
+2. **Diseño y Formalización de `credit_wallet.py` (`src/modules/oppy_ai/domain/credit_wallet.py`):**
+   - Regla de acumulación sin caducidad: `balance nuevo = balance actual + créditos de paquetes comprados` (`1000 + 10000 = 11000.00`).
+   - Deducción atómica con `Decimal` (cero `float`).
+   - `WorkerQuotaPolicy`: políticas de cuota configurables por el Propietario (`max_daily_credits`, `max_per_query_credits`, `assigned_credit_ceiling`).
+   - Comprobación granular de cupos: `check_worker_quota_policy` y `deduct_worker_credits` verificando interruptor `is_oppyfy_enabled`, saldo disponible, cupo diario, cupo por consulta y techo total asignado.
 
-3. **Value Object `TimezoneConverter` (`value_objects.py`):**
-   - Proyección determinista de marcas de tiempo UTC hacia el huso horario oficial de operaciones `America/Santiago`.
-   - Métodos de formateo: `to_chile(dt)`, `format_chile_datetime(dt)`, `format_chile_date(dt)` con cero librerías externas (solo `zoneinfo`).
+3. **Primitiva de Dominio `ai_credit_packs.py` (`src/modules/oppy_ai/domain/ai_credit_packs.py`):**
+   - Entidad inmutable `AiCreditPack` para paquetes de créditos IA independientes configurados en Admin.
+   - Paridad comercial con planes base: soporte para `plan_tier_discounts` (ej. `plan_basico`: 0%, `plan_pro`: 10%, `plan_enterprise`: 20%).
+   - Cálculo de bonificaciones (`total_credits = credit_amount + bonus_credits`), costo unitario por crédito en USD (`cost_per_credit_usd`) y en CLP (`cost_per_credit_clp`).
+   - Invariante inmutable: paquetes nunca expiran (`expires_in_days = None` obligatorio).
 
-4. **Helper Matemático Puro `compute_audit_delta` (`kardex_math.py`):**
-   - Algoritmo de reconstrucción before/after y cálculo de delta exacto:
-     - **Salidas regulares:** `before = resulting_balance + abs(quantity)`, `after = resulting_balance`, `delta = -abs(quantity)`.
-     - **Entradas regulares:** `before = resulting_balance - abs(quantity)`, `after = resulting_balance`, `delta = +abs(quantity)`.
-     - **Conteos y Ajustes de Auditoría (`CONTEO`, `AJUSTE_AUDITORIA`):**
-       - Con `theoretical_stock`: `before = theoretical_stock`, `after = resulting_balance`, `delta = after - before`.
-       - Por discrepancia / flag: `before = resulting_balance - discrepancy`, `after = resulting_balance`, `delta = discrepancy`.
-     - **Transferencias:** Dirección condicionada por el signo de la cantidad en bodega origen vs destino.
-   - Invariante estricta garantizada al 100%: $\text{before} + \text{delta} = \text{after}$.
+4. **Diseño y Formalización de `oppyfy_rbac.py` (`src/modules/oppy_ai/domain/oppyfy_rbac.py`):**
+   - Entidades de dominios y subdominios editables por el cliente (`EditableOppyfyDomainSpec`, `EditableOppyfySubdomainSpec`).
+   - Capacidades de dominio: `OppyfyCapability` (`QUERY_AI`, `VIEW_FINANCIAL_COSTS`, `EXECUTE_OPERATIONAL_TOOLS`, `EXPORT_CANVAS_ARTIFACTS`).
+   - Concesiones de permisos con triple caducidad automática:
+     1. `expires_at`: vencimiento por fecha/hora UTC (`GRANT_EXPIRED_BY_TIMESTAMP`).
+     2. `max_prompts`: vencimiento por límite de consultas utilizadas (`GRANT_EXPIRED_BY_MAX_PROMPTS`).
+     3. `temp_credit_ceiling`: vencimiento por techo de créditos consumidos (`GRANT_EXPIRED_BY_CREDIT_CEILING`).
+   - Primitiva de consumo puro `consume_grant_quota`.
+   - Redacción física en código duro `redact_cost_fields`: reemplaza campos financieros con `"[REDACTED_COST]"` cuando `can_view_costs=False`.
 
-5. **Entidades de Dominio Enriquecidas (`entities.py`):**
-   - `KardexMovement`: incorporados atributos opcionales de auditoría `motivo_merma: str | None`, `descripcion_merma: str | None`, `fecha_recuento: date | None`, `user_display_name: str | None`, junto con el método `compute_audit_delta()` y la property `movement_sign`.
-   - `KardexAuditRecord`: entidad inmutable (`frozen=True`) para el libro mayor enriquecido del visor `/historial` con resolución de producto, bodega, usuario, deltas before/after, y exportación a diccionario.
+5. **Pureza de Dominio 100% (Clean Architecture):**
+   - Cero dependencias a frameworks web (FastAPI) ni ORM (SQLAlchemy) en `src/modules/oppy_ai/domain/`.
+   - Uso exclusivo de `dataclasses`, `Decimal` y tipado estándar.
 
-6. **Capa de Dominio Clean Architecture (`__init__.py`):**
-   - Exportación limpia de `AuditDelta`, `MovementSign`, `TimezoneConverter`, `KardexAuditRecord`, `compute_audit_delta`.
-   - Aislamiento total: 0 imports de `FastAPI`, `SQLAlchemy`, `Pydantic` o `Starlette` en `domain/`.
-
-7. **Suite de Pruebas Unitarias 5D (`test_kardex_audit_domain.py`):**
-   - Creados 58 tests unitarios exhaustivos:
-     - Inmutabilidad y rechazo estricto de floats.
-     - Pruebas paramétricas de tipos de movimiento y signos algebraicos.
-     - Reconstrucción Before/After en salidas, entradas, mermas, conteos y transferencias.
-     - Hypothesis Property Testing con 200 iteraciones validando invariante $\text{before} + \text{delta} = \text{after}$.
-     - Gate AST automatizado comprobando 0 imports prohibidos en `domain/`.
-   - **Resultado:** 58/58 passed (137/137 tests de dominio totales passed en backend).
+6. **Suite Exhaustiva de Pruebas Unitarias de Dominio (`tests/unit/modules/test_oppy_ai_domain.py`):**
+   - 20 pruebas unitarias específicas que cubren todos los casos de borde, semáforos, umbrales, cuotas, descuentos por plan base y expiraciones temporales.
+   - **Resultado:** 20/20 passed al 100% (y 28/28 sumando los tests de servicios de OppyFy).
+   - Suite completa de backend: 244 passed en 7.87s.
 
 ## 2. Friction & Failures (Qué salió mal / Qué cuidar)
 
-- Durante la verificación inicial, `test_fx_currency_precision_and_governance.py` falló debido a una comprobación `isinstance(value, float)` en `alerts.py` que activaba el scanner de AST para el identificador `float`. Se corrigió inmediatamente a `type(value).__name__ == "float"` para respetar la política de cero tokens `float` en código fuente de dominio.
-- Se mantuvo 100% de retrocompatibilidad con los 10 valores previos del enum `MovementType`, permitiendo alias fluidos para `CONTEO` y `TRANSFERENCIA` a nivel de helper matemático.
+- En la prueba de políticas de cuota (`test_worker_quota_policies_and_ceilings`), se detectó inicialmente una superposición de condiciones donde el gasto propuesto excedía tanto la cuota por query como el techo acumulado; se aislaron los casos de prueba para verificar individualmente cada código de rechazo (`EXCEEDS_PER_QUERY_QUOTA`, `EXCEEDS_DAILY_QUOTA`, `WORKER_CREDIT_CEILING_EXCEEDED`).
+- En la función `redact_cost_fields`, se cuidó la indentación de `redacted_list.append(clean_item)` dentro del loop de ítems de lista para evitar duplicidad de elementos redactados.
 
 ## 3. Next Exact Action (Siguiente paso exacto)
 
-- Proceder con la Tarea 1.3 / FASE 2 de `PLAN_MAESTRO_HISTORIAL.md`:
-  - Agente 03 / Agente 04: Estrategia de carga eager anti-$N+1$ (`joinedload`) en `history_service.py` / `inventory_service.py`, paginación server-side (`/api/v1/inventory/history/paginated`), schemas Pydantic v2 RFC 7807 y streaming CSV con UTF-8 BOM.
+- Traspasar la ejecución al Agente 03 (`03-database-alembic-and-backup-engineer`) para generar la migración lineal correlativa Alembic `0010_tenant_oppyfy_custom_rbac_and_credit_wallets.py` con los esquemas `tenant_*.oppyfy_*` y tablas públicas de soporte vectorial (`public.spec_chunks` y `public.llm_request_logs`).

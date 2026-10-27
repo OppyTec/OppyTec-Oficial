@@ -21,8 +21,6 @@ import {
   ClipboardCheck,
   Palette,
   MessageSquare,
-  Send,
-  Square,
   Flame,
   UtensilsCrossed,
   CookingPot,
@@ -455,32 +453,6 @@ export function Navbar({
   const [myHoldings, setMyHoldings] = useState<readonly HoldingWithTenants[]>(DEFAULT_HOLDINGS);
   const [dbRoles] = useState(DEFAULT_DB_ROLES);
 
-  // Oppy Bot IA Drawer State
-  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
-  const [aiMessages, setAiMessages] = useState<
-    Array<{
-      role: "user" | "assistant";
-      content: string;
-    }>
-  >([
-    {
-      role: "assistant",
-      content:
-        "¡Hola! Soy Oppy Bot, tu copiloto y asistente de Inteligencia Artificial. Puedo enseñarte paso a paso cómo usar la plataforma (crear productos, recetas, empaques, importar archivos) o analizar en tiempo real los datos de tu negocio (stock, costos, eventos y compras). ¿En qué te puedo colaborar hoy?",
-    },
-  ]);
-  const [aiInput, setAiInput] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  const suggestions = [
-    "¿Cómo creo un producto o empaque a granel?",
-    "¿Qué productos están con stock crítico?",
-    "¿Cómo funciona el costeo FIFO por capas?",
-    "¿Cómo uso el importador de Excel?",
-  ];
-
   useEffect(() => {
     setIsMac(typeof navigator !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0);
 
@@ -492,7 +464,6 @@ export function Navbar({
       }
       if (e.key === "Escape") {
         setIsSearchOpen(false);
-        setIsAIChatOpen(false);
         setOpenDropdown(null);
       }
     };
@@ -510,12 +481,6 @@ export function Navbar({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
-  useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [aiMessages]);
 
   // Fetch tenants if available
   useEffect(() => {
@@ -560,97 +525,6 @@ export function Navbar({
     } catch {
       // Ignore storage errors
     }
-  };
-
-  const handleStopAI = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    setAiLoading(false);
-  };
-
-  const handleSendAIMessage = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (aiLoading) {
-      handleStopAI();
-      return;
-    }
-    if (!aiInput.trim()) return;
-
-    const query = aiInput.trim();
-    const userMessage = { role: "user" as const, content: query };
-    setAiMessages((prev) => [...prev, userMessage]);
-    setAiInput("");
-    setAiLoading(true);
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    try {
-      const response = await fetch(resolveApiEndpointUrl("/ai/chat"), {
-        method: "POST",
-        headers: buildApiHeaders(),
-        body: JSON.stringify({
-          messages: [...aiMessages, userMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
-        signal: controller.signal,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const answer = data.answer || "He analizado tus datos operativos correctamente.";
-        setAiMessages((prev) => [...prev, { role: "assistant", content: answer }]);
-      } else {
-        setAiMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `Analizando datos operativos para "${query}":\n\n• Niveles de stock y rotación dentro de parámetros óptimos.\n• Costeo teórico vs real actualizado bajo metodología PPP/FIFO.\n• Puedes consultar más detalles en el panel de Gestión y Kardex.`,
-          },
-        ]);
-      }
-    } catch (err: unknown) {
-      const isAbort =
-        err instanceof Error &&
-        (err.name === "AbortError" || err.message.toLowerCase().includes("cancel"));
-      if (isAbort) {
-        setAiMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: "*(Generación detenida por el usuario)*" },
-        ]);
-      } else {
-        setAiMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `Analizando datos operativos para "${query}":\n\n• Consulta procesada correctamente en modo local.\n• Registro de insumos y mermas sincronizado en tiempo real.`,
-          },
-        ]);
-      }
-    } finally {
-      setAiLoading(false);
-      abortControllerRef.current = null;
-    }
-  };
-
-  const handleSendSuggestion = (suggestion: string) => {
-    if (aiLoading) {
-      handleStopAI();
-      return;
-    }
-    const userMessage = { role: "user" as const, content: suggestion };
-    setAiMessages((prev) => [
-      ...prev,
-      userMessage,
-      {
-        role: "assistant",
-        content: `Respuesta a "${suggestion}":\n\n1. En OppyTec puedes gestionar esta acción directamente desde el menú lateral.\n2. Los datos de inventario y recetas se recalculan automáticamente con cada transacción.\n3. Si necesitas soporte en un flujo específico, indícamelo para guiarte paso a paso.`,
-      },
-    ]);
   };
 
   return (
@@ -880,15 +754,15 @@ export function Navbar({
               {/* IA Oppy Bot */}
               <button
                 type="button"
-                onClick={() => setIsAIChatOpen(true)}
+                onClick={() => navigate("/oppyfy")}
                 className={cn(
                   "touch-target h-10 w-10 rounded-xl flex items-center justify-center transition-all active:scale-95 group shrink-0",
                   theme === "light"
                     ? "bg-white/20 text-white hover:bg-white/30"
                     : "hover:bg-purple-600/10 text-purple-600"
                 )}
-                title="Oppy Bot Workspace"
-                aria-label="Abrir Oppy Bot"
+                title="OppyFy AI Workspace"
+                aria-label="Abrir OppyFy AI Workspace"
               >
                 <Sparkles
                   size={16}
@@ -1211,18 +1085,18 @@ export function Navbar({
                 )}
               />
 
-              {/* Botón Oppy Bot (Sparkles) - Abre Modal/Drawer Interactivo */}
+              {/* Botón Oppy Bot (Sparkles) - Navega a OppyFy Workspace */}
               <button
                 type="button"
-                onClick={() => setIsAIChatOpen(true)}
+                onClick={() => navigate("/oppyfy")}
                 className={cn(
                   "h-10 w-10 rounded-xl flex items-center justify-center transition-all border shadow-sm active:scale-95 group relative overflow-hidden shrink-0 cursor-pointer",
                   theme === "light"
                     ? "bg-white/20 hover:bg-white/30 text-white border-white/30"
                     : "bg-purple-600/10 hover:bg-purple-600/20 text-purple-600 border-purple-600/20"
                 )}
-                title="Oppy Bot Workspace (Copiloto IA)"
-                aria-label="Abrir Oppy Bot"
+                title="OppyFy AI Workspace"
+                aria-label="Abrir OppyFy AI Workspace"
               >
                 <Sparkles
                   size={16}
@@ -1366,150 +1240,6 @@ export function Navbar({
                 <X size={18} />
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Panel Deslizable Chat Asistente Oppy IA (Oppy Bot Drawer) */}
-      {isAIChatOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-[100] bg-background/50 backdrop-blur-sm flex justify-end"
-          onClick={() => setIsAIChatOpen(false)}
-        >
-          <div
-            className="w-full max-w-md bg-card border-l border-border h-full flex flex-col shadow-2xl relative animate-in slide-in-from-right duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header del Chat */}
-            <div className="p-4 border-b border-border flex items-center justify-between bg-secondary/20">
-              <div className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-purple-600/10 flex items-center justify-center border border-purple-600/20">
-                  <Sparkles size={16} className="text-purple-600 animate-pulse" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-foreground">Oppy Bot</h3>
-                  <div className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] text-muted-foreground font-medium">En línea y listo</span>
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAIChatOpen(false)}
-                className="h-8 w-8 rounded-lg hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors border border-transparent hover:border-border cursor-pointer"
-                aria-label="Cerrar Oppy Bot"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Mensajes */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-background/30">
-              {aiMessages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "flex flex-col rounded-2xl px-4 py-3 text-sm shadow-sm border",
-                    msg.role === "user"
-                      ? "max-w-[85%] bg-purple-600 text-white border-purple-600 self-end rounded-tr-none"
-                      : "max-w-[95%] bg-secondary/40 border-border text-foreground self-start rounded-tl-none"
-                  )}
-                >
-                  <div className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-
-              {/* Sugerencias Rápidas (Chips) */}
-              {aiMessages.length === 1 && (
-                <div className="pt-2 space-y-2">
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-                    Preguntas Sugeridas
-                  </p>
-                  <div className="grid grid-cols-1 gap-2">
-                    {suggestions.map((suggestion, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleSendSuggestion(suggestion)}
-                        className="w-full text-left p-3 rounded-xl border border-border bg-card hover:bg-secondary/50 text-xs text-muted-foreground hover:text-foreground transition-all duration-200 active:scale-[0.98] flex items-center justify-between cursor-pointer"
-                      >
-                        <span>{suggestion}</span>
-                        <ChevronRight size={14} className="text-muted-foreground/50" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Indicador de carga */}
-              {aiLoading && (
-                <div className="flex items-center justify-between self-start bg-secondary/40 border border-border/60 rounded-2xl px-3.5 py-2.5 text-xs shadow-xs w-full max-w-[90%]">
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <span className="h-1.5 w-1.5 rounded-full bg-purple-600 animate-bounce [animation-delay:-0.3s]" />
-                      <span className="h-1.5 w-1.5 rounded-full bg-purple-600 animate-bounce [animation-delay:-0.15s]" />
-                      <span className="h-1.5 w-1.5 rounded-full bg-purple-600 animate-bounce" />
-                    </div>
-                    <span className="text-[11px] text-muted-foreground font-medium ml-1">
-                      Oppy Bot está analizando...
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleStopAI}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive text-[11px] font-semibold transition-colors border border-destructive/20 active:scale-95 cursor-pointer"
-                    title="Detener respuesta"
-                  >
-                    <Square size={11} className="fill-current" />
-                    <span>Detener</span>
-                  </button>
-                </div>
-              )}
-
-              <div ref={chatEndRef} />
-            </div>
-
-            {/* Input Footer */}
-            <form onSubmit={handleSendAIMessage} className="p-4 border-t border-border bg-card">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={aiInput}
-                  onChange={(e) => setAiInput(e.target.value)}
-                  placeholder={
-                    aiLoading
-                      ? "Oppy Bot está respondiendo... puedes detenerlo"
-                      : "Pregúntale a Oppy Bot..."
-                  }
-                  className="flex-1 h-10 bg-secondary/50 border border-border rounded-xl px-4 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
-                />
-                {aiLoading ? (
-                  <button
-                    type="button"
-                    onClick={handleStopAI}
-                    className="h-10 px-3.5 rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground flex items-center justify-center gap-1.5 text-xs font-semibold transition-colors shadow-md shadow-destructive/20 active:scale-95 cursor-pointer"
-                    title="Detener respuesta de IA"
-                  >
-                    <Square size={13} className="fill-current" />
-                    <span className="hidden sm:inline">Detener</span>
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={!aiInput.trim()}
-                    className="h-10 w-10 rounded-xl bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center transition-colors shadow-lg shadow-purple-600/10 active:scale-95 disabled:opacity-50 disabled:scale-100 cursor-pointer"
-                    aria-label="Enviar consulta"
-                  >
-                    <Send size={16} />
-                  </button>
-                )}
-              </div>
-            </form>
           </div>
         </div>
       )}

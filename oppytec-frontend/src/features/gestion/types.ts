@@ -35,10 +35,11 @@ export interface Categoria {
 }
 
 export interface CategoriaReceta {
-  id: string;
+  id: string | number;
   nombre: string;
-  color?: string;
-  icono?: string;
+  color?: string | null;
+  icono?: string | null;
+  orden?: number;
 }
 
 export interface BodegaConfig {
@@ -170,33 +171,87 @@ export interface IngredienteReceta {
   type?: "producto" | "grupo";
 }
 
-export interface Receta {
-  id: string;
-  nombre: string;
-  precio: number;
-  porciones?: number;
+// ---------------------------------------------------------
+// Contratos de Dominio Polimórficos de Fichas Técnicas & Escandallos (Fase 3)
+// ---------------------------------------------------------
+
+export interface IngredienteFijo {
+  id?: string | number;
+  receta_id?: string | number;
+  producto_id?: string | number | null;
+  subreceta_id?: string | number | null;
+  nombre?: string | null;
+  target_type: "producto" | "subreceta";
+  unidad: string;
+  cantidad_receta: number;
+  porcentaje_merma: number;
+  costo_unitario: number;
+  costo_total: number;
+  bodega_consumo_id?: string | number | null;
+  notas?: string | null;
+}
+
+export interface GrupoOpcionesItem {
+  id?: string | number;
+  grupo_id?: string | number;
+  producto_id?: string | number | null;
+  receta_id?: string | number | null;
+  nombre?: string | null;
+  target_type?: "producto" | "receta";
+  type?: "producto" | "receta";
+  cantidad?: number;
+  cantidad_porcion?: number;
+  es_opcion_default?: boolean;
+  es_default?: boolean;
+  recargo_precio?: number;
+  precio_adicional?: number;
+  orden?: number;
+  costo_referencial?: number;
   iva_incluido?: boolean;
   iva_porcentaje?: number;
-  imagen_url?: string | null;
-  imagenes_galeria?: { id: string; url: string; is_primary?: boolean }[] | null;
-  categoria_receta_id?: string | null;
-  areas_operativas_ids?: string[];
-  ingredientes: IngredienteReceta[];
-  costo_total?: number;
-  costo_porcion?: number;
-  precio_neto?: number;
-  precio_bruto?: number;
+}
 
-  // Preparación y multimedia
-  preparacion?: string | null;
-  video_url?: string | null;
-  documento_url?: string | null;
+export interface GrupoOpciones {
+  id: string | number;
+  nombre: string;
+  descripcion?: string | null;
+  seleccion_minima: number;
+  seleccion_maxima: number;
+  min_selecciones?: number;
+  max_selecciones?: number;
+  permite_repetir?: boolean;
+  items: GrupoOpcionesItem[];
+  created_at?: string;
+}
 
-  // Métricas dinámicas de Gestión
-  disponibilidad_por_bodega?: { bodega_id: string; bodega_nombre: string; cantidad: number }[];
-  consumo_diario?: number;
-  consumo_semanal?: number;
-  consumo_mensual?: number;
+export interface RecetaGrupoOpcion {
+  id?: string | number;
+  receta_id?: string | number;
+  grupo_id: string | number;
+  orden: number;
+  es_requerido: boolean;
+  grupo?: GrupoOpciones | null;
+}
+
+export interface ComboGrupoOpcion {
+  id?: string | number;
+  combo_id?: string | number;
+  grupo_id: string | number;
+  orden: number;
+  es_requerido: boolean;
+  grupo?: GrupoOpciones | null;
+}
+
+export interface ComboItemFijo {
+  id?: string | number;
+  combo_id?: string | number;
+  producto_id?: string | number | null;
+  receta_id?: string | number | null;
+  nombre?: string | null;
+  target_type: "producto" | "receta";
+  cantidad: number;
+  costo_unitario: number;
+  costo_total: number;
 }
 
 export interface ComboItem {
@@ -212,47 +267,296 @@ export interface ComboItem {
 }
 
 export interface CategoriaCombo {
-  id: string;
+  id: string | number;
   nombre: string;
-  color?: string;
-  icono?: string;
+  color?: string | null;
+  icono?: string | null;
+  orden?: number;
+}
+
+export interface Receta {
+  id: string | number;
+  codigo?: string;
+  nombre: string;
+  descripcion?: string | null;
+  categoria_receta_id?: string | number | null;
+  categoria_nombre?: string | null;
+  es_subreceta?: boolean;
+  es_dinamica?: boolean;
+  porciones?: number;
+  porciones_rendimiento?: number;
+  costo_total?: number;
+  costo_total_calculado?: number;
+  costo_porcion?: number;
+  costo_peor_caso?: number;
+  costo_mejor_caso?: number;
+  precio?: number;
+  precio_venta_neto?: number;
+  precio_venta_bruto?: number;
+  precio_neto?: number;
+  precio_bruto?: number;
+  iva_porcentaje?: number;
+  iva_incluido?: boolean;
+  margen_neto?: number;
+  margen_bruto?: number;
+  margen_pct?: number;
+  food_cost_pct?: number;
+  imagen_url?: string | null;
+  imagenes_galeria?: { id: string; url: string; is_primary?: boolean }[] | null;
+  preparacion?: string | null;
+  video_url?: string | null;
+  documento_url?: string | null;
+  tiempo_preparacion_minutos?: number | null;
+  ingredientes_fijos?: IngredienteFijo[];
+  grupos_opciones?: RecetaGrupoOpcion[];
+  subrecetas_tree?: Array<Record<string, unknown>>;
+  alergenos?: AllergenInfo[];
+  allergens?: AllergenInfo[];
+  areas_operativas_ids?: string[];
+
+  // Métricas dinámicas de Gestión
+  disponibilidad_por_bodega?: { bodega_id: string; bodega_nombre: string; cantidad: number }[];
+  consumo_diario?: number;
+  consumo_semanal?: number;
+  consumo_mensual?: number;
+
+  // Compatibilidad legacy
+  ingredientes?: IngredienteReceta[];
 }
 
 export interface Combo {
-  id: string;
+  id: string | number;
+  codigo?: string | null;
   nombre: string;
-  precio: number;
-  iva_incluido?: boolean;
-  iva_porcentaje?: number;
+  descripcion?: string | null;
+  categoria_combo_id?: string | number | null;
+  categoria_nombre?: string | null;
+  es_dinamico?: boolean;
+  precio_venta_neto?: number;
+  precio_venta_bruto?: number;
+  costo_total_calculado?: number;
+  costo_base?: number;
+  margen_amount?: number;
+  margen_pct?: number;
+  food_cost_pct?: number;
+  disponibilidad_stock_porciones?: number | null;
+  esta_disponible?: boolean;
   imagen_url?: string | null;
-  items: ComboItem[];
+  iva_porcentaje?: number;
+  iva_incluido?: boolean;
+  items_fijos?: ComboItemFijo[];
+  grupos_opciones?: ComboGrupoOpcion[];
+
+  // Compatibilidad legacy
+  precio?: number;
+  items?: ComboItem[];
   costo_total?: number;
   precio_neto?: number;
   precio_bruto?: number;
   disponibilidad?: number;
-  categoria_combo_id?: string | null;
 }
 
-export interface GrupoOpcionesItem {
-  id?: string;
-  grupo_id?: string;
-  producto_id?: string | null;
-  receta_id?: string | null;
-  precio_adicional: number;
-  iva_incluido: boolean;
-  iva_porcentaje: number;
-  nombre?: string;
-  type?: "producto" | "receta";
-}
-
-export interface GrupoOpciones {
-  id: string;
+export interface SimulatedOptionItem {
+  item_id: number | string;
+  grupo_id: number | string;
+  grupo_nombre: string;
   nombre: string;
+  cantidad: number;
+  costo_unitario: number;
+  costo_total: number;
+  recargo_precio: number;
+}
+
+export interface DynamicCostResult {
+  recipe_id: number | string;
+  recipe_nombre: string;
+  base_fixed_cost: number;
+  options_cost: number;
+  total_cost: number;
+  portion_cost: number;
+  total_surcharge: number;
+  effective_net_price: number;
+  effective_gross_price: number;
+  margin_amount: number;
+  margin_pct: number;
+  food_cost_pct: number;
+  selected_options: SimulatedOptionItem[];
+}
+
+// ---------------------------------------------------------
+// Ficha Técnica de Cocina Escalada y Alérgenos Normados (Fase 6)
+// ---------------------------------------------------------
+
+export interface AllergenInfo {
+  code: string;
+  nombre: string;
+  nombre_en?: string | null;
+  icono?: string | null;
+  descripcion?: string | null;
+}
+
+export interface KitchenSheetOptionItem {
+  item_id?: number | string | null;
+  producto_id?: number | string | null;
+  receta_id?: number | string | null;
+  nombre: string;
+  target_type: string;
+  cantidad_base: number;
+  cantidad_escalada: number;
+  unidad: string;
+  es_opcion_default: boolean;
+  recargo_precio: number;
+  alergenos?: AllergenInfo[];
+}
+
+export interface KitchenSheetOptionGroup {
+  grupo_id: number | string;
+  grupo_nombre: string;
   seleccion_minima: number;
   seleccion_maxima: number;
-  items: GrupoOpcionesItem[];
-  created_at?: string;
+  es_requerido: boolean;
+  opciones: KitchenSheetOptionItem[];
 }
+
+export interface KitchenSheetItem {
+  ingrediente_id?: number | string | null;
+  producto_id?: number | string | null;
+  subreceta_id?: number | string | null;
+  nombre: string;
+  target_type: string;
+  unidad: string;
+  cantidad_neta_base: number;
+  cantidad_neta_escalada: number;
+  porcentaje_merma: number;
+  cantidad_bruta_escalada: number;
+  notas?: string | null;
+  alergenos?: AllergenInfo[];
+  subreceta_desglose?: KitchenSheetItem[];
+}
+
+export interface KitchenSheetResponse {
+  recipe_id: number | string;
+  codigo: string;
+  nombre: string;
+  descripcion?: string | null;
+  categoria_nombre?: string | null;
+  porciones_base: number;
+  porciones_solicitadas: number;
+  factor_escalamiento: number;
+  tiempo_preparacion_minutos?: number | null;
+  preparacion?: string | null;
+  video_url?: string | null;
+  documento_url?: string | null;
+  ingredientes_fijos: KitchenSheetItem[];
+  grupos_opciones: KitchenSheetOptionGroup[];
+  alergenos_consolidados: AllergenInfo[];
+  allergens?: AllergenInfo[];
+}
+
+export type TipoRecetaFiltro = "todas" | "estaticas" | "dinamicas" | "subrecetas";
+
+export interface RecipeFilterParams {
+  tipo?: TipoRecetaFiltro;
+  categoria_id?: string | number | null;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ComboFilterParams {
+  categoria_id?: string | number | null;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface RecipeIngredientInput {
+  producto_id?: number | string | null;
+  subreceta_id?: number | string | null;
+  cantidad_receta: number;
+  porcentaje_merma?: number;
+  bodega_consumo_id?: number | string | null;
+  notas?: string | null;
+}
+
+export interface RecipeOptionGroupLinkInput {
+  grupo_id: number | string;
+  orden?: number;
+  es_requerido?: boolean;
+}
+
+export interface RecipeCreateInput {
+  codigo: string;
+  nombre: string;
+  descripcion?: string | null;
+  categoria_receta_id?: number | string | null;
+  es_subreceta?: boolean;
+  es_dinamica?: boolean;
+  porciones_rendimiento?: number;
+  precio_venta_neto?: number;
+  precio_venta_bruto?: number;
+  iva_porcentaje?: number;
+  iva_incluido?: boolean;
+  imagen_url?: string | null;
+  preparacion?: string | null;
+  video_url?: string | null;
+  documento_url?: string | null;
+  tiempo_preparacion_minutos?: number | null;
+  ingredientes?: RecipeIngredientInput[];
+  grupos_opciones?: RecipeOptionGroupLinkInput[];
+}
+
+export type RecipeUpdateInput = Partial<RecipeCreateInput>;
+
+export interface ComboItemInput {
+  producto_id?: number | string | null;
+  receta_id?: number | string | null;
+  cantidad: number;
+}
+
+export interface ComboOptionGroupLinkInput {
+  grupo_id: number | string;
+  orden?: number;
+  es_requerido?: boolean;
+}
+
+export interface ComboCreateInput {
+  nombre: string;
+  codigo?: string | null;
+  descripcion?: string | null;
+  categoria_combo_id?: number | string | null;
+  es_dinamico?: boolean;
+  precio_venta_neto?: number;
+  precio_venta_bruto?: number;
+  iva_porcentaje?: number;
+  iva_incluido?: boolean;
+  imagen_url?: string | null;
+  items?: ComboItemInput[];
+  grupos_opciones?: ComboOptionGroupLinkInput[];
+}
+
+export type ComboUpdateInput = Partial<ComboCreateInput>;
+
+export interface OptionGroupItemInput {
+  producto_id?: number | string | null;
+  receta_id?: number | string | null;
+  nombre?: string | null;
+  cantidad?: number;
+  es_opcion_default?: boolean;
+  recargo_precio?: number;
+  orden?: number;
+}
+
+export interface OptionGroupCreateInput {
+  nombre: string;
+  descripcion?: string | null;
+  seleccion_minima?: number;
+  seleccion_maxima?: number;
+  permite_repetir?: boolean;
+  items?: OptionGroupItemInput[];
+}
+
+export type OptionGroupUpdateInput = Partial<OptionGroupCreateInput>;
 
 export type ViewTab =
   | "productos"

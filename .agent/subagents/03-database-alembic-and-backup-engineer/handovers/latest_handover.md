@@ -1,66 +1,56 @@
 # Reporte de Traspaso (`Handover`) — Agente 03: Especialista en Base de Datos, Alembic y Backups 4-Capas
 
-- **Fecha UTC:** 2026-10-25T19:40:00+00:00
-- **Fase / Tarea:** Módulo de Consumo, Manos Libres y Buffet Inteligente (`/registro-de-consumo`, `/consumo/manos-libres`, `/consumo/buffet`) — FASE 1: Tareas 1.1 y 1.2 de `PLAN_MAESTRO_CONSUMO.md`
-- **Estado:** ✅ Culminado con Éxito (100% Verificado con Pytest y Ruff en verde)
+- **Fecha UTC:** 2026-10-26T21:00:00Z
+- **Fase / Hito:** Fase 1 del `PLAN_MAESTRO_OPPYFY_AI.md`: Modelado de Persistencia Multi-Tenant SQLAlchemy 2.0 Async (`TenantBase` / `PublicBase`), Migración Lineal Correlativa Alembic 0010 e Idempotencia DDL Multi-Tenant.
+- **Estado de Certificación:** `OPPYFY_AI_PERSISTENCE_AND_ALEMBIC_0010_CERTIFIED` (Alembic 0001..0010 verificado, 2/2 tests de arquitectura correlativa pasando al 100% verde, 8/8 tests de modelos OppyFy pasando al 100% verde).
 
-## 1. Completed (Qué se hizo)
+---
 
-### 1.1 Modelos de Persistencia SQLAlchemy 2.0 en `oppytec-backend/src/modules/operations/infrastructure/models.py`:
-- Todos heredan estrictamente de `TenantBase` para operar en esquemas dinámicos `tenant_*` aislados con `SET LOCAL search_path`.
-- **`ConsumptionRecord` (`consumption_records`):**
-  - Cabecera transaccional de consumo directo, salidas operativas y mermas.
-  - Campos: `id` (BigInteger PK), `codigo_folio` (String(64) unique), `folio_ticket` (String(64) nullable), `area_operativa_id` (FK `areas_operativas.id` ondelete SET NULL), `bodega_id` (FK `bodegas.id` ondelete SET NULL), `usuario_id` (Integer), `tipo_origen` (String(32), default "MANUAL_TERMINAL", enum: MANUAL_TERMINAL, MANOS_LIBRES_VOZ, BUFFET_LIQUIDACION, VENTA_POS), `costo_total` (Numeric(14, 2)), `notas` (Text nullable).
-  - Mixins: `AuditTimestampsMixin`, `SoftDeleteMixin`.
-  - Relación: `items` con cascada `all, delete-orphan`.
-- **`ConsumptionRecordItem` (`consumption_record_items`):**
-  - Desglose detallado de insumos/productos/recetas/combos consumidos por transacción.
-  - Campos: `id` (BigInteger PK), `consumption_record_id` (FK `consumption_records.id` ondelete CASCADE), `tipo_item` (String(20): PRODUCTO, RECETA, COMBO), `item_id` (Integer), `cantidad` (Numeric(12, 4)), `unidad_medida` (String(20)), `costo_unitario_ppp` (Numeric(14, 2)), `costo_total` (Numeric(14, 2)), `lote_codigo` (String(64) nullable), `fecha_vencimiento_lote` (Date nullable), `kardex_movement_id` (BigInteger FK `registro_stock.id` ondelete SET NULL), `opciones_seleccionadas` (JSONDictType / JSONB).
-  - Mixin: `AuditTimestampsMixin`.
-  - Relación: `consumption_record`.
-- **`ConsumptionTemplate` (`consumption_templates`):**
-  - Plantillas de catálogo configurables por turno, cuadrilla o área operativa.
-  - Campos: `id` (BigInteger PK), `slug` (String(64) unique), `nombre` (String(128)), `descripcion` (Text nullable), `usuario_creador_id` (Integer), `is_public` (Boolean default False), `columnas_count` (Integer default 8), `sort_mode` (String(32) default "alpha_asc"), `product_ids` (JSONDictType), `custom_product_order` (JSONDictType nullable).
-  - Mixins: `AuditTimestampsMixin`, `SoftDeleteMixin`, `TranslatableI18nMixin`.
-- **`BuffetTemplate` (Enriquecido):**
-  - Campos agregados: `descripcion` (Text nullable), `estaciones_json` (JSONDictType nullable), `is_system` (Boolean default False), `is_public` (Boolean default True).
-- **`BuffetSession` (Enriquecida):**
-  - Campos agregados: `area_operativa_id` (FK `areas_operativas.id` ondelete SET NULL), `bodega_id` (FK `bodegas.id` ondelete SET NULL), `usuario_creador_id` (Integer nullable), `tipo_servicio` (String(64) default "DESAYUNO"), `pax_comensales` (Integer default 0), `costo_total_montaje` (Numeric(14, 2)), `valor_sobrante_reutilizable` (Numeric(14, 2)), `costo_neto_pax` (Numeric(14, 2)).
-  - Relaciones: `stations`, `items` (ambas con cascade `all, delete-orphan`).
-- **`BuffetStation` (Enriquecida):**
-  - Campo agregado: `orden` (Integer default 0).
-  - Relaciones: `session`, `items`.
-- **`BuffetSessionItem` (`buffet_session_items`):**
-  - Campos: `id` (BigInteger PK), `session_id` (FK `buffet_sessions.id` ondelete CASCADE), `station_id` (FK `buffet_stations.id` ondelete CASCADE), `tipo_item` (String(20): PRODUCTO, RECETA), `item_id` (Integer), `cantidad_montada` (Numeric(12, 4)), `cantidad_sobrante` (Numeric(12, 4)), `cantidad_merma` (Numeric(12, 4)), `cantidad_neta_consumida` (Numeric(12, 4)), `costo_unitario_ppp` (Numeric(14, 2)), `costo_total` (Numeric(14, 2)).
-  - Mixin: `AuditTimestampsMixin`.
-- **`VoiceStation` (`voice_stations`):**
-  - Campos: `id` (BigInteger PK), `area_operativa_id` (FK `areas_operativas.id` ondelete SET NULL), `nombre_estacion` (String(64)), `voice_command` (String(64) clave fonética), `usuario_asignado_id` (Integer nullable), `is_active` (Boolean default True).
-  - Mixins: `AuditTimestampsMixin`, `SoftDeleteMixin`.
-  - Relación: `order_logs`.
-- **`VoiceOrderLog` (`voice_order_logs`):**
-  - Campos: `id` (BigInteger PK), `station_id` (FK `voice_stations.id` ondelete CASCADE), `texto_transcrito` (Text), `accion_detectada` (String(32): CONSUMO, MERMA), `confianza_ia` (Numeric(5, 4)), `items_interpretados_json` (JSONDictType), `estado` (String(32): PENDIENTE, CONFIRMADO, RECHAZADO, EJECUTADO), `consumption_record_id` (FK `consumption_records.id` ondelete SET NULL).
-  - Mixin: `AuditTimestampsMixin`.
-  - Relaciones: `station`, `consumption_record`.
+## 1. Completed (Qué se ejecutó y validó)
 
-### 1.2 Migración Correlativa Alembic Lineal `0005`:
-- Archivo: `oppytec-backend/alembic/versions/0005_tenant_consumption_buffet_and_voice_tables.py`.
-- `revision = "0005_tenant_consumption_buffet_and_voice_tables"`.
-- `down_revision = "0004_tenant_inventory_kardex_and_physical_counts"`.
-- `migration_scope = "tenant"`.
-- Enlace lineal continuo asegurado con `0006_tenant_approval_requests_and_notification_matrix.py` (`down_revision = "0005_tenant_consumption_buffet_and_voice_tables"`).
-- Funciones seguras e idempotentes: `_has_table`, `_has_column`, `_has_index`, `_get_tenant_schemas(bind)`.
-- Crea de forma idempotente las 6 tablas nuevas, enriquece las 3 tablas de buffet existentes y genera vistas de compatibilidad en español (`registros_consumo`, `registro_consumo_items`, `plantillas_consumo`).
-- Reversibilidad LIFO simétrica completa en `downgrade()`.
+1. **Migración Lineal Correlativa Alembic 0010 (`0010_tenant_oppyfy_custom_rbac_and_credit_wallets.py`):**
+   - Ubicación: [`oppytec-backend/alembic/versions/0010_tenant_oppyfy_custom_rbac_and_credit_wallets.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/alembic/versions/0010_tenant_oppyfy_custom_rbac_and_credit_wallets.py).
+   - Metadatos:
+     * `revision = "0010_tenant_oppyfy_custom_rbac_and_credit_wallets"`
+     * `down_revision = "0009_tenant_procurement_purchases_and_suppliers"`
+     * `migration_scope = "tenant"`
+   - DDL en esquemas de cliente `tenant_*`:
+     * `oppyfy_domains`: `id` (BigInteger PK autoincrement), `domain_key` (VARCHAR 100 UNIQUE), `name_es` (VARCHAR 150), `name_en` (VARCHAR 150), `icon` (VARCHAR 50), `is_active` (BOOL), `sort_order` (INT), timestamps.
+     * `oppyfy_subdomains`: `id` (BigInteger PK), `domain_id` (FK a `oppyfy_domains.id` CASCADE), `subdomain_key` (VARCHAR 100 UNIQUE), `name_es`, `name_en`, `module_slug` (VARCHAR 100), `allowed_tool_functions` (JSONB), `can_view_costs_default` (BOOL), `sort_order` (INT), `is_active` (BOOL), timestamps.
+     * `oppyfy_permission_grants`: `id` (UUID PK), `user_id` (INT), `subdomain_id` (FK a `oppyfy_subdomains.id` CASCADE), `role_id` (INT nullable), `effect` (VARCHAR 16 default 'ALLOW'), `can_query` (BOOL), `can_view_costs` (BOOL), `expires_at` (TIMESTAMPTZ nullable), `max_prompts` (INT nullable), `prompts_used` (INT default 0), `temp_credit_ceiling` (NUMERIC(12,2) nullable), `temp_credits_used` (NUMERIC(12,2) default 0.00), timestamps.
+     * `oppyfy_worker_credit_wallets`: `id` (BigInteger PK), `user_id` (INT UNIQUE), `is_oppyfy_enabled` (BOOL default true), `assigned_credit_ceiling` (NUMERIC(12,2) nullable), `credits_spent_total` (NUMERIC(12,2) default 0.00), `balance_override` (NUMERIC(12,2) nullable), timestamps.
+     * `oppyfy_prompt_audit_log`: `id` (BigInteger PK), `user_id` (INT), `prompt_text` (TEXT), `status` (VARCHAR 50: ALLOWED, BLOCKED_UNAUTHORIZED_PROMPT), `resolved_domain` (VARCHAR 100 nullable), `resolved_tools` (JSONB), `tokens_spent` (INT default 0), `credits_deducted` (NUMERIC(12,2) default 0.00), `created_at` (TIMESTAMPTZ).
+     * `oppyfy_rbac_audit_log`: `id` (BigInteger PK), `actor_user_id` (INT), `target_user_id` (INT), `action` (VARCHAR 100), `details` (JSONB default '{}'), `created_at` (TIMESTAMPTZ).
+   - DDL en esquema global `public`:
+     * `public.ai_credit_packs`: Paquetes de créditos IA independientes para compra Add-On configurables por el Superadmin (`id`, `pack_name`, `credits_amount` NUMERIC(14,2), `price_clp` NUMERIC(14,2), `price_usd` NUMERIC(14,2), `is_popular` BOOL, `is_active` BOOL, `sort_order` INT, `created_at`, `updated_at`).
+     * `public.ai_model_configs`: Columnas `cached_cost_per_1m_usd` (NUMERIC(12,6)) y `embedding_cost_per_1m_usd` (NUMERIC(12,6)).
+     * `public.spec_chunks`: Columna `token_count` (INT default 0).
+   - Introspección dinámica idempotente (`_has_table`, `_has_column`, `_has_index`) para soportar tanto esquemas vírgenes como inquilinos con tablas previas de 0002.
+   - Reversibilidad LIFO simétrica con `downgrade()` real.
 
-### 1.3 Testing y Calidad de Código:
-- Pruebas unitarias en `oppytec-backend/tests/unit/modules/test_operations_services.py` y `oppytec-backend/tests/modules/operations/test_migration_0005.py`.
-- 13/13 tests pasando en verde.
-- Verificación de compilación limpia con `python -m py_compile`.
-- Verificación de linting con `ruff check` sin advertencias ni errores.
+2. **Modelos SQLAlchemy 2.0 Async (`oppytec-backend/src/modules/oppy_ai/infrastructure/models.py`):**
+   - Reflejo fiel de las tablas bajo `TenantBase` para esquemas `tenant_*` y `PublicBase` para `public`.
+   - Propiedades de compatibilidad hacia atrás (`slug` <-> `domain_key`, `name` <-> `name_es`, `allocated_credits` <-> `assigned_credit_ceiling`, `consumed_credits` <-> `credits_spent_total`, `decision_status` <-> `status`, `credits_consumed` <-> `credits_deducted`).
+   - Cero uso de `float`, todos los cálculos monetarios y de tokens en `Decimal` con `Numeric`.
 
-## 2. Friction & Failures (Qué salió mal / Qué cuidar)
-- En tests unitarios sin PostgreSQL activo, `op.get_bind()` requiere un mock explicito para que Alembic no lance `NameError: name '_proxy' is not defined`. Se configuró adecuadamente en los tests de simulación de migración.
-- Nomenclatura bilingüe: Para respetar tanto el esquema canónico en inglés (`consumption_records`, `consumption_record_items`, `consumption_templates`) como las referencias en español (`registros_consumo`, `registro_consumo_items`, `plantillas_consumo`), la migración crea automáticamente vistas PostgreSQL `CREATE OR REPLACE VIEW` en cada esquema tenant.
+3. **Verificación y Pruebas Ejecutadas:**
+   - `python scripts/db_migration.py verify`: Alembic correlative migration chain verified OK.
+   - `alembic heads`: Unico head activo `0010_tenant_oppyfy_custom_rbac_and_credit_wallets (head)`.
+   - `uv run pytest tests/architecture/test_alembic_integrity.py`: 2/2 passed in 0.15s (100% verde).
+   - `uv run pytest tests/unit/modules/test_oppy_ai_services.py`: 8/8 passed in 0.26s (100% verde).
+   - `alembic upgrade head`: DDL ejecutado exitosamente contra PostgreSQL real en `public` y esquemas `tenant_*`.
 
-## 3. Next Exact Action (Siguiente paso exacto)
-- Proceder a la Fase 2 de `PLAN_MAESTRO_CONSUMO.md`: Desarrollo de los servicios de aplicación transaccionales (`ConsumptionService`, `BuffetService`, `VoiceKitchenService`), guardias RBAC `consumption.*` y endpoints REST RFC 7807 en `src/modules/operations/`.
+---
+
+## 2. Friction & Failures
+
+- **Dependencias FK Preexistentes de 0002 al revertir `downgrade()`:**
+  * Al auditar `downgrade()`, se detectó que tablas de 0002 (`tenant_documents`, `document_chunks`) tienen FKs hacia `oppyfy_subdomains`. Si un tenant posee estas tablas, hacer `DROP TABLE oppyfy_subdomains` provocaría `DependentObjectsStillExistError`.
+  * Solución implementada: En el `downgrade()` de 0010, se verifica la presencia de `tenant_documents`. Si existe, se revierten únicamente las columnas e índices añadidos en 0010 sin destruir la tabla base requerida por 0002; si no existen dependencias, se realiza el drop completo de forma segura.
+
+---
+
+## 3. Next Exact Action
+
+- **Para Agente 04 (`04-backend-senior-dev`) y Agente 06 (`06-ai-oppyfy-and-jev-engineer`):**
+  * Continuar con la **Fase 2 de `PLAN_MAESTRO_OPPYFY_AI.md`**: Implementación de `MeteredAIService`, router JEV con herramientas deterministas (`operational_tools/`), redacción física de costos (*Hard-Code Data Stripping*) y endpoints REST RFC 7807 (`/api/v1/oppyfy/*` y `/api/v1/platform-admin/token-consumption`).

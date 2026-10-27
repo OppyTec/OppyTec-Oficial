@@ -17,6 +17,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     Numeric,
+    SmallInteger,
     String,
     Text,
     UniqueConstraint,
@@ -46,6 +47,11 @@ class SystemPlan(PublicBase, AuditTimestampsMixin, TranslatableI18nMixin):
     )
     slug: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, default=None, nullable=True)
+    monthly_ai_credits: Mapped[int] = mapped_column(Integer, default=1000, nullable=False)
+    tier: Mapped[int] = mapped_column(SmallInteger, default=1, nullable=False)
+    is_popular: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     max_active_users: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
     max_products: Mapped[int] = mapped_column(Integer, default=500, nullable=False)
     max_suppliers: Mapped[int] = mapped_column(Integer, default=20, nullable=False)
@@ -79,6 +85,35 @@ class SystemPlan(PublicBase, AuditTimestampsMixin, TranslatableI18nMixin):
         nullable=False,
     )
     auto_convert_fx: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class SaaSAIPolicyConfig(PublicBase, AuditTimestampsMixin):
+    """
+    Configuración global de conversión de tokens de LLM a créditos de IA y precios unitarios.
+    Registro único singleton (id=1) en el esquema `public`.
+    """
+
+    __tablename__ = "saas_ai_policy_config"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    tokens_per_credit: Mapped[int] = mapped_column(Integer, default=1000, nullable=False)
+    default_monthly_credits: Mapped[int] = mapped_column(Integer, default=2000, nullable=False)
+    credit_price_clp: Mapped[Decimal] = mapped_column(
+        Numeric(14, 2),
+        default=Decimal("15.00"),
+        nullable=False,
+    )
+    credit_price_usd: Mapped[Decimal] = mapped_column(
+        Numeric(14, 4),
+        default=Decimal("0.0150"),
+        nullable=False,
+    )
+    updated_by: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("public.global_users.id", ondelete="SET NULL"),
+        default=None,
+        nullable=True,
+    )
 
 
 class Holding(PublicBase, AuditTimestampsMixin):

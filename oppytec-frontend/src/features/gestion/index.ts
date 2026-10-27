@@ -2,6 +2,14 @@
 
 export * from "./types";
 export * from "./useGestion";
+export {
+  useRecetas,
+  useCombos,
+  useGruposOpciones,
+  type UseRecetasOptions,
+  type UseCombosOptions,
+  type UseGruposOpcionesOptions,
+} from "./hooks";
 
 export {
   DraftRecoveryBanner,

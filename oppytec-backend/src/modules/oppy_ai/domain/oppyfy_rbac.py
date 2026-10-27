@@ -1,6 +1,7 @@
 """
 Motor de Dominio del RBAC Exclusivo y 100% Editable de `OppyFy` (`src/modules/oppy_ai/domain/oppyfy_rbac.py`).
 - Dominios y Sub-dominios personalizados creados/editados por el Propietario del Tenant.
+- Capacidades de dominio (`OppyfyCapability`).
 - Evaluación de permisos permanentes o temporales con triple control de caducidad automática:
   1. Fecha y hora (`expires_at`).
   2. Cantidad máxima de prompts (`used_prompts < max_prompts`).
@@ -10,12 +11,14 @@ Motor de Dominio del RBAC Exclusivo y 100% Editable de `OppyFy` (`src/modules/op
 """
 from __future__ import annotations
 
+import functools
 import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Literal
+from enum import Enum
+from typing import Any, Literal
 
 BLOCKED_UNAUTHORIZED_PROMPT: str = "BLOCKED_UNAUTHORIZED_PROMPT"
 ALLOWED_PROMPT_STATUS: str = "ALLOWED"
@@ -27,7 +30,21 @@ SENSITIVE_COST_KEYS: frozenset[str] = frozenset(
         "costo_neto",
         "costo_total",
         "costo_receta",
+        "costo_total_merma",
+        "costo_teorico_clp",
+        "costo_real_clp",
         "precio_compra",
+        "last_purchase_price",
+        "historical_avg_price",
+        "total_neto",
+        "total_bruto_clp",
+        "subtotal_neto",
+        "iva_clp",
+        "total_draft_neto_clp",
+        "total_draft_bruto_clp",
+        "total_estimated_reorder_cost",
+        "total_at_risk_cost",
+        "total_shortage_cost_neto",
         "margen",
         "margen_bruto",
         "unit_cost",
@@ -35,10 +52,24 @@ SENSITIVE_COST_KEYS: frozenset[str] = frozenset(
         "purchase_price",
         "profit_margin",
         "food_cost_amount",
+        "ventas_totales_clp",
+        "ticket_promedio_clp",
+        "gasto_total",
+        "total_monetario",
+        "monto_total",
     }
 )
 
 GrantEffectLiteral = Literal["ALLOW", "DENY"]
+
+
+class OppyfyCapability(str, Enum):
+    """Capacidades granulares dentro de los dominios y subdominios de OppyFy."""
+
+    QUERY_AI = "oppyfy.capability.query_ai"
+    VIEW_FINANCIAL_COSTS = "oppyfy.capability.view_financial_costs"
+    EXECUTE_OPERATIONAL_TOOLS = "oppyfy.capability.execute_operational_tools"
+    EXPORT_CANVAS_ARTIFACTS = "oppyfy.capability.export_canvas_artifacts"
 
 
 @dataclass(frozen=True)
@@ -49,6 +80,8 @@ class EditableOppyfyDomainSpec:
     slug: str
     name: str
     is_enabled: bool = True
+    icon: str = "sparkles"
+    sort_order: int = 0
 
 
 @dataclass(frozen=True)
@@ -61,6 +94,7 @@ class EditableOppyfySubdomainSpec:
     name: str
     bound_tool_codes: tuple[str, ...]
     module_slug: str = "oppy_ai"
+    can_view_costs_default: bool = False
 
 
 @dataclass(frozen=True)
@@ -76,6 +110,7 @@ class OppyfyPermissionGrantSpec:
     user_id: int | None = None
     role_id: int | None = None
     effect: GrantEffectLiteral = "ALLOW"
+    can_query: bool = True
     can_view_costs: bool = False
     expires_at: datetime | None = None
     max_prompts: int | None = None
@@ -104,7 +139,10 @@ def is_grant_currently_valid(
 ) -> tuple[bool, str | None]:
     """
     Verifica si una concesión de permiso (`OppyfyPermissionGrantSpec`) sigue activa bajo
-    el triple control de caducidad automática.
+    el triple control de caducidad automática:
+    1. Timestamp de expiración (`expires_at`).
+    2. Límite de prompts utilizados (`used_prompts < max_prompts`).
+    3. Techo temporal de créditos acumulados (`credits_used_in_grant + estimated_cost <= temp_credit_ceiling`).
     """
     current_time = now or datetime.now(UTC)
 
@@ -121,6 +159,33 @@ def is_grant_currently_valid(
         return False, "GRANT_EXPIRED_BY_CREDIT_CEILING"
 
     return True, None
+
+
+def consume_grant_quota(
+    grant: OppyfyPermissionGrantSpec,
+    *,
+    credits_spent: Decimal = Decimal("1.00"),
+) -> OppyfyPermissionGrantSpec:
+    """
+    Primitiva pura que incrementa el contador de prompts y créditos utilizados en una concesión.
+    """
+    return OppyfyPermissionGrantSpec(
+        grant_id=grant.grant_id,
+        subdomain_id=grant.subdomain_id,
+        subdomain_slug=grant.subdomain_slug,
+        user_id=grant.user_id,
+        role_id=grant.role_id,
+        effect=grant.effect,
+        can_query=grant.can_query,
+        can_view_costs=grant.can_view_costs,
+        expires_at=grant.expires_at,
+        max_prompts=grant.max_prompts,
+        used_prompts=grant.used_prompts + 1,
+        temp_credit_ceiling=grant.temp_credit_ceiling,
+        credits_used_in_grant=(grant.credits_used_in_grant + credits_spent).quantize(
+            Decimal("0.01")
+        ),
+    )
 
 
 def evaluate_oppyfy_subdomain_access(
@@ -251,6 +316,25 @@ def validate_hierarchical_delegation(
 PayloadValue = str | int | Decimal | bool | list[dict[str, str | int | Decimal | bool]]
 
 
+def _redact_value(val: Any) -> Any:
+    if isinstance(val, Mapping):
+        clean_dict: dict[str, Any] = {}
+        for k, v in val.items():
+            k_lower = str(k).lower()
+            if k_lower in SENSITIVE_COST_KEYS or any(
+                token in k_lower for token in (
+                    "costo", "cost", "margen", "margin", "precio", "gasto", "monetario", "monto", "tarifa", "fee", "presupuesto"
+                )
+            ):
+                clean_dict[k] = REDACTED_COST_MARKER
+            else:
+                clean_dict[k] = _redact_value(v)
+        return clean_dict
+    if isinstance(val, (list, tuple)):
+        return [_redact_value(item) for item in val]
+    return val
+
+
 def redact_cost_fields(
     payload: Mapping[str, PayloadValue],
     *,
@@ -265,27 +349,39 @@ def redact_cost_fields(
 
     redacted: dict[str, PayloadValue] = {}
     for key, val in payload.items():
-        key_lower = key.lower()
+        key_lower = str(key).lower()
         is_sensitive = key_lower in SENSITIVE_COST_KEYS or any(
-            token in key_lower for token in ("costo", "cost", "margen", "margin", "precio_compra")
+            token in key_lower for token in (
+                "costo", "cost", "margen", "margin", "precio", "gasto", "monetario", "monto", "tarifa", "fee", "presupuesto"
+            )
         )
         if is_sensitive:
             redacted[key] = REDACTED_COST_MARKER
-        elif isinstance(val, list):
-            redacted_list: list[dict[str, str | int | Decimal | bool]] = []
-            for item in val:
-                clean_item: dict[str, str | int | Decimal | bool] = {}
-                for sub_k, sub_v in item.items():
-                    sub_lower = sub_k.lower()
-                    if sub_lower in SENSITIVE_COST_KEYS or any(
-                        token in sub_lower
-                        for token in ("costo", "cost", "margen", "margin", "precio_compra")
-                    ):
-                        clean_item[sub_k] = REDACTED_COST_MARKER
-                    else:
-                        clean_item[sub_k] = sub_v
-                redacted_list.append(clean_item)
-            redacted[key] = redacted_list
+        elif isinstance(val, Mapping):
+            redacted[key] = _redact_value(val)
+        elif isinstance(val, (list, tuple)):
+            redacted[key] = [_redact_value(item) for item in val]
         else:
             redacted[key] = val
     return redacted
+
+
+def hardcoded_data_stripping(
+    func: Any,
+) -> Any:
+    """
+    Decorador para herramientas operativas deterministas (JEV Layer 2).
+    Garantiza la redacción en código duro de campos financieros y de costo
+    cuando `can_view_costs=False`. Si no se especifica `can_view_costs`,
+    se asume `True` para preservar el payload original del cálculo interno.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, can_view_costs: bool = True, **kwargs: Any) -> Any:
+        result = func(*args, **kwargs)
+        if isinstance(result, Mapping):
+            return redact_cost_fields(result, can_view_costs=can_view_costs)
+        return result
+
+    return wrapper
+

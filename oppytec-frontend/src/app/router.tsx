@@ -15,7 +15,7 @@ import {
   AlertasPage,
 } from "@/features/inventory";
 import { OperationsFeatureView } from "@/features/operations";
-import { OppyFyFeatureView } from "@/features/oppyfy";
+import { OppyFyFeatureView, OppyfyWorkspacePage } from "@/features/oppyfy";
 import {
   AdminBusinessTypesView,
   AdminClientUsersView,
@@ -25,12 +25,13 @@ import {
   AdminLayout,
   AdminLegalEntitiesView,
   AdminModulesView,
-  AdminPlansView,
   AdminTenantsView,
+  PlansPage,
   PlatformAdminFeatureView,
+  TokenConsumptionPage,
 } from "@/features/platform-admin";
 
-import { ProcurementFeatureView } from "@/features/procurement";
+import { ProcurementFeatureView, ProveedoresPage } from "@/features/procurement";
 import { RbacAndAuditFeatureView } from "@/features/rbac-and-audit";
 import { RecipesFeatureView } from "@/features/recipes";
 import { ConfiguracionPage } from "@/features/configuracion";
@@ -188,7 +189,7 @@ export function ClientAppShell() {
         <Route path="/recuentos" element={<RecuentosPage />} />
         <Route path="/gestion/*" element={<GestionPage />} />
         <Route path="/gestion" element={<GestionPage />} />
-        <Route path="/proveedores" element={<ModulePlaceholderView title="Directorio de Proveedores" moduleSlug="module:gestion:proveedores" />} />
+        <Route path="/proveedores" element={<ProveedoresPage />} />
         <Route path="/notificaciones" element={<NotificationsPage />} />
         <Route path="/notificaciones/*" element={<NotificationsPage />} />
         <Route path="/alertas" element={<AlertasPage />} />
@@ -202,7 +203,8 @@ export function ClientAppShell() {
         <Route path="/actividades/usuarios" element={<UsuariosPage />} />
         <Route path="/usuarios" element={<UsuariosPage />} />
         <Route path="/actividades/*" element={<ModulePlaceholderView title="Panel de Actividades y Turnos" moduleSlug="module:panel_de_actividades" />} />
-        <Route path="/oppybot" element={<ModulePlaceholderView title="OppyBot Workspace (Copiloto IA)" moduleSlug="module:oppybot" />} />
+        <Route path="/oppyfy" element={<OppyfyWorkspacePage />} />
+        <Route path="/oppybot" element={<Navigate to="/oppyfy" replace />} />
         <Route path="/perfil" element={<ProfilePage />} />
         <Route path="/holding-hub" element={<ModulePlaceholderView title="Holding Hub — Visión Consolidada" moduleSlug="module:holding_hub" />} />
         <Route path="/configuracion" element={<ConfiguracionPage />} />
@@ -259,16 +261,8 @@ export function AppRouter() {
           <Route path="users" element={<AdminGlobalUsersView />} />
           <Route path="business-types" element={<AdminBusinessTypesView />} />
           <Route path="modules" element={<AdminModulesView />} />
-          <Route path="plans" element={<AdminPlansView />} />
-          <Route
-            path="token-consumption"
-            element={
-              <AdminPlaceholderView
-                title="Consumo Tokens Cliente"
-                description="Monitoreo FinOps y créditos OppyFy"
-              />
-            }
-          />
+          <Route path="plans" element={<PlansPage />} />
+          <Route path="token-consumption" element={<TokenConsumptionPage />} />
           <Route path="holdings" element={<AdminHoldingsView />} />
           <Route path="legal-entities" element={<AdminLegalEntitiesView />} />
           <Route path="tenants" element={<AdminTenantsView />} />
@@ -294,6 +288,18 @@ export function AppRouter() {
           />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
+        <Route
+          path="/oppyfy"
+          element={
+            <PrivateRoute>
+              <OppyfyWorkspacePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/oppybot"
+          element={<Navigate to="/oppyfy" replace />}
+        />
         <Route
           path="/*"
           element={

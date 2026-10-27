@@ -517,5 +517,11 @@
     "pagination": {
       "item_label": "alerts"
     }
+  },
+  "gestion_tabs": {
+    "pedidos": "Orders & Purchasing",
+    "mermas": "Waste Control",
+    "pedidos_description": "Purchase orders, merchandise receiving and suppliers directory",
+    "mermas_description": "Operational loss analytics valued at WAC"
   }
 }

@@ -1,7 +1,18 @@
 {
   "header": {
     "title": "Product Management",
-    "subtitle": "Product and supplies catalog"
+    "subtitle": "Product and supplies catalog",
+    "pedidos_title": "Purchase Orders & Procurement Management",
+    "pedidos_subtitle": "Purchase orders, physical goods receiving, agreed price catalog and suppliers",
+    "mermas_title": "Waste Management & Analytics",
+    "mermas_subtitle": "Analytical monitoring of operational losses, expirations and reasons"
+  },
+  "tabs": {
+    "productos": "Supplies & Products",
+    "recetas": "Recipes & Costing",
+    "combos": "Combos & Promotions",
+    "pedidos": "Orders & Purchasing",
+    "mermas": "Waste Control"
   },
   "toolbar": {
     "area_selector_label": "Operational Area",

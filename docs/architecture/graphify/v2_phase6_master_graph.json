@@ -336,6 +336,36 @@
       "path": "oppytec-backend/alembic/versions/0006_tenant_approval_requests_and_notification_matrix.py"
     },
     {
+      "id": "migration:0007_public_system_plans",
+      "label": "Alembic 0007 Migration: Public system plans extension and saas policy",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0007_public_system_plans_extension_and_saas_policy.py"
+    },
+    {
+      "id": "migration:0007_tenant_procurement_purchases",
+      "label": "Alembic 0007 Migration: Tenant procurement purchases and suppliers",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0007_tenant_procurement_purchases_and_suppliers.py"
+    },
+    {
+      "id": "migration:0008_tenant_recipes_combos",
+      "label": "Alembic 0008 Migration: Tenant recipes combos dynamic option groups",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0008_tenant_recipes_combos_dynamic_option_groups.py"
+    },
+    {
+      "id": "migration:0009_tenant_procurement_purchases",
+      "label": "Alembic 0009 Migration: Tenant procurement purchases and suppliers",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0009_tenant_procurement_purchases_and_suppliers.py"
+    },
+    {
+      "id": "migration:0010_tenant_oppyfy_custom",
+      "label": "Alembic 0010 Migration: Tenant oppyfy custom rbac and credit wallets",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0010_tenant_oppyfy_custom_rbac_and_credit_wallets.py"
+    },
+    {
       "id": "module:analytics",
       "label": "Analytics Module (Executive Margins, Kasavana Menu Engineering, Loss Control & Projections)",
       "type": "backend_module",
@@ -1161,11 +1191,11 @@
     "load_test_target_rps": 500,
     "load_test_p95_budget_ms": 120,
     "rubric_score": "10/10",
-    "nodes_count": 91,
+    "nodes_count": 96,
     "edges_count": 116,
     "frontend_admin_views": 4,
     "backend_routers": 11,
-    "alembic_migrations": 7,
-    "updated_at": "2026-10-26T01:31:49.347479+00:00"
+    "alembic_migrations": 12,
+    "updated_at": "2026-10-27T00:28:42.934749+00:00"
   }
 }

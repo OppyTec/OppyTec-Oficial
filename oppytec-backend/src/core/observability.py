@@ -43,9 +43,18 @@ SENSITIVE_KEY_TOKENS: tuple[str, ...] = (
     "rut",
     "tax_id",
     "credit_card",
+    "card_number",
+    "tarjeta",
     "cvv",
     "dsn",
     "private_key",
+    "email_contacto",
+    "email",
+    "correo",
+    "telefono",
+    "phone",
+    "direccion",
+    "address",
 )
 
 AUDIT_USER_PII_TOKENS: tuple[str, ...] = (
@@ -62,6 +71,37 @@ AUDIT_USER_PII_TOKENS: tuple[str, ...] = (
 _EMAIL_PATTERN: re.Pattern[str] = re.compile(
     r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
 )
+_RUT_PATTERN: re.Pattern[str] = re.compile(
+    r"\b(?:\d{1,2}\.\d{3}\.\d{3}-[\dkK]|\d{7,8}-[\dkK](?![0-9a-fA-F-]))\b"
+)
+_PHONE_PATTERN: re.Pattern[str] = re.compile(
+    r"(?:\+56\s*9?\s*\d{4}\s*\d{4})\b"
+)
+_CREDIT_CARD_PATTERN: re.Pattern[str] = re.compile(
+    r"\b(?:\d{4}[-\s]?\d{6}[-\s]?\d{5}|(?:\d{4}[-\s]?){3}\d{4})\b"
+)
+_BEARER_PATTERN: re.Pattern[str] = re.compile(
+    r"(?i)\bBearer\s+[A-Za-z0-9\-._~+/]+=*"
+)
+_INLINE_SECRET_PATTERN: re.Pattern[str] = re.compile(
+    r"(?i)\b(password|passwd|secret|token|api_key|apikey|cvv)\s*[:=]\s*[^\s,;]+"
+)
+
+
+def scrub_pii_text(text: str | None) -> str | None:
+    """
+    Enmascara de forma determinista patrones PII (correos electrónicos, RUT chileno,
+    teléfonos, tarjetas de crédito, tokens Bearer y secretos inline) en textos libres, notas o metadatos.
+    """
+    if text is None or not text:
+        return text
+    result = _EMAIL_PATTERN.sub(REDACTED_MARKER, text)
+    result = _RUT_PATTERN.sub(REDACTED_MARKER, result)
+    result = _PHONE_PATTERN.sub(REDACTED_MARKER, result)
+    result = _CREDIT_CARD_PATTERN.sub(REDACTED_MARKER, result)
+    result = _BEARER_PATTERN.sub(REDACTED_MARKER, result)
+    result = _INLINE_SECRET_PATTERN.sub(rf"\1={REDACTED_MARKER}", result)
+    return result
 
 
 @dataclass(frozen=True)
@@ -210,6 +250,63 @@ def clear_in_memory_alerts_metrics() -> None:
     _in_memory_alerts_metrics.clear()
 
 
+@dataclass(frozen=True)
+class RecipeOperationMetric:
+    """Métrica determinista de operaciones de recetas, escandallos, fichas de cocina y combos."""
+
+    operation: str
+    status: str
+    duration_ms: float
+    tenant_id: str | None = None
+    recipe_id: int | None = None
+    combo_id: int | None = None
+    is_dynamic: bool = False
+    allergen_count: int = 0
+    timestamp: str = ""
+
+
+_in_memory_recipe_metrics: list[RecipeOperationMetric] = []
+
+
+def get_in_memory_recipe_metrics() -> list[RecipeOperationMetric]:
+    """Devuelve las métricas de operaciones de recetas y combos registradas en memoria."""
+    return list(_in_memory_recipe_metrics)
+
+
+def clear_in_memory_recipe_metrics() -> None:
+    """Limpia las métricas de operaciones de recetas y combos en memoria."""
+    _in_memory_recipe_metrics.clear()
+
+
+@dataclass(frozen=True)
+class OppyfyOperationMetric:
+    """Métrica determinista de consultas, ruteo y ejecuciones operativas de OppyFy."""
+
+    operation: str
+    status: str
+    duration_ms: float
+    tenant_id: str | None = None
+    user_id: str | None = None
+    subdomain_slug: str | None = None
+    tool_code: str | None = None
+    tokens_total: int = 0
+    credits_deducted: str = "0.00"
+    timestamp: str = ""
+
+
+_in_memory_oppyfy_metrics: list[OppyfyOperationMetric] = []
+
+
+def get_in_memory_oppyfy_metrics() -> list[OppyfyOperationMetric]:
+    """Devuelve las métricas operativas de OppyFy registradas en memoria."""
+    return list(_in_memory_oppyfy_metrics)
+
+
+def clear_in_memory_oppyfy_metrics() -> None:
+    """Limpia las métricas operativas de OppyFy en memoria."""
+    _in_memory_oppyfy_metrics.clear()
+
+
 def record_alert_operational_metric(
     *,
     tenant_id: str,
@@ -305,14 +402,43 @@ def reset_tenant_telemetry_context(
     _current_tenant_ctx_var.reset(ctx_token)
 
 
+AI_METRIC_KEY_EXEMPTIONS: frozenset[str] = frozenset(
+    {
+        "tokens.total",
+        "tokens.input",
+        "tokens.output",
+        "tokens.cached",
+        "tokens_total",
+        "input_tokens",
+        "output_tokens",
+        "cached_tokens",
+        "total_tokens",
+        "prior_thread_tokens",
+    }
+)
+
+
 def _is_sensitive_key(key: str) -> bool:
     normalized = key.strip().lower().replace("-", "_")
+    if (
+        key in AI_METRIC_KEY_EXEMPTIONS
+        or normalized in AI_METRIC_KEY_EXEMPTIONS
+        or normalized.startswith("tokens.")
+    ):
+        return False
     return any(token.replace("-", "_") in normalized for token in SENSITIVE_KEY_TOKENS)
+
+
+def _scrub_string_patterns(text: str) -> str:
+    """Redacta patrones PII embebidos en texto libre (correos, RUTs, teléfonos y secretos inline) preservando nombres propios."""
+    return scrub_pii_text(text) or ""
 
 
 def _scrub_value(value: object) -> object:
     if isinstance(value, SecretStr):
         return REDACTED_MARKER
+    if isinstance(value, str):
+        return _scrub_string_patterns(value)
     if isinstance(value, Mapping):
         return {
             str(k): (
@@ -333,7 +459,8 @@ def scrub_telemetry_payload(payload: dict[str, object]) -> dict[str, object]:
     """
     Función pura y determinista que redacta recursivamente con '[REDACTED_PII]'
     cualquier clave sensible (password, hashed_password, secret, token, authorization,
-    cookie, api_key, rut, tax_id, credit_card, cvv) o instancia de SecretStr.
+    cookie, api_key, rut, tax_id, email_contacto, telefono, direccion, credit_card, cvv)
+    o instancia de SecretStr, preservando nombres comerciales ('Pollo King').
     """
     scrubbed: dict[str, object] = {}
     for key, val in payload.items():
@@ -342,6 +469,19 @@ def scrub_telemetry_payload(payload: dict[str, object]) -> dict[str, object]:
         else:
             scrubbed[key] = _scrub_value(val)
     return scrubbed
+
+
+def scrub_sentry_event(
+    event: dict[str, object],
+    hint: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """
+    Hook determinista `before_send` para Sentry / GlitchTip que garantiza
+    sanitización recursiva de PII (RUT, email_contacto, telefono, direccion,
+    credenciales y SecretStr) sin alterar la razón social inmutable ('Pollo King').
+    """
+    _ = hint
+    return scrub_telemetry_payload(event)
 
 
 def format_structured_log(
@@ -407,7 +547,8 @@ def trace_span(
     status_str = "SUCCESS"
 
     with tracer.start_as_current_span(name) as otel_span:
-        for k, v in dynamic_attrs.items():
+        initial_clean_attrs = scrub_telemetry_payload(dynamic_attrs)
+        for k, v in initial_clean_attrs.items():
             if v is not None:
                 otel_span.set_attribute(str(k), v if isinstance(v, (bool, str, int, float)) else str(v))
 
@@ -497,6 +638,66 @@ def trace_span(
                 timestamp=datetime.now(UTC).isoformat(),
             )
             _in_memory_inventory_metrics.append(metric)
+
+            if name.startswith(("recipe.", "combo.")) or tracer_name.startswith("oppytec.recipes"):
+                raw_recipe_id = dynamic_attrs.get("recipe_id")
+                metric_recipe_id: int | None = None
+                if raw_recipe_id is not None:
+                    try:
+                        metric_recipe_id = int(str(raw_recipe_id))
+                    except (ValueError, TypeError):
+                        metric_recipe_id = None
+
+                raw_combo_id = dynamic_attrs.get("combo_id")
+                metric_combo_id: int | None = None
+                if raw_combo_id is not None:
+                    try:
+                        metric_combo_id = int(str(raw_combo_id))
+                    except (ValueError, TypeError):
+                        metric_combo_id = None
+
+                raw_allergen_count = dynamic_attrs.get("allergen_count", 0)
+                try:
+                    metric_allergens = int(str(raw_allergen_count)) if raw_allergen_count is not None else 0
+                except (ValueError, TypeError):
+                    metric_allergens = 0
+
+                recipe_metric = RecipeOperationMetric(
+                    operation=name,
+                    status=status_str,
+                    duration_ms=round(duration_ms, 3),
+                    tenant_id=metric_tenant,
+                    recipe_id=metric_recipe_id,
+                    combo_id=metric_combo_id,
+                    is_dynamic=bool(dynamic_attrs.get("is_dynamic", False)),
+                    allergen_count=metric_allergens,
+                    timestamp=datetime.now(UTC).isoformat(),
+                )
+                _in_memory_recipe_metrics.append(recipe_metric)
+
+            if name.startswith("oppyfy.") or tracer_name.startswith("oppytec.oppyfy"):
+                raw_tokens = dynamic_attrs.get("tokens.total", dynamic_attrs.get("total_tokens", 0))
+                try:
+                    metric_tokens = int(str(raw_tokens))
+                except (ValueError, TypeError):
+                    metric_tokens = 0
+
+                raw_credits = dynamic_attrs.get("credits.deducted", "0.00")
+                metric_credits = str(raw_credits)
+
+                oppy_metric = OppyfyOperationMetric(
+                    operation=name,
+                    status=status_str,
+                    duration_ms=round(duration_ms, 3),
+                    tenant_id=metric_tenant,
+                    user_id=metric_user,
+                    subdomain_slug=str(dynamic_attrs.get("subdomain_slug", "")) or None,
+                    tool_code=str(dynamic_attrs.get("tool.selected", dynamic_attrs.get("tool_code", ""))) or None,
+                    tokens_total=metric_tokens,
+                    credits_deducted=metric_credits,
+                    timestamp=datetime.now(UTC).isoformat(),
+                )
+                _in_memory_oppyfy_metrics.append(oppy_metric)
 
 
 def record_quota_semaphore_metric(

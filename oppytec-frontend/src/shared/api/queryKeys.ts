@@ -52,6 +52,10 @@ export const queryKeys = {
       ["oppytec", "inventory", "counts", tenantId] as const,
     mermas: (tenantId: string) =>
       ["oppytec", "inventory", "mermas", tenantId] as const,
+    mermasAnalytics: (tenantId: string, params?: Record<string, unknown>) =>
+      ["oppytec", "inventory", "mermas", "analytics", tenantId, params ?? {}] as const,
+    mermasHistory: (tenantId: string, params?: Record<string, unknown>) =>
+      ["oppytec", "inventory", "mermas", "history", tenantId, params ?? {}] as const,
     alerts: (params?: {
       holdingId?: string;
       tenantId?: string;
@@ -91,16 +95,41 @@ export const queryKeys = {
       ["inventory", "history", params ?? {}] as const,
   },
   recipes: {
+    all: (tenantId: string) => ["oppytec", "recipes", "all", tenantId] as const,
+    list: (tenantId: string, params?: Record<string, unknown>) =>
+      ["oppytec", "recipes", "list", tenantId, params ?? {}] as const,
+    detail: (tenantId: string, id: string | number) =>
+      ["oppytec", "recipes", "detail", tenantId, String(id)] as const,
+    categories: (tenantId: string) =>
+      ["oppytec", "recipes", "categories", tenantId] as const,
+    optionGroups: (tenantId: string) =>
+      ["oppytec", "recipes", "optionGroups", tenantId] as const,
+    optionGroupDetail: (tenantId: string, id: string | number) =>
+      ["oppytec", "recipes", "optionGroupDetail", tenantId, String(id)] as const,
+    combos: (tenantId: string, params?: Record<string, unknown>) =>
+      ["oppytec", "recipes", "combos", tenantId, params ?? {}] as const,
+    comboDetail: (tenantId: string, id: string | number) =>
+      ["oppytec", "recipes", "comboDetail", tenantId, String(id)] as const,
+    comboCategories: (tenantId: string) =>
+      ["oppytec", "recipes", "comboCategories", tenantId] as const,
+    simulation: (tenantId: string, recipeId: string | number) =>
+      ["oppytec", "recipes", "simulation", tenantId, String(recipeId)] as const,
+    allergens: (tenantId: string, id: string | number) =>
+      ["oppytec", "recipes", "allergens", tenantId, String(id)] as const,
+    kitchenSheet: (tenantId: string, id: string | number, servings?: number) =>
+      ["oppytec", "recipes", "kitchenSheet", tenantId, String(id), servings ?? "default"] as const,
     escandallos: (tenantId: string) =>
       ["oppytec", "recipes", "escandallos", tenantId] as const,
-    combos: (tenantId: string) =>
-      ["oppytec", "recipes", "combos", tenantId] as const,
   },
   procurement: {
-    purchaseOrders: (tenantId: string) =>
-      ["oppytec", "procurement", "purchaseOrders", tenantId] as const,
-    suppliers: (tenantId: string) =>
-      ["oppytec", "procurement", "suppliers", tenantId] as const,
+    purchaseOrders: (tenantId: string, params?: Record<string, unknown>) =>
+      ["oppytec", "procurement", "purchaseOrders", tenantId, params ?? {}] as const,
+    dashboard: (tenantId: string) =>
+      ["oppytec", "procurement", "dashboard", tenantId] as const,
+    suppliers: (tenantId: string, params?: Record<string, unknown>) =>
+      ["oppytec", "procurement", "suppliers", tenantId, params ?? {}] as const,
+    supplierCatalog: (tenantId: string, supplierId: number) =>
+      ["oppytec", "procurement", "supplierCatalog", tenantId, supplierId] as const,
     invoices: (tenantId: string) =>
       ["oppytec", "procurement", "invoices", tenantId] as const,
   },
@@ -275,11 +304,31 @@ export const queryKeys = {
       ["oppytec", "oppyfy", "workspace", tenantId] as const,
     credits: (tenantId: string) =>
       ["oppytec", "oppyfy", "credits", tenantId] as const,
+    wallet: (tenantId: string) =>
+      ["oppytec", "oppyfy", "wallet", tenantId] as const,
+    workerWallets: (tenantId: string) =>
+      ["oppytec", "oppyfy", "workerWallets", tenantId] as const,
     rbacDomains: (tenantId: string) =>
       ["oppytec", "oppyfy", "rbacDomains", tenantId] as const,
+    rbacGrants: (tenantId: string) =>
+      ["oppytec", "oppyfy", "rbacGrants", tenantId] as const,
+    promptAuditLogs: (tenantId: string, status?: string) =>
+      ["oppytec", "oppyfy", "promptAuditLogs", tenantId, status ?? "all"] as const,
+    aiPacks: (isActiveOnly?: boolean) =>
+      ["oppytec", "oppyfy", "aiPacks", String(isActiveOnly ?? false)] as const,
+    packQuote: (packId: number, planTier?: string) =>
+      ["oppytec", "oppyfy", "packQuote", String(packId), planTier ?? "none"] as const,
+    telemetryLogs: () =>
+      ["oppytec", "oppyfy", "telemetryLogs"] as const,
   },
   platformAdmin: {
     holdings: () => ["oppytec", "platformAdmin", "holdings"] as const,
+    plans: () => ["oppytec", "platformAdmin", "plans"] as const,
+    aiPacks: (isActiveOnly?: boolean) =>
+      ["oppytec", "platformAdmin", "aiPacks", String(isActiveOnly ?? false)] as const,
+    saasPolicy: () => ["oppytec", "platformAdmin", "saasPolicy"] as const,
+    tokenConsumption: (filters?: Record<string, unknown>) =>
+      ["oppytec", "platformAdmin", "tokenConsumption", filters ?? {}] as const,
     finopsLogs: (envFilter: string) =>
       ["oppytec", "platformAdmin", "finopsLogs", envFilter] as const,
     observability: (subview: string, envFilter: string) =>

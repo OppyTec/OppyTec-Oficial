@@ -517,5 +517,11 @@
     "pagination": {
       "item_label": "alertas"
     }
+  },
+  "gestion_tabs": {
+    "pedidos": "Pedidos & Compras",
+    "mermas": "Control de Mermas",
+    "pedidos_description": "Órdenes de compra, recepción de mercadería y directorio de proveedores",
+    "mermas_description": "Analítica de pérdidas operativas valorizadas al PPP"
   }
 }

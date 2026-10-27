@@ -32,6 +32,7 @@ export interface MenuItem {
   readonly exact?: boolean;
   readonly color: string;
   readonly rgb: string;
+  readonly badge?: string;
 }
 
 export const ADMIN_DIRECT_MENU_ITEMS = [
@@ -74,6 +75,7 @@ export const GESTION_NEGOCIO_ITEMS = [
     icon: Layers,
     color: "#8b5cf6",
     rgb: "139,92,246",
+    badge: "SaaS",
   },
   {
     path: "/admin/token-consumption",
@@ -81,6 +83,7 @@ export const GESTION_NEGOCIO_ITEMS = [
     icon: Coins,
     color: "#10b981",
     rgb: "16,185,129",
+    badge: "FinOps",
   },
 ] as const;
 
@@ -393,20 +396,35 @@ export function AdminSidebar({
                     "--sub-rgb": subItem.rgb,
                   } as CSSProperties;
                   const SubIcon = subItem.icon;
+                  const testId =
+                    subItem.path === "/admin/plans"
+                      ? "admin-nav-item-plans"
+                      : subItem.path === "/admin/token-consumption"
+                        ? "admin-nav-item-token-consumption"
+                        : `admin-nav-item-${subItem.path.replace("/admin/", "")}`;
 
                   return (
                     <Link
                       key={subItem.path}
                       to={subItem.path}
+                      data-testid={testId}
                       style={subStyle}
+                      title={
+                        subItem.badge
+                          ? `${subItem.label} (${subItem.badge})`
+                          : subItem.label
+                      }
                       className={`flex items-center gap-3 pl-11 pr-3 py-2 text-sm transition-all duration-200 group relative ${
                         subIsActive
-                          ? "text-[var(--sub-color)] font-medium"
+                          ? "text-[var(--sub-color)] font-medium bg-[rgba(var(--sub-rgb),0.08)] rounded-r-xl"
                           : "text-muted-foreground hover:text-[var(--sub-color)] hover:bg-[rgba(var(--sub-rgb),0.05)] rounded-r-xl"
                       }`}
                     >
                       {subIsActive && (
-                        <div className="absolute left-[1.375rem] w-[2px] h-[calc(100%-8px)] bg-[var(--sub-color)] rounded-full -translate-x-1/2" />
+                        <div
+                          data-testid="active-nav-indicator"
+                          className="absolute left-[1.375rem] w-[2px] h-[calc(100%-8px)] bg-[var(--sub-color)] rounded-full -translate-x-1/2"
+                        />
                       )}
                       <SubIcon
                         size={16}
@@ -416,7 +434,22 @@ export function AdminSidebar({
                             : "text-muted-foreground group-hover:text-[var(--sub-color)]"
                         }`}
                       />
-                      <span className="truncate">{subItem.label}</span>
+                      <span className="truncate flex-1">{subItem.label}</span>
+                      {subItem.badge && (
+                        <span
+                          data-testid={`badge-${subItem.badge.toLowerCase()}`}
+                          className="ml-auto px-1.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded border transition-colors shrink-0"
+                          style={{
+                            backgroundColor: subIsActive
+                              ? "rgba(var(--sub-rgb), 0.18)"
+                              : "rgba(var(--sub-rgb), 0.08)",
+                            color: "var(--sub-color)",
+                            borderColor: "rgba(var(--sub-rgb), 0.28)",
+                          }}
+                        >
+                          {subItem.badge}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
@@ -520,11 +553,16 @@ export function AdminSidebar({
             "--item-rgb": item.rgb,
           } as CSSProperties;
           const ItemIcon = item.icon;
+          const testId =
+            item.path === "/admin"
+              ? "admin-nav-item-dashboard"
+              : `admin-nav-item-${item.path.replace("/admin/", "")}`;
 
           return (
             <Link
               key={item.path}
               to={item.path}
+              data-testid={testId}
               style={itemStyle}
               title={isCollapsed && !isOpen ? item.label : undefined}
               className={`flex items-center gap-4 px-3 h-11 rounded-xl transition-all duration-200 group relative ${

@@ -19,15 +19,18 @@ Snapshot de Stock con Semáforos, Undo/Redo Transaccional, Mermas e Ingesta de F
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import suppress
 from datetime import date
 from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, Request, Response, UploadFile, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.database import get_tenant_db_session
 from src.core.exceptions import (
     DomainValidationError,
     PermissionDeniedError,
@@ -44,8 +47,13 @@ from src.core.realtime.schemas import RealtimeEventEnvelope
 from src.modules.inventory.application.alerts_service import InventoryAlertsService
 from src.modules.inventory.application.history_service import KardexHistoryService
 from src.modules.inventory.application.inventory_service import InventoryService
+from src.modules.inventory.application.merma_analytics_service import MermaAnalyticsService
 from src.modules.inventory.application.physical_count_service import PhysicalCountService
 from src.modules.inventory.application.waste_service import WasteService
+from src.modules.procurement.presentation.schemas import (
+    MermaAnalyticsResponse,
+    MermaHistoryResponse,
+)
 from src.modules.inventory.domain.alerts import (
     AlertBadgeSummary,
     AlertsConsolidatedSummary,
@@ -97,6 +105,34 @@ _waste_service = WasteService(
 _physical_count_service = PhysicalCountService(inventory=_inventory_service)
 _alerts_service = InventoryAlertsService()
 _history_service = KardexHistoryService(inventory=_inventory_service)
+_merma_analytics_service = MermaAnalyticsService()
+
+
+def _format_tenant_schema_inv(tenant_id: str | None) -> str:
+    if not tenant_id:
+        return "tenant_default"
+    cleaned = str(tenant_id).strip().lower().replace("-", "_")
+    if not cleaned.startswith("tenant_"):
+        cleaned = f"tenant_{cleaned}"
+    return cleaned
+
+
+async def get_inventory_tenant_db(request: Request) -> AsyncGenerator[AsyncSession | None, None]:
+    principal: AuthenticatedPrincipal | None = getattr(request.state, "principal", None)
+    tenant_id = principal.tenant_id if principal else None
+    schema = _format_tenant_schema_inv(tenant_id)
+    session_gen = get_tenant_db_session(schema)
+    try:
+        session = await anext(session_gen)
+    except Exception:
+        yield None
+        return
+
+    try:
+        yield session
+    finally:
+        with suppress(Exception):
+            await session_gen.aclose()
 
 
 def _parse_optional_uuid(val: str | None) -> UUID | None:
@@ -844,6 +880,32 @@ async def report_merma_endpoint(
         reporter_user_id=principal.user_id,
         tenant_id=principal.tenant_id,
     )
+    _merma_analytics_service.register_in_memory_merma({
+        "id": rec.waste_id,
+        "producto_id": rec.producto_id,
+        "bodega_id": rec.bodega_id,
+        "cantidad": rec.quantity,
+        "costo_total": rec.total_cost,
+        "motivo": rec.reason,
+        "estado_aprobacion": rec.status,
+        "reportado_por_user_id": rec.reporter_user_id,
+        "created_at": date.today(),
+        "fecha_merma": date.today(),
+        "tenant_id": principal.tenant_id,
+    })
+    try:
+        publisher = get_realtime_publisher()
+        tenant_uuid = UUID(str(principal.tenant_id)) if principal.tenant_id else None
+        await publisher.publish_event(
+            RealtimeEventEnvelope(
+                event_type="inventory.waste.registered",
+                tenant_id=tenant_uuid,
+                payload={"waste_id": rec.waste_id, "costo_total": str(rec.total_cost)},
+                query_keys_to_invalidate=[["inventory", "mermas"], ["inventory", "mermas", "analytics"]],
+            )
+        )
+    except Exception:
+        pass
     return MermaResponse(
         waste_id=rec.waste_id,
         producto_id=rec.producto_id,
@@ -892,6 +954,71 @@ async def approve_merma_endpoint(
         reason=rec.reason,
         reporter_user_id=rec.reporter_user_id,
         status=rec.status,
+    )
+
+
+@router.get(
+    "/api/v1/inventory/mermas/analytics",
+    response_model=MermaAnalyticsResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_mermas_analytics_endpoint(
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.mermas.view")),
+    ],
+    session: Annotated[AsyncSession | None, Depends(get_inventory_tenant_db)],
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    bodega_id: int | None = Query(default=None),
+) -> MermaAnalyticsResponse:
+    """Obtiene agregaciones analíticas y financieras de mermas e inventario dañado."""
+    data = await _merma_analytics_service.get_analytics(
+        session,
+        date_from=date_from,
+        date_to=date_to,
+        bodega_id=bodega_id,
+        tenant_id=_principal.tenant_id,
+    )
+    return MermaAnalyticsResponse(**data)
+
+
+@router.get(
+    "/api/v1/inventory/mermas/history",
+    response_model=MermaHistoryResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_mermas_history_endpoint(
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireTenantPermission("inventory.mermas.view")),
+    ],
+    session: Annotated[AsyncSession | None, Depends(get_inventory_tenant_db)],
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    bodega_id: int | None = Query(default=None),
+    estado: str | None = Query(default=None),
+    motivo: str | None = Query(default=None),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
+) -> MermaHistoryResponse:
+    """Historial cronológico paginado de mermas con filtros."""
+    items, total = await _merma_analytics_service.get_history(
+        session,
+        date_from=date_from,
+        date_to=date_to,
+        bodega_id=bodega_id,
+        estado=estado,
+        motivo=motivo,
+        skip=skip,
+        limit=limit,
+        tenant_id=_principal.tenant_id,
+    )
+    return MermaHistoryResponse(
+        items=items,
+        total=total,
+        skip=skip,
+        limit=limit,
     )
 
 

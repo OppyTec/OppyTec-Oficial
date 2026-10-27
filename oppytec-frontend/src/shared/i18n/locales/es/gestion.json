@@ -1,7 +1,18 @@
 {
   "header": {
     "title": "Gestión de Productos",
-    "subtitle": "Catálogo de productos e insumos"
+    "subtitle": "Catálogo de productos e insumos",
+    "pedidos_title": "Gestión de Pedidos y Abastecimiento",
+    "pedidos_subtitle": "Órdenes de compra, recepción física, catálogo pactado y proveedores",
+    "mermas_title": "Gestión y Control de Mermas",
+    "mermas_subtitle": "Monitoreo analítico de pérdidas operativas, caducidades y motivos"
+  },
+  "tabs": {
+    "productos": "Insumos & Productos",
+    "recetas": "Recetas & Escandallos",
+    "combos": "Combos & Promociones",
+    "pedidos": "Pedidos & Compras",
+    "mermas": "Control de Mermas"
   },
   "toolbar": {
     "area_selector_label": "Área Operativa",

@@ -603,3 +603,295 @@ def test_plan_basico_oppyfy_disabled_by_default_and_upgrade_or_override() -> Non
     assert "oppy_ai" in req_with_ai.enabled_modules
     assert req_with_ai.custom_max_users_override == 10
 
+
+def test_operational_tools_and_cost_stripping() -> None:
+    """
+    Verifica las herramientas operativas deterministas (JEV Layer 2):
+    - Inventario FEFO y alertas de reposición
+    - Factibilidad de banquetes y eventos
+    - Mermas y Food Cost
+    - Regla inmutable "Pollo King": nombres de proveedores intactos
+    - Hard-Code Data Stripping cuando can_view_costs=False
+    """
+    from src.adapters.ai.jev_protocol import JevChoiceResult
+    from src.modules.oppy_ai.application.operational_tools import (
+        analyze_event_supply_feasibility,
+        analyze_waste_and_merma_impact,
+        build_optimal_purchase_order_draft,
+        evaluate_supplier_lead_times_and_price_drift,
+        get_expiring_batches_fefo,
+        get_sales_and_food_cost_variance,
+        get_stock_health_and_reorder_alerts,
+        render_canvas_chart,
+        render_canvas_table,
+    )
+
+    schema = "tenant_test"
+
+    # 1. Inventario & FEFO
+    stock_alerts = get_stock_health_and_reorder_alerts(schema, critical_threshold_days=7)
+    assert stock_alerts["critical_items_count"] == 2
+    assert isinstance(stock_alerts["total_estimated_reorder_cost"], Decimal)
+
+    exp_batches = get_expiring_batches_fefo(schema, days_window=14)
+    assert exp_batches["expiring_batches_count"] == 3
+    assert exp_batches["batches"][0]["risk_level"] == "CRITICAL"
+
+    # 2. Proveedores & Demoras (Regla Pollo King)
+    supp_drift = evaluate_supplier_lead_times_and_price_drift(schema)
+    pk_supp = next(
+        s for s in supp_drift["suppliers_evaluated"] if s["supplier_name"] == "Pollo King SpA"
+    )
+    assert pk_supp["supplier_name"] == "Pollo King SpA"
+    assert pk_supp["lead_time_drift_hours"] == 12
+
+    po_draft = build_optimal_purchase_order_draft(schema)
+    assert any(
+        order["supplier_name"] == "Pollo King SpA" for order in po_draft["supplier_orders"]
+    )
+    assert isinstance(po_draft["total_draft_neto_clp"], Decimal)
+
+    # 3. Banquetes & Eventos
+    event_feasibility = analyze_event_supply_feasibility(schema, guest_count=120)
+    assert event_feasibility["stock_sufficient"] is False
+    assert len(event_feasibility["critical_shortages"]) > 0
+
+    event_ok = analyze_event_supply_feasibility(schema, guest_count=50)
+    assert event_ok["stock_sufficient"] is True
+    assert len(event_ok["critical_shortages"]) == 0
+
+    # 4. Mermas & Food Cost
+    food_cost = get_sales_and_food_cost_variance(schema)
+    assert food_cost["food_cost_real_pct"] == Decimal("32.00")
+    assert food_cost["variacion_costo_pct"] == Decimal("2.00")
+
+    waste_impact = analyze_waste_and_merma_impact(schema)
+    assert waste_impact["total_merma_incidents"] == 5
+    assert isinstance(waste_impact["costo_total_merma"], Decimal)
+
+    # 5. Canvas Tools
+    canvas_tbl = render_canvas_table("Stock Crítico", ["Item", "Stock"], [["Lomo", "14kg"]])
+    assert canvas_tbl["artifact_type"] == "canvas_table"
+
+    canvas_chrt = render_canvas_chart("bar", "Costos", [{"name": "Costo", "data": [30]}])
+    assert canvas_chrt["artifact_type"] == "canvas_chart"
+
+    # 6. Hard-Code Data Stripping en tool router
+    jev_dummy = JevChoiceResult(
+        decision_id="TEST",
+        value="get_stock_health_and_reorder_alerts",
+        confidence=Decimal("0.99"),
+        threshold=Decimal("0.70"),
+        meets_threshold=True,
+        fallback_required=False,
+        alternatives=(),
+        usage_record=None,  # type: ignore[arg-type]
+    )
+    router = OppyfyToolRouter(None)  # type: ignore[arg-type]
+
+    # Sin permiso de costos
+    res_redacted = router.execute_hardcoded_tool(
+        "get_stock_health_and_reorder_alerts",
+        tenant_schema=schema,
+        can_view_costs=False,
+        jev_choice=jev_dummy,
+    )
+    assert res_redacted.costs_redacted is True
+    first_alert = res_redacted.sanitized_payload["alerts"][0]
+    assert first_alert["costo_unitario"] == REDACTED_COST_MARKER
+    assert first_alert["precio_compra"] == REDACTED_COST_MARKER
+    assert first_alert["total_neto"] == REDACTED_COST_MARKER
+    assert res_redacted.sanitized_payload["total_estimated_reorder_cost"] == REDACTED_COST_MARKER
+
+    # Con permiso de costos
+    res_allowed = router.execute_hardcoded_tool(
+        "get_stock_health_and_reorder_alerts",
+        tenant_schema=schema,
+        can_view_costs=True,
+        jev_choice=jev_dummy,
+    )
+    assert res_allowed.costs_redacted is False
+    assert isinstance(res_allowed.sanitized_payload["alerts"][0]["costo_unitario"], Decimal)
+
+
+def test_metered_ai_service_model_tariffs_and_cost_precision() -> None:
+    """
+    Verifica que MeteredAIService calcule costos exactos en USD NUMERIC(14,6)
+    y CLP NUMERIC(14,2) a partir de ai_model_configs.
+    """
+    from src.modules.oppy_ai.application.metered_ai_service import (
+        ModelConfigRegistry,
+        ModelTariff,
+    )
+
+    registry = ModelConfigRegistry()
+    tariff = registry.get_tariff("gemini-1.5-flash")
+    assert tariff.input_cost_per_1m_usd == Decimal("0.075000")
+    assert tariff.output_cost_per_1m_usd == Decimal("0.300000")
+
+    # Registro de tarifa personalizada
+    registry.set_tariff(
+        ModelTariff(
+            model_slug="custom-llm",
+            input_cost_per_1m_usd=Decimal("0.500000"),
+            cached_cost_per_1m_usd=Decimal("0.100000"),
+            output_cost_per_1m_usd=Decimal("2.000000"),
+        )
+    )
+    custom_tariff = registry.get_tariff("custom-llm")
+    assert custom_tariff.input_cost_per_1m_usd == Decimal("0.500000")
+
+    # Verificación de cálculo monetario con Decimal
+    service = MeteredAIService(
+        jev_port=None,  # type: ignore[arg-type]
+        llm_port=None,  # type: ignore[arg-type]
+        rag_service=None,  # type: ignore[arg-type]
+        model_registry=registry,
+    )
+    usd, clp = service.calculate_token_cost(
+        "custom-llm",
+        input_tokens=100_000,
+        cached_tokens=50_000,
+        output_tokens=20_000,
+        usd_to_clp_rate=Decimal("950.00"),
+    )
+    # (100k * 0.50 + 50k * 0.10 + 20k * 2.00) / 1M = (0.05 + 0.005 + 0.04) = 0.095000 USD
+    assert usd == Decimal("0.095000")
+    # 0.095 * 950 = 90.25 CLP
+    assert clp == Decimal("90.25")
+
+
+def test_three_layer_rag_and_semantic_cache_l1_l2() -> None:
+    """
+    Verifica el RAG de 3 Capas:
+    - Capa 1: Context health
+    - Capa 2: Live tools (is_cacheable = False)
+    - Capa 3: specs/business-domain (0% fuga)
+    - Caché semántica L1 Redis con TTL 48h
+    """
+    from src.modules.oppy_ai.application.rag_service import (
+        BusinessSpecChunkRecord,
+        InMemoryRedisSemanticCache,
+        ThreeLayerRagService,
+    )
+    from src.modules.oppy_ai.application.tool_router import RoutedToolExecutionResult
+
+    cache = InMemoryRedisSemanticCache(default_ttl_seconds=172800)
+    rag = ThreeLayerRagService(
+        business_spec_chunks=[
+            BusinessSpecChunkRecord(
+                chunk_id=uuid.uuid4(),
+                spec_rel_path="specs/business-domain/inventory/fefo.md",
+                module_slug="inventory",
+                content_markdown="Reglas FEFO oficiales",
+            )
+        ],
+        semantic_cache=cache,
+    )
+
+    # 1. Consulta conceptual (sin herramientas vivas) -> Cacheable
+    bundle_conceptual = rag.build_three_layer_context(
+        user_prompt="¿Cómo funciona FEFO en OppyTec?",
+        authorized_subdomain_id=1,
+        user_id=1,
+        routed_tool_result=None,
+    )
+    assert bundle_conceptual.is_cacheable is True
+    saved = rag.store_conceptual_cache(
+        "¿Cómo funciona FEFO en OppyTec?",
+        "FEFO prioriza el lote que vence primero.",
+        is_cacheable=bundle_conceptual.is_cacheable,
+    )
+    assert saved is True
+    hit = rag.check_conceptual_cache("¿Cómo funciona FEFO en OppyTec?")
+    assert hit == "FEFO prioriza el lote que vence primero."
+
+    # 2. Consulta con datos vivos de Capa 2 -> Estrictamente NO cacheable
+    live_result = RoutedToolExecutionResult(
+        tool_code="query_stock_levels",
+        subdomain_slug="inventario_y_bodegas",
+        jev_choice=None,  # type: ignore[arg-type]
+        raw_fields_count=2,
+        sanitized_payload={"stock_disponible_kg": Decimal("18.50")},
+        costs_redacted=False,
+    )
+    bundle_live = rag.build_three_layer_context(
+        user_prompt="Muéstrame el stock vivo",
+        authorized_subdomain_id=1,
+        user_id=1,
+        routed_tool_result=live_result,
+    )
+    assert bundle_live.is_cacheable is False
+    assert rag.store_conceptual_cache("Muéstrame el stock vivo", "18.50kg", is_cacheable=bundle_live.is_cacheable) is False
+
+    # 3. Aislamiento estricto: rechazo de rutas fuera de specs/business-domain
+    with pytest.raises(ValueError, match="RAG Isolation Error"):
+        rag.register_business_spec_chunk(
+            BusinessSpecChunkRecord(
+                chunk_id=uuid.uuid4(),
+                spec_rel_path="src/modules/identity/passwords.py",
+                module_slug="identity",
+                content_markdown="Código interno prohibido",
+            )
+        )
+
+
+def test_ai_credit_packs_service_crud_quote_and_stacking() -> None:
+    """
+    Verifica el servicio de paquetes de créditos IA:
+    - CRUD en public.ai_credit_packs
+    - Cotización con descuento por nivel de plan base SaaS
+    - Acumulación sin caducidad (1000 + 10000 = 11000)
+    """
+    from src.modules.oppy_ai.application.ai_credit_packs_service import (
+        AiCreditPacksService,
+    )
+
+    service = AiCreditPacksService()
+    packs = service.list_packs()
+    assert len(packs) >= 3
+
+    # Creación
+    new_p = service.create_pack(
+        pack_name="Turbo 2.500",
+        credits_amount=Decimal("2500.00"),
+        price_clp=Decimal("22990.00"),
+        price_usd=Decimal("25.00"),
+        bonus_credits=Decimal("100.00"),
+        plan_tier_discounts={"plan_pro": Decimal("10.00"), "plan_enterprise": Decimal("20.00")},
+    )
+    assert new_p.total_credits == Decimal("2600.00")
+
+    # Cotización con descuento Plan Enterprise (20%)
+    quote = service.calculate_quote(new_p.id, base_plan_tier="plan_enterprise")
+    assert quote.discount_pct == Decimal("20.00")
+    # 25.00 - 20% = 20.00 USD
+    assert quote.final_price_usd == Decimal("20.00")
+
+    # Actualización
+    updated = service.update_pack(new_p.id, is_popular=True)
+    assert updated.is_popular is True
+
+    # Eliminación
+    assert service.delete_pack(new_p.id) is True
+
+
+def test_token_consumption_finops_analytics() -> None:
+    """
+    Verifica las métricas consolidadas de rentabilidad y margen bruto FinOps
+    calculadas por TokenConsumptionAggregatorService.
+    """
+    from src.modules.oppy_ai.application.token_consumption_service import (
+        TokenConsumptionAggregatorService,
+    )
+
+    aggregator = TokenConsumptionAggregatorService()
+    finops = aggregator.get_finops_analytics(credit_sale_price_clp=Decimal("15.00"))
+    assert finops.total_tokens > 0
+    assert finops.provider_cost_usd > Decimal("0.000000")
+    assert finops.provider_cost_clp > Decimal("0.00")
+    assert finops.credits_revenue_clp > Decimal("0.00")
+    assert "gemini-1.5-flash" in finops.model_breakdown
+    assert finops.model_breakdown["gemini-1.5-flash"]["tokens"] > 0
+
+

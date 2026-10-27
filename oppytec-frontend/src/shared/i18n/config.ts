@@ -108,6 +108,10 @@ export const IMMUTABLE_PROPER_NOUNS: readonly string[] = [
   "Super Pollo",
   "NotCo",
   "Kunstmann",
+  "Distribuidora Austral Food SpA",
+  "Agrícola y Comercial Valle Central Ltda",
+  "Lácteos del Sur S.A.",
+  "Importadora y Distribuidora Gourmet Pacific",
 ] as const;
 
 export const I18N_RESOURCES: Resource = {

@@ -1,17 +1,33 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import {
+  convertAmountExact,
+  formatCurrencyAmount,
+  type SupportedCurrency,
+} from "@/shared/currency";
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
-export function formatMoney(value: number): string {
-  return value.toLocaleString("es-CL", {
-    style: "currency",
-    currency: "CLP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
+export function formatMoney(
+  value: number | string,
+  currency: SupportedCurrency = "CLP",
+  fromCurrency: SupportedCurrency = "CLP"
+): string {
+  if (value === null || value === undefined || value === "") {
+    return formatCurrencyAmount(0, currency);
+  }
+  const numVal = typeof value === "number" ? value : Number(value);
+  if (Number.isNaN(numVal) || !Number.isFinite(numVal)) {
+    return formatCurrencyAmount(0, currency);
+  }
+  const exactStr = typeof value === "string" ? value.trim() : numVal.toFixed(4);
+  const converted =
+    fromCurrency === currency
+      ? exactStr
+      : convertAmountExact(exactStr, fromCurrency, currency);
+  return formatCurrencyAmount(converted, currency);
 }
 
 export function getImageUrl(path: string | null | undefined): string {

@@ -25,5 +25,6 @@ export {
   CURRENCY_SYMBOLS,
   type UseCurrencyFormatterReturn,
   formatCurrencyAmount,
+  formatMoney,
   useCurrencyFormatter,
 } from "./useCurrencyFormatter";

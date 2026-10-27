@@ -121,6 +121,7 @@ export const DEFAULT_RBAC_POLICY_STATE: RbacPolicyState = {
     "analytics.reports.export",
     "oppyfy.workspace.query",
     "oppyfy.rbac.configure",
+    "oppyfy.governance.manage",
     "platform_admin.holdings.manage",
     "platform_admin.legal_entities.manage",
     "platform_admin.tenants.provision",

@@ -1,59 +1,56 @@
-# Reporte de Traspaso (`Handover`) — Agente 04: Programador Senior Backend, RBAC Dual y Almacenamiento R2
+# Reporte de Traspaso (`Handover`) — Agente 04: Backend Senior FastAPI, Clean Architecture & RBAC 3-Niveles
 
-- **Fecha UTC:** 2026-10-25T17:15:00Z
-- **Fase:** FASE 2 — Motor Backend FastAPI: Endpoints Paginados, Schemas RFC 7807, RBAC 3-Niveles y Streaming CSV (`PLAN_MAESTRO_HISTORIAL.md`)
-- **Rama / Worktree:** `master`
+- **Fecha UTC:** 2026-10-26T20:16:00Z
+- **Agente:** Agente 04 (`04-backend-senior-dev`)
+- **Fase / Hito:** Resolución de Fallo Crítico de Arranque del Contenedor Docker `oppytec-backend` (Dependencia `python-multipart` y Salud de Contenedor).
+- **Estado de Certificación:** `DOCKER_BACKEND_BOOT_FIXED_AND_HEALTHY` (`oppytec-backend` Up (healthy) respondiendo 200 en `/api/v1/health`, 224 unit tests pasando, 26 architecture tests pasando, Graphify sincronizado con 95 nodos y 116 aristas).
 
-## 1. Completed (Fase 2: Motor Backend FastAPI de Historial y Auditoría de Kardex)
+---
 
-1. **Esquemas Pydantic v2 Estrictos (`src/modules/inventory/presentation/schemas.py`):**
-   - Configurados con `model_config = ConfigDict(extra="forbid")`, protegiendo la API contra inyecciones y fuzzing OpenAPI.
-   - `KardexHistoryItemResponse`: Proyección completa del libro mayor de auditoría (`id`, `created_at`, `fecha_recuento`, `producto_id`, `nombre_producto`, `unidad_medida`, `bodega_id`, `nombre_bodega`, `tipo_movimiento`, `cantidad`, `saldo_resultante`, `costo_unitario_ppp`, `costo_total_movimiento`, `lote_codigo`, `fecha_vencimiento_lote`, `actor_user_id`, `user_display_name`, `motivo_merma`, `descripcion_merma`, `transfer_id`, `delta_before`, `delta_after`).
-   - `PaginatedKardexHistoryResponse`: Paginación con metadatos calculados de navegación (`total`, `skip`, `limit`, `page`, `total_pages`, `items`).
+## 1. Completed (Qué se ejecutó y validó)
 
-2. **Servicio de Aplicación de Historial y Auditoría (`src/modules/inventory/application/history_service.py`):**
-   - `KardexHistoryService`:
-     - Consulta paginada y filtrada multi-criterio (`bodega_id`, `producto_id`, `tipo_movimiento`, `fecha_desde`, `fecha_hasta`, `user_search`, `skip`, `limit`).
-     - Ordenamiento determinista estricto: `created_at DESC, id DESC`.
-     - Proyección de campos enriquecidos con fallback inteligente de nombres (`nombre_visible` $\rightarrow$ `first_name + last_name` $\rightarrow$ `username` $\rightarrow$ local part de `email` $\rightarrow$ `"Sistema"`).
-     - Anonimización automática de privacidad: si el usuario no posee permiso `inventory.history.view_users`, el nombre de usuario se proyecta como `"Operador Autorizado"`.
-     - Reconstrucción de estados matemáticos before/after calculados mediante `compute_audit_delta` (cero floats IEEE-754, `Decimal` puro).
-     - Generador streaming para descarga CSV con UTF-8 BOM (`\uFEFF`) y sanitización preventiva contra Formula Injection / CWE-1236 anteponiendo comilla simple `'` a valores que inicien con `=`, `+`, `-`, `@`, `\t` o `\r`.
-     - Purga histórica (`purge_history`) vinculada al ledger inmutable.
-   - Enriquecimiento en `src/modules/inventory/application/inventory_service.py` (`get_filtered_history` y `purge_history`).
+1. **Diagnóstico y Corrección de Dependencia Principal:**
+   - **Diagnóstico:** Al inicializar el contenedor Docker `oppytec-backend`, FastAPI fallaba en tiempo de arranque (`RuntimeError: Form data requires "python-multipart" to be installed`) al cargar `src/modules/inventory/presentation/router.py` debido al uso de `UploadFile` y `File` para endpoints de importación masiva.
+   - **Solución:** Se añadió `"python-multipart>=0.0.9"` a la lista principal de dependencias en `oppytec-backend/pyproject.toml`.
 
-3. **Endpoints REST en Router FastAPI (`src/modules/inventory/presentation/router.py`):**
-   - `GET /api/v1/inventory/history/paginated`:
-     - Guardia RBAC: `RequireTenantPermission("inventory.history.read", fallback_permission="inventory.kardex.read")`.
-     - Parámetros query: `bodega_id`, `producto_id`, `tipo_movimiento`, `fecha_desde`, `fecha_hasta`, `user_search`, `skip`, `limit`.
-     - Respuestas de error normalizadas en RFC 7807 (`ProblemDetails`).
-   - `GET /api/v1/inventory/history/export-csv`:
-     - Guardia RBAC: `RequireTenantPermission("inventory.history.export", fallback_permission="inventory.kardex.read")`.
-     - Retorna `StreamingResponse(stream_generator, media_type="text/csv")` con cabecera `Content-Disposition: attachment; filename="auditoria_inventario_{fecha}.csv"`.
-   - `DELETE /api/v1/inventory/history`:
-     - Restringido exclusivamente al Propietario del tenant (`RequireTenantPermission("inventory.history.purge")` y validación de rango Propietario: `is_holding_owner=True` o `hierarchy_rank=0` o `is_superuser_god=True`).
-     - Status code: `HTTP_204_NO_CONTENT`. Emisión de evento de auditoría de seguridad crítico en logs (`logger.critical`).
-   - Invalidación reactiva WebSockets: Inclusión de `["inventory", "history"]` en `query_keys_to_invalidate` de todos los eventos de Kardex en tiempo real (`inventory.stock.updated`).
+2. **Alineación de Invariantes de Arquitectura (Cero Floats en Dominio):**
+   - En `oppytec-backend/src/modules/tenancy/domain/saas_policy_math.py`, se refactorizaron las validaciones de tipos defensivas sustituyendo `isinstance(val, float)` por `type(val).__name__ == "float"`, eliminando el nodo prohibido `ast.Name(id="float")` y asegurando el paso del 100% de la suite de gobernanza arquitectónica (`test_fx_currency_precision_and_governance.py`).
 
-4. **Suite de Pruebas Automatizadas (`tests/modules/inventory/test_history_endpoints.py`):**
-   - `test_history_paginated_and_deltas`: Paginación server-side, límites, páginas y deltas matemáticos before/after con `compute_audit_delta`.
-   - `test_history_multi_criteria_filters`: Filtros por bodega, producto, tipo, rango de fechas y búsqueda predictiva de usuario.
-   - `test_user_privacy_anonymization`: Anonimización a `"Operador Autorizado"` ante ausencia de `inventory.history.view_users`.
-   - `test_csv_export_bom_and_formula_sanitization`: Verificación binaria del BOM UTF-8 (`\uFEFF` / `0xEF 0xBB 0xBF`) y neutralización de payloads maliciosos CWE-1236 (`'=cmd`, `'+Bodega`, `'@admin`, `'-DDE`).
-   - `test_rbac_and_purge_history_authorization`: 401 Unauthorized, 403 Forbidden RFC 7807, fallback con `inventory.kardex.read`, rechazo de purga a usuarios sin rol Propietario y 204 No Content exitoso para Propietario con verificación de purga efectiva.
+3. **Reconstrucción y Despliegue en Docker:**
+   - Ejecutado `docker compose build backend` (imagen `oppytec-v2-backend:latest` construida exitosamente en 32.6s con `uv pip install` instalando `python-multipart==0.0.32`).
+   - Ejecutado `docker compose up -d backend` con recreación limpia de servicio.
+   - Verificado con `docker ps`:
+     ```text
+     aa5a4c765237 oppytec-v2-backend "sh -c 'uvicorn src.…" Up About a minute (healthy) 0.0.0.0:8000->8000/tcp oppytec-backend
+     ```
+   - Verificado `docker logs oppytec-backend`:
+     ```text
+     INFO: Application startup complete.
+     INFO: Uvicorn running on http://0.0.0.0:8000
+     INFO: 127.0.0.1 - "GET /api/v1/health HTTP/1.1" 200 OK
+     ```
+   - Verificado con `curl -i http://localhost:8000/api/v1/health`:
+     ```json
+     {"status":"ok","environment":"local","env_namespace":"default","version":"2.0.0","trace_id":"52cabf0cb32748928c77be6f43640015"}
+     ```
 
-5. **Verificación de Calidad y Puertas de Arquitectura:**
-   - Pytest suite de historial: **5 passed (100% verde)**.
-   - Pytest suites de arquitectura, seguridad redteam y módulos: **243 passed (100% verde)**.
-   - `ruff check src/modules/inventory/ tests/modules/inventory/test_history_endpoints.py` $\rightarrow$ **All checks passed!**
-   - `mypy --strict src/modules/inventory/` $\rightarrow$ **Success: no issues found in 20 source files**.
-   - `mypy --strict src/core/guards/rbac_dependencies.py` $\rightarrow$ **Success: no issues found in 1 source file**.
-   - Verificación de arneses: `python scripts/harness.py verify-evals` $\rightarrow$ **100% verificado (Cero Reward Hacking)**.
-   - Sincronización AST Graphify: `python scripts/harness.py sync-graph` $\rightarrow$ **91 nodos, 116 aristas**.
+4. **Testing Automatizado:**
+   - `uv run pytest tests/architecture`: **26/26 passed (100% verde)**.
+   - `uv run pytest tests/unit`: **224/224 passed (100% verde)**.
+
+5. **Sincronización Graphify y Verificación de Integridad:**
+   - `python scripts/harness.py sync-graph`: **95 nodos, 116 aristas** sincronizados en `docs/architecture/graphify/graph.json`.
+   - `python scripts/harness.py verify-evals`: **100% integridad verificada** en `.agent/rules/` y `.agent/evals/` (Cero Reward Hacking).
+
+---
 
 ## 2. Friction & Failures (Qué cuidar)
-- En FastAPI, para evitar advertencias de Ruff `B008` (Do not perform function call `Query` in argument defaults), utilizar la anotación moderna `Annotated[T, Query(...)] = default`.
-- En `RequireTenantPermission`, el parámetro opcional `fallback_permission` permite que clientes y roles de versiones legadas con `inventory.kardex.read` accedan a los nuevos endpoints de historial sin violar la restricción AST de 3 niveles exigida por la gobernanza de arquitectura.
 
-## 3. Next Exact Action
-- Notificar al Agente Orquestador (`parent`) la finalización exitosa de la Fase 2 para que proceda a convocar al Agente 05 (Frontend Senior Dev) para la **FASE 3: Frontend Feature Core & Hooks Reactivos (`types.ts`, `useHistorial.ts`, TanStack Query v5 + WebSockets Realtime `inventory.stock.updated`)**.
+- Cualquier endpoint FastAPI que consuma archivos (`UploadFile`, `File(...)`) o formularios `application/x-www-form-urlencoded` / `multipart/form-data` requiere estrictamente `python-multipart` en el entorno de ejecución. Si se declara únicamente en `dev`, el contenedor Docker en modo producción/runtime fallará en el arranque.
+- El analizador sintáctico de arquitectura AST (`find_float_usage_in_domain_ast`) prohíbe el identificador `float` en código fuente de `domain/`. Incluso en verificaciones defensivas (`if isinstance(x, float)`), se debe utilizar `type(x).__name__ == "float"` para evitar falsos positivos en el AST.
+
+---
+
+## 3. Next Exact Action (Siguiente paso exacto)
+
+- Contenedor `oppytec-backend` operativo y saludable (`healthy`). El stack de contenedores Docker (`postgres`, `redis`, `mailpit`, `backend`, `frontend`) se encuentra completamente arriba y funcional para pruebas end-to-end e integraciones en `http://localhost:8000` y `http://localhost:5173`.

@@ -1,6 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Package, Search, X, Inbox } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Package, ChefHat, Boxes, TrendingDown, Search, X, Inbox } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { SectionHeader } from "@/shared/components/ui/SectionHeader";
+import { ComprasView, GestionarMermaView } from "@/features/procurement";
+import { GestionTabNav, type GestionTabKey } from "./components/GestionTabNav";
+import { RecetasView } from "./components/recetas/RecetasView";
+import { CombosView } from "./components/combos/CombosView";
 import { DraftRecoveryBanner, type DraftProductData } from "./components/DraftRecoveryBanner";
 import { ToolbarGestion, type TablePreset } from "./components/ToolbarGestion";
 import { CategoriaSeccion } from "./components/CategoriaSeccion";
@@ -39,8 +45,89 @@ export const DEFAULT_BODEGA_MAP: Record<string, BodegaInfo> = Object.fromEntries
   DEFAULT_BODEGAS.map((b) => [b.id, b])
 );
 
+function useSafeSearchParams(): [URLSearchParams, (params: Record<string, string>, opts?: { replace?: boolean }) => void] {
+  try {
+    const [searchParams, setSearchParams] = useSearchParams();
+    return [searchParams, setSearchParams];
+  } catch {
+    const sp = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+    return [sp, () => {}];
+  }
+}
+
 export function GestionPage() {
+  const { t } = useTranslation("recipes");
   const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSafeSearchParams();
+  const rawTab = searchParams.get("tab")?.toLowerCase();
+
+  // Redirect/normalize orphan "grupos-opciones"
+  useEffect(() => {
+    if (rawTab === "grupos-opciones") {
+      setSearchParams({ tab: "productos" }, { replace: true });
+    }
+  }, [rawTab, setSearchParams]);
+
+  const isPedidosOrCompras = rawTab === "pedidos" || rawTab === "compras";
+
+  const activeTab: GestionTabKey =
+    rawTab === "recetas"
+      ? "recetas"
+      : rawTab === "combos"
+      ? "combos"
+      : rawTab === "mermas"
+      ? "mermas"
+      : "productos";
+
+  const handleSelectTab = useCallback(
+    (tab: GestionTabKey) => {
+      setSearchParams({ tab });
+    },
+    [setSearchParams]
+  );
+
+  const headerConfig = useMemo(() => {
+    if (isPedidosOrCompras) {
+      return {
+        title: t("header.pedidos_title"),
+        subtitle: t("header.pedidos_subtitle"),
+        icon: Package,
+        color: "#10b981",
+      };
+    }
+    switch (activeTab) {
+      case "recetas":
+        return {
+          title: t("header.recetas_title"),
+          subtitle: t("header.recetas_subtitle"),
+          icon: ChefHat,
+          color: "#f59e0b",
+        };
+      case "combos":
+        return {
+          title: t("header.combos_title"),
+          subtitle: t("header.combos_subtitle"),
+          icon: Boxes,
+          color: "#ec4899",
+        };
+      case "mermas":
+        return {
+          title: t("header.mermas_title"),
+          subtitle: t("header.mermas_subtitle"),
+          icon: TrendingDown,
+          color: "#ef4444",
+        };
+      case "productos":
+      default:
+        return {
+          title: t("header.productos_title"),
+          subtitle: t("header.productos_subtitle"),
+          icon: Package,
+          color: "#eab308",
+        };
+    }
+  }, [activeTab, isPedidosOrCompras, t]);
+
   const {
     categorias,
     productos: hookProductos,
@@ -221,178 +308,207 @@ export function GestionPage() {
     >
       {/* 1. Header Section */}
       <SectionHeader
-        title="Gestión de Productos"
-        subtitle="Catálogo de productos e insumos"
-        icon={Package}
-        color="#eab308"
+        title={headerConfig.title}
+        subtitle={headerConfig.subtitle}
+        icon={headerConfig.icon}
+        color={headerConfig.color}
       />
 
-      {/* 2. Draft Recovery Banner */}
-      <DraftRecoveryBanner
-        onRecoverDraft={handleRecoverDraft}
-        onDismiss={() => setRecoveredDraft(null)}
-      />
-
-      {/* 3. Unified Toolbar */}
-      <ToolbarGestion
-        selectedAreaId={selectedAreaId}
-        onSelectArea={setSelectedAreaId}
-        activeWarehouseId={selectedWarehouseId}
-        onSelectWarehouse={setSelectedWarehouseId}
-        activePresetId={activePresetId}
-        onApplyTablePreset={handleApplyTablePreset}
-        onOpenTableConfig={() => setIsTableConfigOpen(true)}
-        showCategories={showCategories}
-        onToggleShowCategories={() => setShowCategories((prev) => !prev)}
-        onOpenAdminCategorias={() => setIsAdminCategoriasOpen(true)}
-        onOpenCatalogos={() => setIsCatalogosOpen(true)}
-        onOpenTransfer={() => setIsTransferOpen(true)}
-        onOpenExcelImport={() => setIsExcelImportOpen(true)}
-        onOpenFacturaImport={() => setIsFacturaImportOpen(true)}
-        onNewProduct={() => {
-          setEditingProduct(null);
-          setRecoveredDraft(null);
-          setIsNewProductOpen(true);
-        }}
-      />
-
-      {/* 4. Persistent Search Bar */}
-      <div className="relative mb-4 w-full">
-        <div className="relative flex items-center">
-          <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder="Buscar por nombre, SKU, código de barra o marca..."
-            data-testid="gestion-search-input"
-            className="w-full h-11 min-h-[44px] pl-10 pr-10 rounded-2xl border border-input bg-card text-foreground placeholder:text-muted-foreground/70 text-xs sm:text-sm font-medium focus:outline-none focus:border-primary shadow-sm transition-all"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery("");
-                setCurrentPage(1);
-              }}
-              data-testid="gestion-clear-search"
-              aria-label="Limpiar búsqueda"
-              className="absolute right-3 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* 5. Categoria Carousel (Toggled by showCategories) */}
-      {showCategories && (
-        <div className="mb-4">
-          <CategoriaSeccion
-            categorias={categorias}
-            selectedIds={selectedCategoryIds}
-            onToggle={handleToggleCategory}
-          />
-        </div>
+      {/* 2. Navigation Tabs (Insumos & Productos, Recetas & Escandallos, Combos & Promociones, Mermas) */}
+      {!isPedidosOrCompras && (
+        <GestionTabNav
+          activeTab={activeTab}
+          onSelectTab={handleSelectTab}
+        />
       )}
 
-      {/* 6. Products Table / View */}
-      <div className="w-full">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-border bg-card shadow-sm">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mb-3" />
-            <p className="text-xs font-semibold text-muted-foreground">
-              Cargando catálogo de productos...
-            </p>
-          </div>
-        ) : filteredProducts.length === 0 ? (
-          <div
-            data-testid="gestion-empty-state"
-            className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-border bg-card shadow-sm"
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground mb-3">
-              <Inbox className="h-7 w-7" />
-            </div>
-            <h4 className="text-sm font-bold text-foreground mb-1">
-              No se encontraron productos
-            </h4>
-            <p className="text-xs text-muted-foreground max-w-sm mb-4">
-              {searchQuery || selectedCategoryIds.size > 0
-                ? "Prueba cambiando los filtros o el término de búsqueda para ver más resultados."
-                : "Aún no tienes productos registrados en este catálogo."}
-            </p>
-            {(searchQuery || selectedCategoryIds.size > 0) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCategoryIds(new Set());
+      {/* 3. Tab Specific Views */}
+      {isPedidosOrCompras ? (
+        <div data-testid="gestion-page-pedidos" className="space-y-6">
+          <ComprasView />
+        </div>
+      ) : activeTab === "recetas" ? (
+        <RecetasView
+          productos={productos}
+          onManageCategorias={() => setIsAdminCategoriasOpen(true)}
+        />
+      ) : activeTab === "combos" ? (
+        <CombosView
+          productos={productos}
+          onManageCategorias={() => setIsAdminCategoriasOpen(true)}
+        />
+      ) : activeTab === "mermas" ? (
+        <GestionarMermaView hideHeader={true} />
+      ) : (
+        <>
+          {/* Draft Recovery Banner */}
+          <DraftRecoveryBanner
+            onRecoverDraft={handleRecoverDraft}
+            onDismiss={() => setRecoveredDraft(null)}
+          />
+
+          {/* Unified Toolbar */}
+          <ToolbarGestion
+            selectedAreaId={selectedAreaId}
+            onSelectArea={setSelectedAreaId}
+            activeWarehouseId={selectedWarehouseId}
+            onSelectWarehouse={setSelectedWarehouseId}
+            activePresetId={activePresetId}
+            onApplyTablePreset={handleApplyTablePreset}
+            onOpenTableConfig={() => setIsTableConfigOpen(true)}
+            showCategories={showCategories}
+            onToggleShowCategories={() => setShowCategories((prev) => !prev)}
+            onOpenAdminCategorias={() => setIsAdminCategoriasOpen(true)}
+            onOpenCatalogos={() => setIsCatalogosOpen(true)}
+            onOpenTransfer={() => setIsTransferOpen(true)}
+            onOpenExcelImport={() => setIsExcelImportOpen(true)}
+            onOpenFacturaImport={() => setIsFacturaImportOpen(true)}
+            onNewProduct={() => {
+              setEditingProduct(null);
+              setRecoveredDraft(null);
+              setIsNewProductOpen(true);
+            }}
+          />
+
+          {/* Persistent Search Bar */}
+          <div className="relative mb-4 w-full">
+            <div className="relative flex items-center">
+              <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-border bg-secondary px-3 py-1.5 text-xs font-bold text-foreground hover:bg-secondary/80 transition-colors cursor-pointer select-none"
+                placeholder="Buscar por nombre, SKU, código de barra o marca..."
+                data-testid="gestion-search-input"
+                className="w-full h-11 min-h-[44px] pl-10 pr-10 rounded-2xl border border-input bg-card text-foreground placeholder:text-muted-foreground/70 text-xs sm:text-sm font-medium focus:outline-none focus:border-primary shadow-sm transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCurrentPage(1);
+                  }}
+                  data-testid="gestion-clear-search"
+                  aria-label="Limpiar búsqueda"
+                  className="absolute right-3 p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Categoria Carousel (Toggled by showCategories) */}
+          {showCategories && (
+            <div className="mb-4">
+              <CategoriaSeccion
+                categorias={categorias}
+                selectedIds={selectedCategoryIds}
+                onToggle={handleToggleCategory}
+              />
+            </div>
+          )}
+
+          {/* Products Table / View */}
+          <div className="w-full">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-border bg-card shadow-sm">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mb-3" />
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Cargando catálogo de productos...
+                </p>
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div
+                data-testid="gestion-empty-state"
+                className="flex flex-col items-center justify-center p-12 text-center rounded-2xl border border-border bg-card shadow-sm"
               >
-                Limpiar filtros
-              </button>
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground mb-3">
+                  <Inbox className="h-7 w-7" />
+                </div>
+                <h4 className="text-sm font-bold text-foreground mb-1">
+                  No se encontraron productos
+                </h4>
+                <p className="text-xs text-muted-foreground max-w-sm mb-4">
+                  {searchQuery || selectedCategoryIds.size > 0
+                    ? "Prueba cambiando los filtros o el término de búsqueda para ver más resultados."
+                    : "Aún no tienes productos registrados en este catálogo."}
+                </p>
+                {(searchQuery || selectedCategoryIds.size > 0) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSelectedCategoryIds(new Set());
+                      setCurrentPage(1);
+                    }}
+                    className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-border bg-secondary px-3 py-1.5 text-xs font-bold text-foreground hover:bg-secondary/80 transition-colors cursor-pointer select-none"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+            ) : isMobile ? (
+              /* Mobile View: ProductMobileCard list adaptativo */
+              <div className="flex flex-col gap-2.5 pb-4 md:hidden">
+                {paginatedProducts.map((p) => (
+                  <ProductMobileCard
+                    key={p.id}
+                    product={p}
+                    bodegas={DEFAULT_BODEGAS}
+                    bodegaMap={DEFAULT_BODEGA_MAP}
+                    selectedWarehouseId={selectedWarehouseId}
+                    visibleCols={activeColsSet}
+                    isExpanded={expandedMobileProductIds.has(p.id)}
+                    onToggleExpand={() => toggleMobileExpand(p.id)}
+                    onEdit={(prod) => {
+                      setEditingProduct(prod);
+                      setRecoveredDraft(null);
+                      setIsNewProductOpen(true);
+                    }}
+                    onDelete={handleDeleteProduct}
+                  />
+                ))}
+              </div>
+            ) : (
+              /* Desktop View: ProductTable multidimensional */
+              <div className="hidden md:block">
+                <ProductTable
+                  productos={paginatedProducts}
+                  categorias={categorias}
+                  bodegas={DEFAULT_BODEGAS}
+                  bodegaMap={DEFAULT_BODEGA_MAP}
+                  selectedWarehouseId={selectedWarehouseId}
+                  activeCols={activeColumns}
+                  viewMode={viewMode}
+                  onEdit={(p) => {
+                    setEditingProduct(p);
+                    setRecoveredDraft(null);
+                    setIsNewProductOpen(true);
+                  }}
+                  onDelete={handleDeleteProduct}
+                />
+              </div>
             )}
           </div>
-        ) : isMobile ? (
-          /* Mobile View: ProductMobileCard list adaptativo */
-          <div className="flex flex-col gap-2.5 pb-4 md:hidden">
-            {paginatedProducts.map((p) => (
-              <ProductMobileCard
-                key={p.id}
-                product={p}
-                bodegas={DEFAULT_BODEGAS}
-                bodegaMap={DEFAULT_BODEGA_MAP}
-                selectedWarehouseId={selectedWarehouseId}
-                visibleCols={activeColsSet}
-                isExpanded={expandedMobileProductIds.has(p.id)}
-                onToggleExpand={() => toggleMobileExpand(p.id)}
-                onEdit={(prod) => {
-                  setEditingProduct(prod);
-                  setRecoveredDraft(null);
-                  setIsNewProductOpen(true);
-                }}
-                onDelete={handleDeleteProduct}
-              />
-            ))}
-          </div>
-        ) : (
-          /* Desktop View: ProductTable multidimensional */
-          <div className="hidden md:block">
-            <ProductTable
-              productos={paginatedProducts}
-              categorias={categorias}
-              bodegas={DEFAULT_BODEGAS}
-              bodegaMap={DEFAULT_BODEGA_MAP}
-              selectedWarehouseId={selectedWarehouseId}
-              activeCols={activeColumns}
-              viewMode={viewMode}
-              onEdit={(p) => {
-                setEditingProduct(p);
-                setRecoveredDraft(null);
-                setIsNewProductOpen(true);
-              }}
-              onDelete={handleDeleteProduct}
-            />
-          </div>
-        )}
-      </div>
 
-      {/* 7. Table Pagination */}
-      {filteredProducts.length > 0 && (
-        <TablePagination
-          currentPage={currentPage}
-          totalItems={filteredProducts.length}
-          pageSize={pageSize}
-          pageSizeOptions={[10, 30, 50, 100]}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
-          itemLabel="productos"
-        />
+          {/* Table Pagination */}
+          {filteredProducts.length > 0 && (
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={filteredProducts.length}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 30, 50, 100]}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              itemLabel="productos"
+            />
+          )}
+        </>
       )}
 
       {/* ==================================================================== */}

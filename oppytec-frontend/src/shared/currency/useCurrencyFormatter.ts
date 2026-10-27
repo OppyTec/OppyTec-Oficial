@@ -55,6 +55,8 @@ export function formatCurrencyAmount(
   return `${symbol}${addThousandsSeparators(rawInt, ".")},${rawFrac}`;
 }
 
+export const formatMoney = formatCurrencyAmount;
+
 export interface UseCurrencyFormatterReturn {
   readonly currency: SupportedCurrency;
   readonly format: (

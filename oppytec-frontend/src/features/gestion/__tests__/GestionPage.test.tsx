@@ -1,7 +1,8 @@
 // oppytec-frontend/src/features/gestion/__tests__/GestionPage.test.tsx
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter, useSearchParams } from "react-router-dom";
 import { GestionPage } from "../GestionPage";
 import { PermissionsProvider } from "@/shared/auth/usePermissions";
 import { applyDocumentTheme } from "@/shared/hooks/useTheme";
@@ -33,12 +34,23 @@ function openDropdown(trigger: HTMLElement) {
 }
 
 function renderGestionPage(route = "/gestion?tab=productos") {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        gcTime: 0,
+      },
+    },
+  });
+
   return render(
-    <MemoryRouter initialEntries={[route]}>
-      <PermissionsProvider>
-        <GestionPage />
-      </PermissionsProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[route]}>
+        <PermissionsProvider>
+          <GestionPage />
+        </PermissionsProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 
@@ -319,6 +331,141 @@ describe("Fase 8: GestionPage Integration & E2E Suite", () => {
         await screen.findByTestId("product-table-root");
         expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/Gestión/i);
       });
+    });
+  });
+
+  // ==========================================================================
+  // 5. Navegación Integrada de Tabs y Eliminación de Grupos-Opciones
+  // ==========================================================================
+  describe("5. Navegación Integrada de Tabs y Eliminación de Grupos-Opciones", () => {
+    it("renders the 3 main navigation tabs and ensures grupos-opciones is NOT present", async () => {
+      renderGestionPage("/gestion?tab=productos");
+
+      expect(screen.getByTestId("gestion-tab-productos")).toBeDefined();
+      expect(screen.getByTestId("gestion-tab-recetas")).toBeDefined();
+      expect(screen.getByTestId("gestion-tab-combos")).toBeDefined();
+
+      // Ensure orphan tab is completely absent
+      expect(screen.queryByTestId("gestion-tab-grupos-opciones")).toBeNull();
+      expect(screen.queryByRole("tab", { name: /grupos.*opciones/i })).toBeNull();
+    });
+
+    it("mounts directly under /gestion?tab=recetas and displays Recetas view and header", async () => {
+      renderGestionPage("/gestion?tab=recetas");
+
+      expect(screen.getByTestId("recetas-view-root")).toBeDefined();
+      expect(screen.getByTestId("recetas-toolbar")).toBeDefined();
+      await screen.findByTestId("recetas-table-root");
+
+      await waitFor(() => {
+        expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/Recetas/i);
+      });
+
+      // Products table should not be in the DOM
+      expect(screen.queryByTestId("product-table-root")).toBeNull();
+    });
+
+    it("mounts directly under /gestion?tab=combos and displays Combos view and header", async () => {
+      renderGestionPage("/gestion?tab=combos");
+
+      expect(screen.getByTestId("combos-view-root")).toBeDefined();
+      expect(screen.getByTestId("combos-toolbar")).toBeDefined();
+      await screen.findByTestId("combos-table-root");
+
+      await waitFor(() => {
+        expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/Combos/i);
+      });
+
+      // Products table should not be in the DOM
+      expect(screen.queryByTestId("product-table-root")).toBeNull();
+    });
+
+    it("switches reactively between tabs on user click", async () => {
+      renderGestionPage("/gestion?tab=productos");
+
+      // Initially on products tab
+      await screen.findByTestId("product-table-root");
+
+      // Click Recetas tab
+      const recetasTab = screen.getByTestId("gestion-tab-recetas");
+      fireEvent.click(recetasTab);
+
+      await screen.findByTestId("recetas-view-root");
+      await screen.findByTestId("recetas-table-root");
+      expect(screen.queryByTestId("product-table-root")).toBeNull();
+
+      // Click Combos tab
+      const combosTab = screen.getByTestId("gestion-tab-combos");
+      fireEvent.click(combosTab);
+
+      await screen.findByTestId("combos-view-root");
+      await screen.findByTestId("combos-table-root");
+      expect(screen.queryByTestId("recetas-view-root")).toBeNull();
+
+      // Click back to Productos tab
+      const productosTab = screen.getByTestId("gestion-tab-productos");
+      fireEvent.click(productosTab);
+
+      await screen.findByTestId("product-table-root");
+      expect(screen.queryByTestId("combos-view-root")).toBeNull();
+    });
+
+    it("falls back to productos when loaded with orphan query /gestion?tab=grupos-opciones", async () => {
+      renderGestionPage("/gestion?tab=grupos-opciones");
+
+      await screen.findByTestId("product-table-root");
+      expect(screen.getByTestId("gestion-tab-productos")).toBeDefined();
+      expect(screen.queryByTestId("gestion-tab-grupos-opciones")).toBeNull();
+    });
+
+    it("does not trigger React Error #310 when transitioning between ?tab=pedidos and other tabs", async () => {
+      function TestRouteController() {
+        const [, setSearchParams] = useSearchParams();
+        return (
+          <div data-testid="route-controller">
+            <button data-testid="nav-pedidos" onClick={() => setSearchParams({ tab: "pedidos" })}>Pedidos</button>
+            <button data-testid="nav-recetas" onClick={() => setSearchParams({ tab: "recetas" })}>Recetas</button>
+            <button data-testid="nav-combos" onClick={() => setSearchParams({ tab: "combos" })}>Combos</button>
+            <button data-testid="nav-productos" onClick={() => setSearchParams({ tab: "productos" })}>Productos</button>
+          </div>
+        );
+      }
+
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false, gcTime: 0 } },
+      });
+
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/gestion?tab=pedidos"]}>
+            <PermissionsProvider>
+              <TestRouteController />
+              <GestionPage />
+            </PermissionsProvider>
+          </MemoryRouter>
+        </QueryClientProvider>
+      );
+
+      // Initially on pedidos
+      expect(screen.getByTestId("gestion-page-pedidos")).toBeDefined();
+      expect(screen.getByText("Gestión de Pedidos y Abastecimiento")).toBeDefined();
+
+      // Transition to recetas (would fail with React Error #310 if early return existed)
+      fireEvent.click(screen.getByTestId("nav-recetas"));
+      expect(await screen.findByTestId("recetas-view-root")).toBeDefined();
+      expect(screen.queryByTestId("gestion-page-pedidos")).toBeNull();
+
+      // Transition to combos
+      fireEvent.click(screen.getByTestId("nav-combos"));
+      expect(await screen.findByTestId("combos-view-root")).toBeDefined();
+
+      // Transition back to pedidos
+      fireEvent.click(screen.getByTestId("nav-pedidos"));
+      expect(await screen.findByTestId("gestion-page-pedidos")).toBeDefined();
+
+      // Transition to productos
+      fireEvent.click(screen.getByTestId("nav-productos"));
+      expect(await screen.findByTestId("product-table-root")).toBeDefined();
     });
   });
 });

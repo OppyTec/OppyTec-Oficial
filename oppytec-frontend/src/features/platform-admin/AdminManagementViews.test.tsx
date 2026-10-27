@@ -1,6 +1,20 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import * as httpClient from "@/shared/api/httpClient";
 import { AppProviders } from "@/app/providers";
+
+vi.spyOn(httpClient, "apiRequest").mockImplementation(async (_url, options) => {
+  return {
+    data: options?.fallbackData ?? {},
+    traceId: "test-trace",
+    timestampIso: new Date().toISOString(),
+    tenantId: "test-tenant",
+  };
+});
+
+afterEach(() => {
+  cleanup();
+});
 import { PermissionsProvider } from "@/shared/auth/usePermissions";
 import { CurrencySelector } from "@/shared/currency/CurrencySelector";
 import { LanguageFlagSelector } from "@/shared/i18n/LanguageFlagSelector";

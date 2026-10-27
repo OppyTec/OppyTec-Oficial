@@ -1,49 +1,53 @@
 # Reporte de Traspaso (`Handover`) — Agente 08: Especialista en 5 Entornos y Observabilidad 4-Pilares
 
-- **Fecha UTC:** 2026-10-26T00:55:00Z
-- **Fase:** Instrumentación de Observabilidad 4-Pilares en los Endpoints de Historial de Kardex (`08-environments-and-observability-engineer`)
-- **Estado de Certificación:** `KARDEX_HISTORY_OBSERVABILITY_4_PILLARS_CERTIFIED` (104/104 tests de inventario exitosos, 7/7 en `test_history_observability.py`, spans OTel enriquecidos, logs estructurados JSON con redacción PII determinista sobre correos y usernames, captura limpia RFC 7807, verify-evals 100% OK).
+- **Fecha UTC:** 2026-10-26T20:15:00Z
+- **Fase:** Fase 7 — Tarea 7.3: Observabilidad OpenTelemetry y Sanitización PII para OppyFy (`PLAN_MAESTRO_OPPYFY_AI.md`)
+- **Estado de Certificación:** `OPPYFY_OPENTELEMETRY_AND_PII_SANITIZATION_CERTIFIED` (8/8 tests de observabilidad OppyFy 100% verdes, 29/29 tests de regresión suites relacionadas 100% verdes).
 
 ## 1. Completed (Qué se hizo)
-- **Pre-ejecución Graphify:**
-  - Ejecución previa obligatoria: `python scripts/harness.py nav "inventory"`.
-- **Instrumentación de Observabilidad 4-Pilares en Historial de Kardex (`src/modules/inventory/`):**
-  - `src/modules/inventory/application/history_service.py` (`KardexHistoryService`):
-    * Spans nativos OpenTelemetry con el context manager `trace_span()`:
-      - `kardex.history.query` en `get_filtered_history()`: registra los 7 atributos requeridos:
-        `oppytec.tenant_id`, `bodega_id`, `producto_id`, `tipo_movimiento`, `total_records`, `page_size`, `actor_user_id` (junto con `user_id` para correlación en métricas).
-      - `kardex.history.export_csv` en `generate_csv_stream()`: registra los atributos requeridos:
-        `oppytec.tenant_id`, `records_exported`, `file_format` (con valor `"csv"`).
-      - `kardex.history.purge` en `purge_history()`: registra `oppytec.tenant_id`, `purged_records` y emite log crítico de auditoría.
-    * Redacción PII determinista:
-      - Implementación de `scrub_audit_payload()`: redacción recursiva con `[REDACTED_PII]` de cualquier correo electrónico (vía regex determinista y campos `email`, `mail`, `correo`) y nombres de usuario (`username`, `user_name`, `user_display_name`, `nombre_usuario`, `nombre_visible`), sumado a la protección estándar de tokens, contraseñas, RUTs y tarjetas.
-      - Función `format_history_audit_log()`: emite logs JSON estructurados con redacción PII estricta.
-    * Captura limpia de excepciones conforme a RFC 7807 (Problem Details):
-      - Valida obligatoriedad de `tenant_id` (`DomainValidationError` -> HTTP 400, `i18n_key="common:errors.tenant_required"`).
-      - Valida coherencia de rango de fechas `fecha_desde <= fecha_hasta` (`DomainValidationError` -> HTTP 400, `i18n_key="inventory:history.invalid_date_range"`).
-      - Las excepciones son capturadas limpiamente por `trace_span()`, marcando el span OTel con `status_code=400` y `StatusCode.ERROR`, emitiendo log JSON de error sanitizado sin filtración de datos sensibles.
-    * Registro de métricas operativas de inventario (`InventoryOperationMetric`) para cada consulta, exportación y purga.
-  - `src/modules/inventory/presentation/router.py`:
-    * Conexión de `actor_user_id=principal.user_id` desde `get_history_paginated_endpoint` y `export_history_csv_endpoint` hacia el servicio de historial.
-  - `src/modules/inventory/application/inventory_service.py`:
-    * Delegación de `get_filtered_history` soportando `actor_user_id`.
-- **Suite de Pruebas Unitarias e Integración de Observabilidad:**
-  - Creada `tests/modules/inventory/test_history_observability.py` (7 pruebas específicas exhaustivas):
-    1. `test_kardex_history_query_otel_span_and_attributes`: valida span `kardex.history.query`, atributos OTel (`oppytec.tenant_id`, `bodega_id`, `producto_id`, `tipo_movimiento`, `total_records`, `page_size`, `actor_user_id`) y métrica operativa.
-    2. `test_kardex_history_export_csv_otel_span_and_attributes`: valida span `kardex.history.export_csv`, atributos (`oppytec.tenant_id`, `records_exported`, `file_format`) y métrica.
-    3. `test_pii_deterministic_redaction_in_audit_logs`: valida redacción determinista del 100% de correos y nombres de usuario en payloads y logs de auditoría.
-    4. `test_rfc7807_exception_capture_missing_tenant`: valida excepción 400 RFC 7807 ante ausencia de `tenant_id` con captura limpia en span OTel.
-    5. `test_rfc7807_exception_capture_invalid_date_range`: valida excepción 400 RFC 7807 ante `fecha_desde > fecha_hasta`.
-    6. `test_kardex_history_http_integration_trace_headers_and_spans`: valida integración HTTP con inyección de cabecera `X-Trace-ID` y exportación de spans en `InMemorySpanExporter`.
-    7. `test_kardex_history_purge_audit_span_and_metrics`: valida span de purga, métrica y emisión de log crítico de auditoría con PII redactado.
-- **Validación de Calidad y Puertas de Aceptación:**
-  - `cd oppytec-backend && .venv/bin/pytest tests/modules/inventory/ -v`: **104/104 passed (100%)**.
-  - `python scripts/harness.py verify-evals`: **100% verificado (Cero Reward Hacking)**.
-  - `python scripts/harness.py sync-graph`: sincronizado.
+- **Instrumentación de Spans Semánticos OpenTelemetry en `OppyFy`:**
+  - `oppyfy.query` (Span raíz en `MeteredAIService.execute_oppyfy_query`):
+    - Atributos semánticos: `tenant.schema`, `user.id`, `thread.id`, `prompt.status`, `tokens.total`, `credits.deducted`.
+    - Garantía Zero-Float: `credits.deducted` formateado estrictamente como string Decimal (e.g. `"1.00"` / `"0.00"`), nunca `float`.
+  - `oppyfy.tool_router` (Span en `OppyfyToolRouter.classify_tool_and_subdomain`):
+    - Atributos semánticos: `tool.selected` (código de herramienta seleccionado), `router.duration_ms` (duración exacta en ms de clasificación JEV).
+  - `oppyfy.data_stripping` (Span en `OppyfyToolRouter.execute_hardcoded_tool`):
+    - Atributos semánticos: `costs.redacted: bool` (indica si se aplicó redacción de costos por RBAC `can_view_costs=False`), `fields.scrubbed_count: int` (conteo exacto de campos reemplazados por `"[REDACTED_COST]"`).
+  - `oppyfy.metered_ai` (Span en Paso 5 de `MeteredAIService.execute_oppyfy_query`):
+    - Atributos semánticos: `provider.model`, `provider.cost_usd` (formateado con 6 decimales como string Decimal, cero `float`), `tokens.input: int`, `tokens.output: int`.
+  - Spans de herramientas operativas (`operational_tools/`):
+    - Instrumentadas las 9 herramientas con span semántico `oppyfy.tool.<tool_name>`:
+      * `oppyfy.tool.get_stock_health_and_reorder_alerts`
+      * `oppyfy.tool.get_expiring_batches_fefo`
+      * `oppyfy.tool.evaluate_supplier_lead_times_and_price_drift`
+      * `oppyfy.tool.build_optimal_purchase_order_draft`
+      * `oppyfy.tool.analyze_event_supply_feasibility`
+      * `oppyfy.tool.get_sales_and_food_cost_variance`
+      * `oppyfy.tool.analyze_waste_and_merma_impact`
+      * `oppyfy.tool.render_canvas_table`
+      * `oppyfy.tool.render_canvas_chart`
+- **Sanitización Estricta PII y Regla Pollo King (`src/core/observability.py`):**
+  - Incorporadas exclusiones semánticas en `_is_sensitive_key` (`AI_METRIC_KEY_EXEMPTIONS`) para que contadores LLM (`tokens.total`, `tokens.input`, `tokens.output`, `tokens.*`) permanezcan tipados como `int` y no sean censurados como tokens de autenticación.
+  - Añadidos tokens sensibles `"card_number"` y `"tarjeta"` a `SENSITIVE_KEY_TOKENS`.
+  - Mejorado `_CREDIT_CARD_PATTERN` con soporte para tarjetas de 15 y 16 dígitos.
+  - Creada métrica determinista `OppyfyOperationMetric` acumulable en `_in_memory_oppyfy_metrics`.
+  - Verificada la preservación inmutable de la razón social `"Pollo King SpA"` sin redacción PII.
+- **Suite de Pruebas Unitarias de Observabilidad:**
+  - Creada `oppytec-backend/tests/unit/modules/test_oppyfy_observability.py` con 8 tests completos:
+    1. `test_oppyfy_full_query_semantic_spans_success`: flujo exitoso con jerarquía completa de spans.
+    2. `test_oppyfy_query_with_costs_allowed`: `can_view_costs=True` genera `costs.redacted=False` y `fields.scrubbed_count=0`.
+    3. `test_oppyfy_query_blocked_by_rbac_observability`: bloqueo RBAC emite `BLOCKED_UNAUTHORIZED_PROMPT` y cero cobro sin spans hijos.
+    4. `test_oppyfy_query_blocked_by_injection_guard`: bloqueo anti-inyección JEV emite `BLOCKED_UNAUTHORIZED_PROMPT` y telemetría de bloqueo.
+    5. `test_oppyfy_query_blocked_disabled_worker`: bloqueo de billetera inactiva o sin cupo emite status correspondiente.
+    6. `test_oppyfy_strict_pii_scrubbing_and_brand_preservation`: scrubbing de correos, tarjetas, teléfonos, RUTs y contraseñas.
+    7. `test_oppyfy_zero_float_financial_metrics_guarantee`: garantía de cero float en todas las métricas financieras de OTel.
+    8. `test_operational_tools_direct_span_emission`: emisión correcta de spans en las 9 herramientas operativas.
+- **Ejecución y Verificación 100% Verde:**
+  - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/modules/test_oppyfy_observability.py` -> **8 passed in 0.20s (100% verde)**.
+  - Verificación conjunta con tests de arquitectura y módulos de OppyFy: **29 passed in 0.33s (100% verde)**.
 
 ## 2. Friction & Failures (Qué cuidar)
-- En `trace_span()`, la captura de `metric_user` prioriza `user_id` del payload; al registrar `actor_user_id` para el span OTel, se inyecta simultáneamente `user_id` en los atributos iniciales para garantizar que `InventoryOperationMetric` asocie el ID numérico del usuario sin ambigüedad.
-- Las consultas streaming de CSV utilizan generadores (`yield`); al envolverlas con `with trace_span(...)`, el span se cierra y exporta tras consumir la totalidad de los chunks del generador (garantizado al leer `response.content` en pruebas y clientes HTTP).
+- En `WorkerCreditWalletState`, los argumentos del constructor dataclass son `user_id`, `allocated_credits`, `consumed_credits`, `is_oppyfy_enabled`, y `assigned_credit_ceiling`. No se debe confundir con el modelo ORM `OppyfyWorkerCreditWallet` que posee `wallet_id` y `spent_credits`.
 
 ## 3. Next Exact Action
-- Informar y enviar reporte detallado al orquestador principal (`15d1d875-f063-4ed3-aa5e-f6749fa0c926`).
+- Enviar reporte final al agente orquestador/parent (`d0212433-cb68-4d01-aea7-ef017fe152b9`).
