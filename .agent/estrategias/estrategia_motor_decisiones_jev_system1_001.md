@@ -146,28 +146,54 @@ En las Etapas 3, 4 y 5 del Importador Masivo de Planillas:
 
 ---
 
-## 5. Registro Estricto e Ineludible de `JEV` en `public.llm_request_logs`
+## 5. Telemetría Desacoplada de `JEV`: Tabla Dedicada `public.jev_request_logs` y FinOps Especializado
 
-Tal como ocurre con los modelos generativos de `OppyFy`, **toda llamada a `JEV` en cualquier módulo del proyecto debe quedar registrada sin excepción en `public.llm_request_logs`**:
+Para garantizar escalabilidad ante cargas masivas de micro-decisiones sub-simbólicas (cientos de clasificaciones por segundo en importadores y pipelines de datos) y proteger el rendimiento de la bitácora generativa general, **JEV cuenta con su propia tabla dedicada `public.jev_request_logs` completamente desacoplada de `public.llm_request_logs`**:
 
-1. **Adaptador Único Medido (`oppytec-backend/src/adapters/ai/jev_adapter.py`):**
-   - Implementa `JevDecisionPort` (`decide_boolean`, `decide_choice`, `decide_score`).
-   - En cada invocación mide `request_duration_ms`, captura los tokens/unidades consumidas, calcula `provider_cost_usd` y `provider_cost_clp` (`Decimal`) y escribe el registro en `public.llm_request_logs` con:
-     - `engine_tier = "SYSTEM_1_JEV"`
-     - `decision_primitive = "BOOLEAN" | "CHOICE" | "SCORE"`
-     - `confidence_score = Decimal`
-     - `holding_id`, `tenant_id`, `tenant_schema`, `user_id`, `caller_feature`.
-2. **Visibilidad en las 2 Vistas Administrativas de OppyTec (`platform-admin/`):**
-   - En el panel administrativo de OppyTec podrás filtrar el consumo y gasto real de **`JEV (Sistema 1)` vs `Modelos Generativos (Sistema 2)`** por modelo y por cada Tenant, visualizando incluso la métrica de **"Ahorro Estimado por Enrutamiento con JEV"**.
+### 5.1 Desacoplamiento Arquitectónico y Rendimiento de Escritura
+1. **Aislamiento de Carga y Cero Contención:**
+   - Mientras `llm_request_logs` almacena transacciones conversacionales de Sistema 2 con tiempos de respuesta de $1.000 - 5.000\text{ ms}$, JEV procesa decisiones atómicas en $10 - 450\text{ ms}$.
+   - Mantener una tabla dedicada `public.jev_request_logs` evita la contención de bloqueos e índices en `llm_request_logs` y permite optimizar los índices compuestos exclusivamente para los patrones de acceso de Sistema 1 (`idx_jev_logs_tenant_created`, `idx_jev_logs_holding_created`, `idx_jev_logs_feature`, `idx_jev_logs_confidence`).
+2. **Métrica FinOps de Retorno de Inversión — "Ahorro Estimado por JEV":**
+   - El desacoplamiento permite a la plataforma calcular analíticamente el retorno de inversión y eficiencia cognitiva:
+     $$\text{Ahorro Estimado} = \sum (\text{Costo Hipotético LLM Sistema 2} - \text{Costo Real JEV})$$
+   - El panel administrativo de OppyTec (`platform-admin/`) expone esta métrica agregando por holding, tenant y feature llamante (`caller_feature`).
+
+### 5.2 Componentes de la Arquitectura de Telemetría JEV
+1. **`JevUsageRecord` (`oppytec-backend/src/adapters/ai/jev_protocol.py`):**
+   - Dataclass inmutable (`@dataclass(frozen=True, kw_only=True)`) que modela el registro completo de decisión y consumo:
+     - Identidad y tenencia: `holding_id`, `tenant_id`, `tenant_schema`, `user_id`, `trace_id`.
+     - Contexto funcional: `caller_feature`, `decision_id`, `decision_primitive` (`BOOLEAN`, `CHOICE`, `SCORE`), `input_summary`, `result_value`.
+     - Calibración y acción: `confidence_score` (`Decimal(5, 4)` continuo $[0.0000, 1.0000]$), `calibrated_action` (`AUTO_ACCEPTED`, `FLAGGED_WARNING`, `FALLBACK_LLM`).
+     - FinOps exacto Zero-Float: `provider_cost_usd` (`Decimal`), `provider_cost_clp` (`Decimal`), `credits_deducted` (`Decimal`), `estimated_tokens`, `latency_ms`, `is_success`, `error_message`.
+2. **`JevTelemetrySinkPort` (`oppytec-backend/src/adapters/ai/jev_protocol.py`):**
+   - Protocolo desacoplado con métodos tipados:
+     - `record_jev_usage(record: JevUsageRecord) -> None`: Registro individual síncrono/asíncrono.
+     - `record_jev_usage_batch(records: Sequence[JevUsageRecord]) -> None`: Registro en lote optimizado.
+3. **`DatabaseJevTelemetrySink` (`oppytec-backend/src/adapters/ai/jev_adapter.py`):**
+   - Implementación sobre SQLAlchemy 2.0 Async (`AsyncSession`):
+     - Mapea `JevUsageRecord` a la entidad `JevRequestLog`.
+     - Soporta persistencia atómica masiva mediante `session.add_all(...)`, eliminando el overhead de transacciones individuales en operaciones masivas.
+4. **`MeteredJevAdapter.decide_choice_batch` (`oppytec-backend/src/adapters/ai/jev_adapter.py`):**
+   - Método especializado para evaluación por lotes de items (`JevChoiceBatchItem`):
+     - Evalúa de forma continua y atómica múltiples candidatos en una sola pasada.
+     - Emite la telemetría en bloque vía `_jev_sink.record_jev_usage_batch(...)`.
+     - Diseñado específicamente para importaciones masivas de catálogo (`IMPORTADOR_EXCEL_SPEC.md`) y validaciones de partidas de facturas OCR.
+5. **Compatibilidad Dual (Backward Compatibility):**
+   - `MeteredJevAdapter` registra simultáneamente en `JevTelemetrySinkPort` (`public.jev_request_logs`) y, para mantener continuidad retrocompatible con vistas globales preexistentes, emite en `LlmTelemetrySinkPort` (`public.llm_request_logs` con `engine_tier="SYSTEM_1_JEV"`).
 
 ---
 
-## 6. Artefactos a Construir en el Proyecto (Nombres y Ubicaciones)
+## 6. Artefactos del Motor JEV en el Proyecto (Nombres y Ubicaciones)
 
 | # | Artefacto | Ruta Exacta en el Proyecto | Propósito |
 |---|---|---|---|
-| **1** | **ADR del Motor JEV Sistema 1** | `docs/adr/ADR-013-jev-system1-global-decision-and-routing-engine.md` | Congela el árbol de decisión *Código $\to$ JEV $\to$ LLM*, los umbrales de confianza calibrada y el registro en `llm_request_logs`. |
+| **1** | **ADR del Motor JEV Sistema 1** | `docs/adr/ADR-013-jev-system1-global-decision-and-routing-engine.md` | Congela el árbol de decisión *Código $\to$ JEV $\to$ LLM*, los umbrales de confianza calibrada y el registro en `jev_request_logs` y `llm_request_logs`. |
 | **2** | **Regla Agéntica Inmutable** | `.agent/rules/14-jev-system1-mandatory-gate.md` | Obliga a todo agente a responder *"¿Esta tarea la puede hacer JEV (Sí/No)?"* en cada módulo actual o futuro e implementarlo automáticamente si es *Sí*. |
-| **3** | **Skill Ejecutable de JEV** | `.agent/skills/jev-decision-engine/` (`SKILL.md`, `__init__.py`, `contracts.py`) | Provee las plantillas tipadas (`JevBoolean`, `JevChoice`, `JevScore`) y la guía de umbrales de confianza. |
-| **4** | **Puerto y Adaptador Medido de JEV** | `oppytec-backend/src/adapters/ai/jev_protocol.py` y `jev_adapter.py` | Implementación centralizada que ejecuta JEV y registra obligatoriamente cada decisión en `public.llm_request_logs`. |
-| **5** | **Quality Gate AST de JEV** | `oppytec-backend/tests/architecture/test_jev_system1_enforcement.py` | Bloquea el commit si un módulo con `can_jev_handle_it: true` no usa `JevDecisionPort`, si alguien usa listas regex de intenciones o si llama a JEV sin pasar por `llm_request_logs`. |
+| **3** | **Skill Ejecutable de JEV** | `.agent/skills/jev-decision-engine/` (`SKILL.md`, `__init__.py`, `jev_router.py`, `complexity_evaluator.py`) | Provee plantillas tipadas (`JevBoolean`, `JevChoice`, `JevScore`), enrutador semántico y evaluador de complejidad cognitiva. |
+| **4** | **Migración Alembic 0011** | `oppytec-backend/alembic/versions/0011_public_jev_request_logs_and_finops_telemetry.py` | Crea la tabla `public.jev_request_logs` e índices compuestos `idx_jev_logs_*` de alto throughput. |
+| **5** | **Modelo SQLAlchemy JEV** | `oppytec-backend/src/modules/oppy_ai/infrastructure/models.py` (`JevRequestLog`) | Mapeo relacional ORM en `PublicBase` con tipos `Numeric(5, 4)` y `Numeric(14, 6)`. |
+| **6** | **Protocolos y Tipos JEV** | `oppytec-backend/src/adapters/ai/jev_protocol.py` | Define `JevUsageRecord`, `JevTelemetrySinkPort`, `JevChoiceBatchItem`, resultados tipados y umbral por defecto (`0.85`). |
+| **7** | **Adaptador Medido y Sinks** | `oppytec-backend/src/adapters/ai/jev_adapter.py` | `MeteredJevAdapter`, `DatabaseJevTelemetrySink`, `InMemoryJevTelemetrySink` y método `decide_choice_batch`. |
+| **8** | **Quality Gate AST de JEV** | `oppytec-backend/tests/architecture/test_jev_system1_enforcement.py` | Bloquea commits si un módulo con `can_jev_handle_it: true` no usa `JevDecisionPort`, si alguien usa listas regex de intenciones o si llama a JEV sin telemetría. |
+| **9** | **Suite de Pruebas JEV (Unitarias y Arquitectura)** | `oppytec-backend/tests/unit/adapters/test_jev_telemetry_decoupling.py` y `oppytec-backend/tests/architecture/test_jev_system1_enforcement.py` | Valida desacoplamiento de telemetría JEV, batching, sinks de base de datos, consistencia FinOps y enforcement de arquitectura AST. |

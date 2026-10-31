@@ -21,7 +21,7 @@ graph TD
             Tenancy["holdings, legal_entities (1:1 con Tenant),<br/>tenants (schema_name UNIQUE, base_currency)"]
             PlansMods["system_plans (max_active_users, max_storage_mb),<br/>app_modules, tenant_modules"]
             ClientIdentity["client_users (Holding level, soft-delete libera cupo),<br/>client_user_tenant_access (Acceso Transversal)"]
-            GlobalAI["llm_request_logs, audio_request_logs, ai_model_configs,<br/>ai_credit_packages, spec_chunks (Solo business-domain/)"]
+            GlobalAI["jev_request_logs (Sistema 1), llm_request_logs (Sistema 2/Embeddings),<br/>audio_request_logs, ai_model_configs, ai_credit_packages, spec_chunks (Solo business-domain/)"]
             GlobalInfra["i18n_translation_memory, fx_current_rates,<br/>fx_rate_history, fx_audit_log, backup_execution_logs"]
         end
 
@@ -71,8 +71,31 @@ graph TD
 - **`public.client_user_tenant_access` (Acceso Transversal en el Holding):**
   - `user_id` (`FK -> client_users.id`), `holding_id`, `tenant_id` (`FK compuesta (holding_id, tenant_id) -> tenants`), `granted_by_user_id`. Permite que un mismo trabajador opere en múltiples Tenants del mismo Holding (ej. Hotel + Restaurante).
 
-### 2.3 FinOps IA (`llm_request_logs`), Paquetes de Créditos `OppyFy`, `i18n`, `FX` y Backups
-- **`public.llm_request_logs` (Registro Estricto y Sin Excepción de Toda Llamada IA):**
+### 2.3 FinOps IA (`jev_request_logs`, `llm_request_logs`), Paquetes de Créditos `OppyFy`, `i18n`, `FX` y Backups
+- **`public.jev_request_logs` (Bitácora Inmutable de Decisiones Sub-simbólicas Sistema 1):**
+  - **Propósito Arquitectónico:** Registro inmutable (*Append-Only*) y desacoplado de micro-decisiones de alta velocidad del motor JEV (`Sistema 1`: determinista, estructurado y sub-simbólico en `< 500 ms`). Permite aislar la telemetría de ultra-alta frecuencia (cientos de clasificaciones por segundo en importaciones y enrutamiento) respecto al flujo generativo de `llm_request_logs`, protegiendo el throughput de persistencia y habilitando la medición exacta de FinOps y la métrica de retorno de inversión *"Ahorro Estimado por Enrutamiento JEV"*.
+  - **Columnas e Integridad de Tipos:**
+    - `id` (`UUID` PK, default `gen_random_uuid()`), `created_at` (`TIMESTAMPTZ` Indexed, server_default `now()`).
+    - `holding_id` (`UUID` Indexed), `tenant_id` (`UUID` Indexed), `tenant_schema` (`VARCHAR(63)` Indexed), `user_id` (`INTEGER NULL` Indexed).
+    - `trace_id` (`VARCHAR(64) NULL` — correlación distribuida OpenTelemetry / hilo conversacional).
+    - `caller_feature` (`VARCHAR(64)` Indexed — ej. `'oppyfy_chat'`, `'tool_router'`, `'excel_import'`, `'invoice_ocr'`, `'merma_judge'`).
+    - `decision_id` (`VARCHAR(64)` — identificador funcional único de la micro-decisión).
+    - `decision_primitive` (`VARCHAR(16)` — `'BOOLEAN'`, `'CHOICE'`, `'SCORE'`).
+    - `input_summary` (`VARCHAR(255)` — síntesis higienizada del input evaluado).
+    - `result_value` (`VARCHAR(128)` — resultado emitido por la primitiva).
+    - `confidence_score` (`NUMERIC(5, 4)` Indexed — calibración matemática continua entre `0.0000` y `1.0000`).
+    - `calibrated_action` (`VARCHAR(24)` — `'AUTO_ACCEPTED'`, `'FLAGGED_WARNING'`, `'FALLBACK_LLM'`).
+    - `model_name` (`VARCHAR(64)` — motor de ejecución o regla JEV).
+    - `estimated_tokens` (`INTEGER` server_default `0`), `provider_cost_usd` (`NUMERIC(14, 6)` server_default `0.000000`), `provider_cost_clp` (`NUMERIC(14, 2)` server_default `0.00`), `credits_deducted` (`NUMERIC(12, 2)` server_default `0.00`).
+    - `latency_ms` (`INTEGER` server_default `0`), `is_success` (`BOOLEAN` server_default `true`), `error_message` (`TEXT NULL`).
+  - **Índices Compuestos de Alto Rendimiento:**
+    - `idx_jev_logs_tenant_created` (`tenant_id, created_at`): Filtrado temporal ágil y agregación mensual por tenant.
+    - `idx_jev_logs_holding_created` (`holding_id, created_at`): Auditoría consolidada a nivel corporativo multi-sucursal.
+    - `idx_jev_logs_feature` (`caller_feature`): Métricas de consumo y frecuencia por feature llamante.
+    - `idx_jev_logs_confidence` (`confidence_score`): Auditoría analítica de calibración, distribución de confianza y detección de derivas semánticas.
+    - Índices individuales adicionales: `created_at`, `tenant_schema`, `user_id`.
+  - **Soporte de Inserción Masiva en Lote (*Batching*):** Integrado nativamente con `DatabaseJevTelemetrySink` mediante `session.add_all(...)` y `MeteredJevAdapter.decide_choice_batch`, permitiendo procesar importaciones masivas de catálogos de miles de filas (`IMPORTADOR_EXCEL_SPEC.md`) y conciliaciones masivas de facturas OCR sin contención ni degradación de latencia.
+- **`public.llm_request_logs` (Registro Estricto y Sin Excepción de Toda Llamada IA Sistema 2 / Embeddings):**
   - `id` (`BIGSERIAL` PK), `created_at` (`TIMESTAMPTZ` Indexed), `holding_id` (`UUID` Indexed), `tenant_id` (`UUID` Indexed), `tenant_schema` (`VARCHAR(100)` Indexed), `user_id` (`INTEGER`), `thread_id` (`UUID NULL`).
   - `engine_tier` (`'SYSTEM_1_JEV' | 'SYSTEM_2_LLM' | 'EMBEDDING'`), `caller_feature` (`'oppyfy_chat'`, `'oppyfy_tool_router'`, `'excel_import'`, `'invoice_ocr'`, `'merma_judge'`, `'i18n_auto_translate'`), `model_name`, `input_tokens`, `cached_tokens`, `output_tokens`, `total_tokens`.
   - `provider_cost_usd` (`NUMERIC(14, 6)`), `provider_cost_clp` (`NUMERIC(14, 2)`), `credits_deducted` (`NUMERIC(12, 2)`), `request_duration_ms`, `api_success`, `error_message`.

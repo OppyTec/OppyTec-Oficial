@@ -36,6 +36,7 @@ class LlmUsageRecord:
     thread_id: uuid.UUID | None = None
     api_success: bool = True
     error_message: str | None = None
+    tokens_saved: int = 0
 
     @property
     def total_tokens(self) -> int:

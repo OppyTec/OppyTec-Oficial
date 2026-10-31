@@ -1,57 +1,78 @@
 # Reporte de Traspaso (`Handover`) — Agente 09: QA, Parity & Test Engineer
 
-- **Fecha UTC:** 2026-10-26T23:35:00Z
+- **Fecha UTC:** 2026-10-31T22:45:00Z
 - **Agente:** Agente 09 (`09-qa-parity-and-test-engineer`)
-- **Fase / Hito:** Fase 7.4 de `PLAN_MAESTRO_OPPYFY_AI.md`: "Testing 5D Exhaustivo, Paridad Matemática y Test de Arquitectura AST para OppyFy".
-- **Estado de Certificación:** `OPPYFY_PHASE_7_4_5D_TESTING_AND_AST_GATE_CERTIFIED` (17/17 tests nuevos 100% verde, 50/50 tests OppyFy 100% verde, 29/29 tests de arquitectura globales 100% verde, cero uso de float, paridad matemática multi-moneda verificada con Hypothesis).
+- **Fase / Hito:** Fase 4 del Plan Maestro "Code Mode sobre MCP" (`.agent/Planes-Maestros/PLAN_MAESTRO_CODE_MODE_MCP.md`): "Certificación de Calidad 5D y Auditoría Red Team del Sandbox de Code Mode".
+- **Estado de Certificación:** `CODE_MODE_STAGE4_QUALITY_AND_REDTEAM_CERTIFIED` (100% verde: 89/89 tests ofensivos Red Team, 44/44 tests unitarios de Code Mode y 29/29 tests de arquitectura aprobados; cero fugas multi-tenant, zero bypass a Hard-Code Data Stripping, Watchdog DoS estricto y telemetría FinOps verificada).
 
 ---
 
 ## 1. Completed (Qué se ejecutó y validó)
 
-1. **Test de Arquitectura AST (`oppytec-backend/tests/architecture/test_oppyfy_telemetry_and_isolation.py`):**
-   - **Puerta 1 (Zero-Direct-AI-SDK):** Análisis AST exhaustivo sobre todo `src/` certificando que **0 llamadas al SDK de Gemini (`google.generativeai`, `google.genai`), OpenAI o Anthropic eluden la capa de adaptadores (`src/adapters/ai/`)**. Garantiza que toda invocación pasa por el interceptor universal `MeteredAIService` y emite telemetría al sumidero ineludible de `public.llm_request_logs`.
-   - **Puerta 2 (Aislamiento de Bóveda RAG Capa 3A):** Verificación por AST de que `ThreeLayerRagService` define y exige `ALLOWED_PUBLIC_SPEC_VAULT_PREFIX = "specs/business-domain"` y rechaza con `ValueError` cualquier intento de registrar o indexar `specs/engineering-code/`, `docs/adr/`, o código fuente de `src/`.
-   - **Puerta 3 (Hard-Code Data Stripping en Herramientas Operativas):** Verificación por AST de que todas las herramientas operativas deterministas en `src/modules/oppy_ai/application/operational_tools/` implementan el decorador `@hardcoded_data_stripping` o invocan directamente `redact_cost_fields`.
-   - Se implementó el decorador `@hardcoded_data_stripping` en `src/modules/oppy_ai/domain/oppyfy_rbac.py` y se decoraron las herramientas en `inventory_tools.py`, `procurement_tools.py`, `events_tools.py`, `waste_tools.py` y `canvas_tools.py`.
+1. **Creación de la Suite Ofensiva Red Team en `oppytec-backend/tests/security_redteam/test_17_code_mode_sandbox_security.py`:**
+   - **Vector 1: Intento de escape de sandbox mediante introspección dunder:**
+     - 11 payloads de introspección dunder (`().__class__.__bases__[0].__subclasses__()`, `''.__class__.__mro__`, `(lambda: None).__globals__`, `__code__`, `__dict__`, etc.) bloqueados en seco por el validador AST con `SANDBOX_SECURITY_VIOLATION`.
+     - 11 llamadas a built-ins reflexivos peligrosos (`globals()`, `locals()`, `vars()`, `eval()`, `exec()`, `open()`, `breakpoint()`, etc.) bloqueadas deterministamente.
+     - Pruebas de integración contra `OppyfyCodeModeService` verificando respuestas estructuradas sin filtración de datos y con registro forense.
+   - **Vector 2: Intento de evasión e inyección de módulos del SO:**
+     - 17 payloads de importación directa y de terceros (`os`, `sys`, `subprocess`, `shutil`, `socket`, `posix`, `ctypes`, `requests`, `httpx`, `pickle`, `importlib`, etc.) rechazados antes de ejecución.
+     - Intercepción hermética tanto en nivel sintáctico AST como en el built-in protegido `_safe_import`.
+     - Verificación de ejecución autorizada de módulos seguros (`math`, `json`, `datetime`, `decimal.Decimal`).
+   - **Vector 3: Ataque DoS por bucle infinito y disparo de timeout (watchdog):**
+     - Bucle infinito `while True: pass` cortado por el watchdog (timeout configurado) arrojando `SANDBOX_TIMEOUT_EXCEEDED` en < 0.3s.
+     - Bucle de alta frecuencia interceptado por el limitador de 1.000.000 instrucciones de `sys.settrace`.
+     - Captura adecuada de `stdout` previo al corte forzado.
+   - **Vector 4: Bomba AST (scripts con más de 2000 nodos AST para agotar memoria):**
+     - Expresiones con más de 2500 nodos AST y scripts con más de 2100 sentencias rechazados con `SANDBOX_SECURITY_VIOLATION` antes de compilar.
+     - Scripts analíticos legítimos (< 2000 nodos) ejecutados exitosamente.
+   - **Vector 5: Intento de IDOR Cross-Tenant (`tenant_competitor` inyectado):**
+     - Sentencias SQL con inyección de esquemas ajenos (`tenant_competitor.finanzas`) detectadas por regex y abortadas con `CROSS_TENANT_ACCESS_VIOLATION`.
+     - Inyección en argumentos de herramientas MCP (`tenant_id`, almacenamiento de archivos en Cloudflare R2 con menciones inter-inquilino) bloqueadas.
+     - Autorización legítima confirmada cuando el script referencia explícitamente el `tenant_id` activo propio.
+   - **Vector 6: Evasión de Hard-Code Data Stripping:**
+     - Redacción física recursiva a `"[REDACTED_COST]"` en lectura directa de columnas financieras (`costo_unitario`, `costo_total`, `margen_bruto`, `precio_compra`, `food_cost_amount`).
+     - Evasión por renombramiento de claves / asignación de variables frustrada: el valor subyacente sigue redactado.
+     - Operaciones aritméticas sobre costos redactados explotan con `TypeError`, garantizando confidencialidad.
+     - Doble barrera de stripping: a la entrada de datos MCP y a la salida final sintetizada.
+     - Administradores financieros con `can_view_costs=True` reciben los valores numéricos intactos.
+   - **Vector 7: Invocación de herramientas MCP con permisos RBAC no concedidos:**
+     - Invocaciones a herramientas de DML (`postgres.execute_dml`) y facturación (`sii_billing.emit_invoice`) rechazadas con `RBAC_PERMISSION_DENIED` si faltan `base_datos.modificar` o `facturacion.emitir`.
+     - Verificación de jerarquía RBAC de 3 niveles con comodines (`inventario.*`).
+     - Rol Superuser God autorizado para invocar cualquier herramienta MCP.
+   - **Vector 8: Búsqueda de capacidades con consultas maliciosas (SQLi / Prompt Injection):**
+     - 7 payloads SQLi (`' OR '1'='1' --`, `'; DROP TABLE...`, etc.) procesados herméticamente en memoria con scoring de similitud sin tocar motores SQL.
+     - 6 payloads de Prompt Injection / XSS / SSTI manejados sin efectos colaterales.
+     - Garantía estricta de descriptores token-minimal (< 150 tokens / < 600 bytes JSON).
+   - **Vector 9: Telemetría de tokens en `llm_request_logs` con medición de `tokens_saved`:**
+     - Reducción analítica masiva en memoria: 3 filas a 1 resumen reduce el volumen en > 75%, registrando `tokens_saved_estimate > 0`.
+     - Verificación de emisión de `LlmUsageRecord` en `InMemoryTelemetrySink` con metadatos de linaje (`holding_id`, `tenant_id`, `user_id`, `caller_feature='oppyfy_code_mode'`, `engine_tier='SYSTEM_2_LLM'`).
+     - Intentos de ataque generan registro forense en bitácora con `api_success=False` y mensaje de error.
+   - **Vector 10: Integridad referencial de esquemas y retornos inmutables:**
+     - Estructuras `@dataclass(frozen=True)` (`SandboxContext`, `SandboxExecutionResult`, `OppyfyCodeModeExecutionResult`) inmutables contra manipulación maliciosa.
+     - Validación estricta de formato `tenant_[a-z0-9_]+` rechazando inyecciones SQL y caracteres no alfanuméricos.
+     - Idempotencia del filtro `strip_sensitive_cost_data`.
+     - Control estricto de referencias en el SDK tipado (`AttributeError` ante herramientas no registradas).
 
-2. **Suite de Pruebas 5D y Paridad Matemática con Hypothesis (`oppytec-backend/tests/unit/modules/test_oppyfy_5d_quality.py`):**
-   - **Dimensión 1 (Unitario):**
-     - Verificación puntual de umbrales discretos del medidor semafórico de contexto (64.99% vs 65.00% verde, 65.01% ámbar, 79.99% vs 80.02% alerta preventiva, 85.00% ámbar vs 85.01% rojo con bloqueo).
-     - Validación del presupuesto de tokens en rollover al 5.00% (410 tokens sobre 8192 seguros).
-   - **Dimensión 2 (Integración):**
-     - Orquestación E2E completa: `MeteredAIService` + `ThreeLayerRagService` + `OppyfyToolRouter` + `WorkerCreditWalletState` + sumidero de telemetría.
-     - Bloqueo y auditoría de solicitudes denegadas por RBAC (`BLOCKED_UNAUTHORIZED_PROMPT`) con 0 créditos descontados para generación.
-   - **Dimensión 3 (Propiedades con Hypothesis):**
-     - *No-Overflow en Billeteras:* Apilamiento de paquetes de créditos con `Decimal` sin desbordamiento ni derivas (hasta $10^8$ créditos), conmutatividad y asociatividad estricta.
-     - *Conservación de Créditos:* Invariante estricto en la transferencia de créditos del Holding a las billeteras de los trabajadores (`pool.unallocated + wallet.allocated == constante`).
-     - *Deducción Atómica:* Disminución monótona y exacta de créditos remanentes cuando `deduct_amount <= remaining`.
-   - **Dimensión 4 (Contratos):**
-     - Garantía estricta de cero `float` (exclusivamente `Decimal` e `int`).
-     - Verificación de límites de escala en base de datos: `NUMERIC(14,6)` para USD (hasta 99.999.999,999999) y `NUMERIC(14,2)` para CLP (hasta 999.999.999.999,99).
-     - Invocación con `can_view_costs=False` redacta físicamente los campos sensibles a `"[REDACTED_COST]"`.
-   - **Dimensión 5 (Paridad Matemática):**
-     - Paridad matemática bidireccional entre `MeteredAIService.calculate_token_cost` y `saas_policy_math.calculate_real_api_cost_usd`.
-     - Monotonicidad de tarifas: mayor consumo de tokens nunca disminuye el costo.
-     - Conversión cambiaria exacta con `ROUND_HALF_UP`: `cost_clp == round(cost_usd * rate, 2)`.
+2. **Resultados de Ejecución de Suites:**
+   - `pytest oppytec-backend/tests/security_redteam/test_17_code_mode_sandbox_security.py`: **89/89 pasados (100%) en 0.77s**.
+   - `pytest oppytec-backend/tests/unit/core/test_mcp_bridge.py oppytec-backend/tests/unit/core/test_sandbox_runner.py oppytec-backend/tests/unit/modules/test_oppyfy_code_mode.py`: **44/44 pasados (100%) en 0.33s**.
+   - `pytest oppytec-backend/tests/architecture/`: **29/29 pasados (100%) en 1.37s**.
+   - Total acumulado: **162 tests ejecutados y aprobados con 0 fallos**.
 
-3. **Ejecución y Verificación 100% Verde:**
-   - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_oppyfy_telemetry_and_isolation.py oppytec-backend/tests/unit/modules/test_oppyfy_5d_quality.py`: **17 passed en 1.33s (100% verde)**.
-   - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/modules/test_oppy_ai_*.py oppytec-backend/tests/unit/modules/test_oppyfy_*.py`: **50 passed en 1.59s (100% verde)**.
-   - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/`: **29 passed en 1.42s (100% verde)**.
-   - Grafo de arquitectura sincronizado con `python3 scripts/harness.py sync-graph` (96 nodos, 116 aristas).
+3. **Sincronización del Grafo de Arquitectura Graphify:**
+   - Comando: `python scripts/harness.py sync-graph`
+   - Resultado: 97 nodos y 116 aristas sincronizados exitosamente en `docs/architecture/graphify/graph.json` y `visualizer.html`.
 
 ---
 
 ## 2. Friction & Failures (Qué cuidar)
 
-- **Asignaciones Anotadas en AST Python (`ast.AnnAssign` vs `ast.Assign`):** La constante `ALLOWED_PUBLIC_SPEC_VAULT_PREFIX: str = "specs/business-domain"` utiliza tipado explícito, por lo que el AST parser genera un nodo `ast.AnnAssign` en lugar de `ast.Assign`. El linter de arquitectura AST fue calibrado para soportar ambas variantes.
-- **Redondeo Discreto de Porcentajes en Tokens Seguros:** Al trabajar con 8192 tokens como base segura, `6555 * 100 / 8192 = 80.017%`, que redondea a `80.02%` con `ROUND_HALF_UP`. Los tests de límites discretos se fijaron con cálculo exacto para evitar falsos negativos por micro-fracciones.
-- **Atributos de Telemetría en Memoria:** `InMemoryTelemetrySink` expone sus registros mediante la propiedad `.records` (`tuple[LlmUsageRecord, ...]`), mientras que `MeteredGeminiAdapter` expone `.emitted_logs`.
+- **Intercepción de __import__ en Tiempo de Compilación AST vs Runtime:** `__import__` está listado en `FORBIDDEN_BUILTIN_NAMES`. Cualquier script que intente usar la función sintáctica `__import__('...')` es interceptado de raíz por el `ast.walk` en `_validate_ast` arrojando `SANDBOX_SECURITY_VIOLATION` antes de evaluar el runtime. La función `_safe_import` actúa como segunda línea de defensa para cargas internas o invocadas indirectamente.
+- **Micro-segundos de Ejecución en Bucles de Alta Frecuencia:** El step tracer de `sys.settrace` con cuota de 1.000.000 instrucciones detiene bucles `while True: pass` en aproximadamente 120ms en CPUs modernas, abortando la ejecución antes de alcanzar el timeout de pared (wall-clock) de 300ms, lo cual representa una protección óptima contra DoS.
 
 ---
 
 ## 3. Next Exact Action (Siguiente paso exacto)
 
-- Fase 7.4 de `PLAN_MAESTRO_OPPYFY_AI.md` completada y certificada con 100% de tests en verde.
-- Notificar al Agente Orquestador (`d0212433-cb68-4d01-aea7-ef017fe152b9`) para consolidar la certificación de la fase.
+- Fase 4 completada y certificada al 100%.
+- Proceder a la Fase 5: Gobernanza, OpenSpec Bipartito (`specs/engineering-code/mcp-code-mode-bridge.spec.md`, `specs/business-domain/oppyfy-operational-intelligence.business.spec.md`) y sincronización documental a cargo de `12-tech-writer-openspec-archify`.

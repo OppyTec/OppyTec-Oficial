@@ -310,3 +310,36 @@ class OppyfyTelemetryLogItemResponse(BaseModel):
     total_tokens: int
     estimated_cost_usd: Decimal
     credits_deducted: Decimal
+
+
+# ============================================================================
+# 8. AI MODEL TARIFFS SCHEMAS
+# ============================================================================
+
+
+class AiModelTariffResponse(BaseModel):
+    """Tarifa configurada para un modelo IA en el panel Platform Admin."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    model_slug: str
+    engine_tier: str
+    input_cost_per_1m_usd: Decimal
+    cached_cost_per_1m_usd: Decimal
+    output_cost_per_1m_usd: Decimal
+    embedding_cost_per_1m_usd: Decimal
+    is_enabled: bool
+
+
+class AiModelTariffUpdateRequest(BaseModel):
+    """Actualización dinámica de tarifa para un modelo de IA en Platform Admin."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    engine_tier: str | None = None
+    input_cost_per_1m_usd: Decimal | None = Field(default=None, ge=Decimal("0"))
+    cached_cost_per_1m_usd: Decimal | None = Field(default=None, ge=Decimal("0"))
+    output_cost_per_1m_usd: Decimal | None = Field(default=None, ge=Decimal("0"))
+    embedding_cost_per_1m_usd: Decimal | None = Field(default=None, ge=Decimal("0"))
+    is_enabled: bool | None = None
+

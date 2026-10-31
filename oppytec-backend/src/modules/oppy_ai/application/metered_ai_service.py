@@ -20,7 +20,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
+from typing import Protocol, runtime_checkable
 
 from src.adapters.ai.jev_protocol import JevDecisionPort
 from src.adapters.ai.protocol import (
@@ -29,7 +29,12 @@ from src.adapters.ai.protocol import (
     LlmTelemetrySinkPort,
     LlmUsageRecord,
 )
+from src.core.fx.fx_service import FXService
 from src.core.observability import trace_span
+from src.modules.oppy_ai.application.code_mode_service import (
+    OppyfyCodeModeExecutionResult,
+    OppyfyCodeModeService,
+)
 from src.modules.oppy_ai.application.rag_service import (
     RagThreeLayerBundle,
     ThreeLayerRagService,
@@ -113,13 +118,32 @@ DEFAULT_MODEL_TARIFFS: dict[str, ModelTariff] = {
 }
 
 
+@runtime_checkable
+class AiModelConfigLike(Protocol):
+    """Protocolo estructural para registros de tarifas de modelos IA (`public.ai_model_configs`)."""
+
+    model_slug: str
+    engine_tier: str
+    input_cost_per_1m_usd: Decimal
+    cached_cost_per_1m_usd: Decimal
+    output_cost_per_1m_usd: Decimal
+    embedding_cost_per_1m_usd: Decimal
+    is_enabled: bool
+
+
 class ModelConfigRegistry:
     """Registro en memoria y proveedor de tarifas vigentes de `public.ai_model_configs`."""
 
-    def __init__(self, tariffs: Mapping[str, ModelTariff] | None = None) -> None:
+    def __init__(
+        self,
+        tariffs: Mapping[str, ModelTariff] | None = None,
+        db_records: Sequence[AiModelConfigLike | Mapping[str, object]] | None = None,
+    ) -> None:
         self._tariffs: dict[str, ModelTariff] = dict(DEFAULT_MODEL_TARIFFS)
         if tariffs:
             self._tariffs.update(tariffs)
+        if db_records:
+            self.load_from_db_records(db_records)
 
     def get_tariff(self, model_slug: str) -> ModelTariff:
         """Retorna la tarifa configurada para `model_slug` o el fallback estándar."""
@@ -132,6 +156,102 @@ class ModelConfigRegistry:
     def set_tariff(self, tariff: ModelTariff) -> None:
         """Actualiza o registra una tarifa para un modelo específico."""
         self._tariffs[tariff.model_slug.lower().strip()] = tariff
+
+    def list_tariffs(self) -> list[ModelTariff]:
+        """Retorna la lista de todas las tarifas de modelos IA configuradas."""
+        return list(self._tariffs.values())
+
+    def update_tariff(
+        self,
+        model_slug: str,
+        *,
+        engine_tier: str | None = None,
+        input_cost_per_1m_usd: Decimal | None = None,
+        cached_cost_per_1m_usd: Decimal | None = None,
+        output_cost_per_1m_usd: Decimal | None = None,
+        embedding_cost_per_1m_usd: Decimal | None = None,
+        is_enabled: bool | None = None,
+    ) -> ModelTariff:
+        """Actualiza dinámicamente las tarifas de un modelo en el registry."""
+        normalized = model_slug.lower().strip()
+        existing = self._tariffs.get(normalized)
+        if existing is not None:
+            updated = ModelTariff(
+                model_slug=existing.model_slug,
+                engine_tier=engine_tier if engine_tier is not None else existing.engine_tier,
+                input_cost_per_1m_usd=(
+                    input_cost_per_1m_usd
+                    if input_cost_per_1m_usd is not None
+                    else existing.input_cost_per_1m_usd
+                ),
+                cached_cost_per_1m_usd=(
+                    cached_cost_per_1m_usd
+                    if cached_cost_per_1m_usd is not None
+                    else existing.cached_cost_per_1m_usd
+                ),
+                output_cost_per_1m_usd=(
+                    output_cost_per_1m_usd
+                    if output_cost_per_1m_usd is not None
+                    else existing.output_cost_per_1m_usd
+                ),
+                embedding_cost_per_1m_usd=(
+                    embedding_cost_per_1m_usd
+                    if embedding_cost_per_1m_usd is not None
+                    else existing.embedding_cost_per_1m_usd
+                ),
+                is_enabled=is_enabled if is_enabled is not None else existing.is_enabled,
+            )
+        else:
+            updated = ModelTariff(
+                model_slug=model_slug,
+                engine_tier=engine_tier or "SYSTEM_2_LLM",
+                input_cost_per_1m_usd=(
+                    input_cost_per_1m_usd if input_cost_per_1m_usd is not None else Decimal("0.150000")
+                ),
+                cached_cost_per_1m_usd=(
+                    cached_cost_per_1m_usd if cached_cost_per_1m_usd is not None else Decimal("0.037500")
+                ),
+                output_cost_per_1m_usd=(
+                    output_cost_per_1m_usd if output_cost_per_1m_usd is not None else Decimal("0.600000")
+                ),
+                embedding_cost_per_1m_usd=(
+                    embedding_cost_per_1m_usd if embedding_cost_per_1m_usd is not None else Decimal("0.000000")
+                ),
+                is_enabled=is_enabled if is_enabled is not None else True,
+            )
+        self._tariffs[normalized] = updated
+        return updated
+
+    def load_from_db_records(
+        self,
+        records: Sequence[AiModelConfigLike | Mapping[str, object]],
+    ) -> None:
+        """Carga o actualiza tarifas en el registry a partir de registros de base de datos (`public.ai_model_configs`)."""
+        for r in records:
+            if isinstance(r, AiModelConfigLike):
+                self.set_tariff(
+                    ModelTariff(
+                        model_slug=r.model_slug,
+                        engine_tier=r.engine_tier,
+                        input_cost_per_1m_usd=r.input_cost_per_1m_usd,
+                        cached_cost_per_1m_usd=r.cached_cost_per_1m_usd,
+                        output_cost_per_1m_usd=r.output_cost_per_1m_usd,
+                        embedding_cost_per_1m_usd=r.embedding_cost_per_1m_usd,
+                        is_enabled=r.is_enabled,
+                    )
+                )
+            elif isinstance(r, Mapping):
+                self.set_tariff(
+                    ModelTariff(
+                        model_slug=str(r["model_slug"]),
+                        engine_tier=str(r.get("engine_tier", "SYSTEM_2_LLM")),
+                        input_cost_per_1m_usd=Decimal(str(r.get("input_cost_per_1m_usd", "0.150000"))),
+                        cached_cost_per_1m_usd=Decimal(str(r.get("cached_cost_per_1m_usd", "0.037500"))),
+                        output_cost_per_1m_usd=Decimal(str(r.get("output_cost_per_1m_usd", "0.600000"))),
+                        embedding_cost_per_1m_usd=Decimal(str(r.get("embedding_cost_per_1m_usd", "0.000000"))),
+                        is_enabled=bool(r.get("is_enabled", True)),
+                    )
+                )
 
 
 @dataclass(frozen=True)
@@ -165,7 +285,7 @@ class OppyfyQueryRequest:
     language_code: str = "es"
     brand_name: str = "OppyFy"
     estimated_credit_cost: Decimal = Decimal("1.00")
-    usd_to_clp_rate: Decimal = Decimal("950.00")
+    usd_to_clp_rate: Decimal | None = None
 
 
 @dataclass(frozen=True)
@@ -203,6 +323,8 @@ class MeteredAIService:
         tool_router: OppyfyToolRouter | None = None,
         model_registry: ModelConfigRegistry | None = None,
         telemetry_sink: LlmTelemetrySinkPort | None = None,
+        fx_service: FXService | None = None,
+        code_mode_service: OppyfyCodeModeService | None = None,
     ) -> None:
         self._jev = jev_port
         self._llm = llm_port
@@ -210,8 +332,72 @@ class MeteredAIService:
         self._router = tool_router or OppyfyToolRouter(jev_port)
         self._models = model_registry or ModelConfigRegistry()
         self._sink = telemetry_sink
+        self._fx = fx_service or FXService()
         self._prompt_audit_logs: list[OppyfyAuditEntry] = []
         self._emitted_usage_records: list[LlmUsageRecord] = []
+        self._code_mode = code_mode_service
+        if self._code_mode is not None:
+            self._code_mode.set_metered_service(self)
+
+    @property
+    def code_mode_service(self) -> OppyfyCodeModeService:
+        """Servicio de orquestación de Code Mode sobre MCP con telemetría integrada."""
+        if self._code_mode is None:
+            self._code_mode = OppyfyCodeModeService(metered_ai_service=self)
+        return self._code_mode
+
+    def search_capabilities(
+        self,
+        tenant_id: str,
+        query: str = "",
+        limit: int = 5,
+    ) -> list[dict[str, object]]:
+        """Descubrimiento de capacidades MCP token-minimal (< 150 tokens) para OppyFy."""
+        return self.code_mode_service.search_capabilities(
+            tenant_id=tenant_id,
+            query=query,
+            limit=limit,
+        )
+
+    def execute_code_mode(
+        self,
+        tenant_id: str | uuid.UUID,
+        user_id: int,
+        user_role: str | int | tuple[int, ...] | Sequence[int] | None = None,
+        permissions: frozenset[str] | set[str] | list[str] | Sequence[str] | None = None,
+        script_code: str = "",
+        can_view_costs: bool = False,
+        *,
+        holding_id: uuid.UUID | str | None = None,
+        thread_id: uuid.UUID | None = None,
+        caller_feature: str = "oppyfy_code_mode",
+    ) -> OppyfyCodeModeExecutionResult:
+        """
+        Ejecuta un script en el sandbox aislado mediante Code Mode.
+        Registra la telemetría FinOps (tokens usados y ahorrados) en public.llm_request_logs.
+        """
+        return self.code_mode_service.execute_code_mode(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            user_role=user_role,
+            permissions=permissions,
+            script_code=script_code,
+            can_view_costs=can_view_costs,
+            holding_id=holding_id,
+            thread_id=thread_id,
+            caller_feature=caller_feature,
+            metered_service=self,
+        )
+
+    @property
+    def model_registry(self) -> ModelConfigRegistry:
+        """Registro de configuración de tarifas de modelos IA."""
+        return self._models
+
+    @property
+    def fx_service(self) -> FXService:
+        """Motor cambiario multi-moneda de OppyTec."""
+        return self._fx
 
     @property
     def prompt_audit_logs(self) -> tuple[OppyfyAuditEntry, ...]:
@@ -236,15 +422,20 @@ class MeteredAIService:
         input_tokens: int,
         cached_tokens: int = 0,
         output_tokens: int = 0,
-        usd_to_clp_rate: Decimal = Decimal("950.00"),
+        usd_to_clp_rate: Decimal | None = None,
     ) -> tuple[Decimal, Decimal]:
-        """Calcula el costo exacto en USD (NUMERIC 14,6) y CLP (NUMERIC 14,2) según ai_model_configs."""
+        """Calcula el costo exacto en USD (NUMERIC 14,6) y CLP (NUMERIC 14,2) según ai_model_configs y FXService."""
         tariff = self._models.get_tariff(model_slug)
         cost_in = (Decimal(input_tokens) * tariff.input_cost_per_1m_usd) / _ONE_MILLION
         cost_cached = (Decimal(cached_tokens) * tariff.cached_cost_per_1m_usd) / _ONE_MILLION
         cost_out = (Decimal(output_tokens) * tariff.output_cost_per_1m_usd) / _ONE_MILLION
         cost_usd = (cost_in + cost_cached + cost_out).quantize(_SIX_DECIMALS, rounding=ROUND_HALF_UP)
-        cost_clp = (cost_usd * usd_to_clp_rate).quantize(_TWO_DECIMALS, rounding=ROUND_HALF_UP)
+        effective_fx = (
+            usd_to_clp_rate
+            if usd_to_clp_rate is not None
+            else self._fx.get_exchange_rate("USD", "CLP")
+        )
+        cost_clp = (cost_usd * effective_fx).quantize(_TWO_DECIMALS, rounding=ROUND_HALF_UP)
         return cost_usd, cost_clp
 
     def execute_oppyfy_query(

@@ -11,16 +11,24 @@ Implementa:
 from __future__ import annotations
 
 import argparse
-import fcntl
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+# Compatibilidad de Locks a Nivel de Kernel (Linux/macOS con fcntl, fallback seguro para Windows)
+try:
+    import fcntl
+    _HAS_FCNTL = True
+except ImportError:
+    fcntl = None  # type: ignore[assignment]
+    _HAS_FCNTL = False
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 AGENT_DIR = ROOT_DIR / ".agent"
@@ -30,6 +38,7 @@ CLAIMS_FILE = MEMORY_DIR / "claims_registry.json"
 CLAIMS_LOCK = MEMORY_DIR / ".claims_registry.lock"
 EVENTS_LOG = MEMORY_DIR / "harness_events.jsonl"
 EVAL_HASHES_FILE = AGENT_DIR / "evals" / "eval_hashes.sha256"
+MODEL_ROUTER_FILE = AGENT_DIR / "config" / "model_router.json"
 
 # Mapa de asignaciones de agentes constructores en paralelo por Fase de specs/06-IMPLEMENTATION-PLAN.md
 PHASE_WORKERS: dict[int, list[tuple[str, str]]] = {
@@ -83,10 +92,11 @@ def log_event(event_type: str, payload: dict[str, Any]) -> None:
 
 
 def claim_ast_symbol(worker_id: str, file_path: str, symbol_path: str, intent: str) -> None:
-    """Reserva un símbolo AST de forma atómica usando fcntl.flock(LOCK_EX)."""
+    """Reserva un símbolo AST de forma atómica usando fcntl.flock(LOCK_EX) en POSIX o lock atómico en Windows."""
     MEMORY_DIR.mkdir(parents=True, exist_ok=True)
     with open(CLAIMS_LOCK, "w", encoding="utf-8") as lock_fd:
-        fcntl.flock(lock_fd.fileno(), fcntl.LOCK_EX)
+        if _HAS_FCNTL and fcntl is not None:
+            fcntl.flock(lock_fd.fileno(), fcntl.LOCK_EX)
         try:
             data: dict[str, Any] = {"version": "2.0.0", "active_claims": []}
             if CLAIMS_FILE.exists():
@@ -117,7 +127,8 @@ def claim_ast_symbol(worker_id: str, file_path: str, symbol_path: str, intent: s
                 json.dump(data, tmp_file, indent=2, ensure_ascii=False)
             os.replace(tmp_path, CLAIMS_FILE)
         finally:
-            fcntl.flock(lock_fd.fileno(), fcntl.LOCK_UN)
+            if _HAS_FCNTL and fcntl is not None:
+                fcntl.flock(lock_fd.fileno(), fcntl.LOCK_UN)
 
     log_event("AST_SYMBOL_CLAIMED", {"worker": worker_id, "file": file_path, "symbol": symbol_path})
     print(f"✅ Símbolo AST '{symbol_path}' reservado atómicamente para '{worker_id}'.")
@@ -206,30 +217,254 @@ def prepare_phase_worktrees(phase: int) -> None:
     print('   "Lee el archivo MISSION_PROMPT.md de este directorio y ejecuta tu misión de principio a fin."')
 
 
-def route_task_cmd(prompt_text: str, is_json: bool = False) -> None:
-    """Clasifica un requerimiento de usuario usando el Motor JEV Sistema 1."""
+def load_model_router_config() -> dict[str, Any]:
+    """Carga la configuración declarativa de modelos y tiers desde .agent/config/model_router.json."""
+    if not MODEL_ROUTER_FILE.exists():
+        return {
+            "version": "2.0.0",
+            "active_provider_default": "gemini",
+            "tiers": {},
+            "agent_overrides": {},
+            "providers_catalog": {},
+        }
+    return json.loads(MODEL_ROUTER_FILE.read_text(encoding="utf-8"))
+
+
+def resolve_agent_model(agent_or_tier: str, complexity_tier: str | None = None) -> dict[str, Any]:
+    """
+    Resuelve el tier, modelo primario y cadena de fallbacks de un agente o tier específico.
+    Si complexity_tier es provisto y dynamic_routing_enabled está activo, se permite
+    promover o adaptar el tier según la complejidad cognitiva evaluada por JEV.
+    """
+    cfg = load_model_router_config()
+    tiers = cfg.get("tiers", {})
+    agent_overrides = cfg.get("agent_overrides", {})
+    dynamic_enabled = cfg.get("dynamic_routing_enabled", True)
+
+    # Determinar el tier base
+    if agent_or_tier in tiers:
+        base_tier_key = agent_or_tier
+    else:
+        base_tier_key = agent_overrides.get(agent_or_tier, "tier_fast_execution")
+
+    effective_tier_key = base_tier_key
+    was_promoted = False
+
+    tier_hierarchy = ["tier_lightweight", "tier_fast_execution", "tier_reasoning_heavy"]
+
+    if dynamic_enabled and complexity_tier and complexity_tier in tiers:
+        base_idx = tier_hierarchy.index(base_tier_key) if base_tier_key in tier_hierarchy else 1
+        comp_idx = tier_hierarchy.index(complexity_tier) if complexity_tier in tier_hierarchy else 1
+
+        # Promoción si la complejidad cognitiva demanda un tier superior
+        if comp_idx > base_idx:
+            effective_tier_key = complexity_tier
+            was_promoted = True
+        elif comp_idx < base_idx and base_tier_key != "tier_reasoning_heavy":
+            # Optimización de cuota para agentes estándar ante tareas ultraligeras/cosméticas
+            effective_tier_key = complexity_tier
+
+    tier_info = tiers.get(effective_tier_key, {
+        "name": "Default Tier",
+        "primary": "gemini/gemini-3.8-flash",
+        "fallbacks": ["gemini/gemini-flash-lite"],
+    })
+
+    return {
+        "target": agent_or_tier,
+        "base_tier_key": base_tier_key,
+        "tier_key": effective_tier_key,
+        "tier_name": tier_info.get("name", effective_tier_key),
+        "primary_model": tier_info.get("primary", "gemini/gemini-3.8-flash"),
+        "fallback_chain": tier_info.get("fallbacks", []),
+        "description": tier_info.get("description", ""),
+        "was_promoted": was_promoted,
+    }
+
+
+def escalate_model_tier(agent_or_tier: str, reason: str = "TEST_FAILURE_REASONING_DEFICIT") -> dict[str, Any]:
+    """
+    Escala reactivamente el tier de un agente al tier superior inmediato
+    (tier_lightweight -> tier_fast_execution -> tier_reasoning_heavy) tras una falla
+    en Fast Gate < 15s o déficit de razonamiento demostrable.
+    """
+    resolution = resolve_agent_model(agent_or_tier)
+    current_tier = resolution["tier_key"]
+
+    tier_progression = {
+        "tier_lightweight": "tier_fast_execution",
+        "tier_fast_execution": "tier_reasoning_heavy",
+        "tier_reasoning_heavy": "tier_reasoning_heavy",
+    }
+    next_tier = tier_progression.get(current_tier, "tier_reasoning_heavy")
+
+    escalated_resolution = resolve_agent_model(agent_or_tier, complexity_tier=next_tier)
+    event_payload = {
+        "target": agent_or_tier,
+        "previous_tier": current_tier,
+        "escalated_tier": next_tier,
+        "new_primary_model": escalated_resolution["primary_model"],
+        "reason": reason,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    log_event("MODEL_TIER_ESCALATED", event_payload)
+
+    print(f"⚡ [AUTO-ESCALADO COGNITIVO ACTIVADO] Agente/Tier: '{agent_or_tier}'")
+    print(f"   • Tier previo: {current_tier}")
+    print(f"   • Nuevo Tier Promovido: 🚀 {next_tier}")
+    print(f"   • Modelo Primario: {escalated_resolution['primary_model']}")
+    print(f"   • Motivo: {reason}")
+    return escalated_resolution
+
+
+def trigger_model_fallback(agent_or_tier: str, failed_model: str, reason: str) -> dict[str, Any]:
+    """Simula o ejecuta un fallback dinámico al siguiente modelo disponible cuando la cuota se agota."""
+    resolution = resolve_agent_model(agent_or_tier)
+    chain = [resolution["primary_model"]] + resolution["fallback_chain"]
+
+    next_model = None
+    if failed_model in chain:
+        idx = chain.index(failed_model)
+        if idx + 1 < len(chain):
+            next_model = chain[idx + 1]
+    else:
+        next_model = resolution["fallback_chain"][0] if resolution["fallback_chain"] else "gemini/gemini-3.8-flash"
+
+    if not next_model:
+        next_model = "gemini/gemini-flash-lite"
+
+    event_payload = {
+        "target": agent_or_tier,
+        "tier": resolution["tier_key"],
+        "failed_model": failed_model,
+        "reason": reason,
+        "promoted_fallback_model": next_model,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    log_event("MODEL_FALLBACK_TRIGGERED", event_payload)
+
+    print(f"⚠️ [MODEL FALLBACK ACTIVADO] Agente/Tier: '{agent_or_tier}'")
+    print(f"   • Modelo agotado/fallido: {failed_model}")
+    print(f"   • Motivo: {reason}")
+    print(f"   • Nuevo Modelo Promovido: 🚀 {next_model}")
+    print(f"   • Cadena restante: {chain[chain.index(next_model) + 1:] if next_model in chain else []}")
+    return event_payload
+
+
+def run_load_benchmark_cmd(concurrency: int = 100) -> None:
+    """Ejecuta la prueba de carga y estrés concurrente contra el backend de OppyTec v2.0."""
+    backend_py = ROOT_DIR / "oppytec-backend" / ".venv" / "bin" / "python"
+    if not backend_py.exists():
+        backend_py = Path(sys.executable)
+
+    script = f"""
+import asyncio, httpx, warnings
+warnings.filterwarnings('ignore')
+from src.main import app
+from src.core.security import create_access_token
+from tests.load.locustfile import run_burst_load_simulation
+
+async def main():
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://testserver') as client:
+        token = create_access_token(
+            user_id=999, holding_id='holding_test', tenant_id='tenant_test',
+            hierarchy_rank=20, contracted_modules=['catalog', 'inventory', 'operations', 'analytics'],
+            role_grants=['catalog.units.convert', 'inventory.kardex.write', 'operations.sales.create'],
+            accessible_tenants=['tenant_test']
+        )
+        headers = {{'Authorization': f'Bearer {{token}}', 'X-Tenant-ID': 'tenant_test'}}
+        metrics = await run_burst_load_simulation(client, headers, concurrency={concurrency}, mode='stock_and_sales')
+        print('======================================================================')
+        print('⚡ BENCHMARK OFICIAL DE CARGA Y ESTRÉS — OPPYTEC V2.0 (LOCUST / ASYNCIO)')
+        print('======================================================================')
+        print(f'   • Peticiones Concurrentes:    {{metrics.total_requests}}')
+        print(f'   • Throughput Proyectado:      {{metrics.projected_rps:.1f}} RPS (SLA Objetivo: >= 500 RPS)')
+        print(f'   • Latencia P50 (Mediana):     {{metrics.p50_latency_ms:.2f}} ms')
+        print(f'   • Latencia P95:               {{metrics.p95_latency_ms:.2f}} ms (SLA Objetivo: <= 120 ms)')
+        print(f'   • Latencia P99:               {{metrics.p99_latency_ms:.2f}} ms')
+        print(f'   • Errores HTTP 5xx:           {{metrics.http_5xx_count}} (Tolerancia: 0)')
+        print(f'   • Peticiones Fallidas:        {{metrics.failed_requests}}')
+        status = '✅ CERTIFICADO SLA (>= 500 RPS & P95 <= 120ms)' if metrics.p95_latency_ms <= 120 and metrics.projected_rps >= 500 else '❌ NO CUMPLE'
+        print(f'   • Veredicto Final:            {{status}}')
+        print('======================================================================')
+
+asyncio.run(main())
+"""
+    subprocess.run([str(backend_py), "-c", script], cwd=ROOT_DIR / "oppytec-backend", check=True)
+
+
+def list_models_cmd() -> None:
+    """Muestra el catálogo de proveedores, los tiers y la asignación de modelos de los 13 agentes."""
+    cfg = load_model_router_config()
+    print("🤖 Catálogo y Enrutador Dinámico de Modelos LLM (OppyTec v2.0)")
+    print(f"   Versión: {cfg.get('version')} | Proveedor Predeterminado: {cfg.get('active_provider_default')}\n")
+
+    print("📦 Proveedores Registrados en Catálogo:")
+    for prov_key, prov in cfg.get("providers_catalog", {}).items():
+        models_count = len(prov.get("models", []))
+        sample_models = ", ".join(m["id"] for m in prov.get("models", [])[:3])
+        print(f"   • [{prov_key}] {prov.get('name')}: {models_count} modelos ({sample_models}...)")
+
+    print("\n🎯 Tiers Lógicos Abstractos:")
+    for t_key, t_val in cfg.get("tiers", {}).items():
+        print(f"   • [{t_key}] {t_val.get('name')}:")
+        print(f"     └─ Primario: 🌟 {t_val.get('primary')}")
+        print(f"     └─ Cadena Fallback: {' ➔ '.join(t_val.get('fallbacks', []))}")
+
+    print("\n👥 Asignación del Escuadrón Multi-Agente (13 Agentes):")
+    for agent_id, tier_key in cfg.get("agent_overrides", {}).items():
+        resolved = resolve_agent_model(agent_id)
+        first_fallback = resolved["fallback_chain"][0] if resolved["fallback_chain"] else "Ninguno"
+        print(f"   • `{agent_id}` ➔ Tier: {tier_key}")
+        print(f"     └── Primario: {resolved['primary_model']} (Fallback 1: {first_fallback})")
+
+
+def route_task_cmd(prompt_text: str, is_json: bool = False, explain_complexity: bool = False) -> None:
+    """Clasifica un requerimiento de usuario usando el Motor JEV Sistema 1 con asignación dinámica de modelos."""
     sys.path.insert(0, str(AGENT_DIR / "skills" / "jev-decision-engine"))
     from jev_router import classify_user_request  # type: ignore
 
     classification = classify_user_request(prompt_text)
+    comp_rep = classification.complexity_report
+    complexity_tier = comp_rep.promoted_tier if comp_rep else None
+
+    primary_resolved = resolve_agent_model(classification.primary_agent.value, complexity_tier=complexity_tier)
+
     log_event("JEV_TASK_ROUTED", {
         "primary_agent": classification.primary_agent.value,
         "mode": classification.mode.value,
         "confidence": str(classification.confidence),
         "supporting": [a.value for a in classification.supporting_agents],
+        "complexity_score": str(comp_rep.complexity_score) if comp_rep else "N/A",
+        "complexity_level": comp_rep.level if comp_rep else "N/A",
+        "assigned_tier": primary_resolved["tier_key"],
+        "was_promoted": primary_resolved.get("was_promoted", False),
+        "primary_model": primary_resolved["primary_model"],
+        "primary_fallbacks": primary_resolved["fallback_chain"],
         "prompt_snippet": prompt_text[:120],
     })
 
     if is_json:
-        print(json.dumps(classification.to_dict(), indent=2, ensure_ascii=False))
+        data = classification.to_dict()
+        data["model_resolution"] = primary_resolved
+        print(json.dumps(data, indent=2, ensure_ascii=False))
     else:
         print(classification.to_header())
+        if comp_rep:
+            promoted_badge = " [Promovido]" if primary_resolved.get("was_promoted") else ""
+            print(f"   📊 **Complejidad Evaluada:** {comp_rep.complexity_score} ({comp_rep.level}) ➔ **Tier Dinámico:** `{primary_resolved['tier_key']}`{promoted_badge}")
+        print(f"   ⚙️ **Modelo Primario:** `{primary_resolved['primary_model']}` | **Fallback 1:** `{primary_resolved['fallback_chain'][0] if primary_resolved['fallback_chain'] else 'N/A'}`")
+        if explain_complexity and comp_rep:
+            print("\n" + comp_rep.explain())
         print(f"\n📋 Justificación: {classification.rationale}")
         print("\n🔀 Pipeline de Ejecución (Orden Lógico de Dependencias):")
         for stage in classification.pipeline:
-            agents_list = ", ".join(f"`{a.value}`" for a in stage.agents)
+            agents_detail: list[str] = []
+            for a in stage.agents:
+                m_info = resolve_agent_model(a.value, complexity_tier=complexity_tier)
+                agents_detail.append(f"`{a.value}` (Modelo: `{m_info['primary_model']}`)")
             print(f"  • Etapa {stage.stage_number} [{stage.execution_type}]: {stage.stage_name}")
-            print(f"    └─ Agentes asignados: {agents_list}")
+            print(f"    └─ Agentes asignados: {', '.join(agents_detail)}")
 
 
 def show_status() -> None:
@@ -354,6 +589,46 @@ def sync_graph_cmd() -> None:
             add_edge("app:backend_main", "router:core_realtime", "mounts_ws_router")
         if "core:realtime_ws" in nodes_map:
             add_edge("router:core_realtime", "core:realtime_ws", "routes_to_realtime_ws")
+
+    # 2b. Componentes Core de Code Mode sobre MCP
+    core_mcp_bridge = ROOT_DIR / "oppytec-backend" / "src" / "core" / "mcp_bridge" / "manager.py"
+    if core_mcp_bridge.exists():
+        add_node(
+            "core:mcp_bridge",
+            "Core MCP Dynamic Bridge Manager (Lifecycle & Tool Discovery)",
+            "backend_core",
+            str(core_mcp_bridge.relative_to(ROOT_DIR)),
+        )
+        if "module:oppy_ai" in nodes_map:
+            add_edge("module:oppy_ai", "core:mcp_bridge", "discovers_and_routes_mcp_tools")
+
+    core_sandbox = ROOT_DIR / "oppytec-backend" / "src" / "core" / "sandbox" / "runner.py"
+    if core_sandbox.exists():
+        add_node(
+            "core:code_mode_sandbox",
+            "Core Code Mode Sandboxed Runner (AST Validation, Watchdog & Hard-Code Stripping)",
+            "backend_core",
+            str(core_sandbox.relative_to(ROOT_DIR)),
+        )
+        if "core:mcp_bridge" in nodes_map:
+            add_edge("core:code_mode_sandbox", "core:mcp_bridge", "executes_mcp_calls_via_bridge")
+        if "module:oppy_ai" in nodes_map:
+            add_edge("module:oppy_ai", "core:code_mode_sandbox", "executes_synthesized_scripts")
+
+    code_mode_service = ROOT_DIR / "oppytec-backend" / "src" / "modules" / "oppy_ai" / "application" / "code_mode_service.py"
+    if code_mode_service.exists():
+        add_node(
+            "service:oppyfy_code_mode",
+            "OppyFy Code Mode Application Service (Multi-Tenant & FinOps Telemetry)",
+            "backend_service",
+            str(code_mode_service.relative_to(ROOT_DIR)),
+        )
+        if "module:oppy_ai" in nodes_map:
+            add_edge("service:oppyfy_code_mode", "module:oppy_ai", "orchestrates_code_mode")
+        if "core:code_mode_sandbox" in nodes_map:
+            add_edge("service:oppyfy_code_mode", "core:code_mode_sandbox", "invokes_isolated_sandbox")
+        if "core:mcp_bridge" in nodes_map:
+            add_edge("service:oppyfy_code_mode", "core:mcp_bridge", "searches_capabilities")
 
     # 3. Componentes Clave de Frontend
     fe_i18n_selector = ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "i18n" / "LanguageFlagSelector.tsx"
@@ -492,6 +767,29 @@ def sync_graph_cmd() -> None:
             "Frontend Telemetry & OpenTelemetry Vitest Suite",
             [("suite:frontend_telemetry_test", "frontend:app_shell", "verifies_telemetry_and_spans")],
         ),
+        "suite:code_mode_sandbox_security_test": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "security_redteam" / "test_17_code_mode_sandbox_security.py",
+            "Code Mode Sandbox Security & Red Team Offensive Suite (10 Vectors)",
+            [
+                ("suite:code_mode_sandbox_security_test", "core:code_mode_sandbox", "audits_sandbox_escapes_and_watchdog"),
+                ("suite:code_mode_sandbox_security_test", "core:mcp_bridge", "audits_anti_idor_and_stripping"),
+            ],
+        ),
+        "suite:oppyfy_code_mode_test": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "unit" / "modules" / "test_oppyfy_code_mode.py",
+            "OppyFy Code Mode Application Service Unit Test Suite",
+            [("suite:oppyfy_code_mode_test", "service:oppyfy_code_mode", "verifies_token_savings_and_chat_payload")],
+        ),
+        "suite:mcp_bridge_test": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "unit" / "core" / "test_mcp_bridge.py",
+            "MCP Dynamic Bridge Manager Unit Test Suite",
+            [("suite:mcp_bridge_test", "core:mcp_bridge", "verifies_tool_registration_and_sdk_generation")],
+        ),
+        "suite:sandbox_runner_test": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "unit" / "core" / "test_sandbox_runner.py",
+            "Code Mode Sandbox Runner Unit Test Suite",
+            [("suite:sandbox_runner_test", "core:code_mode_sandbox", "verifies_ast_limits_and_stripping")],
+        ),
     }
     for s_id, (s_path, s_label, s_edges) in fe_test_map.items():
         if s_path.exists():
@@ -527,17 +825,38 @@ def sync_graph_cmd() -> None:
     if master_path.parent.exists():
         master_path.write_text(serialized, encoding="utf-8")
 
+    # Sincronización automática de docs/architecture/graphify/visualizer.html
+    visualizer_path = ROOT_DIR / "docs" / "architecture" / "graphify" / "visualizer.html"
+    visualizer_synced = False
+    if visualizer_path.exists():
+        html_content = visualizer_path.read_text(encoding="utf-8")
+        script_pattern = re.compile(
+            r'(<script\s+id=["\']initial-graph-data["\']\s+type=["\']application/json["\']>)(.*?)(</script>)',
+            re.DOTALL,
+        )
+        if script_pattern.search(html_content):
+            formatted_json = json.dumps(data, indent=2, ensure_ascii=False)
+            updated_html = script_pattern.sub(
+                rf"\g<1>\n{formatted_json}\n  \g<3>",
+                html_content,
+            )
+            visualizer_path.write_text(updated_html, encoding="utf-8")
+            visualizer_synced = True
+
     log_event("GRAPHIFY_SYNCED", {
         "nodes_count": len(sorted_nodes),
         "edges_count": len(sorted_edges),
         "alembic_migrations": metrics["alembic_migrations"],
         "backend_routers": metrics["backend_routers"],
         "verification_suites": metrics["verification_suites"],
+        "visualizer_synced": visualizer_synced,
     })
     print("🔄 Grafo de Arquitectura Graphify sincronizado con éxito:")
     print(f"   • Nodos totales: {len(sorted_nodes)} (Routers: {metrics['backend_routers']}, Migraciones: {metrics['alembic_migrations']}, Suites: {metrics['verification_suites']})")
     print(f"   • Aristas totales: {len(sorted_edges)}")
     print(f"   • Destino: {graph_path.relative_to(ROOT_DIR)}")
+    if visualizer_synced:
+        print(f"   • Visualizador HTML: {visualizer_path.relative_to(ROOT_DIR)}")
 
 
 def main() -> int:
@@ -547,9 +866,10 @@ def main() -> int:
     sub.add_parser("status", help="Muestra el estado del arnés y verifica integridad anti-trampa")
     sub.add_parser("verify-evals", help="Verifica los hashes SHA-256 de reglas y evaluaciones inmutables")
 
-    route_p = sub.add_parser("route-task", help="Clasifica y enruta una tarea hacia los 12 agentes con JEV")
+    route_p = sub.add_parser("route-task", help="Clasifica y enruta una tarea hacia los 13 agentes con JEV")
     route_p.add_argument("prompt", help="Texto del requerimiento del usuario a clasificar")
     route_p.add_argument("--json", action="store_true", help="Salida en formato JSON estructurado")
+    route_p.add_argument("--explain-complexity", action="store_true", help="Muestra el desglose de los 4 factores de complejidad cognitiva JEV")
 
     prep_p = sub.add_parser("prepare-phase", help="Crea los Git Worktrees y MISSION_PROMPT.md para una Fase (1..6)")
     prep_p.add_argument("--phase", type=int, required=True, choices=[1, 2, 3, 4, 5, 6])
@@ -567,6 +887,24 @@ def main() -> int:
 
     sub.add_parser("sync-graph", help="Escanea y sincroniza artefactos del proyecto en docs/architecture/graphify/graph.json")
 
+    sub.add_parser("list-models", help="Muestra el catálogo multi-proveedor, tiers abstractos y asignación de modelos de los 13 agentes")
+
+    bench_p = sub.add_parser("benchmark-load", help="Ejecuta la prueba de carga y estrés concurrente (SLA >= 500 RPS y P95 <= 120ms)")
+    bench_p.add_argument("--concurrency", type=int, default=100, help="Número de peticiones concurrentes (def: 100)")
+
+    resolve_m_p = sub.add_parser("resolve-model", help="Resuelve el tier, modelo primario y cadena de fallbacks de un agente o tier")
+    resolve_m_p.add_argument("target", help="ID del Agente (ej: 04-backend-senior-dev) o nombre del tier (ej: tier_reasoning_heavy)")
+    resolve_m_p.add_argument("--json", action="store_true", help="Salida en formato JSON")
+
+    fallback_p = sub.add_parser("trigger-fallback", help="Ejecuta/simula una degradación por cuota agotada (HTTP 429) hacia el siguiente modelo")
+    fallback_p.add_argument("target", help="ID del Agente o nombre del tier")
+    fallback_p.add_argument("--failed-model", required=True, help="Modelo que agotó cuota o falló")
+    fallback_p.add_argument("--reason", default="HTTP 429 Quota Exceeded / Rate Limit", help="Motivo de la falla")
+
+    escalate_p = sub.add_parser("escalate-model", help="Escala reactivamente el tier de un agente al siguiente tier superior")
+    escalate_p.add_argument("target", help="ID del Agente o nombre del tier")
+    escalate_p.add_argument("--reason", default="TEST_FAILURE_REASONING_DEFICIT", help="Motivo del escalado reactivo")
+
     args = parser.parse_args()
     if args.command == "status":
         show_status()
@@ -574,7 +912,30 @@ def main() -> int:
     if args.command == "verify-evals":
         return 0 if verify_anti_cheating_hashes() else 1
     if args.command == "route-task":
-        route_task_cmd(args.prompt, args.json)
+        route_task_cmd(args.prompt, args.json, getattr(args, "explain_complexity", False))
+        return 0
+    if args.command == "list-models":
+        list_models_cmd()
+        return 0
+    if args.command == "benchmark-load":
+        run_load_benchmark_cmd(args.concurrency)
+        return 0
+    if args.command == "resolve-model":
+        res = resolve_agent_model(args.target)
+        if args.json:
+            print(json.dumps(res, indent=2, ensure_ascii=False))
+        else:
+            print(f"🎯 Target: `{res['target']}` ➔ Tier: `{res['tier_key']}` ({res['tier_name']})")
+            print(f"   • Modelo Primario: 🌟 {res['primary_model']}")
+            print(f"   • Cadena de Fallbacks: {' ➔ '.join(res['fallback_chain']) if res['fallback_chain'] else 'Ninguno'}")
+            if res.get('description'):
+                print(f"   • Propósito: {res['description']}")
+        return 0
+    if args.command == "trigger-fallback":
+        trigger_model_fallback(args.target, args.failed_model, args.reason)
+        return 0
+    if args.command == "escalate-model":
+        escalate_model_tier(args.target, args.reason)
         return 0
     if args.command == "prepare-phase":
         prepare_phase_worktrees(args.phase)

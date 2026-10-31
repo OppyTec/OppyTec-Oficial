@@ -29,11 +29,21 @@ class ASTGraphNavigator:
         data = self._load()
         nodes = data.get("nodes", [])
         edges = data.get("edges", [])
+
+        def _norm(s: str) -> str:
+            return str(s).lower().replace("_", "").replace("-", "").replace(" ", "")
+
+        q_lower = symbol_query.lower()
+        q_clean = _norm(symbol_query)
+
         matched_ids = {
             n.get("id") for n in nodes
-            if symbol_query.lower() in str(n.get("id", "")).lower()
-            or symbol_query.lower() in str(n.get("label", "")).lower()
-            or symbol_query.lower() in str(n.get("path", "")).lower()
+            if q_lower in str(n.get("id", "")).lower()
+            or q_lower in str(n.get("label", "")).lower()
+            or q_lower in str(n.get("path", "")).lower()
+            or q_clean in _norm(n.get("id", ""))
+            or q_clean in _norm(n.get("label", ""))
+            or q_clean in _norm(n.get("path", ""))
         }
         related_edges = [
             e for e in edges

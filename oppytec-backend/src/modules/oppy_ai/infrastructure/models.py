@@ -1,7 +1,7 @@
 """
 oppytec-backend/src/modules/oppy_ai/infrastructure/models.py
 Modelos SQLAlchemy 2.0 del Asistente `OppyFy` y Motor `JEV`:
-- `PublicBase` (`public`): `LlmRequestLog`, `AudioRequestLog`, `AiModelConfig`,
+- `PublicBase` (`public`): `JevRequestLog`, `LlmRequestLog`, `AudioRequestLog`, `AiModelConfig`,
   `AiCreditPackage`, `AiCreditPack`, `SpecSyncMetadata`, `SpecChunk` (indexa exclusivamente `specs/business-domain/`).
 - `TenantBase` (`tenant_*`): `OppyfyDomain`, `OppyfySubdomain`, `OppyfyPermissionGrant`,
   `OppyfyWorkerCreditWallet`, `OppyfyPromptAuditLog`, `OppyfyRbacAuditLog`, `TenantDocument`, `DocumentChunk`,
@@ -19,6 +19,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -36,6 +37,50 @@ from src.shared.models_base import (
     TranslatableI18nMixin,
 )
 from src.shared.soft_delete_mixin import SoftDeleteMixin
+
+
+class JevRequestLog(PublicBase):
+    """
+    Registro estricto y telemetría de decisiones del motor JEV (Fast/Sub-symbolic/Deterministic).
+    Tabla Append-Only en `public.jev_request_logs`.
+    """
+
+    __tablename__ = "jev_request_logs"
+    __table_args__ = (
+        Index("idx_jev_logs_tenant_created", "tenant_id", "created_at"),
+        Index("idx_jev_logs_holding_created", "holding_id", "created_at"),
+        Index("idx_jev_logs_feature", "caller_feature"),
+        Index("idx_jev_logs_confidence", "confidence_score"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+    holding_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False, index=True)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False, index=True)
+    tenant_schema: Mapped[str] = mapped_column(String(63), nullable=False, index=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    trace_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    caller_feature: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    decision_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    decision_primitive: Mapped[str] = mapped_column(String(16), nullable=False)
+    input_summary: Mapped[str] = mapped_column(String(255), nullable=False)
+    result_value: Mapped[str] = mapped_column(String(128), nullable=False)
+    confidence_score: Mapped[Decimal] = mapped_column(Numeric(5, 4), nullable=False, index=True)
+    calibrated_action: Mapped[str] = mapped_column(String(24), nullable=False)
+    model_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    estimated_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    provider_cost_usd: Mapped[Decimal] = mapped_column(Numeric(14, 6), default=Decimal("0.000000"), nullable=False)
+    provider_cost_clp: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=Decimal("0.00"), nullable=False)
+    credits_deducted: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"), nullable=False)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    error_message: Mapped[str | None] = mapped_column(Text, default=None, nullable=True)
 
 
 class LlmRequestLog(PublicBase):
@@ -623,3 +668,27 @@ class AiChatMessage(TenantBase, AuditTimestampsMixin):
     )
     role: Mapped[str] = mapped_column(String(32), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+__all__ = [
+    "AiChatMessage",
+    "AiChatThread",
+    "AiCreditPackage",
+    "AiCreditPack",
+    "AiModelConfig",
+    "AudioRequestLog",
+    "DocumentChunk",
+    "JevRequestLog",
+    "LlmRequestLog",
+    "OppyfyDomain",
+    "OppyfyPermissionGrant",
+    "OppyfyPromptAuditLog",
+    "OppyfyRbacAuditLog",
+    "OppyfySubdomain",
+    "OppyfyWorkerCreditWallet",
+    "SpecChunk",
+    "SpecSyncMetadata",
+    "TenantAiMemory",
+    "TenantDocument",
+]
+

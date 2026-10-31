@@ -5,7 +5,7 @@ tags:
   - segundo-cerebro
   - arquitectura
   - bitacora
-updated: "2026-10-19"
+updated: "2026-10-29"
 ---
 
 # 🧠 Segundo Cerebro de OppyTec v2.0 — Mapa Maestro para Humanos (Obsidian Ready)
@@ -13,6 +13,13 @@ updated: "2026-10-19"
 > **Cómo usar esta carpeta en Obsidian:**  
 > Abre **Obsidian** $\to$ *"Abrir carpeta como bóveda (Open folder as vault)"* $\to$ selecciona la raíz del proyecto `/home/jcampillay/WorkArea/OppyTec/OppyTec-Code2`.  
 > Si abres la **Vista de Grafo (`Ctrl+G`)** en Obsidian, verás cómo este documento conecta todas las estrategias, especificaciones de negocio, contratos de código y el diario de obra de los **13 Agentes Especializados**.
+
+---
+
+## 🚀 Acceso Rápido: Preparación para Entrevista
+- **[[APUNTES_ENTREVISTA_AI_ENGINEER|🎯 Apuntes Maestros para la Entrevista: AI Engineer (Hoja de Ruta y Cheat Sheet)]]** ⭐
+- **[[../../GUIA_ARQUITECTURA_AGENTICA_OPPYTEC_V2|📘 Guía Maestra de Arquitectura Agéntica OppyTec v2.0]]**
+- **[[../../COMPARATIVA_LIDR_VS_OPPYTEC_V2|🔬 Comparativa Exhaustiva: LIDR Estimator vs OppyTec v2.0]]**
 
 ---
 
@@ -30,6 +37,8 @@ Aquí el **Agente 12 (`12-tech-writer-openspec-archify`)** documenta en lenguaje
 - **[[08-Plan-Maestro-4-Vistas-Administrativas-Holdings-Entidades-Tenants-Usuarios-i18n-RBAC|Bitácora Plan Maestro (Pasos 3 y 4): 4 Vistas Administrativas (Holdings, Entidades Legales, Tenants, Usuarios Clientes), Paridad i18n, Blindaje RBAC <Can> y Testing Interactivo]]** ✅ *(Completado y Auditado: DynamicAdminTable, DynamicAdminForm y 36/36 Vitests)*
 - **[[09-Gobernanza-Estricta-Graphify-CLI-nav-y-sync-graph|Bitácora 09 — Gobernanza Estricta de Graphify: Subcomandos CLI 'nav' y 'sync-graph', Pre y Post-Ejecución Obligatoria sin Excepción]]** ✅ *(Implementado en scripts/harness.py: 83 nodos, 111 aristas, AGENTS.md Regla 6 inviolable, verify-evals 100% OK)*
 - **[[10-Opcion-3-Persistencia-Real-PostgreSQL-Alembic-0003-y-Verificacion-5D|Bitácora 10 — Opción 3: Persistencia Real en Base de Datos PostgreSQL, Migración Alembic 0003 en Vivo y Verificación 5D]]** ✅ *(DAG Pipeline de 4 Etapas: Alembic 0003 aplicado en PostgreSQL Docker, 196 pytest + 40 vitest certificados con sello QA_APPROVED y SYNC_APPROVED)*
+- **[[11-Marco-de-los-7-Niveles-de-Observabilidad-y-Control-de-Cardinalidad|Bitácora 11 — El Marco de los 7 Niveles de Observabilidad y la Regla de Oro de Cardinalidad Multi-Tenant]]** ✅ *(Los 4 pilares OTel/LGTM/Sentry/Umami, propagación W3C X-Trace-ID, SLOs P95 <= 120ms y la Regla de Oro Multi-Tenant: Métricas para tendencias de baja cardinalidad; Trazas y Logs para causa raíz de alta cardinalidad)*
+- **[[12-Asignacion-Dinamica-Modelos-LLM-JEV-Complejidad-Cognitiva-y-Graphify|Bitácora 12 — Asignación Dinámica de Modelos LLM por Complejidad Cognitiva JEV & Graphify AST]]** ✅ *(Evaluador matemático C_task de 4 factores en < 0.2ms, umbrales de tiers, promoción dinámica, resiliencia anti-429, auto-escalado reactivo y CLI --explain-complexity)*
 
 ---
 
@@ -80,7 +89,7 @@ Aquí el **Agente 12 (`12-tech-writer-openspec-archify`)** documenta en lenguaje
 | **9** | [Motor `JEV` (Sistema 1)](../../.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md) | Modelo ultrarrápido (70–500 ms) que clasifica, enruta y modera ahorrando miles de tokens. |
 | **10** | [Internacionalización `i18n`](../../.agent/estrategias/estrategia_internacionalizacion_i18n_multilenguaje_001.md) | Banderas SVG (`🇪🇸 ES` / `🇺🇸 EN`), traducción de la web y de los productos del cliente sin traducir marcas propias (`"Pollo King"`). |
 | **11** | [Multi-Moneda FX y Precios](../../.agent/estrategias/estrategia_multimoneda_fx_precios_y_cobros_001.md) | Selector de moneda (`CLP`, `USD`, `EUR`, `BRL`) conectado al Banco Central de Chile y Banco Central Europeo. |
-| **12** | [Observabilidad 4-Pilares](../../.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md) | `OpenTelemetry`, `Grafana`, `Sentry/GlitchTip` y `Umami` con 13 sub-vistas en el panel de administración. |
+| **12** | [Observabilidad 4-Pilares](../../.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md) | Marco de 7 Niveles, `OpenTelemetry`, `Grafana LGTM`, `Sentry/GlitchTip`, `Umami`, Regla de Oro de Cardinalidad y 13 sub-vistas en admin. |
 | **13** | [Imágenes en R2 y Cuotas MB](../../.agent/estrategias/estrategia_almacenamiento_imagenes_r2_y_cuotas_001.md) | Fotos convertidas a `.webp` ligeras, sin mezclarse entre clientes y con límite de memoria según el plan. |
 | **14** | [Respaldos de Base de Datos 4-Capas](../../.agent/estrategias/estrategia_respaldos_base_datos_y_recuperacion_001.md) | Copias cifradas en Neon, Cloudflare R2, VPS secundario y tu servidor local, permitiendo restaurar a 1 solo restaurante. |
 | **15** | [Escuadrón de 12 Agentes](../../.agent/estrategias/estrategia_escuadron_multiagente_prompts_y_autoreparacion_001.md) | Los 12 agentes especialistas, sus memorias propias (`prompt.md`, `knowledge.md`, `handovers/`) y su autoreparación. |

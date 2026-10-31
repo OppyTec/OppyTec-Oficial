@@ -30,6 +30,17 @@
    - Simula la interacción de un usuario humano real en múltiples navegadores (Chromium, Firefox, WebKit).
    - Se ejecuta bajo demanda o en instancias de certificación pre-release y smoke tests completos.
    - **NO bloquea** el desarrollo rápido, ni la integración continua ni la ejecución de pruebas unitarias, de integración o tests de arquitectura del DAG (Etapas 1 a 4).
+9. **GOBERNANZA DEL DAG CANÓNICO COMPLETO DE 12 AGENTES Y MATRIZ DE INTERVENCIÓN (PROHIBIDO OMITIR ESPECIALISTAS):**
+   - En cualquier tarea en modo **`DAG_PIPELINE`**, los **12 agentes núcleo (Etapas 1 a 4) participan siempre y de manera obligatoria** bajo el principio de cadena de montaje:
+     * **Etapa 1:** `02-software-architect` y `03-database-alembic-and-backup-engineer`
+     * **Etapa 2:** `04-backend-senior-dev` y `05-frontend-senior-dev`
+     * **Etapa 3:** `06-ai-oppyfy-and-jev-engineer`, `07-i18n-and-fx-currency-specialist` y `08-environments-and-observability-engineer`
+     * **Etapa 4:** `09-qa-parity-and-test-engineer`, `10-cybersecurity-redteam-auditor`, `11-git-worktree-merge-arbiter` y `12-tech-writer-openspec-archify`
+   - **Matriz de Intervención (Constructor Activo vs Certificador Sign-off):**
+     * Si el requerimiento exige desarrollo o modificación en su dimensión, el agente actúa como **Constructor Activo**.
+     * Si el requerimiento no requiere añadir código directo de su dominio, el agente actúa obligatoriamente como **Certificador de Impacto Cero (*Sign-off Auditor*)**, validando que la solución respete sus invariantes (ej: Agente 07 certifica ausencia de strings duros sin i18n, Agente 08 certifica trazas OTel/latencia, Agente 10 emite veto de seguridad, Agente 11 certifica limpieza de ramas/worktrees, Agente 12 sincroniza OpenSpec y Graphify).
+   - El Orquestador tiene **ESTRICTAMENTE PROHIBIDO** cerrar o dar por concluido un `DAG_PIPELINE` sin contar con el reporte o certificación de todos los agentes convocados en las 4 etapas.
+   - El modo `FAST_TRACK` queda restringido estrictamente a tareas atómicas, correcciones cosméticas o fixes menores de un único archivo.
 
 ---
 

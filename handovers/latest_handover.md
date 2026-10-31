@@ -1,57 +1,57 @@
-# Reporte de Traspaso (`Handover`) — Agente 09: QA, Parity & Test Engineer
+# Reporte de Traspaso (`Handover`) — Agente 12: Technical Writer, OpenSpec Bipartito, Graphify y Archify
 
-- **Fecha UTC:** 2026-10-26T23:35:00Z
-- **Agente:** Agente 09 (`09-qa-parity-and-test-engineer`)
-- **Fase / Hito:** Fase 7.4 de `PLAN_MAESTRO_OPPYFY_AI.md`: "Testing 5D Exhaustivo, Paridad Matemática y Test de Arquitectura AST para OppyFy".
-- **Estado de Certificación:** `OPPYFY_PHASE_7_4_5D_TESTING_AND_AST_GATE_CERTIFIED` (17/17 tests nuevos 100% verde, 50/50 tests OppyFy 100% verde, 29/29 tests de arquitectura globales 100% verde, cero uso de float, paridad matemática multi-moneda verificada con Hypothesis).
-
----
-
-## 1. Completed (Qué se ejecutó y validó)
-
-1. **Test de Arquitectura AST (`oppytec-backend/tests/architecture/test_oppyfy_telemetry_and_isolation.py`):**
-   - **Puerta 1 (Zero-Direct-AI-SDK):** Análisis AST exhaustivo sobre todo `src/` certificando que **0 llamadas al SDK de Gemini (`google.generativeai`, `google.genai`), OpenAI o Anthropic eluden la capa de adaptadores (`src/adapters/ai/`)**. Garantiza que toda invocación pasa por el interceptor universal `MeteredAIService` y emite telemetría al sumidero ineludible de `public.llm_request_logs`.
-   - **Puerta 2 (Aislamiento de Bóveda RAG Capa 3A):** Verificación por AST de que `ThreeLayerRagService` define y exige `ALLOWED_PUBLIC_SPEC_VAULT_PREFIX = "specs/business-domain"` y rechaza con `ValueError` cualquier intento de registrar o indexar `specs/engineering-code/`, `docs/adr/`, o código fuente de `src/`.
-   - **Puerta 3 (Hard-Code Data Stripping en Herramientas Operativas):** Verificación por AST de que todas las herramientas operativas deterministas en `src/modules/oppy_ai/application/operational_tools/` implementan el decorador `@hardcoded_data_stripping` o invocan directamente `redact_cost_fields`.
-   - Se implementó el decorador `@hardcoded_data_stripping` en `src/modules/oppy_ai/domain/oppyfy_rbac.py` y se decoraron las herramientas en `inventory_tools.py`, `procurement_tools.py`, `events_tools.py`, `waste_tools.py` y `canvas_tools.py`.
-
-2. **Suite de Pruebas 5D y Paridad Matemática con Hypothesis (`oppytec-backend/tests/unit/modules/test_oppyfy_5d_quality.py`):**
-   - **Dimensión 1 (Unitario):**
-     - Verificación puntual de umbrales discretos del medidor semafórico de contexto (64.99% vs 65.00% verde, 65.01% ámbar, 79.99% vs 80.02% alerta preventiva, 85.00% ámbar vs 85.01% rojo con bloqueo).
-     - Validación del presupuesto de tokens en rollover al 5.00% (410 tokens sobre 8192 seguros).
-   - **Dimensión 2 (Integración):**
-     - Orquestación E2E completa: `MeteredAIService` + `ThreeLayerRagService` + `OppyfyToolRouter` + `WorkerCreditWalletState` + sumidero de telemetría.
-     - Bloqueo y auditoría de solicitudes denegadas por RBAC (`BLOCKED_UNAUTHORIZED_PROMPT`) con 0 créditos descontados para generación.
-   - **Dimensión 3 (Propiedades con Hypothesis):**
-     - *No-Overflow en Billeteras:* Apilamiento de paquetes de créditos con `Decimal` sin desbordamiento ni derivas (hasta $10^8$ créditos), conmutatividad y asociatividad estricta.
-     - *Conservación de Créditos:* Invariante estricto en la transferencia de créditos del Holding a las billeteras de los trabajadores (`pool.unallocated + wallet.allocated == constante`).
-     - *Deducción Atómica:* Disminución monótona y exacta de créditos remanentes cuando `deduct_amount <= remaining`.
-   - **Dimensión 4 (Contratos):**
-     - Garantía estricta de cero `float` (exclusivamente `Decimal` e `int`).
-     - Verificación de límites de escala en base de datos: `NUMERIC(14,6)` para USD (hasta 99.999.999,999999) y `NUMERIC(14,2)` para CLP (hasta 999.999.999.999,99).
-     - Invocación con `can_view_costs=False` redacta físicamente los campos sensibles a `"[REDACTED_COST]"`.
-   - **Dimensión 5 (Paridad Matemática):**
-     - Paridad matemática bidireccional entre `MeteredAIService.calculate_token_cost` y `saas_policy_math.calculate_real_api_cost_usd`.
-     - Monotonicidad de tarifas: mayor consumo de tokens nunca disminuye el costo.
-     - Conversión cambiaria exacta con `ROUND_HALF_UP`: `cost_clp == round(cost_usd * rate, 2)`.
-
-3. **Ejecución y Verificación 100% Verde:**
-   - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_oppyfy_telemetry_and_isolation.py oppytec-backend/tests/unit/modules/test_oppyfy_5d_quality.py`: **17 passed en 1.33s (100% verde)**.
-   - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/modules/test_oppy_ai_*.py oppytec-backend/tests/unit/modules/test_oppyfy_*.py`: **50 passed en 1.59s (100% verde)**.
-   - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/`: **29 passed en 1.42s (100% verde)**.
-   - Grafo de arquitectura sincronizado con `python3 scripts/harness.py sync-graph` (96 nodos, 116 aristas).
+- **Fecha UTC:** 2026-10-31T22:45:00Z
+- **Agente:** Agente 12 (`12-tech-writer-openspec-archify`)
+- **Fase / Módulo:** Documentación Técnica, OpenSpec Bipartito, Estrategia Maestra JEV y Telemetría Desacoplada `public.jev_request_logs` (Sistema 1).
+- **Estado de Certificación:** `JEV_TELEMETRY_AND_OPENSPEC_SYNC_APPROVED_100_PERCENT` (Especificaciones en `specs/05-DATABASE-SCHEMA.md`, `specs/engineering-code/oppy-ai-and-voice.code.spec.md` y estrategia `.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md` completamente sincronizadas con la implementación de Alembic `0011`, modelo `JevRequestLog`, protocolos tipados y grafo AST Graphify).
 
 ---
 
-## 2. Friction & Failures (Qué cuidar)
+## 1. Completed (Qué se documentó, sincronizó y verificó)
 
-- **Asignaciones Anotadas en AST Python (`ast.AnnAssign` vs `ast.Assign`):** La constante `ALLOWED_PUBLIC_SPEC_VAULT_PREFIX: str = "specs/business-domain"` utiliza tipado explícito, por lo que el AST parser genera un nodo `ast.AnnAssign` en lugar de `ast.Assign`. El linter de arquitectura AST fue calibrado para soportar ambas variantes.
-- **Redondeo Discreto de Porcentajes en Tokens Seguros:** Al trabajar con 8192 tokens como base segura, `6555 * 100 / 8192 = 80.017%`, que redondea a `80.02%` con `ROUND_HALF_UP`. Los tests de límites discretos se fijaron con cálculo exacto para evitar falsos negativos por micro-fracciones.
-- **Atributos de Telemetría en Memoria:** `InMemoryTelemetrySink` expone sus registros mediante la propiedad `.records` (`tuple[LlmUsageRecord, ...]`), mientras que `MeteredGeminiAdapter` expone `.emitted_logs`.
+1. **Sincronización de Persistencia Global en `specs/05-DATABASE-SCHEMA.md`:**
+   - [specs/05-DATABASE-SCHEMA.md](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/05-DATABASE-SCHEMA.md)
+   - **Diagrama Mermaid (`PublicSchema`):** Incorporada la tabla `jev_request_logs (Sistema 1)` junto a `llm_request_logs (Sistema 2/Embeddings)` en el plano de control global.
+   - **Sección 2.3 (FinOps IA):** Añadida la especificación completa y exhaustiva de `public.jev_request_logs`:
+     * **Propósito Arquitectónico:** Bitácora inmutable Append-Only de micro-decisiones sub-simbólicas Sistema 1 en `< 500 ms`, desacoplada de `llm_request_logs` para aislar la carga de alta frecuencia (cientos de micro-decisiones por segundo) y habilitar la métrica de retorno de inversión *"Ahorro Estimado por Enrutamiento JEV"*.
+     * **Columnas y Tipado Exacto:** `id` (`UUID` PK, default `gen_random_uuid()`), `created_at` (`TIMESTAMPTZ` server_default `now()`), `holding_id` (`UUID`), `tenant_id` (`UUID`), `tenant_schema` (`VARCHAR(63)`), `user_id` (`INTEGER NULL`), `trace_id` (`VARCHAR(64) NULL`), `caller_feature` (`VARCHAR(64)`), `decision_id` (`VARCHAR(64)`), `decision_primitive` (`VARCHAR(16)`), `input_summary` (`VARCHAR(255)`), `result_value` (`VARCHAR(128)`), `confidence_score` (`NUMERIC(5, 4)` en rango continuo $[0.0000, 1.0000]$), `calibrated_action` (`VARCHAR(24)`: `'AUTO_ACCEPTED'`, `'FLAGGED_WARNING'`, `'FALLBACK_LLM'`), `model_name` (`VARCHAR(64)`), `estimated_tokens` (`INTEGER`), `provider_cost_usd` (`NUMERIC(14, 6)`), `provider_cost_clp` (`NUMERIC(14, 2)`), `credits_deducted` (`NUMERIC(12, 2)`), `latency_ms` (`INTEGER`), `is_success` (`BOOLEAN`), `error_message` (`TEXT NULL`).
+     * **Índices Compuestos de Rendimiento:** `idx_jev_logs_tenant_created` (`tenant_id, created_at`), `idx_jev_logs_holding_created` (`holding_id, created_at`), `idx_jev_logs_feature` (`caller_feature`), `idx_jev_logs_confidence` (`confidence_score`), más índices individuales en `created_at`, `tenant_schema` y `user_id`.
+     * **Inserción Masiva en Lote (*Batching*):** Soporte nativo para importaciones de catálogos (`IMPORTADOR_EXCEL_SPEC.md`) y conciliaciones masivas de facturas OCR vía `DatabaseJevTelemetrySink` y `session.add_all(...)`.
+
+2. **Actualización de la Estrategia Maestra JEV (`.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md`):**
+   - [.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/.agent/estrategias/estrategia_motor_decisiones_jev_system1_001.md)
+   - **Sección 5 (Telemetría Desacoplada JEV):** Reflejada la separación de `public.jev_request_logs` frente a `public.llm_request_logs`, protegiendo el throughput de persistencia.
+   - **Componentes Documentados:**
+     * `JevUsageRecord`: Dataclass frozen inmutable que encapsula el contrato de telemetría individual y en lote.
+     * `JevTelemetrySinkPort`: Protocol desacoplado con métodos `record_jev_usage` y `record_jev_usage_batch`.
+     * `DatabaseJevTelemetrySink`: Implementación sobre SQLAlchemy AsyncSession con `session.add_all(...)`.
+     * `MeteredJevAdapter.decide_choice_batch`: Evaluación atómica por lotes con persistencia consolidada.
+     * Continuidad retrocompatible dual: Emisión en paralelo a `LlmTelemetrySinkPort` (`engine_tier="SYSTEM_1_JEV"`).
+     * Métrica FinOps: Fórmula de Ahorro Estimado por JEV frente a invocaciones a LLMs generativos.
+   - **Sección 6 (Tabla de Artefactos):** Incorporadas la migración `0011`, modelo ORM `JevRequestLog`, protocolos tipados, adaptador medido y suites de prueba.
+
+3. **OpenSpec Bipartito de Ingeniería (`specs/engineering-code/oppy-ai-and-voice.code.spec.md`):**
+   - [specs/engineering-code/oppy-ai-and-voice.code.spec.md](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/engineering-code/oppy-ai-and-voice.code.spec.md)
+   - Registrada la tabla `public.jev_request_logs` en el Esquema Compartido `public`.
+   - Especificada la arquitectura del puerto desacoplado `JevTelemetrySinkPort`, las implementaciones `DatabaseJevTelemetrySink` / `InMemoryJevTelemetrySink` y la evaluación por lotes `decide_choice_batch`.
+   - Actualizada la sección "Evaluación JEV Sistema 1" con telemetría desacoplada y acciones calibradas.
+
+4. **Validación de Calidad y Tests de Arquitectura:**
+   - Ejecutado `oppytec-backend/tests/architecture/test_openspec_bipartition_and_sync.py`: **100% aprobado** (1 passed in 0.14s).
+   - Ejecutadas suites de JEV (`test_jev_telemetry_decoupling.py`, `test_jev_cognitive_task_router.py`, `test_jev_system1_enforcement.py`): **12/12 pruebas aprobadas** en 0.19s.
+
+5. **Sincronización del Grafo AST con Graphify:**
+   - Ejecutado `python3 scripts/harness.py sync-graph`.
+   - Actualización completa de nodos y aristas en `docs/architecture/graphify/graph.json`.
 
 ---
 
-## 3. Next Exact Action (Siguiente paso exacto)
+## 2. Friction & Failures (Dificultades y Resoluciones)
 
-- Fase 7.4 de `PLAN_MAESTRO_OPPYFY_AI.md` completada y certificada con 100% de tests en verde.
-- Notificar al Agente Orquestador (`d0212433-cb68-4d01-aea7-ef017fe152b9`) para consolidar la certificación de la fase.
+- **Ninguna fricción:** La coherencia entre el modelo SQLAlchemy `JevRequestLog`, la migración correlativa Alembic `0011` y los protocolos en `src/adapters/ai/` permitió una sincronización documental fluida y libre de discrepancias.
+
+---
+
+## 3. Next Exact Action (Siguiente Acción Exacta)
+
+- Notificar al Agente Orquestador / Parent Agent de la finalización exitosa de la etapa documental y sincronización del grafo AST.

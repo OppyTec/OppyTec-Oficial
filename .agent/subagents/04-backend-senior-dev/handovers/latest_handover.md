@@ -1,56 +1,52 @@
 # Reporte de Traspaso (`Handover`) — Agente 04: Backend Senior FastAPI, Clean Architecture & RBAC 3-Niveles
 
-- **Fecha UTC:** 2026-10-26T20:16:00Z
+- **Fecha UTC:** 2026-10-31T22:30:00Z
 - **Agente:** Agente 04 (`04-backend-senior-dev`)
-- **Fase / Hito:** Resolución de Fallo Crítico de Arranque del Contenedor Docker `oppytec-backend` (Dependencia `python-multipart` y Salud de Contenedor).
-- **Estado de Certificación:** `DOCKER_BACKEND_BOOT_FIXED_AND_HEALTHY` (`oppytec-backend` Up (healthy) respondiendo 200 en `/api/v1/health`, 224 unit tests pasando, 26 architecture tests pasando, Graphify sincronizado con 95 nodos y 116 aristas).
+- **Fase / Hito:** Etapa 2 — Desacoplamiento de Telemetría JEV (Sistema 1) y Adaptador Medido Asíncrono/Transaccional (`jev_protocol.py`, `jev_adapter.py`, `test_jev_telemetry_decoupling.py`).
+- **Estado de Certificación:** `JEV_TELEMETRY_DECOUPLING_CERTIFIED` (Suites de tests unitarios y de arquitectura pasando al 100%, Graphify sincronizado con 97 nodos y 116 aristas).
 
 ---
 
 ## 1. Completed (Qué se ejecutó y validó)
 
-1. **Diagnóstico y Corrección de Dependencia Principal:**
-   - **Diagnóstico:** Al inicializar el contenedor Docker `oppytec-backend`, FastAPI fallaba en tiempo de arranque (`RuntimeError: Form data requires "python-multipart" to be installed`) al cargar `src/modules/inventory/presentation/router.py` debido al uso de `UploadFile` y `File` para endpoints de importación masiva.
-   - **Solución:** Se añadió `"python-multipart>=0.0.9"` a la lista principal de dependencias en `oppytec-backend/pyproject.toml`.
+1. **Definición de Contratos y Protocolos en `oppytec-backend/src/adapters/ai/jev_protocol.py`:**
+   - Dataclass inmutable `JevUsageRecord` (`@dataclass(frozen=True, kw_only=True)`) con todos los campos y tipos correspondientes a `public.jev_request_logs`:
+     * Identificadores: `holding_id`, `tenant_id`, `tenant_schema`, `user_id`, `trace_id`.
+     * Primitivas y contexto: `caller_feature`, `decision_id`, `decision_primitive` (BOOLEAN, CHOICE, SCORE), `input_summary`, `result_value`.
+     * Calibración: `confidence_score` (`Decimal`), `calibrated_action` ('AUTO_ACCEPTED', 'FLAGGED_WARNING', 'FALLBACK_LLM').
+     * FinOps y Rendimiento: `model_name`, `estimated_tokens`, `provider_cost_usd` (`Decimal`), `provider_cost_clp` (`Decimal`), `credits_deducted` (`Decimal`), `latency_ms` (`int`), `is_success` (`bool`), `error_message`, `created_at`.
+   - Protocolo `@runtime_checkable class JevTelemetrySinkPort(Protocol)`:
+     * `def record_jev_usage(self, record: JevUsageRecord) -> None: ...`
+     * `def record_jev_usage_batch(self, records: Sequence[JevUsageRecord]) -> None: ...`
+   - Dataclass `JevChoiceBatchItem` para evaluación por lotes y extensión de `JevDecisionPort` con `decide_choice_batch`.
+   - Dataclasses de resultado (`JevBooleanResult`, `JevChoiceResult`, `JevScoreResult`) extendidos con `jev_record: JevUsageRecord | None = None` preservando retrocompatibilidad total con `usage_record: LlmUsageRecord`.
 
-2. **Alineación de Invariantes de Arquitectura (Cero Floats en Dominio):**
-   - En `oppytec-backend/src/modules/tenancy/domain/saas_policy_math.py`, se refactorizaron las validaciones de tipos defensivas sustituyendo `isinstance(val, float)` por `type(val).__name__ == "float"`, eliminando el nodo prohibido `ast.Name(id="float")` y asegurando el paso del 100% de la suite de gobernanza arquitectónica (`test_fx_currency_precision_and_governance.py`).
+2. **Implementación de Sinks y Adaptador Medido en `oppytec-backend/src/adapters/ai/jev_adapter.py`:**
+   - `InMemoryJevTelemetrySink(JevTelemetrySinkPort)`: Colector en memoria inmutable para tests y desarrollo con `records`, `record_jev_usage`, `record_jev_usage_batch` y `clear()`.
+   - `DatabaseJevTelemetrySink(JevTelemetrySinkPort)`:
+     * Soporte transaccional directo sobre SQLAlchemy `AsyncSession` activa (`session.add(model)` y `session.add_all(models)`).
+     * Mapeo defensivo de `JevUsageRecord` hacia el modelo SQLAlchemy `JevRequestLog`.
+     * Soporte para `session_factory: async_sessionmaker[AsyncSession]` con métodos asíncronos `flush()`, `commit()`, `record_jev_usage_async` y `record_jev_usage_batch_async`.
+   - Actualización de `MeteredJevAdapter`:
+     * Constructor extendido con `jev_telemetry_sink: JevTelemetrySinkPort | None = None` (fallback `InMemoryJevTelemetrySink()`).
+     * Determinación calibrada de acciones mediante `_determine_calibrated_action(confidence, threshold)`: `'AUTO_ACCEPTED'`, `'FLAGGED_WARNING'`, `'FALLBACK_LLM'`.
+     * Registro dual sinérgico: emite a `LlmUsageRecord` (retrocompatibilidad) y `JevUsageRecord` (nuevo pipeline de telemetría especializada).
+     * Implementación de `decide_choice_batch`: evaluación por lotes ultrarrápida (<500 ms) para catálogos y facturas OCR masivas, con registro atómico por lotes en `record_jev_usage_batch`.
 
-3. **Reconstrucción y Despliegue en Docker:**
-   - Ejecutado `docker compose build backend` (imagen `oppytec-v2-backend:latest` construida exitosamente en 32.6s con `uv pip install` instalando `python-multipart==0.0.32`).
-   - Ejecutado `docker compose up -d backend` con recreación limpia de servicio.
-   - Verificado con `docker ps`:
-     ```text
-     aa5a4c765237 oppytec-v2-backend "sh -c 'uvicorn src.…" Up About a minute (healthy) 0.0.0.0:8000->8000/tcp oppytec-backend
-     ```
-   - Verificado `docker logs oppytec-backend`:
-     ```text
-     INFO: Application startup complete.
-     INFO: Uvicorn running on http://0.0.0.0:8000
-     INFO: 127.0.0.1 - "GET /api/v1/health HTTP/1.1" 200 OK
-     ```
-   - Verificado con `curl -i http://localhost:8000/api/v1/health`:
-     ```json
-     {"status":"ok","environment":"local","env_namespace":"default","version":"2.0.0","trace_id":"52cabf0cb32748928c77be6f43640015"}
-     ```
+3. **Exportación Modular en `oppytec-backend/src/adapters/ai/__init__.py`:**
+   - Exposición pública de `JevUsageRecord`, `JevTelemetrySinkPort`, `JevChoiceBatchItem`, `InMemoryJevTelemetrySink` y `DatabaseJevTelemetrySink`.
 
-4. **Testing Automatizado:**
-   - `uv run pytest tests/architecture`: **26/26 passed (100% verde)**.
-   - `uv run pytest tests/unit`: **224/224 passed (100% verde)**.
+4. **Suite de Pruebas Unitarias Exhaustiva en `oppytec-backend/tests/unit/adapters/test_jev_telemetry_decoupling.py`:**
+   - 7 pruebas cubriendo inmutabilidad, sinks de memoria y base de datos con mock `AsyncSession`, emisión dual, acciones calibradas, batch processing y retrocompatibilidad: 7/7 PASSED en 0.18s.
+   - Suite de 26 pruebas de AI y JEV (`test_oppy_ai_services.py`, `test_jev_cognitive_task_router.py`, `test_jev_system1_enforcement.py`, `test_oppyfy_observability.py`): 26/26 PASSED.
+   - Pruebas de seguridad redteam (`test_08_ai_prompt_injection_and_rag_isolation.py`, `test_16_oppyfy_offensive_security_and_firewall.py`): 36/36 PASSED.
 
-5. **Sincronización Graphify y Verificación de Integridad:**
-   - `python scripts/harness.py sync-graph`: **95 nodos, 116 aristas** sincronizados en `docs/architecture/graphify/graph.json`.
-   - `python scripts/harness.py verify-evals`: **100% integridad verificada** en `.agent/rules/` y `.agent/evals/` (Cero Reward Hacking).
+5. **Sincronización Graphify:**
+   - Ejecutado `python3 scripts/harness.py sync-graph`. Grafo sincronizado exitosamente con 97 nodos y 116 aristas.
 
 ---
 
 ## 2. Friction & Failures (Qué cuidar)
 
-- Cualquier endpoint FastAPI que consuma archivos (`UploadFile`, `File(...)`) o formularios `application/x-www-form-urlencoded` / `multipart/form-data` requiere estrictamente `python-multipart` en el entorno de ejecución. Si se declara únicamente en `dev`, el contenedor Docker en modo producción/runtime fallará en el arranque.
-- El analizador sintáctico de arquitectura AST (`find_float_usage_in_domain_ast`) prohíbe el identificador `float` en código fuente de `domain/`. Incluso en verificaciones defensivas (`if isinstance(x, float)`), se debe utilizar `type(x).__name__ == "float"` para evitar falsos positivos en el AST.
-
----
-
-## 3. Next Exact Action (Siguiente paso exacto)
-
-- Contenedor `oppytec-backend` operativo y saludable (`healthy`). El stack de contenedores Docker (`postgres`, `redis`, `mailpit`, `backend`, `frontend`) se encuentra completamente arriba y funcional para pruebas end-to-end e integraciones en `http://localhost:8000` y `http://localhost:5173`.
+- En `decide_choice_batch`, se aceptan instancias de `JevChoiceBatchItem`, diccionarios o tuplas para permitir tanto consumo tipado estricto como ingesta ágil desde parsers de Excel o extractores de PDF/OCR.
+- Las columnas de texto (`input_summary`, `result_value`, `caller_feature`) se truncan defensivamente al mapear a `JevRequestLog` para evitar excepciones de longitud en Postgres.

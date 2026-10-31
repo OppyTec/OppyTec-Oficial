@@ -82,3 +82,7 @@ Predictive Maintenance/
 tests/panel-admin-oppytec/artifacts/backups/*.sql
 tests/panel-admin-oppytec/artifacts/screenshots/*.png
 tests/panel-admin-oppytec/artifacts/state_superadmin.json
+
+# Proyecto Ejemplo
+/lidr-it-estimator-demo
+/Obsidian-OppyTecV2.0

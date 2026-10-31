@@ -38,7 +38,7 @@ Siguiendo [`.agent/estrategias/estrategia_openspec_negocio_vs_codigo_001.md`](..
 
 ---
 
-### 2.3 Las 16 Estrategias Maestras Normativas (`.agent/estrategias/`)
+### 2.3 Las 17 Estrategias Maestras Normativas (`.agent/estrategias/`)
 Todo desarrollo en `oppytec-backend/` y `oppytec-frontend/` está subordinado a las 16 estrategias ubicadas en `.agent/estrategias/`:
 1. [`estrategia_migraciones_alembic_001.md`](../.agent/estrategias/estrategia_migraciones_alembic_001.md) — Migraciones correlativas `0001..NNNN` (`public` vs `tenant`) y Bootstrap Génesis (`oppytec.admin`).
 2. [`estrategia_rbac_y_auditoria_001.md`](../.agent/estrategias/estrategia_rbac_y_auditoria_001.md) — RBAC Dual de 3 niveles, acceso transversal en el Holding, cupos con `soft-delete`, permisos JIT y auditoría forense.

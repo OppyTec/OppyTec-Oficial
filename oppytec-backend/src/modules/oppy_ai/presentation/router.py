@@ -12,6 +12,7 @@ Traspaso de Hilo al 5%, Operational Tools, Platform Admin FinOps y Paquetes de C
 - `GET /api/v1/platform-admin/token-consumption`
 - `GET /api/v1/platform-admin/ai-packs` y `POST /api/v1/platform-admin/ai-packs`
 - `GET /api/v1/platform-admin/ai-packs/{pack_id}/quote`
+- `GET /api/v1/platform-admin/ai-tariffs` y `PUT /api/v1/platform-admin/ai-tariffs/{model_slug}`
 """
 from __future__ import annotations
 
@@ -69,6 +70,8 @@ from src.modules.oppy_ai.presentation.schemas import (
     AiCreditPackCreateRequest,
     AiCreditPackQuoteResponse,
     AiCreditPackResponse,
+    AiModelTariffResponse,
+    AiModelTariffUpdateRequest,
     OppyfyChatRequest,
     OppyfyChatResponse,
     OppyfyDomainCreateRequest,
@@ -110,12 +113,13 @@ _rag_service = ThreeLayerRagService(
         ),
     ]
 )
+_model_registry = ModelConfigRegistry()
 _metered_ai_service = MeteredAIService(
     jev_port=_jev_adapter,
     llm_port=_gemini_adapter,
     rag_service=_rag_service,
     tool_router=_tool_router,
-    model_registry=ModelConfigRegistry(),
+    model_registry=_model_registry,
     telemetry_sink=_telemetry_sink,
 )
 _token_consumption_service = TokenConsumptionAggregatorService()
@@ -702,3 +706,70 @@ async def list_oppyfy_telemetry_logs_endpoint(
         )
         for log in logs
     ]
+
+
+# ============================================================================
+# 8. PLATFORM ADMIN: AI MODEL TARIFFS
+# ============================================================================
+
+
+@router.get(
+    "/api/v1/platform-admin/ai-tariffs",
+    response_model=list[AiModelTariffResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def list_ai_model_tariffs_endpoint(
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("platform_admin.ai_tariffs.read")),
+    ],
+) -> list[AiModelTariffResponse]:
+    """Lista las tarifas de modelos de IA vigentes configuradas en Platform Admin."""
+    tariffs = _model_registry.list_tariffs()
+    return [
+        AiModelTariffResponse(
+            model_slug=t.model_slug,
+            engine_tier=t.engine_tier,
+            input_cost_per_1m_usd=t.input_cost_per_1m_usd,
+            cached_cost_per_1m_usd=t.cached_cost_per_1m_usd,
+            output_cost_per_1m_usd=t.output_cost_per_1m_usd,
+            embedding_cost_per_1m_usd=t.embedding_cost_per_1m_usd,
+            is_enabled=t.is_enabled,
+        )
+        for t in tariffs
+    ]
+
+
+@router.put(
+    "/api/v1/platform-admin/ai-tariffs/{model_slug}",
+    response_model=AiModelTariffResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def update_ai_model_tariff_endpoint(
+    model_slug: str,
+    payload: AiModelTariffUpdateRequest,
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("platform_admin.ai_tariffs.manage")),
+    ],
+) -> AiModelTariffResponse:
+    """Actualiza dinámicamente la tarifa de un modelo de IA en Platform Admin."""
+    updated = _model_registry.update_tariff(
+        model_slug=model_slug,
+        engine_tier=payload.engine_tier,
+        input_cost_per_1m_usd=payload.input_cost_per_1m_usd,
+        cached_cost_per_1m_usd=payload.cached_cost_per_1m_usd,
+        output_cost_per_1m_usd=payload.output_cost_per_1m_usd,
+        embedding_cost_per_1m_usd=payload.embedding_cost_per_1m_usd,
+        is_enabled=payload.is_enabled,
+    )
+    return AiModelTariffResponse(
+        model_slug=updated.model_slug,
+        engine_tier=updated.engine_tier,
+        input_cost_per_1m_usd=updated.input_cost_per_1m_usd,
+        cached_cost_per_1m_usd=updated.cached_cost_per_1m_usd,
+        output_cost_per_1m_usd=updated.output_cost_per_1m_usd,
+        embedding_cost_per_1m_usd=updated.embedding_cost_per_1m_usd,
+        is_enabled=updated.is_enabled,
+    )
+

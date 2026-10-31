@@ -1,31 +1,57 @@
-# Reporte de Traspaso (`Handover`) — Agente 06: Especialista en IA OppyFy (RAG 3-Capas, Créditos) y Motor JEV
+# Handover de Traspaso — Agente 06: Fase 3 Code Mode sobre MCP para OppyFy
 
-- **Fecha UTC:** 2026-10-22T20:15:00+00:00
-- **Fase:** Auditoría del Plan Maestro — Impacto del Plan Básico en Asistente IA OppyFy y Motor JEV (Sistema 1)
+- **Agente:** `06-ai-oppyfy-and-jev-engineer`
+- **Fecha:** 2026-10-31
+- **Hito:** Implementación Fase 3 del Plan Maestro de Code Mode sobre MCP (`.agent/Planes-Maestros/PLAN_MAESTRO_CODE_MODE_MCP.md`)
+- **Estado:** ✅ Completado con 100% pruebas unitarias exitosas (12/12 en suite de Code Mode, 85/85 en suite integral de AI/MCP/Sandbox).
 
-## 1. Completed (Qué se hizo)
-- **Auditoría de Impacto del Plan Básico:**
-  - Verificado que `oppy_ai` está formalmente excluido de `PLAN_BASICO_10_MODULES` en `src/core/bootstrap.py`. El Plan Básico (`basic`) nace sin el Asistente OppyFy activado por defecto.
-  - Verificado que el modelo admite activación modular opcional vía `TenantModulesAndQuotasUpdateRequest` inyectando `"oppy_ai"` en `enabled_modules`, o mediante upgrade directo al Plan Corporativo (`enterprise`), donde está incluido por defecto.
-- **Auditoría de Rendimiento y SLA de JEV (Sistema 1):**
-  - Se benchmarkearon las 3 primitivas inmutables (`decide_boolean`, `decide_choice`, `decide_score`) de `MeteredJevAdapter`:
-    - `decide_boolean`: P95 = 0.022 ms (SLA < 5 ms cumplido al 100%).
-    - `decide_choice`: P95 = 0.070 ms (SLA < 5 ms cumplido al 100%).
-    - `decide_score`: P95 = 0.021 ms (SLA < 5 ms cumplido al 100%).
-    - Suite de 3 operaciones combinadas: P95 = 0.112 ms.
-  - Se agregaron pruebas formales de regresión en `tests/unit/modules/test_oppy_ai_services.py`:
-    - `test_jev_system1_latency_sla_under_5ms`: certifica matemáticamente el SLA < 5ms en 50 ciclos continuos.
-    - `test_plan_basico_oppyfy_disabled_by_default_and_upgrade_or_override`: valida la desactivación por defecto en Plan Básico y la capacidad de override.
-- **Auditoría de Tests de Arquitectura:**
-  - `tests/architecture/test_jev_system1_enforcement.py`: 100% aprobado. Verifica Regla 14, habilidad JEV, políticas de enforce inmutables (`OppyTec-Legacy/**`) y bloque obligatorio `jev_system1_evaluation` en todos los specs de ingeniería.
-  - `tests/architecture/test_oppyfy_telemetry_and_isolation.py`: 100% aprobado. Verifica Regla 13, marca `OppyFy` en `.env.example` y aislamiento hermético contra fuga de `specs/engineering-code/` en el RAG.
-- **Verificación de Calidad:**
-  - `ruff check`: 0 errores.
-  - `mypy --strict`: 0 errores en 100% tipado estricto.
-  - Fast Gate / Suite unit + architecture: 93 pruebas pasando (`93 passed, 14 warnings in 2.68s`).
+---
 
-## 2. Friction & Failures (Qué salió mal / Qué cuidar)
-- Ninguna fricción. JEV se comporta como un subsistema de Sistema 1 puro en memoria que no requiere acceso a red ni tokens externos para evaluaciones heurísticas/guardrails, lo que garantiza latencias en microsegundos y cero degradación cuando aumentan los inquilinos del Plan Básico.
+## 1. Resumen Ejecutivo
+Se implementó la integración de nivel de aplicación para **Code Mode sobre MCP**, permitiendo al asistente OppyFy interactuar con el ecosistema de herramientas a través de dos meta-capacidades minimalistas:
+1. `search_capabilities(tenant_id, query, limit)`: Descubrimiento dinámico bajo demanda con descriptores token-minimal (< 150 tokens por herramienta).
+2. `execute_code_mode(...)`: Orquestación y agregación programática en un sandbox hermético (`CodeModeSandboxRunner`), eliminando el ping-pong de inferencias y logrando una reducción de tokens > 90% (FinOps Token Reduction).
 
-## 3. Next Exact Action (Siguiente paso exacto)
-- Monitorear el Paso 6 del Plan Maestro (`/admin/token-consumption` y telemetría v2.0 de LLMs) para asegurar que el cuadro FinOps refleje con precisión las segregaciones de costos `SYSTEM_1_JEV` vs `SYSTEM_2_LLM`.
+---
+
+## 2. Componentes Implementados y Modificados
+
+1. **`oppytec-backend/src/modules/oppy_ai/application/code_mode_service.py`**:
+   - `OppyfyCodeModeService`: Servicio de orquestación que vincula `MCPBridgeManager` y `CodeModeSandboxRunner`.
+   - `search_capabilities(tenant_id, query, limit)`: Búsqueda semántica token-minimal.
+   - `execute_code_mode(...)`: Ejecutor seguro con normalización multi-tenant, verificación RBAC de 3 niveles, Hard-Code Data Stripping de métricas de costos, y generación de respuesta estructurada (`OppyfyCodeModeExecutionResult`) para el chat.
+   - Emisión de telemetría hacia `MeteredAIService` con registro inmutable en `public.llm_request_logs`.
+
+2. **`oppytec-backend/src/modules/oppy_ai/application/metered_ai_service.py`**:
+   - Enlace nativo con `OppyfyCodeModeService` mediante inyección en constructor y propiedad lazy.
+   - Métodos públicos `search_capabilities` y `execute_code_mode` directamente accesibles desde el orquestador principal de OppyFy.
+
+3. **`oppytec-backend/src/adapters/ai/protocol.py`**:
+   - Extensión retrocompatible de `LlmUsageRecord` con el atributo opcional `tokens_saved: int = 0` para telemetría FinOps.
+
+4. **`oppytec-backend/src/modules/oppy_ai/application/__init__.py` y `src/modules/oppy_ai/__init__.py`**:
+   - Exportación limpia y unificada de `OppyfyCodeModeService` y `OppyfyCodeModeExecutionResult`.
+
+5. **`oppytec-backend/tests/unit/modules/test_oppyfy_code_mode.py`**:
+   - 12 pruebas unitarias 1:1 cubriendo:
+     - Descubrimiento de capacidades (< 150 tokens).
+     - Ejecución exitosa de agregaciones in-sandbox (sintaxis `result =` y `return`).
+     - Hard-Code Data Stripping para usuarios sin permisos financieros (`[REDACTED_COST]`).
+     - Des-redacción autorizada para usuarios con `can_view_costs=True`.
+     - Prevención anti-IDOR cross-tenant (`CROSS_TENANT_ACCESS_VIOLATION`).
+     - Normalización segura de tenants con formato UUID y schemas PostgreSQL.
+     - Registro de telemetría de tokens ahorrados en `MeteredAIService` e `InMemoryTelemetrySink`.
+     - Manejo de excepciones de seguridad AST, RBAC y errores de sintaxis.
+
+---
+
+## 3. Verificación de Pruebas
+- `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/modules/test_oppyfy_code_mode.py`: **12 passed**.
+- Suite completa de IA / MCP / Sandbox (`test_oppyfy_code_mode.py`, `test_oppy_ai_services.py`, `test_oppyfy_observability.py`, `test_oppy_ai_domain.py`, `test_mcp_bridge.py`, `test_sandbox_runner.py`): **85 passed**.
+- `python scripts/harness.py sync-graph`: **Sincronizado exitosamente (97 nodos, 116 aristas)**.
+
+---
+
+## 4. Próximos Pasos (Fase 4: Auditoría Red Team & FinOps)
+- Traspaso a `10-cybersecurity-redteam-auditor` para pruebas de penetración contra el sandbox (escape de entorno, bypass multi-tenant, bombas fork/CPU).
+- Traspaso a `12-tech-writer-openspec-archify` para formalizar especificaciones en OpenSpec.

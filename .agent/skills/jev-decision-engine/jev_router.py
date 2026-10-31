@@ -25,6 +25,11 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+try:
+    from complexity_evaluator import TaskComplexityReport, evaluate_task_complexity
+except ImportError:
+    from .complexity_evaluator import TaskComplexityReport, evaluate_task_complexity  # type: ignore
+
 
 class ExecutionMode(str, Enum):
     FAST_TRACK = "FAST_TRACK"
@@ -234,6 +239,7 @@ class JevTaskClassification:
     supporting_agents: list[SquadAgentId]
     rationale: str
     pipeline: list[PipelineStage]
+    complexity_report: TaskComplexityReport | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -243,6 +249,10 @@ class JevTaskClassification:
         data["supporting_agents"] = [a.value for a in self.supporting_agents]
         for stage in data["pipeline"]:
             stage["agents"] = [a.value if isinstance(a, SquadAgentId) else a for a in stage["agents"]]
+        if self.complexity_report:
+            data["complexity_report"] = self.complexity_report.to_dict()
+        else:
+            data["complexity_report"] = None
         return data
 
     def to_header(self) -> str:
@@ -264,10 +274,11 @@ def _tokenize(text: str) -> set[str]:
     return {token for token in clean.split() if len(token) > 1}
 
 
-def classify_user_request(prompt: str) -> JevTaskClassification:
+def classify_user_request(prompt: str, target_symbols: list[str] | None = None) -> JevTaskClassification:
     """
     Evalúa la intención de la tarea mediante JEV (Sistema 1) determinista.
     Calcula scores por coincidencia de señales normalizadas y calibración de confianza.
+    Evalúa la complejidad cognitiva en 4 factores asignando el tier y reporte de justificación.
     """
     prompt_lower = prompt.lower()
     tokens = _tokenize(prompt)
@@ -324,16 +335,36 @@ def classify_user_request(prompt: str) -> JevTaskClassification:
         rationale = f"Tarea acotada exclusivamente al ámbito de {meta.name}."
     else:
         mode = ExecutionMode.DAG_PIPELINE
-        all_involved = [top_agent] + supporting
 
-        # Si intervienen cambios de código, siempre involucrar QA en la etapa de cierre
-        if (SquadAgentId.FRONTEND in all_involved or SquadAgentId.BACKEND in all_involved) and (
-            SquadAgentId.QA not in all_involved
-        ):
-            all_involved.append(SquadAgentId.QA)
+        # En DAG_PIPELINE, el escuadrón completo de los 12 agentes núcleo (Etapas 1 a 4)
+        # participa siempre y de manera obligatoria bajo el principio de Cadena de Montaje
+        # (Constructores Activos + Auditores / Certificadores de Sign-off de Impacto Cero)
+        canonical_stages: dict[int, list[SquadAgentId]] = {
+            1: [SquadAgentId.ARCHITECT, SquadAgentId.DATABASE],
+            2: [SquadAgentId.BACKEND, SquadAgentId.FRONTEND],
+            3: [SquadAgentId.OPPYFY_JEV, SquadAgentId.I18N_FX, SquadAgentId.ENV_OBS],
+            4: [SquadAgentId.QA, SquadAgentId.RED_TEAM, SquadAgentId.MERGE_ARBITER, SquadAgentId.TECH_WRITER],
+        }
 
-        # Etapa 5 (Playwright E2E en Navegador Real) es desacoplada y opcional:
-        # Solo se activa si el Agente 13 fue activado por sus señales o si el usuario pide explícitamente pruebas en navegador / E2E Playwright.
+        # Actualizar supporting_agents con todos los agentes núcleo del escuadrón
+        full_squad_supporting: list[SquadAgentId] = []
+        for stg in (1, 2, 3, 4):
+            for ag in canonical_stages[stg]:
+                if ag != top_agent and ag not in full_squad_supporting:
+                    full_squad_supporting.append(ag)
+        supporting = full_squad_supporting
+
+        # Agrupar por etapas canónicas obligatorias
+        stage_groups: dict[int, list[SquadAgentId]] = {
+            1: list(canonical_stages[1]),
+            2: list(canonical_stages[2]),
+            3: list(canonical_stages[3]),
+            4: list(canonical_stages[4]),
+            5: [],
+        }
+
+        # Etapa 5 (Playwright E2E en Navegador Real) es desacoplada y bajo demanda:
+        # Solo se activa si el usuario pide explícitamente pruebas en navegador / E2E Playwright.
         playwright_explicit = any(
             kw in prompt_lower
             for kw in (
@@ -352,23 +383,16 @@ def classify_user_request(prompt: str) -> JevTaskClassification:
                 "captura de pantalla e2e",
             )
         )
-        if playwright_explicit and SquadAgentId.E2E_PLAYWRIGHT not in all_involved:
-            all_involved.append(SquadAgentId.E2E_PLAYWRIGHT)
-
-        # Agrupar por etapas lógicas de dependencias
-        stage_groups: dict[int, list[SquadAgentId]] = {1: [], 2: [], 3: [], 4: [], 5: []}
-        for agent in all_involved:
-            stg = SQUAD_CATALOG[agent].stage
-            if stg == 0:
-                continue
-            if agent not in stage_groups[stg]:
-                stage_groups[stg].append(agent)
+        if playwright_explicit:
+            stage_groups[5] = [SquadAgentId.E2E_PLAYWRIGHT]
+            if SquadAgentId.E2E_PLAYWRIGHT not in supporting and top_agent != SquadAgentId.E2E_PLAYWRIGHT:
+                supporting.append(SquadAgentId.E2E_PLAYWRIGHT)
 
         stage_names = {
             1: "Definición de Arquitectura, Contratos y Esquemas DB",
             2: "Construcción en Código (Backend & Frontend en Paralelo)",
             3: "Capas Especializadas (i18n, FX, OppyFy, Observabilidad)",
-            4: "Quality Gate, Pruebas 5D, Veto de Seguridad y Documentación",
+            4: "Quality Gate, Veto de Seguridad, Merge Train y Documentación",
             5: "Certificación E2E en Navegador Real (Playwright, Desacoplado)",
         }
 
@@ -386,9 +410,17 @@ def classify_user_request(prompt: str) -> JevTaskClassification:
                 )
 
         rationale = (
-            f"Tarea transversal con dependencias ordenadas: "
+            f"DAG Canónico Completo con dependencias ordenadas (12 agentes núcleo obligatorios): "
             f"{' -> '.join(f'Etapa {s.stage_number} ({len(s.agents)} agentes)' for s in pipeline)}."
         )
+
+    complexity_report = evaluate_task_complexity(
+        prompt=prompt,
+        primary_agent=top_agent.value,
+        supporting_agents=[a.value for a in supporting],
+        mode=mode.value,
+        target_symbols=target_symbols,
+    )
 
     return JevTaskClassification(
         primary_agent=top_agent,
@@ -398,16 +430,18 @@ def classify_user_request(prompt: str) -> JevTaskClassification:
         supporting_agents=supporting,
         rationale=rationale,
         pipeline=pipeline,
+        complexity_report=complexity_report,
     )
 
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Uso: python jev_router.py \"<prompt del usuario>\" [--json]")
+        print("Uso: python jev_router.py \"<prompt del usuario>\" [--json] [--explain-complexity]")
         sys.exit(1)
 
     prompt_arg = sys.argv[1]
     is_json = "--json" in sys.argv
+    explain_comp = "--explain-complexity" in sys.argv
 
     classification = classify_user_request(prompt_arg)
 
@@ -415,7 +449,12 @@ def main() -> None:
         print(json.dumps(classification.to_dict(), indent=2, ensure_ascii=False))
     else:
         print(classification.to_header())
+        if classification.complexity_report:
+            cr = classification.complexity_report
+            print(f"   📊 **Complejidad Evaluada:** {cr.complexity_score} ({cr.level}) ➔ **Tier Dinámico:** `{cr.promoted_tier}`")
         print(f"\n📋 Justificación: {classification.rationale}")
+        if explain_comp and classification.complexity_report:
+            print("\n" + classification.complexity_report.explain())
         print("\n🔀 Pipeline de Ejecución (Orden Lógico de Dependencias):")
         for stage in classification.pipeline:
             agents_list = ", ".join(f"`{a.value}`" for a in stage.agents)

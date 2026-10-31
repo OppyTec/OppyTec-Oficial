@@ -80,6 +80,35 @@
 - **Bóvedas OpenSpec Sincronizadas:** `specs/business-domain/tenancy-and-plans.business.spec.md` y `specs/engineering-code/tenancy-and-plans.code.spec.md` 100% actualizados y validados por `test_openspec_bipartition_and_sync.py`.
 - **Bitácora Publicada:** `docs/bitacora/diario-escuadron/07-Plan-Maestro-Panel-Administrador-Plan-Basico-10-Modulos-y-Cuotas-Parametricas.md`, `08-...`, `09-Gobernanza-Estricta-Graphify-CLI-nav-y-sync-graph.md` y `10-Opcion-3-Persistencia-Real-PostgreSQL-Alembic-0003-y-Verificacion-5D.md`.
 
+## Hito Cerrado: Arquitectura "Code Mode sobre MCP" para OppyFy (Fases 1 a 5 Certificadas 10/10)
+- **Estado de Certificación:** `SECURITY_APPROVED`, `QA_APPROVED` y `SYNC_APPROVED` (Plan Maestro de Code Mode sobre MCP culminado al 100%).
+- **Fases del Plan Maestro (`.agent/Planes-Maestros/PLAN_MAESTRO_CODE_MODE_MCP.md`):**
+  - **Fase 1 (MCP Dynamic Bridge & Type Generator):**
+    - `src/core/mcp_bridge/manager.py` (`MCPBridgeManager`): Administrador de ciclo de vida de servidores MCP (stdio/SSE/in-memory), introspección reactiva vía `tools/list` (JSON-RPC 2.0) y catálogo semántico token-minimal vía `search_capabilities()` (< 150 tokens por descriptor).
+    - `src/core/mcp_bridge/sdk_generator.py` (`DynamicSDKGenerator`): Generador dinámico de SDK tipado en memoria (`oppy.<server>.<tool>`), desacoplando al LLM del transporte subyacente.
+    - Soporte universal de servidores estandarizados vía `mcp_config.json`.
+  - **Fase 2 (Motor de Sandbox Aislado y Guardias Multi-Tenant):**
+    - `src/core/sandbox/runner.py` (`CodeModeSandboxRunner`): Motor de ejecución hermético en memoria.
+    - AST Security Validator (`ast.walk`): Límite de 2000 nodos AST (previene bombas AST), lista blanca cerrada (`math`, `json`, `datetime`, `decimal`), bloqueo de módulos del SO/red (`os`, `sys`, `subprocess`, `socket`, `shutil`, `urllib`, `requests`, `httpx`, etc.), bloqueo de dunders (`__subclasses__`, `__globals__`, `__code__`, `__class__`, etc.) y de built-ins peligrosos (`eval`, `exec`, `compile`, `open`, etc.).
+    - Watchdog dual de ejecución: Timeout de pared de 3.0s en hilo daemon + tracer de instrucciones de bytecode con cota de $1.000.000$ pasos (`sys.settrace`).
+    - Contexto inmutable `SandboxContext` con validación estricta de formato `tenant_[a-z0-9_]+`.
+    - Guardia Anti-IDOR Cross-Tenant: Escaneo regex `\b(tenant_[a-z0-9_]+)\b` en argumentos de herramientas que aborta de inmediato con `CrossTenantAccessError` si se intenta consultar esquemas ajenos.
+    - Hard-Code Data Stripping (`strip_sensitive_cost_data`): Redacción física irrevocable de campos de costos y márgenes (`[REDACTED_COST]`) si el usuario carece de `can_view_costs` o `finanzas.costos.ver`.
+  - **Fase 3 (Integración Nativa en OppyFy):**
+    - `src/modules/oppy_ai/application/code_mode_service.py` (`OppyfyCodeModeService`): Orquestador integral entre OppyFy, MCPBridge y SandboxRunner para resolver consultas compuestas en un solo turno (*Zero Ping-Pong Latency*).
+  - **Fase 4 (Auditoría Ofensiva Red Team Kali y FinOps):**
+    - 10 vectores ofensivos auditados y certificados en `oppytec-backend/tests/security_redteam/test_17_code_mode_sandbox_security.py` (introspección dunder, imports de SO, bucles infinitos, bombas AST, cross-tenant IDOR, evasión de stripping, RBAC, inyecciones en catálogo, telemetría e inmutabilidad).
+    - Telemetría FinOps obligatoria: Medición de `tokens_saved` (`raw_tokens - final_tokens`) y persistencia ineludible en `public.llm_request_logs` a través de `MeteredAIService` con `LlmUsageRecord(model_name="code-mode-sandbox")`. Ahorro de tokens demostrado: **90% al 99.7%**.
+  - **Fase 5 (Gobernanza, OpenSpec Bipartito y Graphify):**
+    - Especificación de ingeniería: `specs/engineering-code/mcp-code-mode-bridge.engineering.spec.md` y `specs/engineering-code/oppyfy-code-mode.code.spec.md` (arquitectura de 4 capas, contratos de seguridad, watchdog, stripping y FinOps).
+    - Especificación funcional de negocio: `specs/business-domain/oppyfy-code-mode.business.spec.md` (0% SQL, valor de negocio, ahorro 90%+ en tokens, consultas en un solo turno y confidencialidad RBAC).
+    - Verificación OpenSpec: `oppytec-backend/tests/architecture/test_openspec_bipartition_and_sync.py` superado al 100%.
+    - Sincronización Graphify: Actualización de `scripts/harness.py` con nuevos nodos y suites de test (`python scripts/harness.py sync-graph`: 104 nodos, 127 aristas en `graph.json` y `visualizer.html`).
+- **Resultados de la Batería de Pruebas:**
+  - Suite Consolidada Code Mode: **133 tests passed** en 0.88s (`test_17_code_mode_sandbox_security.py`, `test_mcp_bridge.py`, `test_sandbox_runner.py`, `test_oppyfy_code_mode.py`).
+  - Suite de Arquitectura OpenSpec: **1 passed** (`test_openspec_bipartition_and_sync.py`).
+  - Integridad Anti-Trampa: **100% OK** (`python scripts/harness.py verify-evals`).
+
 ## Hito Cerrado: Opción 3 (Persistencia Real y Verificación en Base de Datos)
 - **Estado de Certificación:** `QA_APPROVED` y `SYNC_APPROVED` (DAG Pipeline de 4 Etapas culminado al 100%).
 - **Persistencia en Vivo (Docker):**

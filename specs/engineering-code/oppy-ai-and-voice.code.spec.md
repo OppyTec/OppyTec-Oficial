@@ -51,8 +51,14 @@ last_verified_phase: "Fase 7.6"
     4. Consulta RAG en 3 capas a través de `ThreeLayerRagService`.
     5. Invocación de herramientas operativas en código duro si la consulta es analítica.
     6. *Hard-Code Data Stripping*: purga de campos sensibles financieros si `can_view_costs == False`.
-    7. Registro asíncrono o transaccional ineludible en `public.llm_request_logs` con `Decimal` exacto (`NUMERIC(14,6)` USD, `NUMERIC(14,2)` CLP, `NUMERIC(12,2)` créditos).
+    7. Registro asíncrono o transaccional ineludible en `public.llm_request_logs` (`SYSTEM_2_LLM`, `EMBEDDING`) y en `public.jev_request_logs` (`SYSTEM_1_JEV` vía `JevTelemetrySinkPort`) con `Decimal` exacto (`NUMERIC(14,6)` USD, `NUMERIC(14,2)` CLP, `NUMERIC(12,2)` créditos).
     8. Emisión de spans de observabilidad OpenTelemetry (`oppyfy.query`, `oppyfy.tool_router`, `oppyfy.data_stripping`, `oppyfy.metered_ai`).
+- **Arquitectura de Telemetría JEV Desacoplada (`JevTelemetrySinkPort`):**
+  - Desacoplamiento estricto del flujo de micro-decisiones de Sistema 1 respecto a llamadas generativas Sistema 2.
+  - Implementaciones del puerto `JevTelemetrySinkPort`:
+    - `DatabaseJevTelemetrySink` (`src/adapters/ai/jev_adapter.py`): Colector asíncrono sobre `AsyncSession` que persiste instancias de `JevRequestLog` tanto en flujo individual como en lote atómico (`session.add_all(...)`), garantizando alto rendimiento en importaciones de catálogos y facturas.
+    - `InMemoryJevTelemetrySink`: Colector en memoria para tests unitarios y validación en arnés.
+  - Soporte de evaluación por lotes: `MeteredJevAdapter.decide_choice_batch` procesa colecciones de `JevChoiceBatchItem` y persiste el lote consolidado en una sola operación atómica.
 - **`ThreeLayerRagService` (`application/rag_service.py`):**
   - **Capa 1 (Memoria de Sesión):** Ventana móvil con compresión de historial y evaluación semafórica de tokens.
   - **Capa 2 (Herramientas Operativas Deterministas):** Ejecución directa en Python sobre el esquema `tenant_*` (excluida de la caché por dinamismo transaccional).
@@ -81,6 +87,21 @@ last_verified_phase: "Fase 7.6"
 
 ### 3. Persistencia e Infraestructura (`oppytec-backend/src/modules/oppy_ai/infrastructure/`)
 - **Esquema Compartido `public` (`infrastructure/models.py`):**
+  - `public.jev_request_logs`:
+    - `id` (Uuid PK default `uuid.uuid4`).
+    - `created_at` (DateTime UTC con server_default `func.now()`, Indexed).
+    - `holding_id` (Uuid Indexed), `tenant_id` (Uuid Indexed), `tenant_schema` (String 63 Indexed), `user_id` (Integer nullable Indexed).
+    - `trace_id` (String 64 nullable — correlación distribuida).
+    - `caller_feature` (String 64 Indexed: `oppyfy_chat`, `tool_router`, `excel_import`, `invoice_ocr`, `merma_judge`).
+    - `decision_id` (String 64), `decision_primitive` (String 16: `BOOLEAN`, `CHOICE`, `SCORE`).
+    - `input_summary` (String 255), `result_value` (String 128).
+    - `confidence_score` (`Numeric(5, 4)` Indexed con calibración continua).
+    - `calibrated_action` (String 24: `AUTO_ACCEPTED`, `FLAGGED_WARNING`, `FALLBACK_LLM`).
+    - `model_name` (String 64), `estimated_tokens` (Integer server_default 0).
+    - `provider_cost_usd` (`Numeric(14, 6)` con garantía `Decimal`), `provider_cost_clp` (`Numeric(14, 2)` con garantía `Decimal`).
+    - `credits_deducted` (`Numeric(12, 2)` con garantía `Decimal`).
+    - `latency_ms` (Integer server_default 0), `is_success` (Boolean server_default True), `error_message` (Text nullable).
+    - Índices compuestos de alto rendimiento: `idx_jev_logs_tenant_created`, `idx_jev_logs_holding_created`, `idx_jev_logs_feature`, `idx_jev_logs_confidence`.
   - `public.llm_request_logs`:
     - `id` (BigInteger PK autoincrementable).
     - `created_at` (DateTime UTC con server_default `func.now()`).
@@ -164,6 +185,7 @@ jev_system1_evaluation: «¿Lo puede hacer JEV (Sí/No)?» → **Sí**.
 - Primitiva: `Jev.choice`
 - Umbral de confianza: `0.75` (bajo umbral → camino determinista seguro o rechazo por falta de claridad).
 - Justificación: JEV Sistema 1 clasifica y enruta la intención del usuario hacia la herramienta operativa especializada o hacia el RAG funcional en 70-500 ms con costo infinitesimal antes de activar el modelo de lenguaje de Sistema 2.
+- Telemetría y Desacoplamiento: Registro ineludible en `public.jev_request_logs` mediante el puerto desacoplado `JevTelemetrySinkPort` (`DatabaseJevTelemetrySink`), acciones calibradas (`AUTO_ACCEPTED`, `FLAGGED_WARNING`, `FALLBACK_LLM`), cálculo de finanzas en `Decimal` y soporte de batching (`MeteredJevAdapter.decide_choice_batch`).
 
 ---
 

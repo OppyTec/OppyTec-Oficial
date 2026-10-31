@@ -1,53 +1,31 @@
 # Reporte de Traspaso (`Handover`) — Agente 08: Especialista en 5 Entornos y Observabilidad 4-Pilares
 
-- **Fecha UTC:** 2026-10-26T20:15:00Z
-- **Fase:** Fase 7 — Tarea 7.3: Observabilidad OpenTelemetry y Sanitización PII para OppyFy (`PLAN_MAESTRO_OPPYFY_AI.md`)
-- **Estado de Certificación:** `OPPYFY_OPENTELEMETRY_AND_PII_SANITIZATION_CERTIFIED` (8/8 tests de observabilidad OppyFy 100% verdes, 29/29 tests de regresión suites relacionadas 100% verdes).
+- **Fecha UTC:** 2026-10-29T20:45:00Z
+- **Fase / Tarea:** Marco de los 7 Niveles de Observabilidad y Regla de Oro de Cardinalidad Multi-Tenant
+- **Estado de Certificación:** `OBSERVABILITY_7_LEVELS_AND_CARDINALITY_FRAMEWORK_CERTIFIED` (10/10 criterios de evaluación verificados, hashes SHA-256 de reglas y evals 100% íntegros).
 
 ## 1. Completed (Qué se hizo)
-- **Instrumentación de Spans Semánticos OpenTelemetry en `OppyFy`:**
-  - `oppyfy.query` (Span raíz en `MeteredAIService.execute_oppyfy_query`):
-    - Atributos semánticos: `tenant.schema`, `user.id`, `thread.id`, `prompt.status`, `tokens.total`, `credits.deducted`.
-    - Garantía Zero-Float: `credits.deducted` formateado estrictamente como string Decimal (e.g. `"1.00"` / `"0.00"`), nunca `float`.
-  - `oppyfy.tool_router` (Span en `OppyfyToolRouter.classify_tool_and_subdomain`):
-    - Atributos semánticos: `tool.selected` (código de herramienta seleccionado), `router.duration_ms` (duración exacta en ms de clasificación JEV).
-  - `oppyfy.data_stripping` (Span en `OppyfyToolRouter.execute_hardcoded_tool`):
-    - Atributos semánticos: `costs.redacted: bool` (indica si se aplicó redacción de costos por RBAC `can_view_costs=False`), `fields.scrubbed_count: int` (conteo exacto de campos reemplazados por `"[REDACTED_COST]"`).
-  - `oppyfy.metered_ai` (Span en Paso 5 de `MeteredAIService.execute_oppyfy_query`):
-    - Atributos semánticos: `provider.model`, `provider.cost_usd` (formateado con 6 decimales como string Decimal, cero `float`), `tokens.input: int`, `tokens.output: int`.
-  - Spans de herramientas operativas (`operational_tools/`):
-    - Instrumentadas las 9 herramientas con span semántico `oppyfy.tool.<tool_name>`:
-      * `oppyfy.tool.get_stock_health_and_reorder_alerts`
-      * `oppyfy.tool.get_expiring_batches_fefo`
-      * `oppyfy.tool.evaluate_supplier_lead_times_and_price_drift`
-      * `oppyfy.tool.build_optimal_purchase_order_draft`
-      * `oppyfy.tool.analyze_event_supply_feasibility`
-      * `oppyfy.tool.get_sales_and_food_cost_variance`
-      * `oppyfy.tool.analyze_waste_and_merma_impact`
-      * `oppyfy.tool.render_canvas_table`
-      * `oppyfy.tool.render_canvas_chart`
-- **Sanitización Estricta PII y Regla Pollo King (`src/core/observability.py`):**
-  - Incorporadas exclusiones semánticas en `_is_sensitive_key` (`AI_METRIC_KEY_EXEMPTIONS`) para que contadores LLM (`tokens.total`, `tokens.input`, `tokens.output`, `tokens.*`) permanezcan tipados como `int` y no sean censurados como tokens de autenticación.
-  - Añadidos tokens sensibles `"card_number"` y `"tarjeta"` a `SENSITIVE_KEY_TOKENS`.
-  - Mejorado `_CREDIT_CARD_PATTERN` con soporte para tarjetas de 15 y 16 dígitos.
-  - Creada métrica determinista `OppyfyOperationMetric` acumulable en `_in_memory_oppyfy_metrics`.
-  - Verificada la preservación inmutable de la razón social `"Pollo King SpA"` sin redacción PII.
-- **Suite de Pruebas Unitarias de Observabilidad:**
-  - Creada `oppytec-backend/tests/unit/modules/test_oppyfy_observability.py` con 8 tests completos:
-    1. `test_oppyfy_full_query_semantic_spans_success`: flujo exitoso con jerarquía completa de spans.
-    2. `test_oppyfy_query_with_costs_allowed`: `can_view_costs=True` genera `costs.redacted=False` y `fields.scrubbed_count=0`.
-    3. `test_oppyfy_query_blocked_by_rbac_observability`: bloqueo RBAC emite `BLOCKED_UNAUTHORIZED_PROMPT` y cero cobro sin spans hijos.
-    4. `test_oppyfy_query_blocked_by_injection_guard`: bloqueo anti-inyección JEV emite `BLOCKED_UNAUTHORIZED_PROMPT` y telemetría de bloqueo.
-    5. `test_oppyfy_query_blocked_disabled_worker`: bloqueo de billetera inactiva o sin cupo emite status correspondiente.
-    6. `test_oppyfy_strict_pii_scrubbing_and_brand_preservation`: scrubbing de correos, tarjetas, teléfonos, RUTs y contraseñas.
-    7. `test_oppyfy_zero_float_financial_metrics_guarantee`: garantía de cero float en todas las métricas financieras de OTel.
-    8. `test_operational_tools_direct_span_emission`: emisión correcta de spans en las 9 herramientas operativas.
-- **Ejecución y Verificación 100% Verde:**
-  - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/modules/test_oppyfy_observability.py` -> **8 passed in 0.20s (100% verde)**.
-  - Verificación conjunta con tests de arquitectura y módulos de OppyFy: **29 passed in 0.33s (100% verde)**.
+- **Actualización Normativa de la Estrategia Maestra (`.agent/estrategias/estrategia_observabilidad_monitoreo_y_analitica_001.md`):**
+  - Incorporada formalmente la nueva **Sección 2: El Marco de los 7 Niveles de Observabilidad en OppyTec v2.0**:
+    1. *Nivel 1 — Logs Estructurados JSON (`structlog` / Loki)*: Eventos JSON canónicos, sin `print()`, con timestamp ISO-8601 y sanitización PII obligatoria.
+    2. *Nivel 2 — Métricas Agregadas (Prometheus / Grafana Mimir)*: Series temporales numéricas (Counters, Gauges, Histograms) para throughput, satura de pools y aciertos Redis.
+    3. *Nivel 3 — Trazas Distribuidas (OpenTelemetry Tracing / Tempo)*: Reconstrucción gráfica en cascada (DAGs de Spans) de extremo a extremo (Frontend React -> FastAPI -> Postgres -> Redis -> JEV/OppyFy).
+    4. *Nivel 4 — Correlación W3C y Propagación de Contexto (`Trace ID` / `X-Trace-ID`)*: Cabecera `traceparent` (W3C TraceContext) y propagación de `X-Trace-ID` transversal a logs, trazas y Sentry.
+    5. *Nivel 5 — Alertas Proactivas y Detección Temprana (Grafana Alerting / Sentry)*: Detección proactiva por velocidad de consumo de error budget, saturación de pools (> 80%) y eventos de ciberseguridad.
+    6. *Nivel 6 — SLOs y SLIs con Percentiles Estrictos ($P_{95} \le 120\text{ ms}$)*: Compromisos formales de rendimiento: operaciones transaccionales con $P_{95} \le 120\text{ ms}$, reportes pesados con $P_{95} \le 800\text{ ms}$, y disponibilidad $\ge 99.9\%$.
+    7. *Nivel 7 — Cardinalidad y Control de Explosión de Series Temporales (Regla de Oro Multi-Tenant)*: Definición formal de la Regla de Oro de Baja Cardinalidad para Prometheus frente al desbordamiento combinatorio en SaaS Multi-Tenant.
+  - Renumeradas y sincronizadas las secciones subsecuentes de entornos, PII, Admin Center y artefactos técnicos para preservar la coherencia documental.
+- **Formulación de la Regla de Oro del Nivel 7 (Cardinalidad en Multi-Tenant):**
+  - **Métricas Prometheus:** Restringidas estrictamente a etiquetas macro finitas (`method`, `endpoint_template` canonizado sin IDs, `status_code`, `environment`).
+  - **Prohibición Taxativa:** Queda prohibido inyectar identificadores de alta o infinita cardinalidad (`user_id`, `tenant_schema`, `holding_id`, `trace_id`, `order_id`, `sku`, `rut_tax_id`) como labels de Prometheus, erradicando el riesgo de explosión combinatoria de $\mathcal{O}(10^8 - 10^{10})$ series activas y *OOM Kills* en la TSDB.
+  - **Canal Exclusivo para Alta Cardinalidad:** Los atributos de alta cardinalidad deben viajar exclusivamente en Spans de OpenTelemetry (Tempo) y campos estructurados de Logs JSON (Loki/Sentry), aprovechando sus arquitecturas columnares optimizadas para búsquedas de alta cardinalidad a costo predecible.
+- **Destilación en la Base de Conocimiento Evolutiva (`knowledge.md`):**
+  - Registrado el aprendizaje de arquitectura y la regla de oro de cardinalidad en `.agent/subagents/08-environments-and-observability-engineer/knowledge.md`.
+- **Verificación de Integridad Anti-Trampa con Harness:**
+  - Ejecutado `python3 scripts/harness.py verify-evals` con resultado exitoso: `Integridad de .agent/rules/ y .agent/evals/ verificada al 100% (Cero Reward Hacking)`.
 
 ## 2. Friction & Failures (Qué cuidar)
-- En `WorkerCreditWalletState`, los argumentos del constructor dataclass son `user_id`, `allocated_credits`, `consumed_credits`, `is_oppyfy_enabled`, y `assigned_credit_ceiling`. No se debe confundir con el modelo ORM `OppyfyWorkerCreditWallet` que posee `wallet_id` y `spent_credits`.
+- Al diseñar nuevas métricas en el backend (ej. contadores de negocio o alertas), vigilar estrictamente que ningún desarrollador o sub-agente use `tenant_schema` o `user_id` como tag en `prometheus_client` o `opentelemetry.metrics`. Esos identificadores deben asignarse únicamente al span contextual actual (`trace_span` o `span.set_attribute`).
 
 ## 3. Next Exact Action
-- Enviar reporte final al agente orquestador/parent (`d0212433-cb68-4d01-aea7-ef017fe152b9`).
+- Enviar notificación con el resumen consolidado de las acciones al agente padre / orquestador (`3de42636-bd55-47b9-8f10-6a14e777e62f`).

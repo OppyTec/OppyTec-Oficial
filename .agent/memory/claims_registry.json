@@ -392,6 +392,27 @@
       "claimed_by": "08-environments-and-observability-engineer",
       "intent": "Ensure OpenTelemetry spans platform_admin.tokens.quota_adjust",
       "claimed_at": "2026-10-26T19:35:13.431375+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/oppy_ai/infrastructure/models.py",
+      "symbol_path": "OppyfyDomain",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Eliminar Any para mypy strict",
+      "claimed_at": "2026-10-29T21:26:43.472792+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/oppy_ai/application/metered_ai_service.py",
+      "symbol_path": "ModelConfigRegistry",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Implement dynamic tariff management and FXService integration",
+      "claimed_at": "2026-10-29T21:47:12.567271+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/oppy_ai/application/metered_ai_service.py",
+      "symbol_path": "MeteredAIService",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Support dynamic FXService rate in calculate_token_cost",
+      "claimed_at": "2026-10-29T21:47:18.060381+00:00"
     }
   ]
 }

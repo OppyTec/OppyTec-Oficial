@@ -1,0 +1,3395 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="ocean-blue">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>OppyTec v2.0 — Graphify Interactive Architecture Atlas</title>
+  <style>
+    /* ─── Variables de Diseño y ADN Visual OppyTec ────────────────────────────── */
+    :root, [data-theme="ocean-blue"] {
+      --bg-primary: #07192f;
+      --bg-secondary: #0c2544;
+      --bg-surface: rgba(15, 41, 74, 0.92);
+      --bg-surface-elevated: rgba(22, 58, 102, 0.96);
+      --text-primary: #f0f7ff;
+      --text-secondary: #9ec2e6;
+      --text-muted: #648ba8;
+      --accent-primary: #00d2ff;
+      --accent-secondary: #38bdf8;
+      --accent-hover: #7dd3fc;
+      --border-color: rgba(56, 189, 248, 0.28);
+      --border-focus: #00d2ff;
+      --edge-default: rgba(158, 194, 230, 0.28);
+      --edge-active: #00d2ff;
+      --edge-text: #e0f2fe;
+      --edge-pill-bg: #0c2544;
+      --canvas-bg: #051326;
+      --shadow-elevation: 0 10px 30px rgba(0, 210, 255, 0.16);
+      --badge-bg: rgba(0, 210, 255, 0.14);
+      --badge-border: rgba(0, 210, 255, 0.35);
+      --badge-text: #7dd3fc;
+    }
+
+    [data-theme="dark"] {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-surface: rgba(30, 41, 59, 0.94);
+      --bg-surface-elevated: rgba(51, 65, 85, 0.98);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-primary: #6366f1;
+      --accent-secondary: #818cf8;
+      --accent-hover: #a5b4fc;
+      --border-color: rgba(148, 163, 184, 0.24);
+      --border-focus: #818cf8;
+      --edge-default: rgba(148, 163, 184, 0.26);
+      --edge-active: #818cf8;
+      --edge-text: #f8fafc;
+      --edge-pill-bg: #1e293b;
+      --canvas-bg: #090d16;
+      --shadow-elevation: 0 10px 28px rgba(99, 102, 241, 0.18);
+      --badge-bg: rgba(99, 102, 241, 0.15);
+      --badge-border: rgba(99, 102, 241, 0.35);
+      --badge-text: #a5b4fc;
+    }
+
+    [data-theme="light"] {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-surface: rgba(255, 255, 255, 0.96);
+      --bg-surface-elevated: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --accent-primary: #0284c7;
+      --accent-secondary: #0369a1;
+      --accent-hover: #0ea5e9;
+      --border-color: #cbd5e1;
+      --border-focus: #0284c7;
+      --edge-default: rgba(100, 116, 139, 0.35);
+      --edge-active: #0284c7;
+      --edge-text: #0f172a;
+      --edge-pill-bg: #e2e8f0;
+      --canvas-bg: #f8fafc;
+      --shadow-elevation: 0 10px 24px rgba(0, 0, 0, 0.08);
+      --badge-bg: rgba(2, 132, 199, 0.12);
+      --badge-border: rgba(2, 132, 199, 0.3);
+      --badge-text: #0284c7;
+    }
+
+    /* ─── Reset y Estructura Global ─────────────────────────────────────────── */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--canvas-bg);
+      color: var(--text-primary);
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      user-select: none;
+    }
+
+    /* ─── Cabecera Principal ────────────────────────────────────────────────── */
+    header {
+      height: 64px;
+      min-height: 64px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 30;
+      gap: 12px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent-primary), #10b981);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0, 210, 255, 0.3);
+    }
+
+    .brand-logo svg {
+      width: 22px;
+      height: 22px;
+      fill: #ffffff;
+    }
+
+    .brand-titles {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.2px;
+    }
+
+    .header-metrics {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 8px;
+    }
+
+    .metric-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      background: var(--badge-bg);
+      border: 1px solid var(--badge-border);
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--badge-text);
+      white-space: nowrap;
+    }
+
+    .metric-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ─── Botones Táctiles Mobile-First (>= 44px) ────────────────────────────── */
+    .touch-btn {
+      min-height: 44px;
+      min-width: 44px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.18s ease-in-out;
+      outline: none;
+    }
+
+    .touch-btn:hover {
+      background: var(--accent-primary);
+      color: #07192f;
+      border-color: var(--accent-primary);
+      box-shadow: 0 4px 14px rgba(0, 210, 255, 0.25);
+    }
+
+    .touch-btn:active {
+      transform: scale(0.97);
+    }
+
+    .touch-btn.icon-only {
+      padding: 0;
+      width: 44px;
+      height: 44px;
+    }
+
+    .touch-btn.active {
+      background: var(--accent-primary);
+      color: #07192f;
+      border-color: var(--accent-primary);
+    }
+
+    .theme-select {
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+    }
+
+    /* ─── Barra de Herramientas y Filtros ────────────────────────────────────── */
+    .toolbar {
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 20;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: thin;
+    }
+
+    .toolbar::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .toolbar::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    .search-container {
+      position: relative;
+      min-width: 260px;
+      max-width: 340px;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 44px;
+      padding: 0 36px 0 38px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .search-input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.2);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .search-clear.visible {
+      display: flex;
+    }
+
+    .categories-list {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cat-chip {
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .cat-chip:hover {
+      border-color: var(--accent-primary);
+      color: var(--text-primary);
+    }
+
+    .cat-chip.active {
+      background: var(--accent-primary);
+      color: #07192f;
+      border-color: var(--accent-primary);
+      font-weight: 700;
+    }
+
+    .cat-chip .count {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    .cat-chip.active .count {
+      background: rgba(0, 0, 0, 0.25);
+      color: #ffffff;
+    }
+
+    /* ─── Contenedor Principal y Canvas ─────────────────────────────────────── */
+    .viewport-container {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 120px);
+      overflow: hidden;
+    }
+
+    #graph-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: grab;
+    }
+
+    #graph-canvas:active {
+      cursor: grabbing;
+    }
+
+    /* ─── Controles Flotantes de Zoom / Cámara ──────────────────────────────── */
+    .floating-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 25;
+    }
+
+    .floating-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      transition: all 0.15s ease;
+    }
+
+    .floating-btn:hover {
+      background: var(--accent-primary);
+      color: #07192f;
+      border-color: var(--accent-primary);
+    }
+
+    .zoom-level-badge {
+      position: absolute;
+      bottom: 20px;
+      left: 74px;
+      height: 44px;
+      padding: 0 14px;
+      border-radius: 10px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      pointer-events: none;
+      z-index: 25;
+    }
+
+    /* ─── Leyenda Flotante de Tipos ─────────────────────────────────────────── */
+    .legend-panel {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 16px;
+      max-width: 320px;
+      box-shadow: var(--shadow-elevation);
+      z-index: 22;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+
+    .legend-panel.minimized {
+      transform: translateY(calc(100% + 20px));
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .legend-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .legend-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px 12px;
+      font-size: 11px;
+      color: var(--text-primary);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .legend-toggle-btn {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      height: 44px;
+      padding: 0 14px;
+      border-radius: 10px;
+      background: var(--bg-surface);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      z-index: 21;
+    }
+
+    .legend-toggle-btn.visible {
+      display: flex;
+    }
+
+    /* ─── Panel Lateral Inspector ───────────────────────────────────────────── */
+    .inspector {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 380px;
+      height: 100%;
+      background: var(--bg-surface);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-left: 1px solid var(--border-color);
+      box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
+      z-index: 28;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .inspector.open {
+      transform: translateX(0);
+    }
+
+    .inspector-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .inspector-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .inspector-type-pill {
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .inspector-label {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.3;
+      word-break: break-word;
+    }
+
+    .inspector-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .inspector-close:hover {
+      background: var(--accent-primary);
+      color: #07192f;
+      border-color: var(--accent-primary);
+    }
+
+    .inspector-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .inspector-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .inspector-card-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .inspector-code-box {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      word-break: break-all;
+      user-select: text;
+      color: var(--accent-secondary);
+    }
+
+    .inspector-copy-btn {
+      font-size: 11px;
+      color: var(--accent-primary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .inspector-copy-btn:hover {
+      background: var(--badge-bg);
+    }
+
+    .connections-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .connections-count {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--badge-text);
+      background: var(--badge-bg);
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    .connection-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .connection-item {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: left;
+    }
+
+    .connection-item:hover {
+      border-color: var(--accent-primary);
+      transform: translateX(3px);
+      box-shadow: 0 4px 12px rgba(0, 210, 255, 0.15);
+    }
+
+    .connection-relation {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-secondary);
+      font-family: monospace;
+    }
+
+    .connection-target-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    .connection-target-id {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .inspector-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 8px;
+    }
+
+    .inspector-focus-btn {
+      flex: 1;
+    }
+
+    /* ─── Tooltip Flotante de Hover ─────────────────────────────────────────── */
+    #hover-tooltip {
+      position: absolute;
+      background: var(--bg-surface);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--text-primary);
+      pointer-events: none;
+      z-index: 35;
+      display: none;
+      box-shadow: var(--shadow-elevation);
+      max-width: 280px;
+      line-height: 1.3;
+    }
+
+    /* ─── Responsive Móvil (Mobile First) ───────────────────────────────────── */
+    @media (max-width: 768px) {
+      header {
+        padding: 0 10px;
+        height: 56px;
+        min-height: 56px;
+      }
+      .brand-title {
+        font-size: 13px;
+      }
+      .brand-subtitle, .header-metrics {
+        display: none;
+      }
+      .toolbar {
+        padding: 6px 10px;
+      }
+      .search-container {
+        min-width: 180px;
+      }
+      .inspector {
+        width: 100%;
+        height: 75vh;
+        top: auto;
+        bottom: 0;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        transform: translateY(100%);
+        border-radius: 16px 16px 0 0;
+      }
+      .inspector.open {
+        transform: translateY(0);
+      }
+      .legend-panel {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cabecera Oficial OppyTec v2.0 -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-logo" title="OppyTec v2.0 Architecture Atlas">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 2v4m0 12v4M2 12h4m12 0h4m-3.5-6.5l-2.8 2.8m-7.4 7.4l-2.8 2.8m0-13l2.8 2.8m7.4 7.4l2.8 2.8"/>
+        </svg>
+      </div>
+      <div class="brand-titles">
+        <span class="brand-title">OppyTec v2.0 Graphify</span>
+        <span class="brand-subtitle">Interactive Architecture Atlas</span>
+      </div>
+      <div class="header-metrics">
+        <div class="metric-pill" id="metric-nodes"><span class="metric-dot"></span><span id="nodes-count-text">96</span> Nodos</div>
+        <div class="metric-pill" id="metric-edges"><span class="metric-dot"></span><span id="edges-count-text">116</span> Aristas</div>
+        <div class="metric-pill" id="metric-physics"><span class="metric-dot"></span><span id="physics-status-text">Simulando</span></div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <!-- Selector de Temas ADN Visual -->
+      <select id="theme-selector" class="theme-select" title="Seleccionar tema visual">
+        <option value="ocean-blue">🌊 Ocean Blue</option>
+        <option value="dark">🌙 Dark Mode</option>
+        <option value="light">☀️ Light Mode</option>
+      </select>
+
+      <!-- Botón Cargar graph.json Externo -->
+      <input type="file" id="file-input" accept=".json" style="display: none;" />
+      <button class="touch-btn" id="btn-load-file" title="Cargar archivo graph.json local">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <span class="hide-mobile">Cargar JSON</span>
+      </button>
+
+      <!-- Botón Exportar Imagen PNG -->
+      <button class="touch-btn icon-only" id="btn-export-png" title="Exportar grafo a imagen PNG">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </button>
+
+      <!-- Botón Pausar / Reanudar Simulación -->
+      <button class="touch-btn icon-only" id="btn-toggle-physics" title="Pausar o Reanudar simulación física">
+        <svg id="icon-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="6" y="4" width="4" height="16" rx="1"/>
+          <rect x="14" y="4" width="4" height="16" rx="1"/>
+        </svg>
+        <svg id="icon-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+          <polygon points="5,3 19,12 5,21"/>
+        </svg>
+      </button>
+
+      <!-- Botón Fit to Screen -->
+      <button class="touch-btn icon-only" id="btn-fit-screen" title="Centrar grafo en pantalla">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Barra de Búsqueda y Filtros de Categoría -->
+  <div class="toolbar">
+    <div class="search-container">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="search-input" class="search-input" placeholder="Buscar nodos (id, etiqueta, ruta)..." autocomplete="off" />
+      <button class="search-clear" id="search-clear" title="Limpiar búsqueda">✕</button>
+    </div>
+
+    <div class="categories-list" id="categories-container">
+      <!-- Generado dinámicamente -->
+    </div>
+  </div>
+
+  <!-- Contenedor Principal del Grafo -->
+  <div class="viewport-container" id="viewport">
+    <canvas id="graph-canvas"></canvas>
+
+    <!-- Controles Flotantes Izquierda (Zoom) -->
+    <div class="floating-controls">
+      <button class="floating-btn" id="btn-zoom-in" title="Acercar (+)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+      <button class="floating-btn" id="btn-zoom-out" title="Alejar (-)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+      <button class="floating-btn" id="btn-zoom-reset" title="Restablecer zoom al 100%">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="zoom-level-badge" id="zoom-badge">100%</div>
+
+    <!-- Leyenda Flotante de Colores por Tipo -->
+    <div class="legend-panel" id="legend-panel">
+      <div class="legend-header">
+        <span class="legend-title">Convención de Nodos</span>
+        <button id="btn-close-legend" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;">✕</button>
+      </div>
+      <div class="legend-grid">
+        <div class="legend-item"><span class="legend-dot" style="background:#00d2ff"></span>App / Core</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#10b981"></span>Módulos</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#6366f1"></span>Routers</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#34d399"></span>Dominio</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span>Migraciones</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#a855f7"></span>Features FE</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#ec4899"></span>Shared FE</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#ef4444"></span>Seguridad</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#eab308"></span>Archify Atlas</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#06b6d4"></span>Suites Vitest</div>
+      </div>
+    </div>
+    <button class="legend-toggle-btn" id="btn-show-legend">🎨 Leyenda</button>
+
+    <!-- Tooltip de Hover -->
+    <div id="hover-tooltip"></div>
+
+    <!-- Panel Lateral Inspector -->
+    <aside class="inspector" id="inspector-panel">
+      <div class="inspector-header">
+        <div class="inspector-title-group">
+          <span class="inspector-type-pill" id="ins-type-pill">TYPE</span>
+          <h2 class="inspector-label" id="ins-label">Nodo Seleccionado</h2>
+        </div>
+        <button class="inspector-close" id="btn-close-inspector" title="Cerrar Inspector">✕</button>
+      </div>
+
+      <div class="inspector-content">
+        <!-- Card ID -->
+        <div class="inspector-card">
+          <div class="inspector-card-title">
+            <span>Identificador AST</span>
+            <button class="inspector-copy-btn" id="btn-copy-id">Copiar</button>
+          </div>
+          <div class="inspector-code-box" id="ins-id">node:id</div>
+        </div>
+
+        <!-- Card Ruta de Archivo -->
+        <div class="inspector-card">
+          <div class="inspector-card-title">
+            <span>Ruta de Archivo (Path)</span>
+            <button class="inspector-copy-btn" id="btn-copy-path">Copiar</button>
+          </div>
+          <div class="inspector-code-box" id="ins-path">src/path/file.py</div>
+        </div>
+
+        <!-- Conexiones Entrantes -->
+        <div class="inspector-card">
+          <div class="connections-header">
+            <span class="inspector-card-title" style="margin-bottom:0">Conexiones Entrantes</span>
+            <span class="connections-count" id="ins-inbound-count">0</span>
+          </div>
+          <div class="connection-list" id="ins-inbound-list">
+            <!-- Items dinámicos -->
+          </div>
+        </div>
+
+        <!-- Conexiones Salientes -->
+        <div class="inspector-card">
+          <div class="connections-header">
+            <span class="inspector-card-title" style="margin-bottom:0">Conexiones Salientes</span>
+            <span class="connections-count" id="ins-outbound-count">0</span>
+          </div>
+          <div class="connection-list" id="ins-outbound-list">
+            <!-- Items dinámicos -->
+          </div>
+        </div>
+      </div>
+
+      <div class="inspector-footer">
+        <button class="touch-btn inspector-focus-btn" id="btn-focus-node">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="22" y1="12" x2="18" y2="12"/>
+            <line x1="6" y1="12" x2="2" y2="12"/>
+            <line x1="12" y1="6" x2="12" y2="2"/>
+            <line x1="12" y1="22" x2="12" y2="18"/>
+          </svg>
+          Centrar en Grafo
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Fuente de Datos Inicial Embebida (Sincronizada por scripts/harness.py) -->
+  <script id="initial-graph-data" type="application/json">
+{
+  "graph_id": "v2_phase6_master_graph",
+  "phase": "Fase 6 (Certificación Final 10/10)",
+  "generated_at": "2026-10-19T20:55:00Z",
+  "generator": "12-tech-writer-openspec-archify",
+  "invariants": [
+    "Clean Architecture & Strict DDD: domain/ and application/ layers have 0 framework imports and use Decimal exclusively for financial and inventory math",
+    "Multi-Schema Physical Isolation: PublicBase (public) vs TenantBase (tenant_<slug>) enforced via SET LOCAL search_path and RESET search_path on checkin, with strict 1:1 LegalEntity-to-Tenant mapping",
+    "Linear Correlative Alembic Migrations: 0001_public_* -> 0002_tenant_* with zero merge_heads, governed by scripts/db_migration.py",
+    "4-Layer Encrypted Backups (.sql.zst.age): Neon PITR + Cloudflare R2 + Secondary VPS + Local Pull, with surgical tenant restoration (restore-tenant) and verified Restore Drill",
+    "Dual 3-Level RBAC (<modulo>.<submodulo>.<funcion>): Rank hierarchy (0..30+), commercial seat quotas with soft-delete awareness, Redis kill-switch, and immutable Dual Audit",
+    "4 Deterministic HTTP Security Guards: RequireRateLimit, RequireGlobalPermission/RequireTenantPermission, sanitize_text_input (XSS/Path Traversal), and RequireSafeFileUpload (Magic Bytes + CSV/Excel Formula Sanitization)",
+    "Zero-Polling Realtime WebSockets (/api/v1/ws/realtime): Redis Pub/Sub + Streams (XADD/XRANGE) with server-side 3-level RBAC filtering and TanStack Query v5 surgical invalidation",
+    "JEV System 1 Fast Decision Engine (< 15ms) & OppyFy 3-Layer RAG: Strictly isolated to specs/business-domain/ (0% source code access), client-editable RBAC subdomains, non-expiring credit packages, and llm_request_logs FinOps telemetry",
+    "100% i18n Coverage (11 JSON namespaces es/en + SVG flags + Pollo King proper noun protection) and Multi-Currency FX Engine (BCCh + BCE Frankfurter with Decimal(18,8) and >8% anomaly guard)",
+    "React 19 Feature-Driven Frontend: 10 features -> 5 shared kernels with 0 cross-feature imports, Legacy Visual DNA (light, dark, ocean-blue, 42 tokens, 49 icons, CLS=0), Mobile-First ergonomics, and 13 Observability Admin Sub-Views",
+    "Full Verification & Deep Gate Certification (10/10): Unit, Architecture, Smoke, Integration, 11 Red Team Vectors, Schemathesis OpenAPI Fuzzing, E2E 01..05, UAT Business Scenarios, and 500 RPS Load Profile (P95 <= 120ms)"
+  ],
+  "nodes": [
+    {
+      "id": "app:backend_main",
+      "label": "FastAPI Application Entrypoint & RFC 7807 Exception Handlers",
+      "type": "backend_app",
+      "path": "oppytec-backend/src/main.py"
+    },
+    {
+      "id": "atlas:01_tenancy_and_schemas",
+      "label": "Archify Map 01: Multi-Schema Tenancy, 1:1 LegalEntity, Linear Alembic & 4-Layer Backups",
+      "type": "archify_atlas_map",
+      "path": "docs/architecture/atlas/01-tenancy-and-schemas.archify.html"
+    },
+    {
+      "id": "atlas:02_rbac_quotas_and_audit",
+      "label": "Archify Map 02: Dual 3-Level RBAC, Rank Hierarchy, Seat Quotas & Forensic Audit",
+      "type": "archify_atlas_map",
+      "path": "docs/architecture/atlas/02-rbac-quotas-and-audit.archify.html"
+    },
+    {
+      "id": "atlas:03_clean_architecture_and_domain",
+      "label": "Archify Map 03: Clean Architecture 10 Modules, Decimal Math, Kardex, JEV, i18n, FX & R2",
+      "type": "archify_atlas_map",
+      "path": "docs/architecture/atlas/03-clean-architecture-and-domain.archify.html"
+    },
+    {
+      "id": "atlas:04_critical_runtime_flows_and_resilience",
+      "label": "Archify Map 04: E2E Runtime Flows, Route Probe, 4 HTTP Guards & 11 Red Team Vectors",
+      "type": "archify_atlas_map",
+      "path": "docs/architecture/atlas/04-critical-runtime-flows-and-resilience.archify.html"
+    },
+    {
+      "id": "atlas:05_environments_and_agentic_harness",
+      "label": "Archify Map 05: 5 Environments (SHA-256), 4-Pillar Observability & 12-Agent RLM Harness",
+      "type": "archify_atlas_map",
+      "path": "docs/architecture/atlas/05-environments-and-agentic-harness.archify.html"
+    },
+    {
+      "id": "core:backup_4layers",
+      "label": "FourLayerBackupEngine & SurgicalTenantRestoreEngine (.sql.zst.age)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/backup/protocol.py"
+    },
+    {
+      "id": "core:bootstrap",
+      "label": "GenesisBootstrapper (Idempotent SuperUser, Global Roles & Default Tenant Seeding)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/bootstrap.py"
+    },
+    {
+      "id": "core:code_mode_sandbox",
+      "label": "Core Code Mode Sandboxed Runner (AST Validation, Watchdog & Hard-Code Stripping)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/sandbox/runner.py"
+    },
+    {
+      "id": "core:database",
+      "label": "AsyncDatabaseSessionManager (PublicBase & TenantBase SET LOCAL / RESET search_path)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/database.py"
+    },
+    {
+      "id": "core:fx_currency",
+      "label": "Multi-Currency FX Engine (BCCh + BCE Frankfurter Decimal(18,8) & >8% Anomaly Guard)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/fx/"
+    },
+    {
+      "id": "core:i18n_engine",
+      "label": "Static & Dynamic i18n Engine (11 Namespaces es/en, Pollo King Guard & Pi Prompt)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/i18n/"
+    },
+    {
+      "id": "core:jev_system1",
+      "label": "JEV System 1 Fast Decision Engine (Boolean, Choice, Score <15ms)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/jev/"
+    },
+    {
+      "id": "core:mcp_bridge",
+      "label": "Core MCP Dynamic Bridge Manager (Lifecycle & Tool Discovery)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/mcp_bridge/manager.py"
+    },
+    {
+      "id": "core:r2_storage",
+      "label": "Cloudflare R2 Multi-Tenant Storage Adapter (Dual WebP thumb/display & MB Quota)",
+      "type": "backend_adapter",
+      "path": "oppytec-backend/src/adapters/storage/"
+    },
+    {
+      "id": "core:realtime_ws",
+      "label": "WebSocket Realtime Hub (/api/v1/ws/realtime, Redis Pub/Sub + Streams & RBAC Filter)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/realtime/router.py"
+    },
+    {
+      "id": "core:redis",
+      "label": "RedisClientPool (ENV_NAMESPACE Isolation & <50ms Circuit Breaker)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/redis.py"
+    },
+    {
+      "id": "frontend:admin_management_views",
+      "label": "Frontend Admin Management Views (Holdings, Legal Entities, Tenants & Client Users)",
+      "type": "frontend_feature_submodule",
+      "path": "oppytec-frontend/src/features/platform-admin/AdminManagementViews.tsx"
+    },
+    {
+      "id": "frontend:app_shell",
+      "label": "React 19 App Shell (AppProviders, AppRouter, HoldingTenantSwitcher & ThemeProvider)",
+      "type": "frontend_shell",
+      "path": "oppytec-frontend/src/app/"
+    },
+    {
+      "id": "frontend:currency_selector",
+      "label": "CurrencySelector Component & MoneyBadge (CLP/USD/EUR/BRL BigInt 10^8 Formatter)",
+      "type": "frontend_shared_component",
+      "path": "oppytec-frontend/src/shared/currency/CurrencySelector.tsx"
+    },
+    {
+      "id": "frontend:dynamic_admin_form",
+      "label": "Frontend Shared Dynamic Admin Form (Typed Schema Inputs & Modal Binding)",
+      "type": "frontend_shared_component",
+      "path": "oppytec-frontend/src/shared/components/admin/DynamicAdminForm.tsx"
+    },
+    {
+      "id": "frontend:dynamic_admin_table",
+      "label": "Frontend Shared Dynamic Admin Table (Declarative RBAC <Can>, i18n & Live Filter)",
+      "type": "frontend_shared_component",
+      "path": "oppytec-frontend/src/shared/components/admin/DynamicAdminTable.tsx"
+    },
+    {
+      "id": "frontend:feature_analytics",
+      "label": "Frontend Feature Analytics (Executive Dashboard, Demand Projections & 5 Report Panels)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/analytics/"
+    },
+    {
+      "id": "frontend:feature_auth",
+      "label": "Frontend Feature Auth (Login, SelectTenant & ImpersonationBanner)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/auth/"
+    },
+    {
+      "id": "frontend:feature_catalog",
+      "label": "Frontend Feature Catalog (4-Step Product Wizard, 3-Layer Units, Excel AI Importer & R2 Quota)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/catalog/"
+    },
+    {
+      "id": "frontend:feature_inventory",
+      "label": "Frontend Feature Inventory (Kardex Ledger, Stock Semaphores, Physical Counts & 7x24 Waste Heatmap)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/inventory/"
+    },
+    {
+      "id": "frontend:feature_operations",
+      "label": "Frontend Feature Operations (Mobile POS, Hands-Free Voice, Buffet, Events, Shifts & Alerts)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/operations/"
+    },
+    {
+      "id": "frontend:feature_oppyfy",
+      "label": "Frontend Feature OppyFy (Streaming AI Workspace, % Context Meter, Client RBAC & Credit Wallet)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/oppyfy/"
+    },
+    {
+      "id": "frontend:feature_platform_admin",
+      "label": "Frontend Feature Platform Admin (Holdings, FinOps LLM, FX Console, 4-Layer Backups & 13 Observability Views)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/platform-admin/"
+    },
+    {
+      "id": "frontend:feature_procurement",
+      "label": "Frontend Feature Procurement (Purchase Orders, Suppliers & 3-Way OCR Invoice Matching)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/procurement/"
+    },
+    {
+      "id": "frontend:feature_rbac_and_audit",
+      "label": "Frontend Feature RBAC & Audit (3-Level Matrix, JIT Grants, Plan Quotas & Forensic Audit)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/rbac-and-audit/"
+    },
+    {
+      "id": "frontend:feature_recipes",
+      "label": "Frontend Feature Recipes (Recursive Escandallo Builder, Margin Simulator, Combos & Options)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/recipes/"
+    },
+    {
+      "id": "frontend:inventory_recuento_card",
+      "label": "RecuentoCard Component (Tarjetas de Conteo, Acordeón de Insumos & Conciliación)",
+      "type": "frontend_component",
+      "path": "oppytec-frontend/src/features/inventory/recuentos/RecuentoCard.tsx"
+    },
+    {
+      "id": "frontend:inventory_recuento_detalle_modal",
+      "label": "RecuentoDetalleModal Component (Modal de Auditoría y Acta Detallada de Recuento)",
+      "type": "frontend_modal_component",
+      "path": "oppytec-frontend/src/features/inventory/recuentos/RecuentoDetalleModal.tsx"
+    },
+    {
+      "id": "frontend:inventory_recuentos_page",
+      "label": "RecuentosPage Component (/recuentos - Historial de Recuentos, KPIs, Filtros & Auditoría)",
+      "type": "frontend_feature_submodule",
+      "path": "oppytec-frontend/src/features/inventory/recuentos/RecuentosPage.tsx"
+    },
+    {
+      "id": "frontend:language_flag_selector",
+      "label": "LanguageFlagSelector Component (SVG Flags ES/US & Dropdown)",
+      "type": "frontend_shared_component",
+      "path": "oppytec-frontend/src/shared/i18n/LanguageFlagSelector.tsx"
+    },
+    {
+      "id": "frontend:language_provider",
+      "label": "LanguageProvider Component & Context Wrapper (React 19 i18n)",
+      "type": "frontend_shared_component",
+      "path": "oppytec-frontend/src/shared/i18n/LanguageFlagSelector.tsx"
+    },
+    {
+      "id": "frontend:quota_progress_indicator",
+      "label": "Frontend UI Quota Progress Indicator (4-State Semaphore 80/95/100%)",
+      "type": "frontend_ui_token",
+      "path": "oppytec-frontend/src/shared/components/ui/QuotaProgressIndicator.tsx"
+    },
+    {
+      "id": "frontend:shared_fx_currency",
+      "label": "Frontend Shared FX Currency Kernel (CLP/USD/EUR/BRL BigInt 10^8 Formatter & >8% Alert)",
+      "type": "frontend_shared",
+      "path": "oppytec-frontend/src/shared/currency/"
+    },
+    {
+      "id": "frontend:shared_i18n",
+      "label": "Frontend Shared i18n Kernel (11 JSON Namespaces es/en, SVG Flags & Pollo King Guard)",
+      "type": "frontend_shared",
+      "path": "oppytec-frontend/src/shared/i18n/"
+    },
+    {
+      "id": "frontend:shared_rbac_can",
+      "label": "Frontend Shared RBAC Guard (<Can perform='modulo.submodulo.funcion'> & usePermissions)",
+      "type": "frontend_shared",
+      "path": "oppytec-frontend/src/shared/auth/"
+    },
+    {
+      "id": "frontend:shared_realtime_ws",
+      "label": "Frontend Shared Realtime WebSocket Kernel (useRealtimeSync Zero-Polling & TanStack Query v5)",
+      "type": "frontend_shared",
+      "path": "oppytec-frontend/src/shared/realtime/"
+    },
+    {
+      "id": "frontend:shared_ui_legacy_dna",
+      "label": "Frontend Shared UI Design System (3 Themes light/dark/ocean-blue, 42 Colors, 49 Icons, Mobile-First)",
+      "type": "frontend_shared",
+      "path": "oppytec-frontend/src/shared/components/"
+    },
+    {
+      "id": "frontend:use_language",
+      "label": "useLanguage Hook (Active Language & Context Switcher)",
+      "type": "frontend_shared_hook",
+      "path": "oppytec-frontend/src/shared/i18n/LanguageFlagSelector.tsx"
+    },
+    {
+      "id": "guard:file_magic_guard",
+      "label": "Magic Bytes File Upload & Spreadsheet Formula Injection Guard",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/file_magic_guard.py"
+    },
+    {
+      "id": "guard:rate_limiter",
+      "label": "Sliding Window Rate Limiter Guard (Redis + In-Memory Fallback)",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/rate_limiter.py"
+    },
+    {
+      "id": "guard:rbac_dependencies",
+      "label": "Deterministic 3-Level RBAC HTTP Guard (RequireGlobalPermission & RequireTenantPermission)",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/rbac_dependencies.py"
+    },
+    {
+      "id": "guard:xss_sanitizer",
+      "label": "XSS HTML/SVG Sanitizer & Path Traversal Guard",
+      "type": "security_guard",
+      "path": "oppytec-backend/src/core/guards/xss_sanitizer.py"
+    },
+    {
+      "id": "migration:0001_public_genesis_tenancy",
+      "label": "Alembic 0001 Migration: Genesis Public Tenancy & Global RBAC",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0001_public_genesis_tenancy_modules_and_global_rbac.py"
+    },
+    {
+      "id": "migration:0002_tenant_initial_client",
+      "label": "Alembic 0002 Migration: Tenant Client RBAC & Core Schemas",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0002_tenant_initial_client_rbac_and_core_modules.py"
+    },
+    {
+      "id": "migration:0003_public_plans_quotas",
+      "label": "Alembic 0003 Migration: Public Plans, Quotas & Tenant Capacity Overrides",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0003_public_plans_quotas_and_tenant_capacity_overrides.py"
+    },
+    {
+      "id": "migration:0004_tenant_inventory_kardex",
+      "label": "Alembic 0004 Migration: Tenant inventory kardex and physical counts",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0004_tenant_inventory_kardex_and_physical_counts.py"
+    },
+    {
+      "id": "migration:0005_tenant_approval_requests",
+      "label": "Alembic 0005 Migration: Tenant approval requests and notification matrix",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0005_tenant_approval_requests_and_notification_matrix.py"
+    },
+    {
+      "id": "migration:0005_tenant_consumption_buffet",
+      "label": "Alembic 0005 Migration: Tenant consumption buffet and voice tables",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0005_tenant_consumption_buffet_and_voice_tables.py"
+    },
+    {
+      "id": "migration:0006_tenant_approval_requests",
+      "label": "Alembic 0006 Migration: Tenant approval requests and notification matrix",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0006_tenant_approval_requests_and_notification_matrix.py"
+    },
+    {
+      "id": "migration:0007_public_system_plans",
+      "label": "Alembic 0007 Migration: Public system plans extension and saas policy",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0007_public_system_plans_extension_and_saas_policy.py"
+    },
+    {
+      "id": "migration:0007_tenant_procurement_purchases",
+      "label": "Alembic 0007 Migration: Tenant procurement purchases and suppliers",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0007_tenant_procurement_purchases_and_suppliers.py"
+    },
+    {
+      "id": "migration:0008_tenant_recipes_combos",
+      "label": "Alembic 0008 Migration: Tenant recipes combos dynamic option groups",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0008_tenant_recipes_combos_dynamic_option_groups.py"
+    },
+    {
+      "id": "migration:0009_tenant_procurement_purchases",
+      "label": "Alembic 0009 Migration: Tenant procurement purchases and suppliers",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0009_tenant_procurement_purchases_and_suppliers.py"
+    },
+    {
+      "id": "migration:0010_tenant_oppyfy_custom",
+      "label": "Alembic 0010 Migration: Tenant oppyfy custom rbac and credit wallets",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0010_tenant_oppyfy_custom_rbac_and_credit_wallets.py"
+    },
+    {
+      "id": "migration:0011_public_jev_request",
+      "label": "Alembic 0011 Migration: Public jev request logs and finops telemetry",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0011_public_jev_request_logs_and_finops_telemetry.py"
+    },
+    {
+      "id": "module:analytics",
+      "label": "Analytics Module (Executive Margins, Kasavana Menu Engineering, Loss Control & Projections)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/analytics/"
+    },
+    {
+      "id": "module:audit",
+      "label": "Audit Module (Append-Only Global & Tenant RBAC/Activity Logs with Authorization Lineage)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/audit/"
+    },
+    {
+      "id": "module:catalog",
+      "label": "Catalog Module (3-Layer Units Decimal, Families, Proper Noun i18n & Excel Importer)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/catalog/"
+    },
+    {
+      "id": "module:identity",
+      "label": "Identity Module (Dual 3-Level RBAC, Rank Hierarchy 0..30+, JIT Grants & Kill-Switch)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/identity/"
+    },
+    {
+      "id": "module:inventory",
+      "label": "Inventory Module (Append-Only Kardex, Canonical Lock ORDER BY id ASC FOR UPDATE, Counts & Waste)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/inventory/"
+    },
+    {
+      "id": "module:operations",
+      "label": "Operations Module (POS Consumption, Hands-Free Voice, Buffet, Events, Shifts & Tasks)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/operations/"
+    },
+    {
+      "id": "module:oppy_ai",
+      "label": "OppyFy AI Module (3-Layer Business RAG, Client-Editable RBAC, Non-Expiring Credits & FinOps Logs)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/oppy_ai/"
+    },
+    {
+      "id": "module:procurement",
+      "label": "Procurement Module (Suppliers, Purchase Orders, 3-Way Invoice Match & OCR JEV)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/procurement/"
+    },
+    {
+      "id": "module:recipes",
+      "label": "Recipes Module (Recursive Escandallos, Yield/Shrinkage Decimal Math, Combos & Option Groups)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/recipes/"
+    },
+    {
+      "id": "module:tenancy",
+      "label": "Tenancy Module (Holding, 1:1 LegalEntity/Tenant, SystemPlan Seat & R2 MB Quotas)",
+      "type": "backend_module",
+      "path": "oppytec-backend/src/modules/tenancy/"
+    },
+    {
+      "id": "openspec:business_domain_vault",
+      "label": "OpenSpec Business Domain Vault (13 Specs, 0% SQL/Code, RAG Layer 1 Source)",
+      "type": "openspec_vault",
+      "path": "specs/business-domain/"
+    },
+    {
+      "id": "openspec:engineering_code_vault",
+      "label": "OpenSpec Engineering Code Vault (15 Specs with JEV System 1 Evaluation & Test Links)",
+      "type": "openspec_vault",
+      "path": "specs/engineering-code/"
+    },
+    {
+      "id": "router:analytics",
+      "label": "Backend Presentation Router (analytics) /api/v1/analytics",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/analytics/presentation/router.py"
+    },
+    {
+      "id": "router:audit",
+      "label": "Backend Presentation Router (audit) /api/v1/audit",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/audit/presentation/router.py"
+    },
+    {
+      "id": "router:catalog",
+      "label": "Backend Presentation Router (catalog) /api/v1/catalog",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/catalog/presentation/router.py"
+    },
+    {
+      "id": "router:core_realtime",
+      "label": "Backend Realtime WebSocket Router /api/v1/ws/realtime",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/core/realtime/router.py"
+    },
+    {
+      "id": "router:identity",
+      "label": "Backend Presentation Router (identity) /api/v1/identity",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/identity/presentation/router.py"
+    },
+    {
+      "id": "router:inventory",
+      "label": "Backend Presentation Router (inventory) /api/v1/inventory",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/inventory/presentation/router.py"
+    },
+    {
+      "id": "router:operations",
+      "label": "Backend Presentation Router (operations) /api/v1/operations",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/operations/presentation/router.py"
+    },
+    {
+      "id": "router:oppy_ai",
+      "label": "Backend Presentation Router (oppy_ai) /api/v1/oppy_ai",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/oppy_ai/presentation/router.py"
+    },
+    {
+      "id": "router:procurement",
+      "label": "Backend Presentation Router (procurement) /api/v1/procurement",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/procurement/presentation/router.py"
+    },
+    {
+      "id": "router:recipes",
+      "label": "Backend Presentation Router (recipes) /api/v1/recipes",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/recipes/presentation/router.py"
+    },
+    {
+      "id": "router:tenancy",
+      "label": "Backend Presentation Router (tenancy) /api/v1/tenancy",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/tenancy/presentation/router.py"
+    },
+    {
+      "id": "service:oppyfy_code_mode",
+      "label": "OppyFy Code Mode Application Service (Multi-Tenant & FinOps Telemetry)",
+      "type": "backend_service",
+      "path": "oppytec-backend/src/modules/oppy_ai/application/code_mode_service.py"
+    },
+    {
+      "id": "suite:architecture",
+      "label": "White-Box Architecture Test Suite (15 Immutable Governance & Parity Gates)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/architecture/"
+    },
+    {
+      "id": "suite:code_mode_sandbox_security_test",
+      "label": "Code Mode Sandbox Security & Red Team Offensive Suite (10 Vectors)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/security_redteam/test_17_code_mode_sandbox_security.py"
+    },
+    {
+      "id": "suite:contracts_schemathesis",
+      "label": "OpenAPI 3.1 Contract & Schemathesis Property Fuzzing Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/contracts/test_openapi_schemathesis.py"
+    },
+    {
+      "id": "suite:e2e_01_05",
+      "label": "End-to-End Critical Business Flows Suite (test_e2e_01..05 Full Lifecycle)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/e2e/"
+    },
+    {
+      "id": "suite:frontend_admin_views_test",
+      "label": "Frontend Admin Views & RBAC Interactive Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/platform-admin/AdminManagementViews.test.tsx"
+    },
+    {
+      "id": "suite:frontend_currency_test",
+      "label": "Frontend FX Currency Formatter & Selectors Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/shared/currency/currency.test.tsx"
+    },
+    {
+      "id": "suite:frontend_env_test",
+      "label": "Frontend Environment & Runtime Configuration Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/shared/config/env.test.ts"
+    },
+    {
+      "id": "suite:frontend_i18n_test",
+      "label": "Frontend i18n & Language Switcher Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/shared/i18n/i18n.test.tsx"
+    },
+    {
+      "id": "suite:frontend_recuentos_page",
+      "label": "RecuentosPage Vitest Integration Suite (9 Tests — KPIs, Filtros, Acordeón, RBAC & Kardex Impact)",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/inventory/__tests__/RecuentosPage.test.tsx"
+    },
+    {
+      "id": "suite:frontend_telemetry_test",
+      "label": "Frontend Telemetry & OpenTelemetry Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/shared/telemetry/telemetry.test.ts"
+    },
+    {
+      "id": "suite:integration",
+      "label": "Multi-Tenant Schema Isolation, Redis Kill-Switch & Legacy Math Parity Integration Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/integration/"
+    },
+    {
+      "id": "suite:load_locust_500rps",
+      "label": "High-Concurrency Load & Stress Suite (500 RPS Sustained, P95 <= 120ms SLA)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/load/locustfile.py"
+    },
+    {
+      "id": "suite:mcp_bridge_test",
+      "label": "MCP Dynamic Bridge Manager Unit Test Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/core/test_mcp_bridge.py"
+    },
+    {
+      "id": "suite:oppyfy_code_mode_test",
+      "label": "OppyFy Code Mode Application Service Unit Test Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/modules/test_oppyfy_code_mode.py"
+    },
+    {
+      "id": "suite:sandbox_runner_test",
+      "label": "Code Mode Sandbox Runner Unit Test Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/core/test_sandbox_runner.py"
+    },
+    {
+      "id": "suite:security_redteam_01_11",
+      "label": "Offensive Security Red Team Suite (Vectors 01..11 Kali Linux + Chaos/Resilience)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/security_redteam/"
+    },
+    {
+      "id": "suite:smoke",
+      "label": "System Boot, Health & Readiness Smoke Suite (<2s Fast Gate)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/smoke/"
+    },
+    {
+      "id": "suite:uat_business_scenarios",
+      "label": "User Acceptance Testing Suite (Gastronomic Holding, Buffet, Escandallos, i18n, FX & OppyFy)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/uat/test_uat_business_scenarios.py"
+    },
+    {
+      "id": "suite:unit",
+      "label": "Unit & Property-Based Test Suite (10 Modules 1:1 Co-Creation + Hypothesis Math/RBAC/Quotas)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/"
+    }
+  ],
+  "edges": [
+    {
+      "source": "app:backend_main",
+      "target": "core:realtime_ws",
+      "relation": "mounts_websocket_hub"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "module:analytics",
+      "relation": "mounts_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "module:audit",
+      "relation": "mounts_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "module:catalog",
+      "relation": "mounts_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "module:identity",
+      "relation": "mounts_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "module:inventory",
+      "relation": "mounts_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "module:operations",
+      "relation": "mounts_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "module:oppy_ai",
+      "relation": "mounts_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "module:procurement",
+      "relation": "mounts_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "module:recipes",
+      "relation": "mounts_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "module:tenancy",
+      "relation": "mounts_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:analytics",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:audit",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:catalog",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:core_realtime",
+      "relation": "mounts_ws_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:identity",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:inventory",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:operations",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:oppy_ai",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:procurement",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:recipes",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:tenancy",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "atlas:01_tenancy_and_schemas",
+      "target": "core:database",
+      "relation": "visualizes_and_seals_sha256"
+    },
+    {
+      "source": "atlas:02_rbac_quotas_and_audit",
+      "target": "module:identity",
+      "relation": "visualizes_and_seals_sha256"
+    },
+    {
+      "source": "atlas:03_clean_architecture_and_domain",
+      "target": "module:recipes",
+      "relation": "visualizes_and_seals_sha256"
+    },
+    {
+      "source": "atlas:04_critical_runtime_flows_and_resilience",
+      "target": "guard:rbac_dependencies",
+      "relation": "visualizes_and_seals_sha256"
+    },
+    {
+      "source": "atlas:05_environments_and_agentic_harness",
+      "target": "suite:architecture",
+      "relation": "visualizes_and_seals_sha256"
+    },
+    {
+      "source": "core:code_mode_sandbox",
+      "target": "core:mcp_bridge",
+      "relation": "executes_mcp_calls_via_bridge"
+    },
+    {
+      "source": "frontend:admin_management_views",
+      "target": "frontend:currency_selector",
+      "relation": "formats_tenant_pricing_currency"
+    },
+    {
+      "source": "frontend:admin_management_views",
+      "target": "frontend:dynamic_admin_form",
+      "relation": "renders_modals"
+    },
+    {
+      "source": "frontend:admin_management_views",
+      "target": "frontend:dynamic_admin_table",
+      "relation": "renders_table"
+    },
+    {
+      "source": "frontend:admin_management_views",
+      "target": "frontend:quota_progress_indicator",
+      "relation": "renders_quota_usage_semaphores"
+    },
+    {
+      "source": "frontend:admin_management_views",
+      "target": "frontend:shared_i18n",
+      "relation": "translates_platform_admin_keys"
+    },
+    {
+      "source": "frontend:admin_management_views",
+      "target": "frontend:shared_rbac_can",
+      "relation": "enforces_rbac_can_guard"
+    },
+    {
+      "source": "frontend:admin_management_views",
+      "target": "migration:0003_public_plans_quotas",
+      "relation": "manages_tenant_quotas_from_schema"
+    },
+    {
+      "source": "frontend:admin_management_views",
+      "target": "module:tenancy",
+      "relation": "consumes_admin_rest_api"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:currency_selector",
+      "relation": "renders_navbar_currency_selector"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:feature_analytics",
+      "relation": "routes_to_feature"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:feature_auth",
+      "relation": "routes_to_feature"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:feature_catalog",
+      "relation": "routes_to_feature"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:feature_inventory",
+      "relation": "routes_to_feature"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:feature_operations",
+      "relation": "routes_to_feature"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:feature_oppyfy",
+      "relation": "routes_to_feature"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:feature_platform_admin",
+      "relation": "routes_to_feature"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:feature_procurement",
+      "relation": "routes_to_feature"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:feature_rbac_and_audit",
+      "relation": "routes_to_feature"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:feature_recipes",
+      "relation": "routes_to_feature"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:language_flag_selector",
+      "relation": "renders_navbar_flag_selector"
+    },
+    {
+      "source": "frontend:app_shell",
+      "target": "frontend:language_provider",
+      "relation": "mounts_language_provider"
+    },
+    {
+      "source": "frontend:currency_selector",
+      "target": "frontend:shared_fx_currency",
+      "relation": "renders_currency_dropdown_and_badge"
+    },
+    {
+      "source": "frontend:feature_inventory",
+      "target": "frontend:inventory_recuentos_page",
+      "relation": "contains_submodule"
+    },
+    {
+      "source": "frontend:feature_platform_admin",
+      "target": "frontend:admin_management_views",
+      "relation": "contains_crud_views"
+    },
+    {
+      "source": "frontend:feature_platform_admin",
+      "target": "frontend:language_flag_selector",
+      "relation": "renders_admin_flag_selector"
+    },
+    {
+      "source": "frontend:feature_recipes",
+      "target": "frontend:shared_fx_currency",
+      "relation": "formats_multi_currency_escandallo_costs"
+    },
+    {
+      "source": "frontend:feature_recipes",
+      "target": "frontend:shared_i18n",
+      "relation": "translates_recipes_namespace"
+    },
+    {
+      "source": "frontend:feature_recipes",
+      "target": "frontend:shared_rbac_can",
+      "relation": "guards_recipe_mutations_via_can"
+    },
+    {
+      "source": "frontend:feature_recipes",
+      "target": "frontend:shared_realtime_ws",
+      "relation": "subscribes_live_cost_updates"
+    },
+    {
+      "source": "frontend:feature_recipes",
+      "target": "frontend:shared_ui_legacy_dna",
+      "relation": "renders_3_themes_mobile_first"
+    },
+    {
+      "source": "frontend:feature_recipes",
+      "target": "module:recipes",
+      "relation": "consumes_rest_api"
+    },
+    {
+      "source": "frontend:inventory_recuentos_page",
+      "target": "frontend:inventory_recuento_card",
+      "relation": "renders_session_cards"
+    },
+    {
+      "source": "frontend:inventory_recuentos_page",
+      "target": "frontend:inventory_recuento_detalle_modal",
+      "relation": "renders_detail_modal"
+    },
+    {
+      "source": "frontend:inventory_recuentos_page",
+      "target": "router:inventory",
+      "relation": "consumes_counts_api"
+    },
+    {
+      "source": "frontend:language_flag_selector",
+      "target": "frontend:shared_i18n",
+      "relation": "renders_svg_flags_and_locales"
+    },
+    {
+      "source": "frontend:language_flag_selector",
+      "target": "frontend:use_language",
+      "relation": "invokes_language_switcher"
+    },
+    {
+      "source": "frontend:language_provider",
+      "target": "frontend:shared_i18n",
+      "relation": "provides_i18n_context"
+    },
+    {
+      "source": "frontend:quota_progress_indicator",
+      "target": "migration:0003_public_plans_quotas",
+      "relation": "displays_plan_quotas_usage"
+    },
+    {
+      "source": "frontend:shared_realtime_ws",
+      "target": "core:realtime_ws",
+      "relation": "connects_zero_polling_websocket"
+    },
+    {
+      "source": "frontend:use_language",
+      "target": "frontend:language_provider",
+      "relation": "consumes_language_context"
+    },
+    {
+      "source": "migration:0001_public_genesis_tenancy",
+      "target": "core:database",
+      "relation": "executes_on_public_schema"
+    },
+    {
+      "source": "migration:0002_tenant_initial_client",
+      "target": "migration:0001_public_genesis_tenancy",
+      "relation": "depends_on_public_genesis"
+    },
+    {
+      "source": "migration:0003_public_plans_quotas",
+      "target": "migration:0002_tenant_initial_client",
+      "relation": "extends_public_and_tenant_quotas"
+    },
+    {
+      "source": "migration:0003_public_plans_quotas",
+      "target": "module:tenancy",
+      "relation": "enforces_plan_quotas_and_overrides"
+    },
+    {
+      "source": "module:analytics",
+      "target": "module:inventory",
+      "relation": "aggregates_kardex_and_waste_metrics"
+    },
+    {
+      "source": "module:analytics",
+      "target": "module:recipes",
+      "relation": "computes_kasavana_menu_engineering_matrix"
+    },
+    {
+      "source": "module:catalog",
+      "target": "core:r2_storage",
+      "relation": "stores_dual_webp_within_tenant_mb_quota"
+    },
+    {
+      "source": "module:identity",
+      "target": "guard:rbac_dependencies",
+      "relation": "provides_3_level_rbac_evaluation"
+    },
+    {
+      "source": "module:inventory",
+      "target": "module:audit",
+      "relation": "records_kardex_and_waste_audit"
+    },
+    {
+      "source": "module:inventory",
+      "target": "module:catalog",
+      "relation": "tracks_3_layer_unit_stock"
+    },
+    {
+      "source": "module:operations",
+      "target": "module:inventory",
+      "relation": "commits_pos_and_buffet_consumption"
+    },
+    {
+      "source": "module:operations",
+      "target": "module:recipes",
+      "relation": "deducts_recursive_escandallo_ingredients"
+    },
+    {
+      "source": "module:oppy_ai",
+      "target": "core:code_mode_sandbox",
+      "relation": "executes_synthesized_scripts"
+    },
+    {
+      "source": "module:oppy_ai",
+      "target": "core:jev_system1",
+      "relation": "routes_intent_and_moderates_prompts"
+    },
+    {
+      "source": "module:oppy_ai",
+      "target": "core:mcp_bridge",
+      "relation": "discovers_and_routes_mcp_tools"
+    },
+    {
+      "source": "module:oppy_ai",
+      "target": "openspec:business_domain_vault",
+      "relation": "ingests_rag_layer1_business_specs_only"
+    },
+    {
+      "source": "module:procurement",
+      "target": "core:jev_system1",
+      "relation": "classifies_ocr_invoices"
+    },
+    {
+      "source": "module:procurement",
+      "target": "module:inventory",
+      "relation": "commits_goods_receipt_to_kardex"
+    },
+    {
+      "source": "module:recipes",
+      "target": "core:fx_currency",
+      "relation": "converts_recipe_margins_decimal"
+    },
+    {
+      "source": "module:recipes",
+      "target": "core:i18n_engine",
+      "relation": "translates_recipe_names_preserving_proper_nouns"
+    },
+    {
+      "source": "module:recipes",
+      "target": "module:catalog",
+      "relation": "depends_on_domain_units_and_costs"
+    },
+    {
+      "source": "module:tenancy",
+      "target": "core:backup_4layers",
+      "relation": "enables_surgical_tenant_backup_and_restore"
+    },
+    {
+      "source": "module:tenancy",
+      "target": "core:database",
+      "relation": "provisions_isolated_tenant_schema"
+    },
+    {
+      "source": "openspec:business_domain_vault",
+      "target": "openspec:engineering_code_vault",
+      "relation": "pairs_1_to_1_bipartite_contracts"
+    },
+    {
+      "source": "router:analytics",
+      "target": "module:analytics",
+      "relation": "routes_to_domain_module"
+    },
+    {
+      "source": "router:audit",
+      "target": "module:audit",
+      "relation": "routes_to_domain_module"
+    },
+    {
+      "source": "router:catalog",
+      "target": "module:catalog",
+      "relation": "routes_to_domain_module"
+    },
+    {
+      "source": "router:core_realtime",
+      "target": "core:realtime_ws",
+      "relation": "routes_to_realtime_ws"
+    },
+    {
+      "source": "router:identity",
+      "target": "module:identity",
+      "relation": "routes_to_domain_module"
+    },
+    {
+      "source": "router:inventory",
+      "target": "module:inventory",
+      "relation": "routes_to_domain_module"
+    },
+    {
+      "source": "router:operations",
+      "target": "module:operations",
+      "relation": "routes_to_domain_module"
+    },
+    {
+      "source": "router:oppy_ai",
+      "target": "module:oppy_ai",
+      "relation": "routes_to_domain_module"
+    },
+    {
+      "source": "router:procurement",
+      "target": "module:procurement",
+      "relation": "routes_to_domain_module"
+    },
+    {
+      "source": "router:recipes",
+      "target": "module:recipes",
+      "relation": "routes_to_domain_module"
+    },
+    {
+      "source": "router:tenancy",
+      "target": "module:tenancy",
+      "relation": "routes_to_domain_module"
+    },
+    {
+      "source": "service:oppyfy_code_mode",
+      "target": "core:code_mode_sandbox",
+      "relation": "invokes_isolated_sandbox"
+    },
+    {
+      "source": "service:oppyfy_code_mode",
+      "target": "core:mcp_bridge",
+      "relation": "searches_capabilities"
+    },
+    {
+      "source": "service:oppyfy_code_mode",
+      "target": "module:oppy_ai",
+      "relation": "orchestrates_code_mode"
+    },
+    {
+      "source": "suite:architecture",
+      "target": "app:backend_main",
+      "relation": "enforces_clean_architecture_and_10_criteria"
+    },
+    {
+      "source": "suite:code_mode_sandbox_security_test",
+      "target": "core:code_mode_sandbox",
+      "relation": "audits_sandbox_escapes_and_watchdog"
+    },
+    {
+      "source": "suite:code_mode_sandbox_security_test",
+      "target": "core:mcp_bridge",
+      "relation": "audits_anti_idor_and_stripping"
+    },
+    {
+      "source": "suite:contracts_schemathesis",
+      "target": "app:backend_main",
+      "relation": "fuzzes_openapi_schemas"
+    },
+    {
+      "source": "suite:e2e_01_05",
+      "target": "app:backend_main",
+      "relation": "certifies_end_to_end_lifecycle_flows"
+    },
+    {
+      "source": "suite:e2e_01_05",
+      "target": "module:recipes",
+      "relation": "certifies_e2e_recipe_escandallo_to_pos_deduction"
+    },
+    {
+      "source": "suite:frontend_admin_views_test",
+      "target": "frontend:admin_management_views",
+      "relation": "verifies_modal_crud_and_rbac_veto"
+    },
+    {
+      "source": "suite:frontend_currency_test",
+      "target": "frontend:currency_selector",
+      "relation": "tests_currency_formatting_and_selection"
+    },
+    {
+      "source": "suite:frontend_env_test",
+      "target": "frontend:app_shell",
+      "relation": "verifies_runtime_env_and_invariants"
+    },
+    {
+      "source": "suite:frontend_i18n_test",
+      "target": "frontend:language_flag_selector",
+      "relation": "tests_language_selection_and_persistence"
+    },
+    {
+      "source": "suite:frontend_i18n_test",
+      "target": "frontend:language_provider",
+      "relation": "tests_language_provider_context"
+    },
+    {
+      "source": "suite:frontend_recuentos_page",
+      "target": "frontend:inventory_recuentos_page",
+      "relation": "verifies_view_and_rbac"
+    },
+    {
+      "source": "suite:frontend_telemetry_test",
+      "target": "frontend:app_shell",
+      "relation": "verifies_telemetry_and_spans"
+    },
+    {
+      "source": "suite:integration",
+      "target": "core:database",
+      "relation": "verifies_multi_tenant_search_path_isolation"
+    },
+    {
+      "source": "suite:load_locust_500rps",
+      "target": "app:backend_main",
+      "relation": "stresses_500_rps_p95_under_120ms"
+    },
+    {
+      "source": "suite:mcp_bridge_test",
+      "target": "core:mcp_bridge",
+      "relation": "verifies_tool_registration_and_sdk_generation"
+    },
+    {
+      "source": "suite:oppyfy_code_mode_test",
+      "target": "service:oppyfy_code_mode",
+      "relation": "verifies_token_savings_and_chat_payload"
+    },
+    {
+      "source": "suite:sandbox_runner_test",
+      "target": "core:code_mode_sandbox",
+      "relation": "verifies_ast_limits_and_stripping"
+    },
+    {
+      "source": "suite:security_redteam_01_11",
+      "target": "app:backend_main",
+      "relation": "audits_11_offensive_redteam_vectors"
+    },
+    {
+      "source": "suite:uat_business_scenarios",
+      "target": "module:recipes",
+      "relation": "validates_uat_gastronomic_margins_and_Yields"
+    },
+    {
+      "source": "suite:unit",
+      "target": "module:recipes",
+      "relation": "verifies_legacy_math_parity_and_domain"
+    }
+  ],
+  "metrics": {
+    "backend_modules": 10,
+    "http_security_guards": 4,
+    "frontend_features": 10,
+    "frontend_shared_kernels": 5,
+    "cross_feature_imports": 0,
+    "verification_suites": 19,
+    "redteam_vectors": 11,
+    "e2e_flows": 5,
+    "archify_atlas_maps": 5,
+    "openspec_business_specs": 13,
+    "openspec_engineering_specs": 15,
+    "load_test_target_rps": 500,
+    "load_test_p95_budget_ms": 120,
+    "rubric_score": "10/10",
+    "nodes_count": 104,
+    "edges_count": 127,
+    "frontend_admin_views": 4,
+    "backend_routers": 11,
+    "alembic_migrations": 13,
+    "updated_at": "2026-10-31T23:14:28.238915+00:00"
+  }
+}
+  </script>
+
+  <!-- Lógica y Motor de Grafo Canvas Vanilla JS -->
+  <script>
+    (function() {
+      'use strict';
+
+      // ─── 1. Mapeo de Colores Oficiales ─────────────────────────────────────────
+      const TYPE_CONFIG = {
+        backend_app: { color: '#00d2ff', label: 'App Entrypoint', radius: 18 },
+        backend_core: { color: '#00d2ff', label: 'Backend Core', radius: 16 },
+        backend_adapter: { color: '#00d2ff', label: 'Backend Adapter', radius: 15 },
+        backend_module: { color: '#10b981', label: 'Módulo Backend', radius: 16 },
+        module: { color: '#10b981', label: 'Módulo Backend', radius: 16 },
+        backend_router: { color: '#6366f1', label: 'Router FastAPI', radius: 14 },
+        router: { color: '#6366f1', label: 'Router FastAPI', radius: 14 },
+        domain_entity: { color: '#34d399', label: 'Entidad Dominio', radius: 13 },
+        domain_vo: { color: '#34d399', label: 'Value Object', radius: 13 },
+        backend_migration: { color: '#f59e0b', label: 'Migración Alembic', radius: 14 },
+        migration: { color: '#f59e0b', label: 'Migración Alembic', radius: 14 },
+        frontend_feature: { color: '#a855f7', label: 'Frontend Feature', radius: 16 },
+        frontend_shell: { color: '#a855f7', label: 'Frontend Shell', radius: 17 },
+        frontend_feature_submodule: { color: '#a855f7', label: 'Submódulo FE', radius: 13 },
+        frontend_shared: { color: '#ec4899', label: 'Frontend Shared', radius: 15 },
+        frontend_shared_component: { color: '#ec4899', label: 'Shared Component', radius: 13 },
+        frontend_shared_hook: { color: '#ec4899', label: 'Shared Hook', radius: 13 },
+        frontend_ui_token: { color: '#ec4899', label: 'UI Token', radius: 12 },
+        frontend_component: { color: '#ec4899', label: 'Componente FE', radius: 13 },
+        frontend_modal_component: { color: '#ec4899', label: 'Modal FE', radius: 13 },
+        security_guard: { color: '#ef4444', label: 'Seguridad Guard', radius: 15 },
+        archify_atlas_map: { color: '#eab308', label: 'Atlas Map', radius: 17 },
+        verification_suite: { color: '#06b6d4', label: 'Suite Vitest', radius: 13 },
+        openspec_vault: { color: '#94a3b8', label: 'OpenSpec Vault', radius: 14 },
+        default: { color: '#94a3b8', label: 'Nodo', radius: 13 }
+      };
+
+      function getNodeConfig(type) {
+        return TYPE_CONFIG[type] || TYPE_CONFIG.default;
+      }
+
+      // ─── 2. Definición de Categorías de Filtro ────────────────────────────────
+      const CATEGORIES = [
+        { id: 'all', label: 'Todos', match: () => true },
+        { id: 'modules', label: 'Módulos', match: n => n.type.includes('module') },
+        { id: 'routers', label: 'Routers', match: n => n.type.includes('router') },
+        { id: 'migrations', label: 'Migraciones', match: n => n.type.includes('migration') },
+        { id: 'features', label: 'Frontend', match: n => n.type.startsWith('frontend_') },
+        { id: 'security', label: 'Seguridad', match: n => n.type.includes('security') },
+        { id: 'core', label: 'Core & App', match: n => n.type.startsWith('backend_') && !n.type.includes('router') && !n.type.includes('module') && !n.type.includes('migration') },
+        { id: 'atlas', label: 'Atlas Maps', match: n => n.type.includes('atlas') },
+        { id: 'suites', label: 'Suites Test', match: n => n.type.includes('verification') }
+      ];
+
+      // ─── 3. Estado de la Aplicación ──────────────────────────────────────────
+      let rawData = { nodes: [], edges: [] };
+      let nodes = [];
+      let edges = [];
+      let nodeMap = new Map();
+      let activeCategory = 'all';
+      let searchQuery = '';
+      let selectedNodeId = null;
+      let hoveredNodeId = null;
+      let hoveredEdge = null;
+      let isPhysicsPaused = false;
+
+      // Cámara y Paneo
+      let panX = 0;
+      let panY = 0;
+      let zoom = 1.0;
+      let isDraggingCanvas = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
+
+      // Arrastre de Nodos
+      let draggedNode = null;
+      let isNodeDragging = false;
+
+      // Parámetros Físicos
+      let alpha = 1.0;
+      const ALPHA_MIN = 0.002;
+      const ALPHA_DECAY = 0.993;
+
+      // Referencias DOM
+      const canvas = document.getElementById('graph-canvas');
+      const ctx = canvas.getContext('2d');
+      const viewport = document.getElementById('viewport');
+      const themeSelector = document.getElementById('theme-selector');
+      const fileInput = document.getElementById('file-input');
+      const btnLoadFile = document.getElementById('btn-load-file');
+      const btnExportPng = document.getElementById('btn-export-png');
+      const btnTogglePhysics = document.getElementById('btn-toggle-physics');
+      const btnFitScreen = document.getElementById('btn-fit-screen');
+      const searchInput = document.getElementById('search-input');
+      const searchClear = document.getElementById('search-clear');
+      const categoriesContainer = document.getElementById('categories-container');
+      const zoomBadge = document.getElementById('zoom-badge');
+      const tooltip = document.getElementById('hover-tooltip');
+      const inspector = document.getElementById('inspector-panel');
+
+      // ─── 4. Carga y Parsing de Datos ──────────────────────────────────────────
+      function loadInitialData() {
+        const scriptTag = document.getElementById('initial-graph-data');
+        if (scriptTag && scriptTag.textContent.trim()) {
+          try {
+            const parsed = JSON.parse(scriptTag.textContent.trim());
+            initGraphData(parsed);
+          } catch (err) {
+            console.error('Error parseando JSON embebido:', err);
+          }
+        }
+      }
+
+      function initGraphData(data) {
+        rawData = data || { nodes: [], edges: [] };
+        const rawNodes = rawData.nodes || [];
+        const rawEdges = rawData.edges || [];
+
+        // Inicializar Nodos
+        nodeMap.clear();
+        const total = rawNodes.length;
+        const radiusDistrib = Math.min(window.innerWidth, window.innerHeight) * 0.45;
+
+        nodes = rawNodes.map((n, idx) => {
+          const angle = (idx / (total || 1)) * Math.PI * 2;
+          const config = getNodeConfig(n.type);
+          const jitter = (Math.random() - 0.5) * 50;
+          const node = {
+            id: n.id,
+            label: n.label || n.id,
+            type: n.type || 'unknown',
+            path: n.path || '',
+            color: config.color,
+            radius: config.radius,
+            x: Math.cos(angle) * radiusDistrib + jitter,
+            y: Math.sin(angle) * radiusDistrib + jitter,
+            vx: 0,
+            vy: 0,
+            fx: null,
+            fy: null,
+            inDegree: 0,
+            outDegree: 0,
+            inEdges: [],
+            outEdges: []
+          };
+          nodeMap.set(n.id, node);
+          return node;
+        });
+
+        // Inicializar Aristas
+        edges = [];
+        rawEdges.forEach(e => {
+          const src = nodeMap.get(e.source);
+          const tgt = nodeMap.get(e.target);
+          if (src && tgt) {
+            const edgeObj = {
+              source: src,
+              target: tgt,
+              relation: e.relation || 'relates_to'
+            };
+            edges.push(edgeObj);
+            src.outDegree++;
+            tgt.inDegree++;
+            src.outEdges.push(edgeObj);
+            tgt.inEdges.push(edgeObj);
+          }
+        });
+
+        // Actualizar Contadores en Cabecera
+        document.getElementById('nodes-count-text').textContent = nodes.length;
+        document.getElementById('edges-count-text').textContent = edges.length;
+
+        renderCategoryChips();
+        alpha = 1.0;
+        fitToScreen(false);
+      }
+
+      // ─── 5. Filtros de Categoría y Búsqueda ───────────────────────────────────
+      function renderCategoryChips() {
+        categoriesContainer.innerHTML = '';
+        CATEGORIES.forEach(cat => {
+          const count = nodes.filter(cat.match).length;
+          const chip = document.createElement('button');
+          chip.className = 'cat-chip' + (activeCategory === cat.id ? ' active' : '');
+          chip.innerHTML = `<span>${cat.label}</span><span class="count">${count}</span>`;
+          chip.addEventListener('click', () => {
+            activeCategory = cat.id;
+            renderCategoryChips();
+            alpha = 0.4;
+          });
+          categoriesContainer.appendChild(chip);
+        });
+      }
+
+      function isNodeVisible(node) {
+        if (activeCategory !== 'all') {
+          const cat = CATEGORIES.find(c => c.id === activeCategory);
+          if (cat && !cat.match(node)) return false;
+        }
+        return true;
+      }
+
+      function isNodeSearchMatch(node) {
+        if (!searchQuery) return false;
+        const q = searchQuery.toLowerCase();
+        return (
+          node.id.toLowerCase().includes(q) ||
+          node.label.toLowerCase().includes(q) ||
+          node.path.toLowerCase().includes(q) ||
+          node.type.toLowerCase().includes(q)
+        );
+      }
+
+      searchInput.addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim();
+        searchClear.classList.toggle('visible', searchQuery.length > 0);
+        alpha = 0.5;
+
+        // Si hay una coincidencia única, enfocarla suavemente al presionar Enter
+      });
+
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && searchQuery) {
+          const firstMatch = nodes.find(n => isNodeSearchMatch(n));
+          if (firstMatch) {
+            selectNode(firstMatch.id);
+            focusNode(firstMatch, 1.4);
+          }
+        }
+      });
+
+      searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        searchQuery = '';
+        searchClear.classList.remove('visible');
+        alpha = 0.3;
+      });
+
+      // ─── 6. Simulación Física Force-Directed (Vanilla JS) ───────────────────────
+      function stepPhysics() {
+        if (isPhysicsPaused || alpha < ALPHA_MIN) {
+          document.getElementById('physics-status-text').textContent = isPhysicsPaused ? 'Pausado' : 'Estable';
+          return;
+        }
+
+        document.getElementById('physics-status-text').textContent = 'Simulando';
+
+        const kSpring = 0.04;
+        const desiredLength = 110;
+        const kRepulsion = 2600;
+        const kCenter = 0.012;
+        const damping = 0.88;
+
+        const count = nodes.length;
+
+        // 1. Repulsión Cuadrática Suavizada (Coulomb)
+        for (let i = 0; i < count; i++) {
+          const n1 = nodes[i];
+          for (let j = i + 1; j < count; j++) {
+            const n2 = nodes[j];
+            const dx = n2.x - n1.x;
+            const dy = n2.y - n1.y;
+            const d2 = dx * dx + dy * dy + 150;
+            const d = Math.sqrt(d2);
+            const force = (kRepulsion / d2) * alpha;
+            const fx = (dx / d) * force;
+            const fy = (dy / d) * force;
+
+            if (n1.fx === null) { n1.vx -= fx; n1.vy -= fy; }
+            if (n2.fx === null) { n2.vx += fx; n2.vy += fy; }
+          }
+        }
+
+        // 2. Atracción por Aristas (Hooke)
+        for (let i = 0; i < edges.length; i++) {
+          const edge = edges[i];
+          const src = edge.source;
+          const tgt = edge.target;
+          const dx = tgt.x - src.x;
+          const dy = tgt.y - src.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const displacement = dist - desiredLength;
+          const force = displacement * kSpring * alpha;
+          const fx = (dx / dist) * force;
+          const fy = (dy / dist) * force;
+
+          if (src.fx === null) { src.vx += fx; src.vy += fy; }
+          if (tgt.fx === null) { tgt.vx -= fx; tgt.vy -= fy; }
+        }
+
+        // 3. Gravedad hacia el Centro y Actualización de Posición (Verlet)
+        for (let i = 0; i < count; i++) {
+          const n = nodes[i];
+          if (n.fx !== null && n.fy !== null) {
+            n.x = n.fx;
+            n.y = n.fy;
+            n.vx = 0;
+            n.vy = 0;
+            continue;
+          }
+
+          // Fuerza de centrado
+          n.vx -= n.x * kCenter * alpha;
+          n.vy -= n.y * kCenter * alpha;
+
+          // Damping
+          n.vx *= damping;
+          n.vy *= damping;
+
+          n.x += n.vx;
+          n.y += n.vy;
+        }
+
+        alpha *= ALPHA_DECAY;
+      }
+
+      // ─── 7. Renderizado en Canvas 2D ──────────────────────────────────────────
+      function getComputedThemeColors() {
+        const theme = document.documentElement.getAttribute('data-theme') || 'ocean-blue';
+        if (theme === 'light') {
+          return {
+            edge: 'rgba(100, 116, 139, 0.35)',
+            edgeHighlight: '#0284c7',
+            edgePillBg: '#e2e8f0',
+            edgeText: '#0f172a',
+            textColor: '#0f172a',
+            canvasBg: '#f8fafc'
+          };
+        } else if (theme === 'dark') {
+          return {
+            edge: 'rgba(148, 163, 184, 0.25)',
+            edgeHighlight: '#818cf8',
+            edgePillBg: '#1e293b',
+            edgeText: '#f8fafc',
+            textColor: '#f8fafc',
+            canvasBg: '#090d16'
+          };
+        }
+        // ocean-blue
+        return {
+          edge: 'rgba(158, 194, 230, 0.26)',
+          edgeHighlight: '#00d2ff',
+          edgePillBg: '#0c2544',
+          edgeText: '#f0f7ff',
+          textColor: '#f0f7ff',
+          canvasBg: '#051326'
+        };
+      }
+
+      function render() {
+        ctx.save();
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Transformación de Cámara
+        ctx.translate(panX, panY);
+        ctx.scale(zoom, zoom);
+
+        const colors = getComputedThemeColors();
+        const selectedNode = selectedNodeId ? nodeMap.get(selectedNodeId) : null;
+
+        // 1. Dibujar Aristas
+        edges.forEach(edge => {
+          const src = edge.source;
+          const tgt = edge.target;
+
+          const isSrcVisible = isNodeVisible(src);
+          const isTgtVisible = isNodeVisible(tgt);
+          if (!isSrcVisible && !isTgtVisible) return;
+
+          const isConnectedToSelected = selectedNode && (src.id === selectedNode.id || tgt.id === selectedNode.id);
+          const isConnectedToHover = hoveredNodeId && (src.id === hoveredNodeId || tgt.id === hoveredNodeId);
+          const isHighlighted = isConnectedToSelected || isConnectedToHover || (hoveredEdge === edge);
+
+          ctx.save();
+          if (selectedNode) {
+            ctx.globalAlpha = isHighlighted ? 1.0 : 0.08;
+          } else {
+            ctx.globalAlpha = isHighlighted ? 1.0 : (!isSrcVisible || !isTgtVisible ? 0.15 : 0.65);
+          }
+
+          ctx.strokeStyle = isHighlighted ? colors.edgeHighlight : colors.edge;
+          ctx.lineWidth = isHighlighted ? 2.8 : 1.2;
+
+          // Dibujar línea
+          ctx.beginPath();
+          ctx.moveTo(src.x, src.y);
+          ctx.lineTo(tgt.x, tgt.y);
+          ctx.stroke();
+
+          // Flecha dirigida hacia tgt
+          const dx = tgt.x - src.x;
+          const dy = tgt.y - src.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > tgt.radius + 10) {
+            const arrowSize = isHighlighted ? 10 : 7;
+            const stopDist = tgt.radius + arrowSize;
+            const tipX = tgt.x - (dx / dist) * stopDist;
+            const tipY = tgt.y - (dy / dist) * stopDist;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.fillStyle = isHighlighted ? colors.edgeHighlight : colors.edge;
+            ctx.beginPath();
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(
+              tipX - arrowSize * Math.cos(angle - Math.PI / 6),
+              tipY - arrowSize * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.lineTo(
+              tipX - arrowSize * Math.cos(angle + Math.PI / 6),
+              tipY - arrowSize * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          // Etiqueta de Relación si está resaltada
+          if (isHighlighted && (zoom > 0.65 || isConnectedToSelected)) {
+            const midX = (src.x + tgt.x) / 2;
+            const midY = (src.y + tgt.y) / 2;
+            const text = edge.relation;
+
+            ctx.font = '600 11px ui-monospace, SFMono-Regular, monospace';
+            const metrics = ctx.measureText(text);
+            const padX = 7;
+            const padY = 4;
+            const boxW = metrics.width + padX * 2;
+            const boxH = 18;
+
+            ctx.fillStyle = colors.edgePillBg;
+            ctx.shadowColor = 'rgba(0,0,0,0.3)';
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.roundRect(midX - boxW / 2, midY - boxH / 2, boxW, boxH, 4);
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = colors.edgeHighlight;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.fillStyle = colors.edgeText;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, midX, midY + 1);
+          }
+
+          ctx.restore();
+        });
+
+        // 2. Dibujar Nodos
+        nodes.forEach(node => {
+          const isVisible = isNodeVisible(node);
+          const isSelected = selectedNode && node.id === selectedNode.id;
+          const isHovered = node.id === hoveredNodeId;
+          const isSearchMatch = isNodeSearchMatch(node);
+          const isConnectedToSelected = selectedNode && (
+            selectedNode.outEdges.some(e => e.target.id === node.id) ||
+            selectedNode.inEdges.some(e => e.source.id === node.id)
+          );
+
+          ctx.save();
+
+          // Ajuste de Opacidad
+          if (selectedNode) {
+            ctx.globalAlpha = (isSelected || isConnectedToSelected) ? 1.0 : 0.12;
+          } else if (!isVisible) {
+            ctx.globalAlpha = 0.14;
+          } else if (searchQuery && !isSearchMatch) {
+            ctx.globalAlpha = 0.22;
+          } else {
+            ctx.globalAlpha = 1.0;
+          }
+
+          // Halo de Selección o Hover o Búsqueda
+          if (isSelected) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, node.radius + 7, 0, Math.PI * 2);
+            ctx.strokeStyle = colors.edgeHighlight;
+            ctx.lineWidth = 3.5;
+            ctx.shadowColor = colors.edgeHighlight;
+            ctx.shadowBlur = 16;
+            ctx.stroke();
+          } else if (isSearchMatch) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, node.radius + 6, 0, Math.PI * 2);
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = '#facc15';
+            ctx.shadowBlur = 14;
+            ctx.stroke();
+          } else if (isHovered) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, node.radius + 5, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = node.color;
+            ctx.shadowBlur = 12;
+            ctx.stroke();
+          }
+
+          // Cuerpo del Nodo (Círculo)
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+          ctx.fillStyle = node.color;
+          ctx.shadowBlur = isSelected ? 12 : 6;
+          ctx.shadowColor = node.color;
+          ctx.fill();
+
+          // Borde sutil del nodo
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Etiqueta del Nodo
+          const shouldShowLabel = isSelected || isHovered || isSearchMatch || zoom > 0.8 || (node.radius >= 16 && zoom > 0.45);
+          if (shouldShowLabel && (isVisible || isSelected)) {
+            const labelText = node.label.length > 28 ? node.label.slice(0, 26) + '…' : node.label;
+            ctx.font = (isSelected || isSearchMatch) ? '700 12px sans-serif' : '500 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            const metrics = ctx.measureText(labelText);
+            const padX = 5;
+            const padY = 2;
+            const labelY = node.y + node.radius + 5;
+
+            // Fondo semitransparente detrás del texto
+            ctx.fillStyle = colors.edgePillBg;
+            ctx.beginPath();
+            ctx.roundRect(
+              node.x - metrics.width / 2 - padX,
+              labelY - padY,
+              metrics.width + padX * 2,
+              16 + padY * 2,
+              4
+            );
+            ctx.fill();
+
+            ctx.fillStyle = (isSelected || isSearchMatch) ? '#ffffff' : colors.textColor;
+            ctx.fillText(labelText, node.x, labelY + 1);
+          }
+
+          ctx.restore();
+        });
+
+        ctx.restore();
+      }
+
+      // Bucle Principal de Animación
+      function loop() {
+        stepPhysics();
+        render();
+        requestAnimationFrame(loop);
+      }
+
+      // ─── 8. Transformaciones de Pantalla <-> Mundo ───────────────────────────
+      function screenToWorld(sx, sy) {
+        return {
+          x: (sx - panX) / zoom,
+          y: (sy - panY) / zoom
+        };
+      }
+
+      function worldToScreen(wx, wy) {
+        return {
+          x: wx * zoom + panX,
+          y: wy * zoom + panY
+        };
+      }
+
+      function findNodeAt(sx, sy) {
+        const pt = screenToWorld(sx, sy);
+        // De adelante hacia atrás
+        for (let i = nodes.length - 1; i >= 0; i--) {
+          const n = nodes[i];
+          if (!isNodeVisible(n) && selectedNodeId !== n.id) continue;
+          const dx = pt.x - n.x;
+          const dy = pt.y - n.y;
+          const hitRadius = Math.max(n.radius + 6, 22); // Touch target >= 44px
+          if (dx * dx + dy * dy <= hitRadius * hitRadius) {
+            return n;
+          }
+        }
+        return null;
+      }
+
+      // ─── 9. Navegación, Drag & Drop y Zoom ────────────────────────────────────
+      function resizeCanvas() {
+        const rect = viewport.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+      }
+
+      window.addEventListener('resize', () => {
+        resizeCanvas();
+        alpha = 0.3;
+      });
+
+      // Zoom con Rueda del Ratón
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const factor = e.deltaY < 0 ? 1.14 : 0.88;
+        applyZoomAt(mouseX, mouseY, factor);
+      }, { passive: false });
+
+      function applyZoomAt(sx, sy, factor) {
+        const newZoom = Math.min(Math.max(zoom * factor, 0.15), 4.0);
+        if (newZoom === zoom) return;
+
+        const world = screenToWorld(sx, sy);
+        zoom = newZoom;
+        panX = sx - world.x * zoom;
+        panY = sy - world.y * zoom;
+
+        zoomBadge.textContent = Math.round(zoom * 100) + '%';
+      }
+
+      // Botones de Zoom
+      document.getElementById('btn-zoom-in').addEventListener('click', () => {
+        const rect = canvas.getBoundingClientRect();
+        applyZoomAt(rect.width / 2, rect.height / 2, 1.25);
+      });
+
+      document.getElementById('btn-zoom-out').addEventListener('click', () => {
+        const rect = canvas.getBoundingClientRect();
+        applyZoomAt(rect.width / 2, rect.height / 2, 0.8);
+      });
+
+      document.getElementById('btn-zoom-reset').addEventListener('click', () => {
+        const rect = canvas.getBoundingClientRect();
+        const world = screenToWorld(rect.width / 2, rect.height / 2);
+        zoom = 1.0;
+        panX = rect.width / 2 - world.x * zoom;
+        panY = rect.height / 2 - world.y * zoom;
+        zoomBadge.textContent = '100%';
+      });
+
+      // Fit to Screen
+      function fitToScreen(animated = true) {
+        const visibleNodes = nodes.filter(isNodeVisible);
+        if (visibleNodes.length === 0) return;
+
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        visibleNodes.forEach(n => {
+          if (n.x < minX) minX = n.x;
+          if (n.x > maxX) maxX = n.x;
+          if (n.y < minY) minY = n.y;
+          if (n.y > maxY) maxY = n.y;
+        });
+
+        const padding = 80;
+        const width = maxX - minX + padding * 2;
+        const height = maxY - minY + padding * 2;
+        const rect = canvas.getBoundingClientRect();
+
+        const targetZoom = Math.min(rect.width / width, rect.height / height, 1.4);
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        const targetPanX = rect.width / 2 - centerX * targetZoom;
+        const targetPanY = rect.height / 2 - centerY * targetZoom;
+
+        if (!animated) {
+          zoom = targetZoom;
+          panX = targetPanX;
+          panY = targetPanY;
+          zoomBadge.textContent = Math.round(zoom * 100) + '%';
+          return;
+        }
+
+        animateCameraTo(targetPanX, targetPanY, targetZoom);
+      }
+
+      function focusNode(node, targetZoom = 1.3) {
+        const rect = canvas.getBoundingClientRect();
+        const targetPanX = rect.width / 2 - node.x * targetZoom;
+        const targetPanY = rect.height / 2 - node.y * targetZoom;
+        animateCameraTo(targetPanX, targetPanY, targetZoom);
+      }
+
+      function animateCameraTo(targetX, targetY, targetZ) {
+        const startX = panX, startY = panY, startZ = zoom;
+        const startTime = performance.now();
+        const duration = 400;
+
+        function step(now) {
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1.0);
+          const ease = 1 - Math.pow(1 - progress, 3); // Cubic ease out
+
+          panX = startX + (targetX - startX) * ease;
+          panY = startY + (targetY - startY) * ease;
+          zoom = startZ + (targetZ - startZ) * ease;
+          zoomBadge.textContent = Math.round(zoom * 100) + '%';
+
+          if (progress < 1.0) {
+            requestAnimationFrame(step);
+          }
+        }
+        requestAnimationFrame(step);
+      }
+
+      btnFitScreen.addEventListener('click', () => fitToScreen(true));
+
+      // Eventos de Puntero y Mouse
+      viewport.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Solo clic primario
+        const rect = canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+
+        const hit = findNodeAt(sx, sy);
+        if (hit) {
+          draggedNode = hit;
+          isNodeDragging = false;
+          dragStartX = sx;
+          dragStartY = sy;
+          hit.fx = hit.x;
+          hit.fy = hit.y;
+          alpha = 0.6;
+        } else {
+          isDraggingCanvas = true;
+          dragStartX = sx - panX;
+          dragStartY = sy - panY;
+        }
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+
+        if (draggedNode) {
+          const distMoved = Math.hypot(sx - dragStartX, sy - dragStartY);
+          if (distMoved > 4) isNodeDragging = true;
+
+          const world = screenToWorld(sx, sy);
+          draggedNode.fx = world.x;
+          draggedNode.fy = world.y;
+          draggedNode.x = world.x;
+          draggedNode.y = world.y;
+          alpha = 0.5;
+        } else if (isDraggingCanvas) {
+          panX = sx - dragStartX;
+          panY = sy - dragStartY;
+        } else {
+          // Hover detection
+          const hit = findNodeAt(sx, sy);
+          if (hit) {
+            hoveredNodeId = hit.id;
+            showTooltip(e.clientX, e.clientY, hit);
+          } else {
+            hoveredNodeId = null;
+            hideTooltip();
+          }
+        }
+      });
+
+      window.addEventListener('mouseup', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+
+        if (draggedNode) {
+          if (!isNodeDragging) {
+            // Fue un clic sin arrastre
+            selectNode(draggedNode.id);
+          }
+          draggedNode.fx = null;
+          draggedNode.fy = null;
+          draggedNode = null;
+          isNodeDragging = false;
+        }
+
+        isDraggingCanvas = false;
+      });
+
+      // Soporte Táctil (Mobile-First Touch)
+      let touchStartDist = 0;
+      viewport.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          const t = e.touches[0];
+          const rect = canvas.getBoundingClientRect();
+          const sx = t.clientX - rect.left;
+          const sy = t.clientY - rect.top;
+          const hit = findNodeAt(sx, sy);
+          if (hit) {
+            draggedNode = hit;
+            isNodeDragging = false;
+            dragStartX = sx;
+            dragStartY = sy;
+            hit.fx = hit.x;
+            hit.fy = hit.y;
+            alpha = 0.5;
+          } else {
+            isDraggingCanvas = true;
+            dragStartX = sx - panX;
+            dragStartY = sy - panY;
+          }
+        } else if (e.touches.length === 2) {
+          touchStartDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+        }
+      }, { passive: false });
+
+      viewport.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1) {
+          const t = e.touches[0];
+          const rect = canvas.getBoundingClientRect();
+          const sx = t.clientX - rect.left;
+          const sy = t.clientY - rect.top;
+          if (draggedNode) {
+            isNodeDragging = true;
+            const world = screenToWorld(sx, sy);
+            draggedNode.fx = world.x;
+            draggedNode.fy = world.y;
+            draggedNode.x = world.x;
+            draggedNode.y = world.y;
+            alpha = 0.5;
+          } else if (isDraggingCanvas) {
+            panX = sx - dragStartX;
+            panY = sy - dragStartY;
+          }
+        } else if (e.touches.length === 2) {
+          const currentDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          if (touchStartDist > 0) {
+            const factor = currentDist / touchStartDist;
+            const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+            const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            applyZoomAt(midX, midY, factor);
+            touchStartDist = currentDist;
+          }
+        }
+      }, { passive: false });
+
+      viewport.addEventListener('touchend', () => {
+        if (draggedNode) {
+          if (!isNodeDragging) {
+            selectNode(draggedNode.id);
+          }
+          draggedNode.fx = null;
+          draggedNode.fy = null;
+          draggedNode = null;
+          isNodeDragging = false;
+        }
+        isDraggingCanvas = false;
+        touchStartDist = 0;
+      });
+
+      // ─── 10. Tooltip y Panel Inspector ─────────────────────────────────────────
+      function showTooltip(clientX, clientY, node) {
+        tooltip.style.display = 'block';
+        tooltip.style.left = (clientX + 14) + 'px';
+        tooltip.style.top = (clientY + 14) + 'px';
+        tooltip.innerHTML = `
+          <div style="font-weight:700;margin-bottom:2px;color:${node.color};">${node.label}</div>
+          <div style="font-size:11px;color:var(--text-muted);font-family:monospace;">${node.id}</div>
+          <div style="font-size:10px;margin-top:4px;display:flex;gap:8px;">
+            <span>In: ${node.inDegree}</span><span>Out: ${node.outDegree}</span>
+          </div>
+        `;
+      }
+
+      function hideTooltip() {
+        tooltip.style.display = 'none';
+      }
+
+      function selectNode(nodeId) {
+        selectedNodeId = nodeId;
+        const node = nodeMap.get(nodeId);
+        if (!node) {
+          inspector.classList.remove('open');
+          return;
+        }
+
+        // Actualizar datos del Inspector
+        const cfg = getNodeConfig(node.type);
+        const typePill = document.getElementById('ins-type-pill');
+        typePill.textContent = cfg.label;
+        typePill.style.backgroundColor = `${cfg.color}22`;
+        typePill.style.color = cfg.color;
+        typePill.style.border = `1px solid ${cfg.color}55`;
+
+        document.getElementById('ins-label').textContent = node.label;
+        document.getElementById('ins-id').textContent = node.id;
+        document.getElementById('ins-path').textContent = node.path || '(Sin ruta asignada)';
+
+        // Conexiones Entrantes
+        const inList = document.getElementById('ins-inbound-list');
+        inList.innerHTML = '';
+        document.getElementById('ins-inbound-count').textContent = node.inEdges.length;
+        if (node.inEdges.length === 0) {
+          inList.innerHTML = '<div style="font-size:11px;color:var(--text-muted);">Sin conexiones entrantes</div>';
+        } else {
+          node.inEdges.forEach(e => {
+            const item = document.createElement('div');
+            item.className = 'connection-item';
+            item.innerHTML = `
+              <span class="connection-relation">← ${e.relation}</span>
+              <span class="connection-target-label">${e.source.label}</span>
+              <span class="connection-target-id">${e.source.id}</span>
+            `;
+            item.addEventListener('click', () => {
+              selectNode(e.source.id);
+              focusNode(e.source, 1.4);
+            });
+            inList.appendChild(item);
+          });
+        }
+
+        // Conexiones Salientes
+        const outList = document.getElementById('ins-outbound-list');
+        outList.innerHTML = '';
+        document.getElementById('ins-outbound-count').textContent = node.outEdges.length;
+        if (node.outEdges.length === 0) {
+          outList.innerHTML = '<div style="font-size:11px;color:var(--text-muted);">Sin conexiones salientes</div>';
+        } else {
+          node.outEdges.forEach(e => {
+            const item = document.createElement('div');
+            item.className = 'connection-item';
+            item.innerHTML = `
+              <span class="connection-relation">→ ${e.relation}</span>
+              <span class="connection-target-label">${e.target.label}</span>
+              <span class="connection-target-id">${e.target.id}</span>
+            `;
+            item.addEventListener('click', () => {
+              selectNode(e.target.id);
+              focusNode(e.target, 1.4);
+            });
+            outList.appendChild(item);
+          });
+        }
+
+        inspector.classList.add('open');
+        alpha = 0.25;
+      }
+
+      document.getElementById('btn-close-inspector').addEventListener('click', () => {
+        inspector.classList.remove('open');
+        selectedNodeId = null;
+      });
+
+      document.getElementById('btn-focus-node').addEventListener('click', () => {
+        if (selectedNodeId) {
+          const n = nodeMap.get(selectedNodeId);
+          if (n) focusNode(n, 1.4);
+        }
+      });
+
+      // Copiar al Portapapeles
+      document.getElementById('btn-copy-id').addEventListener('click', (e) => {
+        if (selectedNodeId) {
+          navigator.clipboard.writeText(selectedNodeId);
+          e.target.textContent = '¡Copiado!';
+          setTimeout(() => { e.target.textContent = 'Copiar'; }, 1500);
+        }
+      });
+
+      document.getElementById('btn-copy-path').addEventListener('click', (e) => {
+        if (selectedNodeId) {
+          const n = nodeMap.get(selectedNodeId);
+          if (n && n.path) {
+            navigator.clipboard.writeText(n.path);
+            e.target.textContent = '¡Copiado!';
+            setTimeout(() => { e.target.textContent = 'Copiar'; }, 1500);
+          }
+        }
+      });
+
+      // ─── 11. Acciones de Cabecera (Temas, Play/Pause, Cargar, Exportar) ────────
+      // Selector de Temas
+      themeSelector.addEventListener('change', (e) => {
+        const theme = e.target.value;
+        document.documentElement.setAttribute('data-theme', theme);
+        try {
+          localStorage.setItem('oppytec_theme', theme);
+        } catch (_) {}
+      });
+
+      try {
+        const savedTheme = localStorage.getItem('oppytec_theme');
+        if (savedTheme) {
+          document.documentElement.setAttribute('data-theme', savedTheme);
+          themeSelector.value = savedTheme;
+        }
+      } catch (_) {}
+
+      // Play / Pause Simulación
+      btnTogglePhysics.addEventListener('click', () => {
+        isPhysicsPaused = !isPhysicsPaused;
+        document.getElementById('icon-pause').style.display = isPhysicsPaused ? 'none' : 'block';
+        document.getElementById('icon-play').style.display = isPhysicsPaused ? 'block' : 'none';
+        btnTogglePhysics.classList.toggle('active', isPhysicsPaused);
+        if (!isPhysicsPaused) alpha = 0.5;
+      });
+
+      // Cargar Archivo JSON Local
+      btnLoadFile.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const parsed = JSON.parse(event.target.result);
+            initGraphData(parsed);
+          } catch (err) {
+            alert('Error al parsear el archivo JSON: ' + err.message);
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      // Exportar PNG de Alta Definición
+      btnExportPng.addEventListener('click', () => {
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = canvas.width;
+        exportCanvas.height = canvas.height;
+        const eCtx = exportCanvas.getContext('2d');
+
+        // Fondo sólido según tema
+        const colors = getComputedThemeColors();
+        eCtx.fillStyle = colors.canvasBg;
+        eCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+        // Copiar canvas original
+        eCtx.drawImage(canvas, 0, 0);
+
+        // Marca de agua OppyTec
+        eCtx.font = '600 14px sans-serif';
+        eCtx.fillStyle = colors.textColor;
+        eCtx.globalAlpha = 0.45;
+        eCtx.fillText('OppyTec v2.0 — Graphify Architecture Atlas', 20, exportCanvas.height - 20);
+
+        // Descarga
+        const link = document.createElement('a');
+        link.download = `oppytec_architecture_graph_${new Date().toISOString().slice(0, 10)}.png`;
+        link.href = exportCanvas.toDataURL('image/png');
+        link.click();
+      });
+
+      // Leyenda Toggle
+      const legendPanel = document.getElementById('legend-panel');
+      const btnShowLegend = document.getElementById('btn-show-legend');
+      const btnCloseLegend = document.getElementById('btn-close-legend');
+
+      btnCloseLegend.addEventListener('click', () => {
+        legendPanel.classList.add('minimized');
+        btnShowLegend.classList.add('visible');
+      });
+
+      btnShowLegend.addEventListener('click', () => {
+        legendPanel.classList.remove('minimized');
+        btnShowLegend.classList.remove('visible');
+      });
+
+      // ─── 12. Inicialización ───────────────────────────────────────────────────
+      resizeCanvas();
+      loadInitialData();
+      requestAnimationFrame(loop);
+
+    })();
+  </script>
+</body>
+</html>

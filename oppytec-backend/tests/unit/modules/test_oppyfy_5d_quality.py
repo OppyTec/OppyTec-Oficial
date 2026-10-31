@@ -15,12 +15,15 @@ import uuid
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
+import httpx
 import pytest
 from hypothesis import example, given, settings
 from hypothesis import strategies as st
 
 from src.adapters.ai.gemini_adapter import MeteredGeminiAdapter
 from src.adapters.ai.jev_adapter import InMemoryTelemetrySink, MeteredJevAdapter
+from src.core.fx.fx_service import FXService
+from src.core.security import create_access_token
 from src.modules.oppy_ai.application.metered_ai_service import (
     MeteredAIService,
     ModelConfigRegistry,
@@ -62,6 +65,10 @@ from src.modules.oppy_ai.domain.oppyfy_rbac import (
     OppyfyCapability,
     OppyfyPermissionGrantSpec,
     redact_cost_fields,
+)
+from src.modules.oppy_ai.presentation.router import (
+    _metered_ai_service,
+    _model_registry,
 )
 from src.modules.tenancy.domain.saas_policy_math import (
     calculate_real_api_cost_usd,
@@ -675,3 +682,202 @@ class TestOppyfy5DIntegrationAndContracts:
         result_raw = get_stock_health_and_reorder_alerts("tenant_test", can_view_costs=True)
         assert result_raw["total_estimated_reorder_cost"] != REDACTED_COST_MARKER
         assert isinstance(result_raw["total_estimated_reorder_cost"], Decimal)
+
+
+# ============================================================================
+# GESTIÓN DINÁMICA DE TARIFAS IA Y RESOLUCIÓN FX SERVICE EN PLATFORM ADMIN
+# ============================================================================
+
+
+def _make_admin_headers(
+    permissions: list[str],
+    *,
+    user_id: int = 1,
+    is_global_staff: bool = True,
+    hierarchy_rank: int = 10,
+) -> dict[str, str]:
+    """Genera cabeceras con JWT autenticado para el plano de Platform Admin."""
+    token = create_access_token(
+        user_id=user_id,
+        is_global_staff=is_global_staff,
+        hierarchy_rank=hierarchy_rank,
+        role_grants=permissions,
+    )
+    return {"Authorization": f"Bearer {token}"}
+
+
+class TestPlatformAdminDynamicTariffsAndFxIntegration:
+    """
+    Pruebas unitarias y de integración para la gestión dinámica de tarifas
+    de modelos IA y tasas FX en base de datos / platform-admin.
+    """
+
+    @pytest.mark.asyncio
+    async def test_platform_admin_dynamic_ai_tariffs_endpoint_and_registry_persistence(
+        self,
+        async_client: httpx.AsyncClient,
+    ) -> None:
+        """
+        Verifica la actualización dinámica de tarifas de modelos IA vía endpoint REST en Platform Admin:
+        1. GET /api/v1/platform-admin/ai-tariffs con permisos de lectura.
+        2. PUT /api/v1/platform-admin/ai-tariffs/{model_slug} actualiza costos sin reiniciar la aplicación.
+        3. Persistencia en memoria en _model_registry y reflejo inmediato en MeteredAIService.calculate_token_cost.
+        4. Protección RBAC 403 Forbidden cuando faltan permisos 'platform_admin.ai_tariffs.read' o 'manage'.
+        """
+        read_headers = _make_admin_headers(["platform_admin.ai_tariffs.read"])
+        manage_headers = _make_admin_headers(["platform_admin.ai_tariffs.manage"])
+        unauthorized_headers = _make_admin_headers(["platform_admin.plans.read"])
+
+        # 1. 403 Forbidden si no tiene permiso de lectura
+        resp_unauth = await async_client.get(
+            "/api/v1/platform-admin/ai-tariffs",
+            headers=unauthorized_headers,
+        )
+        assert resp_unauth.status_code == 403
+
+        # 2. GET lista las tarifas vigentes por defecto
+        resp_get = await async_client.get(
+            "/api/v1/platform-admin/ai-tariffs",
+            headers=read_headers,
+        )
+        assert resp_get.status_code == 200
+        tariffs = resp_get.json()
+        assert isinstance(tariffs, list)
+        model_slugs = [t["model_slug"] for t in tariffs]
+        assert "gemini-2.5-flash" in model_slugs
+        assert "gemini-1.5-pro" in model_slugs
+
+        # 3. 403 Forbidden si intenta actualizar sin permiso manage
+        update_payload = {
+            "input_cost_per_1m_usd": "0.350000",
+            "output_cost_per_1m_usd": "1.200000",
+            "cached_cost_per_1m_usd": "0.080000",
+        }
+        resp_put_unauth = await async_client.put(
+            "/api/v1/platform-admin/ai-tariffs/gemini-2.5-flash",
+            json=update_payload,
+            headers=unauthorized_headers,
+        )
+        assert resp_put_unauth.status_code == 403
+
+        # 4. PUT con permiso manage actualiza la tarifa dinámicamente
+        resp_put = await async_client.put(
+            "/api/v1/platform-admin/ai-tariffs/gemini-2.5-flash",
+            json=update_payload,
+            headers=manage_headers,
+        )
+        assert resp_put.status_code == 200
+        updated_data = resp_put.json()
+        assert updated_data["model_slug"] == "gemini-2.5-flash"
+        assert Decimal(str(updated_data["input_cost_per_1m_usd"])) == Decimal("0.350000")
+        assert Decimal(str(updated_data["output_cost_per_1m_usd"])) == Decimal("1.200000")
+        assert Decimal(str(updated_data["cached_cost_per_1m_usd"])) == Decimal("0.080000")
+
+        # 5. Persistencia inmediata en el registry sin reiniciar la app
+        active_tariff = _model_registry.get_tariff("gemini-2.5-flash")
+        assert active_tariff.input_cost_per_1m_usd == Decimal("0.350000")
+        assert active_tariff.output_cost_per_1m_usd == Decimal("1.200000")
+        assert active_tariff.cached_cost_per_1m_usd == Decimal("0.080000")
+
+        # 6. Cálculo en MeteredAIService utiliza la nueva tarifa inmediatamente
+        # 1M input ($0.35) + 1M output ($1.20) = $1.550000 USD
+        cost_usd, cost_clp = _metered_ai_service.calculate_token_cost(
+            "gemini-2.5-flash",
+            input_tokens=1_000_000,
+            cached_tokens=0,
+            output_tokens=1_000_000,
+            usd_to_clp_rate=Decimal("950.00"),
+        )
+        assert cost_usd == Decimal("1.550000")
+        assert cost_clp == Decimal("1472.50")
+
+        # 7. GET refleja la tarifa actualizada
+        resp_get_updated = await async_client.get(
+            "/api/v1/platform-admin/ai-tariffs",
+            headers=read_headers,
+        )
+        assert resp_get_updated.status_code == 200
+        tariffs_after = {t["model_slug"]: t for t in resp_get_updated.json()}
+        assert Decimal(str(tariffs_after["gemini-2.5-flash"]["input_cost_per_1m_usd"])) == Decimal("0.350000")
+
+    def test_dynamic_fx_service_resolution_in_calculate_token_cost(self) -> None:
+        """
+        Verifica que `calculate_token_cost` resuelva la tasa de cambio USD/CLP dinámicamente
+        desde `FXService` cuando `usd_to_clp_rate` es None, adaptándose a cambios de tasa.
+        """
+        fx = FXService()
+        service, _ = _make_metered_service()
+        service._fx = fx  # Inyectar motor cambiario
+
+        # 1. Sin especificar usd_to_clp_rate -> Usa tasa oficial inicial de BCCh (950.00)
+        usd, clp = service.calculate_token_cost(
+            "gemini-1.5-flash",
+            input_tokens=1_000_000,
+            cached_tokens=0,
+            output_tokens=1_000_000,
+        )
+        # input 0.075 + output 0.300 = 0.375000 USD
+        assert usd == Decimal("0.375000")
+        # 0.375 * 950 = 356.25 CLP
+        assert clp == Decimal("356.25")
+
+        # 2. Modificar dinámicamente la tasa FX mediante override manual auditado
+        fx.apply_manual_fx_override(
+            "USD",
+            "CLP",
+            Decimal("1000.00000000"),
+            actor_user_id=1,
+            reason="Ajuste cambiario de emergencia por volatilidad macroeconómica",
+        )
+
+        # 3. La siguiente llamada sin especificar tasa usa inmediatamente 1000.00
+        usd2, clp2 = service.calculate_token_cost(
+            "gemini-1.5-flash",
+            input_tokens=1_000_000,
+            cached_tokens=0,
+            output_tokens=1_000_000,
+        )
+        assert usd2 == Decimal("0.375000")
+        # 0.375 * 1000 = 375.00 CLP
+        assert clp2 == Decimal("375.00")
+
+        # 4. Si se provee una tasa explícita, debe tener precedencia
+        usd3, clp3 = service.calculate_token_cost(
+            "gemini-1.5-flash",
+            input_tokens=1_000_000,
+            cached_tokens=0,
+            output_tokens=1_000_000,
+            usd_to_clp_rate=Decimal("900.00"),
+        )
+        assert usd3 == Decimal("0.375000")
+        # 0.375 * 900 = 337.50 CLP
+        assert clp3 == Decimal("337.50")
+
+    def test_model_config_registry_db_records_loading_and_updates(self) -> None:
+        """
+        Verifica la carga e inicialización de ModelConfigRegistry a partir de registros de BD
+        y operaciones dinámicas de actualización.
+        """
+        db_rows = [
+            {
+                "model_slug": "claude-3.5-sonnet",
+                "engine_tier": "SYSTEM_2_LLM",
+                "input_cost_per_1m_usd": "3.000000",
+                "cached_cost_per_1m_usd": "0.300000",
+                "output_cost_per_1m_usd": "15.000000",
+                "embedding_cost_per_1m_usd": "0.000000",
+                "is_enabled": True,
+            }
+        ]
+
+        registry = ModelConfigRegistry(db_records=db_rows)
+        sonnet = registry.get_tariff("claude-3.5-sonnet")
+        assert sonnet.model_slug == "claude-3.5-sonnet"
+        assert sonnet.input_cost_per_1m_usd == Decimal("3.000000")
+        assert sonnet.output_cost_per_1m_usd == Decimal("15.000000")
+
+        # Actualización parcial
+        updated = registry.update_tariff("claude-3.5-sonnet", input_cost_per_1m_usd=Decimal("2.500000"))
+        assert updated.input_cost_per_1m_usd == Decimal("2.500000")
+        assert updated.output_cost_per_1m_usd == Decimal("15.000000")
+

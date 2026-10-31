@@ -54,7 +54,75 @@ flowchart LR
 
 ---
 
-## 2. Por qué Instrumentar desde la Fase 1 y Cómo Evitar que Consuma RAM en Local
+## 2. El Marco de los 7 Niveles de Observabilidad en OppyTec v2.0
+
+Para trascender el monitoreo reactivo convencional y consolidar una observabilidad de clase empresarial en una arquitectura SaaS Multi-Tenant hiper-escalable, OppyTec v2.0 adopta formalmente el **Marco de los 7 Niveles de Observabilidad**. Este modelo define una jerarquía técnica integral que abarca desde la emisión atómica del evento hasta el control estricto de series temporales y SLOs:
+
+```mermaid
+flowchart TD
+    L7["Nivel 7: Cardinalidad y Control de Explosión de Series Temporales (Regla de Oro Multi-Tenant)"]
+    L6["Nivel 6: SLOs y SLIs con Percentiles Estrictos (P95 <= 120ms / P95 <= 800ms)"]
+    L5["Nivel 5: Alertas Proactivas y Detección Temprana (Burn Rate, Saturation, Anomalies)"]
+    L4["Nivel 4: Correlación W3C y Propagación de Contexto (traceparent, X-Trace-ID Transversal)"]
+    L3["Nivel 3: Trazas Distribuidas (OpenTelemetry Tracing / Tempo DAGs)"]
+    L2["Nivel 2: Métricas Agregadas (Prometheus / Grafana Mimir Counters, Gauges, Histograms)"]
+    L1["Nivel 1: Logs Estructurados JSON (Structlog / Loki con Contexto Enriquecido)"]
+
+    L1 --> L2 --> L3 --> L4 --> L5 --> L6 --> L7
+```
+
+### 2.1 Detalle de los 7 Niveles
+
+1. **Nivel 1 — Logs Estructurados JSON (`structlog` / Loki):**
+   - **Propósito:** Registro atómico, inmutable y procesable por máquinas de eventos de dominio, errores y auditoría.
+   - **Estándar:** Se prohíbe taxativamente el uso de `print()` o logs en texto plano desestructurado. Cada evento se serializa en JSON canónico mediante `structlog`, enriquecido con marca temporal UTC ISO-8601, módulo emisor, nivel de severidad (`INFO`, `WARNING`, `ERROR`, `CRITICAL`), identificadores de contexto y payload higienizado por `scrub_telemetry_payload()`.
+
+2. **Nivel 2 — Métricas Agregadas (Prometheus / Grafana Mimir):**
+   - **Propósito:** Telemetría numérica agregada y continua del pulso del sistema.
+   - **Estándar:** Recolección de series temporales basadas en Contadores (`Counter`), Indicadores de Nivel (`Gauge`), Histogramas (`Histogram`) y Resúmenes (`Summary`). Cuantifican volumen de peticiones (RPS), tasas de error HTTP/gRPC, saturación del pool de conexiones PostgreSQL (`pool_size=40, max_overflow=20`), uso de memoria/CPU, ciclos de background tasks y tasa de aciertos (*Cache Hit Ratio*) en Redis.
+
+3. **Nivel 3 — Trazas Distribuidas (OpenTelemetry Tracing / Tempo):**
+   - **Propósito:** Reconstrucción gráfica en cascada (*DAG / Waterfall*) del ciclo de vida íntegro de cada interacción.
+   - **Estándar:** Medición de latencia punto a punto segmentada en Spans semánticos jerárquicos: desde el clic en React SPA (`oppytec-frontend`), pasando por FastAPI (`oppytec-backend`), middleware de resolución de esquemas Postgres (`SET LOCAL search_path`), pipelines de decisión JEV, llamadas a Redis y ejecuciones de agentes IA (`OppyFy` / LLM).
+
+4. **Nivel 4 — Correlación W3C y Propagación de Contexto (`Trace ID` / `X-Trace-ID`):**
+   - **Propósito:** Unificación bidireccional y trazabilidad transversal de los 4 pilares bajo un hilo conductor unívoco.
+   - **Estándar:** Adopción obligatoria del estándar CNCF/W3C *TraceContext* (`traceparent`). El frontend propaga el contexto distribuido hacia el backend; la respuesta HTTP inyecta la cabecera `X-Trace-ID`. Toda línea de log en Loki, todo evento forense en Sentry/GlitchTip y todo Span en Tempo comparten el mismo `trace_id`, permitiendo al operador navegar instantáneamente entre el error visual, el stacktrace forense y la cascada de ejecución.
+
+5. **Nivel 5 — Alertas Proactivas y Detección Temprana (Grafana Alerting / Sentry):**
+   - **Propósito:** Notificación anticipada ante síntomas de degradación antes de impactar a los comensales o al personal operativo del restaurante.
+   - **Estándar:** Reglas de alerta multi-ventana basadas en saturación de recursos (> 80% pool DB, > 85% CPU/RAM), velocidad de consumo acelerado del presupuesto de error (*Error Budget Burn Rate*), picos anómalos de errores 5xx y eventos de seguridad detenidos (inyecciones SQL, Prompt Injections JEV, rechazos de RBAC o anomalías de cuota).
+
+6. **Nivel 6 — SLOs y SLIs con Percentiles Estrictos ($P_{95} \le 120\text{ ms}$):**
+   - **Propósito:** Gobernanza técnica y contractual innegociable basada en indicadores de nivel de servicio objetivos.
+   - **Estándar:** 
+     - **SLI/SLO de Transacciones Operativas (FastAPI Core):** $P_{95} \le 120\text{ ms}$ (SLA corporativo obligatorio para inventario, ventas, recetas, órdenes y caja).
+     - **SLI/SLO de Reportes Analíticos y Agregaciones Pesadas:** $P_{95} \le 800\text{ ms}$.
+     - **SLI/SLO de Disponibilidad Uptime:** $\ge 99.9\%$ en Staging y Producción.
+     - **Error Budget Policy:** El agotamiento del presupuesto de error congela automáticamente el despliegue de nuevas funcionalidades, priorizando la estabilidad y resiliencia del sistema.
+
+7. **Nivel 7 — Cardinalidad y Control de Explosión de Series Temporales (Regla de Oro Multi-Tenant):**
+   - **Propósito:** Prevenir el colapso por agotamiento de memoria RAM (*OOM Kill*) del recolector de métricas (Prometheus/Mimir), garantizar consultas veloces y eliminar costos disparados de almacenamiento de series temporales.
+   - **La Regla de Oro en OppyTec SaaS Multi-Tenant:**
+     > En una plataforma SaaS Multi-Tenant con múltiples organizaciones (Holdings), esquemas aislados (Tenants) y miles de usuarios concurrentes, **las métricas de Prometheus deben mantener estrictamente BAJA CARDINALIDAD**.
+     >
+     > - **Etiquetas Macro Permitidas en Métricas Prometheus (Baja Cardinalidad):** Únicamente dimensiones acotadas y finitas como:
+     >   * `method`: Verbo HTTP (`GET`, `POST`, `PUT`, `DELETE`).
+     >   * `endpoint_template`: Ruta abstracta y canonizada (ej. `/api/v1/inventory/items/{id}`, **NUNCA** URLs con UUIDs o IDs concretos).
+     >   * `status_code`: Código de respuesta HTTP (`200`, `201`, `400`, `404`, `500`).
+     >   * `environment`: Entorno de ejecución (`local`, `preview`, `ci`, `staging`, `production`).
+     >
+     > - **Identificadores de Alta Cardinalidad Prohibidos en Métricas Prometheus:** Queda terminantemente prohibido usar como etiquetas (*labels*) de Prometheus identificadores como `user_id`, `tenant_schema`, `holding_id`, `trace_id`, `order_id`, `sku` o `rut_tax_id`.
+     >
+     > - **Canal Exclusivo para Alta Cardinalidad:** Los identificadores de alta o infinita cardinalidad deben viajar **exclusivamente** en los **atributos de Spans de OpenTelemetry** (`oppytec.tenant_schema`, `oppytec.holding_id`, `oppytec.user_id`, `oppytec.trace_id`) y en los **campos de Logs estructurados JSON** (Loki / Sentry).
+     >
+     > - **Fundamento Técnico y Matemático:** Si se incorporara `tenant_schema` (ej. 1.000 tenants) y `user_id` (ej. 10.000 usuarios) como labels en un histograma de Prometheus de 12 buckets con 80 endpoints y 4 métodos, la cantidad de series temporales activas explotaría a:
+     >   $$\text{Series Temporales} = 1.000 \times 10.000 \times 12 \times 80 \times 4 \approx 3.84 \times 10^{10} \text{ series activas}$$
+     >   Esta explosión combinatoria saturaría en minutos la memoria RAM del servidor Prometheus/Mimir, provocaría *OOM Kills*, bloquearía la renderización de paneles en Grafana e incurriría en facturaciones masivas e incontrolables en entornos de nube. Por el contrario, los almacenes columnares de trazas (Tempo) y logs (Loki) están arquitectónicamente diseñados para indexar alta cardinalidad a una fracción mínima del costo y sin riesgo de desbordamiento de memoria.
+
+---
+
+## 3. Por qué Instrumentar desde la Fase 1 y Cómo Evitar que Consuma RAM en Local
 
 1. **Instrumentación Única en el Núcleo Transversal (`Zero Boilerplate` en los Módulos):**
    - Los sensores no se escriben manualmente dentro de los 150 endpoints; se registran **una sola vez** en el arranque de la aplicación:
@@ -71,7 +139,7 @@ flowchart LR
 
 ---
 
-## 3. Alineación Estricta con los 5 Entornos (`.agent/estrategias/estrategia_entornos_y_despliegue_001.md`)
+## 4. Alineación Estricta con los 5 Entornos (`.agent/estrategias/estrategia_entornos_y_despliegue_001.md`)
 
 El comportamiento de las 4 herramientas está gobernado directamente por la variable `ENVIRONMENT` en `src/core/config.py` y por `/runtime-env.js` en el Frontend (preservando la invarianza del artefacto `SHA-256`):
 
@@ -85,9 +153,9 @@ El comportamiento de las 4 herramientas está gobernado directamente por la vari
 
 ---
 
-## 4. Contexto Multi-Tenant y Redacción de Datos Sensibles (ISO/IEC 27001 §A.12.4)
+## 5. Contexto Multi-Tenant y Redacción de Datos Sensibles (ISO/IEC 27001 §A.12.4)
 
-### 4.1 Etiquetado Automático por Holding y Tenant en Cada Traza y Error
+### 5.1 Etiquetado Automático por Holding y Tenant en Cada Traza y Error
 Cada vez que una petición atraviesa el middleware de autenticación y resolución de Tenant en FastAPI, `observability.py` inyecta automáticamente en el Span actual de OpenTelemetry y en el Scope de Sentry:
 - `oppytec.trace_id`: ID único devuelto también en la cabecera HTTP `X-Trace-ID` (si un cliente reporta un error en pantalla, el toast muestra ese código corto para buscarlo en 1 segundo en Grafana y Sentry).
 - `oppytec.holding_id`: UUID del Holding.
@@ -95,7 +163,7 @@ Cada vez que una petición atraviesa el middleware de autenticación y resoluci�
 - `oppytec.user_id` y `oppytec.role_rank`: ID numérico del trabajador (sin su nombre ni correo personal) y su rango jerárquico.
 - `oppytec.ui_language` y `oppytec.display_currency`: Idioma (`es`/`en`) y moneda activa (`CLP`/`USD`/`EUR`/`BRL`).
 
-### 4.2 Filtro Estricto de Redacción PII y `SecretStr` (*Zero Secret Leak to Telemetry*)
+### 5.2 Filtro Estricto de Redacción PII y `SecretStr` (*Zero Secret Leak to Telemetry*)
 Para cumplir con **ISO 27001** y con nuestra regla de **Cero Fuga de Secretos**:
 - El procesador de OpenTelemetry y el hook `before_send` de Sentry pasan todo evento por `scrub_telemetry_payload()`:
   - Elimina automáticamente cabeceras `Authorization`, `Cookie`, `X-Api-Key`.
@@ -104,7 +172,7 @@ Para cumplir con **ISO 27001** y con nuestra regla de **Cero Fuga de Secretos**:
 
 ---
 
-## 5. Centro de Mando de Observabilidad en el Panel de Administración de OppyTec (`platform-admin/observability-center/`)
+## 6. Centro de Mando de Observabilidad en el Panel de Administración de OppyTec (`platform-admin/observability-center/`)
 
 Para que el `SuperUser` y el equipo de OppyTec no tengan que abrir 4 sitios externos distintos, el Panel de Administración Global de OppyTec (`features/platform-admin/`) incorpora un **Apartado Especial de Observabilidad y Telemetría** con vistas y sub-vistas dedicadas por cada herramienta, gobernadas por un **Filtro Global de Entorno y Cliente**.
 
@@ -127,7 +195,7 @@ flowchart TD
     TopFilterBar --> V0 & V1 & V2 & V3 & V4
 ```
 
-### 5.1 El Filtro Global por `Environment` (+ Filtro por `Holding / Tenant` y Modo Comparación)
+### 6.1 El Filtro Global por `Environment` (+ Filtro por `Holding / Tenant` y Modo Comparación)
 1. **Conmutador de Entorno con Indicador de Salud:**
    - Permite alternar en 1 clic entre **`production`**, **`staging`**, **`preview`**, **`ci`** y **`local`**.
    - Cada botón de entorno muestra su semáforo en tiempo real (`🟢 Healthy`, `🟡 Warning`, `🔴 Critical`) para saber de inmediato qué entorno se está inspeccionando y si otro entorno presenta alertas.
@@ -138,7 +206,7 @@ flowchart TD
 
 ---
 
-### 5.2 Detalle de las Vistas y Sub-Vistas por Herramienta
+### 6.2 Detalle de las Vistas y Sub-Vistas por Herramienta
 
 #### Sección 0: Resumen Ejecutivo 360° (Vista Unificada)
 - **KPIs Principales:** Disponibilidad Uptime (`99.9%+`), Latencia $P_{95}$ Global vs umbral de `120 ms`, Errores no resueltos en las últimas 24h, Usuarios concurrentes en vivo, Uso del Pool de Conexiones PostgreSQL y estado de los *Circuit Breakers* (Redis y Tasas FX).
@@ -165,7 +233,7 @@ flowchart TD
 
 ---
 
-### 5.3 Control de Acceso RBAC Global (`public`) para el Centro de Observabilidad
+### 6.3 Control de Acceso RBAC Global (`public`) para el Centro de Observabilidad
 El acceso a estas vistas en `platform-admin` está protegido por permisos de 3 niveles en `public`:
 - `platform_observability.overview.view` (Resumen 360°)
 - `platform_observability.otel.view` (Trazas y latencias de OpenTelemetry)
@@ -175,7 +243,7 @@ El acceso a estas vistas en `platform-admin` está protegido por permisos de 3 n
 
 ---
 
-## 6. Artefactos a Construir en el Proyecto (Nombres y Ubicaciones)
+## 7. Artefactos a Construir en el Proyecto (Nombres y Ubicaciones)
 
 | # | Artefacto | Ruta Exacta en el Proyecto | Propósito |
 |---|---|---|---|

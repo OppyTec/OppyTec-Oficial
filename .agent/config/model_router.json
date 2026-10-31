@@ -1,0 +1,132 @@
+{
+  "version": "2.1.0",
+  "description": "Enrutador Dinámico de Modelos LLM Multi-Proveedor con Fallback Automático por Cuota y Tiers Abstractos",
+  "active_provider_default": "gemini",
+  "dynamic_routing_enabled": true,
+  "complexity_thresholds": {
+    "lightweight_max": 0.34,
+    "fast_execution_max": 0.69,
+    "reasoning_heavy_min": 0.70
+  },
+  "dimension_weights": {
+    "graph": 0.35,
+    "domain": 0.30,
+    "scope": 0.20,
+    "context": 0.15
+  },
+  "domain_criticality_weights": {
+    "high": {
+      "weight": 1.0,
+      "keywords": [
+        "transaccion", "transacciones", "kardex", "balance", "moneda", "fx",
+        "rbac", "auth", "tenant", "tenants", "cifrado", "alembic", "migracion",
+        "migraciones", "acid", "conciliacion", "red team", "seguridad",
+        "ciberseguridad", "rebase", "conflicto", "vulnerabilidad", "idor", "escape"
+      ]
+    },
+    "medium": {
+      "weight": 0.5,
+      "keywords": [
+        "formulario", "formularios", "filtro", "filtros", "busqueda",
+        "paginacion", "crud", "endpoint", "endpoints", "servicio",
+        "repositorio", "uow", "componente", "componentes", "modal", "dialog"
+      ]
+    },
+    "low": {
+      "weight": 0.1,
+      "keywords": [
+        "estilo", "estilos", "color", "colores", "traduccion", "traducciones",
+        "i18n", "solo lectura", "plana", "constante", "constantes", "badge",
+        "badges", "label", "icono", "iconos", "codigo postal", "codigos postales"
+      ]
+    }
+  },
+  "tiers": {
+    "tier_reasoning_heavy": {
+      "name": "Razonamiento Profundo y Auditoría Crítica",
+      "description": "Diseño de Arquitectura DDD, Auditoría Ofensiva Red Team, Árbitro Git y Fuzzing",
+      "primary": "gemini/gemini-4-argon",
+      "fallbacks": [
+        "anthropic/claude-3-7-sonnet",
+        "openai/gpt-4o",
+        "gemini/gemini-2.5-pro",
+        "gemini/gemini-3.8-flash"
+      ]
+    },
+    "tier_fast_execution": {
+      "name": "Construcción Rápida y Mantenimiento",
+      "description": "Desarrollo Backend FastAPI, Frontend React 19, Migraciones Alembic y Suites Unitarias",
+      "primary": "gemini/gemini-3.8-flash",
+      "fallbacks": [
+        "openai/gpt-4o-mini",
+        "anthropic/claude-3-5-haiku",
+        "gemini/gemini-2.5-flash",
+        "gemini/gemini-flash-lite"
+      ]
+    },
+    "tier_lightweight": {
+      "name": "Ejecución Ultraligera y Formateo",
+      "description": "Internacionalización i18n, Diccionarios JSON, Formateo PEP8/ESLint y Métricas",
+      "primary": "gemini/gemini-3.8-flash",
+      "fallbacks": [
+        "gemini/gemini-flash-lite",
+        "openai/gpt-4o-mini"
+      ]
+    }
+  },
+  "agent_overrides": {
+    "01-orchestrator-pm": "tier_reasoning_heavy",
+    "02-software-architect": "tier_reasoning_heavy",
+    "03-database-alembic-and-backup-engineer": "tier_fast_execution",
+    "04-backend-senior-dev": "tier_fast_execution",
+    "05-frontend-senior-dev": "tier_fast_execution",
+    "06-ai-oppyfy-and-jev-engineer": "tier_reasoning_heavy",
+    "07-i18n-and-fx-currency-specialist": "tier_lightweight",
+    "08-environments-and-observability-engineer": "tier_fast_execution",
+    "09-qa-parity-and-test-engineer": "tier_reasoning_heavy",
+    "10-cybersecurity-redteam-auditor": "tier_reasoning_heavy",
+    "11-git-worktree-merge-arbiter": "tier_reasoning_heavy",
+    "12-tech-writer-openspec-archify": "tier_fast_execution",
+    "13-browser-e2e-playwright": "tier_reasoning_heavy"
+  },
+  "providers_catalog": {
+    "gemini": {
+      "name": "Google DeepMind / Vertex AI",
+      "models": [
+        {"id": "gemini-4-argon", "family": "argon", "context_window": 1000000},
+        {"id": "gemini-2.5-pro", "family": "pro", "context_window": 1000000},
+        {"id": "gemini-3.8-flash", "family": "flash", "context_window": 1000000},
+        {"id": "gemini-flash-lite", "family": "flash-lite", "context_window": 500000}
+      ]
+    },
+    "anthropic": {
+      "name": "Anthropic Claude",
+      "models": [
+        {"id": "claude-3-7-sonnet", "family": "sonnet", "context_window": 200000},
+        {"id": "claude-3-5-haiku", "family": "haiku", "context_window": 200000},
+        {"id": "claude-opus", "family": "opus", "context_window": 200000}
+      ]
+    },
+    "openai": {
+      "name": "OpenAI",
+      "models": [
+        {"id": "gpt-4o", "family": "flagship", "context_window": 128000},
+        {"id": "gpt-4o-mini", "family": "mini", "context_window": 128000},
+        {"id": "o3-mini", "family": "reasoning", "context_window": 200000}
+      ]
+    },
+    "xai": {
+      "name": "xAI Grok",
+      "models": [
+        {"id": "grok-2", "family": "flagship", "context_window": 128000}
+      ]
+    },
+    "deepseek": {
+      "name": "DeepSeek AI",
+      "models": [
+        {"id": "deepseek-r1", "family": "reasoning", "context_window": 64000},
+        {"id": "deepseek-v3", "family": "chat", "context_window": 64000}
+      ]
+    }
+  }
+}

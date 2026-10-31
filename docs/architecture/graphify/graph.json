@@ -66,6 +66,12 @@
       "path": "oppytec-backend/src/core/bootstrap.py"
     },
     {
+      "id": "core:code_mode_sandbox",
+      "label": "Core Code Mode Sandboxed Runner (AST Validation, Watchdog & Hard-Code Stripping)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/sandbox/runner.py"
+    },
+    {
       "id": "core:database",
       "label": "AsyncDatabaseSessionManager (PublicBase & TenantBase SET LOCAL / RESET search_path)",
       "type": "backend_core",
@@ -88,6 +94,12 @@
       "label": "JEV System 1 Fast Decision Engine (Boolean, Choice, Score <15ms)",
       "type": "backend_core",
       "path": "oppytec-backend/src/core/jev/"
+    },
+    {
+      "id": "core:mcp_bridge",
+      "label": "Core MCP Dynamic Bridge Manager (Lifecycle & Tool Discovery)",
+      "type": "backend_core",
+      "path": "oppytec-backend/src/core/mcp_bridge/manager.py"
     },
     {
       "id": "core:r2_storage",
@@ -366,6 +378,12 @@
       "path": "oppytec-backend/alembic/versions/0010_tenant_oppyfy_custom_rbac_and_credit_wallets.py"
     },
     {
+      "id": "migration:0011_public_jev_request",
+      "label": "Alembic 0011 Migration: Public jev request logs and finops telemetry",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0011_public_jev_request_logs_and_finops_telemetry.py"
+    },
+    {
       "id": "module:analytics",
       "label": "Analytics Module (Executive Margins, Kasavana Menu Engineering, Loss Control & Projections)",
       "type": "backend_module",
@@ -504,10 +522,22 @@
       "path": "oppytec-backend/src/modules/tenancy/presentation/router.py"
     },
     {
+      "id": "service:oppyfy_code_mode",
+      "label": "OppyFy Code Mode Application Service (Multi-Tenant & FinOps Telemetry)",
+      "type": "backend_service",
+      "path": "oppytec-backend/src/modules/oppy_ai/application/code_mode_service.py"
+    },
+    {
       "id": "suite:architecture",
       "label": "White-Box Architecture Test Suite (15 Immutable Governance & Parity Gates)",
       "type": "verification_suite",
       "path": "oppytec-backend/tests/architecture/"
+    },
+    {
+      "id": "suite:code_mode_sandbox_security_test",
+      "label": "Code Mode Sandbox Security & Red Team Offensive Suite (10 Vectors)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/security_redteam/test_17_code_mode_sandbox_security.py"
     },
     {
       "id": "suite:contracts_schemathesis",
@@ -568,6 +598,24 @@
       "label": "High-Concurrency Load & Stress Suite (500 RPS Sustained, P95 <= 120ms SLA)",
       "type": "verification_suite",
       "path": "oppytec-backend/tests/load/locustfile.py"
+    },
+    {
+      "id": "suite:mcp_bridge_test",
+      "label": "MCP Dynamic Bridge Manager Unit Test Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/core/test_mcp_bridge.py"
+    },
+    {
+      "id": "suite:oppyfy_code_mode_test",
+      "label": "OppyFy Code Mode Application Service Unit Test Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/modules/test_oppyfy_code_mode.py"
+    },
+    {
+      "id": "suite:sandbox_runner_test",
+      "label": "Code Mode Sandbox Runner Unit Test Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/core/test_sandbox_runner.py"
     },
     {
       "id": "suite:security_redteam_01_11",
@@ -729,6 +777,11 @@
       "source": "atlas:05_environments_and_agentic_harness",
       "target": "suite:architecture",
       "relation": "visualizes_and_seals_sha256"
+    },
+    {
+      "source": "core:code_mode_sandbox",
+      "target": "core:mcp_bridge",
+      "relation": "executes_mcp_calls_via_bridge"
     },
     {
       "source": "frontend:admin_management_views",
@@ -992,8 +1045,18 @@
     },
     {
       "source": "module:oppy_ai",
+      "target": "core:code_mode_sandbox",
+      "relation": "executes_synthesized_scripts"
+    },
+    {
+      "source": "module:oppy_ai",
       "target": "core:jev_system1",
       "relation": "routes_intent_and_moderates_prompts"
+    },
+    {
+      "source": "module:oppy_ai",
+      "target": "core:mcp_bridge",
+      "relation": "discovers_and_routes_mcp_tools"
     },
     {
       "source": "module:oppy_ai",
@@ -1096,9 +1159,34 @@
       "relation": "routes_to_domain_module"
     },
     {
+      "source": "service:oppyfy_code_mode",
+      "target": "core:code_mode_sandbox",
+      "relation": "invokes_isolated_sandbox"
+    },
+    {
+      "source": "service:oppyfy_code_mode",
+      "target": "core:mcp_bridge",
+      "relation": "searches_capabilities"
+    },
+    {
+      "source": "service:oppyfy_code_mode",
+      "target": "module:oppy_ai",
+      "relation": "orchestrates_code_mode"
+    },
+    {
       "source": "suite:architecture",
       "target": "app:backend_main",
       "relation": "enforces_clean_architecture_and_10_criteria"
+    },
+    {
+      "source": "suite:code_mode_sandbox_security_test",
+      "target": "core:code_mode_sandbox",
+      "relation": "audits_sandbox_escapes_and_watchdog"
+    },
+    {
+      "source": "suite:code_mode_sandbox_security_test",
+      "target": "core:mcp_bridge",
+      "relation": "audits_anti_idor_and_stripping"
     },
     {
       "source": "suite:contracts_schemathesis",
@@ -1161,6 +1249,21 @@
       "relation": "stresses_500_rps_p95_under_120ms"
     },
     {
+      "source": "suite:mcp_bridge_test",
+      "target": "core:mcp_bridge",
+      "relation": "verifies_tool_registration_and_sdk_generation"
+    },
+    {
+      "source": "suite:oppyfy_code_mode_test",
+      "target": "service:oppyfy_code_mode",
+      "relation": "verifies_token_savings_and_chat_payload"
+    },
+    {
+      "source": "suite:sandbox_runner_test",
+      "target": "core:code_mode_sandbox",
+      "relation": "verifies_ast_limits_and_stripping"
+    },
+    {
       "source": "suite:security_redteam_01_11",
       "target": "app:backend_main",
       "relation": "audits_11_offensive_redteam_vectors"
@@ -1182,7 +1285,7 @@
     "frontend_features": 10,
     "frontend_shared_kernels": 5,
     "cross_feature_imports": 0,
-    "verification_suites": 15,
+    "verification_suites": 19,
     "redteam_vectors": 11,
     "e2e_flows": 5,
     "archify_atlas_maps": 5,
@@ -1191,11 +1294,11 @@
     "load_test_target_rps": 500,
     "load_test_p95_budget_ms": 120,
     "rubric_score": "10/10",
-    "nodes_count": 96,
-    "edges_count": 116,
+    "nodes_count": 104,
+    "edges_count": 127,
     "frontend_admin_views": 4,
     "backend_routers": 11,
-    "alembic_migrations": 12,
-    "updated_at": "2026-10-27T00:28:42.934749+00:00"
+    "alembic_migrations": 13,
+    "updated_at": "2026-10-31T23:14:28.238915+00:00"
   }
 }

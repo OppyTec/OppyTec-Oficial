@@ -15,6 +15,10 @@ from src.modules.oppy_ai.application.ai_credit_packs_service import (
     CreditPackDTO,
     CreditPackPurchaseQuoteDTO,
 )
+from src.modules.oppy_ai.application.code_mode_service import (
+    OppyfyCodeModeExecutionResult,
+    OppyfyCodeModeService,
+)
 from src.modules.oppy_ai.application.metered_ai_service import (
     DEFAULT_MODEL_TARIFFS,
     MeteredAIService,
@@ -64,6 +68,8 @@ __all__ = [
     "ModelConfigRegistry",
     "ModelTariff",
     "OppyfyAuditEntry",
+    "OppyfyCodeModeExecutionResult",
+    "OppyfyCodeModeService",
     "OppyfyQueryRequest",
     "OppyfyQueryResponse",
     "OppyfyToolRouter",
