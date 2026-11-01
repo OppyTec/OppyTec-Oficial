@@ -18,6 +18,7 @@ import {
   Users,
   UsersRound,
   X,
+  Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { type CSSProperties, useEffect, useState } from "react";
@@ -84,6 +85,14 @@ export const GESTION_NEGOCIO_ITEMS = [
     color: "#10b981",
     rgb: "16,185,129",
     badge: "FinOps",
+  },
+  {
+    path: "/admin/jev-consumption",
+    label: "Consumo de JEV",
+    icon: Zap,
+    color: "#06b6d4",
+    rgb: "6,182,212",
+    badge: "JEV",
   },
 ] as const;
 
@@ -213,6 +222,13 @@ export function AdminSidebar({
     {
       ...GESTION_NEGOCIO_ITEMS[3],
       label: translateKey("platform_admin", "sidebar.menu_token_consumption"),
+    },
+    {
+      ...GESTION_NEGOCIO_ITEMS[4],
+      label:
+        translateKey("platform_admin", "admin.nav.jev_consumption") ||
+        translateKey("platform_admin", "sidebar.menu_jev_consumption") ||
+        "Consumo de JEV",
     },
   ];
 
@@ -401,7 +417,9 @@ export function AdminSidebar({
                       ? "admin-nav-item-plans"
                       : subItem.path === "/admin/token-consumption"
                         ? "admin-nav-item-token-consumption"
-                        : `admin-nav-item-${subItem.path.replace("/admin/", "")}`;
+                        : subItem.path === "/admin/jev-consumption"
+                          ? "admin-nav-item-jev-consumption"
+                          : `admin-nav-item-${subItem.path.replace("/admin/", "")}`;
 
                   return (
                     <Link

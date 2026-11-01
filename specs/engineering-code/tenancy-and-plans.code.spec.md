@@ -59,14 +59,21 @@ El estado de salud de cada una de las 6 cuotas se calcula mediante `compute_quot
 - `GET /api/v1/tenancy/quotas/seats`: Estado detallado de cupos de usuarios y trabajadores en soft-delete.
 - `GET /api/v1/tenancy/quotas/storage`: Estado de cuota de almacenamiento Cloudflare R2 en MB y porcentaje.
 - `GET /api/v1/tenancy/admin/dashboard-summary`: Métricas y conteos reales para el Shell del Panel Administrador.
+- `GET /api/v1/platform-admin/jev-consumption`: Consola FinOps de consumo de micro-decisiones Sistema 1 (`public.jev_request_logs`). Agrupación jerárquica en 3 niveles (Holdings $\to$ Tenants $\to$ Logs individuales), cálculo de micro-costos en `Decimal` (`Numeric(14,6)` USD, `Numeric(14,2)` CLP, créditos), métricas agregadas de calibración (`AUTO_ACCEPTED`, `FLAGGED_WARNING`, `FALLBACK_LLM`), latencia promedio, estimación de ahorro financiero frente a costo teórico de Sistema 2 ($0.0025 USD de Google Gemini Pro con >99.7% de ahorro) y filtros server-side (`search`, `caller_feature`, `decision_primitive`, `calibrated_action`, `holding_id`, `tenant_id`, paginación). Protegido con `platform_admin.tokens.read`.
 
-## 5. Arquitectura Frontend: 4 Vistas Administrativas, i18n y Guardias RBAC
+## 5. Arquitectura Frontend: Vistas Administrativas, Consola FinOps JEV, i18n y Guardias RBAC
 
-Las 4 vistas operativas se ubican en `oppytec-frontend/src/features/platform-admin/AdminManagementViews.tsx` y se montan en el enrutador SPA (`/admin/holdings`, `/admin/legal-entities`, `/admin/tenants`, `/admin/client-users`):
+Las vistas operativas se ubican en `oppytec-frontend/src/features/platform-admin/` y se montan en el enrutador SPA (`/admin/holdings`, `/admin/legal-entities`, `/admin/tenants`, `/admin/client-users`, `/admin/jev-consumption`):
 1. **`AdminHoldingsView`:** Tabla y modal de creación de Holdings con overrides de capacidad corporativa. Protegida con `platform_admin.holdings.manage`.
 2. **`AdminLegalEntitiesView`:** Tabla y modal de sociedades con validación de RUT chileno (módulo 11) y asignación 1:1. Protegida con `platform_admin.legal_entities.manage`.
 3. **`AdminTenantsView`:** Tabla y modal de aprovisionamiento con selector interactivo del árbol de módulos SaaS (`SAAS_MODULE_TREE`), botón rápido para los 10 módulos del Plan Básico (`PLAN_BASICO_10_MODULE_SLUGS`) y asignación de base de datos `tenant_<slug>`. Protegida con `platform_admin.tenants.provision`.
 4. **`AdminClientUsersView`:** Tabla de usuarios clientes con estado `is_deleted` ("Activo" / "Liberado"), modal de creación con validación de cupo `max_active_users`, botón "Archivar" (soft-delete que libera el cupo inmediatamente) y botón "Entrar" (impersonación de soporte técnico). Protegida con `platform_admin.client_users.manage`.
+5. **`JevConsumptionPage` (`oppytec-frontend/src/features/platform-admin/jev/JevConsumptionPage.tsx`):** Consola FinOps de micro-decisiones Sistema 1 montada en `/admin/jev-consumption` y enlazada en `AdminSidebar.tsx`. Protegida por la guardia RBAC `platform_admin.tokens.read`.
+   - **Tarjetas KPI de Alto Impacto:** Total de decisiones, costo real FinOps (USD y CLP con garantía Zero-Float), Ahorro Estimado frente a LLM generativo (>99.7% de ahorro económico), latencia promedio (SLA < 500 ms) y desglose de acciones calibradas (`AUTO_ACCEPTED` verde, `FLAGGED_WARNING` ámbar, `FALLBACK_LLM` rojo).
+   - **Filtros Server-Side Reactivos:** Búsqueda en vivo (`search`), selector de primitiva (`BOOLEAN`, `CHOICE`, `SCORE`), acción calibrada, feature llamante (`caller_feature`), holding y tenant.
+   - **Visualización Jerárquica Accordion:** Holdings $\to$ Tenants $\to$ Tabla paginada de logs con badges de confianza calibrada (`confidence_score: Decimal(5,4)`), botón de inspección modal con payload JSON higienizado y trazabilidad OpenTelemetry.
+   - **Hook de Consulta y Estado:** `useJevConsumption` (`hooks/useJevConsumption.ts`) sobre TanStack Query (`queryKeys.adminJevConsumptionKeys`).
+   - **Paridad i18n:** Traducciones completas en `locales/{es,en}/platform_admin.json` bajo la sección `jev_consumption`.
 
 ### Componentes Genéricos de Soporte
 - **`DynamicAdminTable` (`oppytec-frontend/src/shared/components/admin/DynamicAdminTable.tsx`):** Tabla con ordenamiento, filtrado en vivo, columnas configurables, soporte de permisos declarativos (`createPermission`, `editPermission`, `deletePermission`) e integración con `translateKey`.

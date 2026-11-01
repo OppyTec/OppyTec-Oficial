@@ -5,6 +5,7 @@ Endpoints REST de Administración de Plataforma SaaS, Planes Comerciales y FinOp
 - `/api/v1/platform-admin/plans/{slug}` (PUT, DELETE con validación 409 de clientes activos)
 - `/api/v1/platform-admin/ai-credits/policy` (GET, PUT)
 - `/api/v1/platform-admin/token-consumption` (GET con agregación jerárquica Holding -> Tenant -> Logs)
+- `/api/v1/platform-admin/jev-consumption` (GET con agregación jerárquica JEV Holding -> Tenant -> Logs)
 - `/api/v1/platform-admin/holdings/{id}/ai-credits` (PATCH)
 - `/api/v1/platform-admin/tenants/{id}/ai-credits` (PATCH)
 """
@@ -15,6 +16,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
+from src.core.observability import trace_span
 from src.core.guards.rbac_dependencies import (
     AuthenticatedPrincipal,
     RequireGlobalPermission,
@@ -33,6 +35,13 @@ from src.modules.tenancy.application.admin_plans_service import (
 from src.modules.tenancy.application.credit_quota_adjustment_service import (
     CreditQuotaAdjustmentService,
 )
+from src.modules.tenancy.application.jev_consumption_service import (
+    JevConsumptionService,
+    JevConsumptionSummaryDTO,
+    JevHoldingGroupDTO,
+    JevLogItemDTO,
+    JevTenantGroupDTO,
+)
 from src.modules.tenancy.application.saas_policy_service import (
     SaaSAIPolicyDTO,
     SaaSPolicyService,
@@ -42,6 +51,10 @@ from src.modules.tenancy.presentation.schemas_platform_admin import (
     CreditQuotaAdjustmentResponse,
     HoldingCreditsUpdateRequest,
     HoldingGroupResponse,
+    JevConsumptionSummaryResponse,
+    JevHoldingGroup,
+    JevLogItem,
+    JevTenantGroup,
     SaaSAIPolicyResponse,
     SaaSAIPolicyUpdateRequest,
     SystemPlanCreateRequest,
@@ -61,6 +74,7 @@ _admin_plans_service = AdminPlansService()
 _admin_plans_service.set_clients_stores(_holdings_store, _tenants_store)
 _credit_quota_service = CreditQuotaAdjustmentService()
 _token_consumption_service = TokenConsumptionAggregatorService()
+_jev_consumption_service = JevConsumptionService()
 
 
 # ============================================================================
@@ -178,6 +192,87 @@ def _map_token_summary_dto(dto: TokenConsumptionSummaryDTO) -> TokenConsumptionS
         tokens_per_credit=dto.tokens_per_credit,
         page=dto.page,
         page_size=dto.page_size,
+    )
+
+
+def _map_jev_log_dto(dto: JevLogItemDTO) -> JevLogItem:
+    return JevLogItem(
+        id=dto.id,
+        created_at=dto.created_at,
+        holding_id=dto.holding_id,
+        holding_name=dto.holding_name,
+        tenant_id=dto.tenant_id,
+        tenant_name=dto.tenant_name,
+        tenant_schema=dto.tenant_schema,
+        user_id=dto.user_id,
+        trace_id=dto.trace_id,
+        caller_feature=dto.caller_feature,
+        decision_id=dto.decision_id,
+        decision_primitive=dto.decision_primitive,
+        input_summary=dto.input_summary,
+        result_value=dto.result_value,
+        confidence_score=dto.confidence_score,
+        calibrated_action=dto.calibrated_action,
+        model_name=dto.model_name,
+        estimated_tokens=dto.estimated_tokens,
+        provider_cost_usd=dto.provider_cost_usd,
+        provider_cost_clp=dto.provider_cost_clp,
+        credits_deducted=dto.credits_deducted,
+        latency_ms=dto.latency_ms,
+        is_success=dto.is_success,
+        error_message=dto.error_message,
+    )
+
+
+def _map_jev_tenant_group_dto(dto: JevTenantGroupDTO) -> JevTenantGroup:
+    return JevTenantGroup(
+        tenant_id=dto.tenant_id,
+        tenant_name=dto.tenant_name,
+        tenant_schema=dto.tenant_schema,
+        holding_id=dto.holding_id,
+        total_decisions=dto.total_decisions,
+        total_cost_usd=dto.total_cost_usd,
+        total_cost_clp=dto.total_cost_clp,
+        total_credits_deducted=dto.total_credits_deducted,
+        avg_latency_ms=dto.avg_latency_ms,
+        auto_accepted_count=dto.auto_accepted_count,
+        flagged_warning_count=dto.flagged_warning_count,
+        fallback_llm_count=dto.fallback_llm_count,
+        logs=[_map_jev_log_dto(l) for l in dto.logs],
+    )
+
+
+def _map_jev_holding_group_dto(dto: JevHoldingGroupDTO) -> JevHoldingGroup:
+    return JevHoldingGroup(
+        holding_id=dto.holding_id,
+        holding_name=dto.holding_name,
+        total_decisions=dto.total_decisions,
+        total_cost_usd=dto.total_cost_usd,
+        total_cost_clp=dto.total_cost_clp,
+        total_credits_deducted=dto.total_credits_deducted,
+        avg_latency_ms=dto.avg_latency_ms,
+        tenants=[_map_jev_tenant_group_dto(t) for t in dto.tenants],
+    )
+
+
+def _map_jev_summary_dto(dto: JevConsumptionSummaryDTO) -> JevConsumptionSummaryResponse:
+    return JevConsumptionSummaryResponse(
+        total_decisions_all=dto.total_decisions_all,
+        total_cost_usd_all=dto.total_cost_usd_all,
+        total_cost_clp_all=dto.total_cost_clp_all,
+        total_credits_deducted_all=dto.total_credits_deducted_all,
+        avg_latency_ms_all=dto.avg_latency_ms_all,
+        total_auto_accepted_all=dto.total_auto_accepted_all,
+        total_flagged_warning_all=dto.total_flagged_warning_all,
+        total_fallback_llm_all=dto.total_fallback_llm_all,
+        estimated_savings_usd_all=dto.estimated_savings_usd_all,
+        estimated_savings_clp_all=dto.estimated_savings_clp_all,
+        holdings=[_map_jev_holding_group_dto(h) for h in dto.holdings],
+        tenants=[_map_jev_tenant_group_dto(t) for t in dto.tenants],
+        all_logs=[_map_jev_log_dto(l) for l in dto.all_logs],
+        page=dto.page,
+        page_size=dto.page_size,
+        total_logs_count=dto.total_logs_count,
     )
 
 
@@ -350,7 +445,67 @@ async def get_token_consumption_endpoint(
 
 
 # ============================================================================
-# 4. MODALES DE AJUSTE DE CUPOS DE CRÉDITOS IA
+# 4. CONSOLA FINOPS DE CONSUMO DE DECISIONES JEV
+# ============================================================================
+
+
+@router.get(
+    "/api/v1/platform-admin/jev-consumption",
+    response_model=JevConsumptionSummaryResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_jev_consumption_endpoint(
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("platform_admin.tokens.read")),
+    ],
+    search: str | None = Query(default=None),
+    caller_feature: str | None = Query(default=None),
+    decision_primitive: str | None = Query(default=None),
+    calibrated_action: str | None = Query(default=None),
+    holding_id: str | None = Query(default=None),
+    tenant_id: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+) -> JevConsumptionSummaryResponse:
+    """
+    Consulta agregada jerárquica de consumo de decisiones JEV,
+    evaluaciones de confianza calibrada y cálculo de ahorro FinOps con filtros server-side.
+    """
+    with trace_span(
+        "platform_admin.jev_consumption.query",
+        attributes={
+            "user_id": str(principal.user_id),
+            "search": search or "",
+            "caller_feature": caller_feature or "",
+            "decision_primitive": decision_primitive or "",
+            "calibrated_action": calibrated_action or "",
+            "holding_id": holding_id or "",
+            "tenant_id": tenant_id or "",
+            "page": page,
+            "page_size": page_size,
+        },
+        tracer_name="oppytec.tenancy.jev_consumption",
+    ) as span_attrs:
+        summary = _jev_consumption_service.get_jev_consumption_summary(
+            search=search,
+            caller_feature=caller_feature,
+            decision_primitive=decision_primitive,
+            calibrated_action=calibrated_action,
+            holding_id=holding_id,
+            tenant_id=tenant_id,
+            page=page,
+            page_size=page_size,
+        )
+        span_attrs["total_decisions_all"] = summary.total_decisions_all
+        span_attrs["total_cost_usd_all"] = str(summary.total_cost_usd_all)
+        span_attrs["avg_latency_ms_all"] = str(summary.avg_latency_ms_all)
+        span_attrs["estimated_savings_usd_all"] = str(summary.estimated_savings_usd_all)
+        return _map_jev_summary_dto(summary)
+
+
+# ============================================================================
+# 5. MODALES DE AJUSTE DE CUPOS DE CRÉDITOS IA
 # ============================================================================
 
 

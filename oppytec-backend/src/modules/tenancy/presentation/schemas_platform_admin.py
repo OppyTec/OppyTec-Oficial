@@ -5,6 +5,7 @@ Esquemas Pydantic v2 (`extra="forbid"`, `Decimal` estricto) para:
 - Política Global de Conversión SaaS & FinOps (`/api/v1/platform-admin/ai-credits/policy`).
 - Consola FinOps de Consumo de Tokens & Créditos (`/api/v1/platform-admin/token-consumption`).
 - Modales de Ajuste de Cupos de Créditos IA (`/ai-credits`).
+- Consola FinOps de Consumo de Decisiones JEV (`/api/v1/platform-admin/jev-consumption`).
 """
 # mypy: disable-error-code="explicit-any"
 from __future__ import annotations
@@ -266,3 +267,98 @@ class TokenConsumptionSummaryResponse(BaseModel):
     tokens_per_credit: int
     page: int
     page_size: int
+
+
+# ============================================================================
+# 5. CONSOLA FINOPS DE CONSUMO DE DECISIONES JEV (SUB-SIMBÓLICO / DETERMINISTA)
+# ============================================================================
+
+
+class JevLogItem(BaseModel):
+    """Registro individual de telemetría y auditoría de decisiones JEV."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    created_at: datetime
+    holding_id: str
+    holding_name: str
+    tenant_id: str
+    tenant_name: str
+    tenant_schema: str
+    user_id: int | None = None
+    trace_id: str | None = None
+    caller_feature: str
+    decision_id: str
+    decision_primitive: str
+    input_summary: str
+    result_value: str
+    confidence_score: Decimal
+    calibrated_action: str
+    model_name: str
+    estimated_tokens: int
+    provider_cost_usd: Decimal
+    provider_cost_clp: Decimal
+    credits_deducted: Decimal
+    latency_ms: int
+    is_success: bool
+    error_message: str | None = None
+
+
+class JevTenantGroup(BaseModel):
+    """Grupo acumulado de decisiones y métricas JEV por sucursal / tenant."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    tenant_id: str
+    tenant_name: str
+    tenant_schema: str
+    holding_id: str
+    total_decisions: int
+    total_cost_usd: Decimal
+    total_cost_clp: Decimal
+    total_credits_deducted: Decimal
+    avg_latency_ms: Decimal
+    auto_accepted_count: int
+    flagged_warning_count: int
+    fallback_llm_count: int
+    logs: list[JevLogItem] = Field(default_factory=list)
+
+
+class JevHoldingGroup(BaseModel):
+    """Grupo acumulado jerárquico de decisiones y métricas JEV por Holding corporativo."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    holding_id: str
+    holding_name: str
+    total_decisions: int
+    total_cost_usd: Decimal
+    total_cost_clp: Decimal
+    total_credits_deducted: Decimal
+    avg_latency_ms: Decimal
+    tenants: list[JevTenantGroup] = Field(default_factory=list)
+
+
+class JevConsumptionSummaryResponse(BaseModel):
+    """Resumen consolidado para la Consola FinOps de consumo de decisiones JEV."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    total_decisions_all: int
+    total_cost_usd_all: Decimal
+    total_cost_clp_all: Decimal
+    total_credits_deducted_all: Decimal
+    avg_latency_ms_all: Decimal
+    total_auto_accepted_all: int
+    total_flagged_warning_all: int
+    total_fallback_llm_all: int
+    estimated_savings_usd_all: Decimal
+    estimated_savings_clp_all: Decimal
+    holdings: list[JevHoldingGroup] = Field(default_factory=list)
+    tenants: list[JevTenantGroup] = Field(default_factory=list)
+    all_logs: list[JevLogItem] = Field(default_factory=list)
+    page: int
+    page_size: int
+    total_logs_count: int
+

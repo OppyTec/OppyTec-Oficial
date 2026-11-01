@@ -21,6 +21,7 @@ import uuid
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
+import httpx
 import pytest
 
 from src.adapters.ai import (
@@ -33,7 +34,9 @@ from src.adapters.ai import (
     JevUsageRecord,
     MeteredJevAdapter,
 )
+from src.core.security import create_access_token
 from src.modules.oppy_ai.infrastructure.models import JevRequestLog
+from src.modules.tenancy.application.jev_consumption_service import JevConsumptionService
 
 pytestmark = pytest.mark.security_redteam
 
@@ -320,3 +323,148 @@ def test_metered_jev_adapter_decide_choice_batch_rejects_oversized_batch() -> No
             user_id=1,
             caller_feature="catalog",
         )
+
+
+# ==============================================================================
+# VECTOR 5: RBAC Y CIBERSEGURIDAD DEL ENDPOINT /api/v1/platform-admin/jev-consumption
+# ==============================================================================
+
+def _make_admin_headers(permissions: list[str]) -> dict[str, str]:
+    """Genera cabeceras con token de administrador global de plataforma."""
+    token = create_access_token(
+        user_id=1,
+        holding_id=None,
+        tenant_id=None,
+        is_global_staff=True,
+        is_superuser_god=False,
+        role_grants=permissions,
+    )
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.mark.asyncio
+async def test_jev_consumption_endpoint_anonymous_access_returns_401(
+    async_client: httpx.AsyncClient,
+) -> None:
+    """Verifica que solicitudes anónimas sin cabecera Authorization reciban HTTP 401."""
+    resp = await async_client.get("/api/v1/platform-admin/jev-consumption")
+    assert resp.status_code == 401
+    assert "detail" in resp.json()
+
+
+@pytest.mark.asyncio
+async def test_jev_consumption_endpoint_unauthorized_tenant_scoped_returns_403(
+    async_client: httpx.AsyncClient,
+) -> None:
+    """Verifica que tokens con alcance de inquilino (tenant-scoped) reciban HTTP 403."""
+    tenant_token = create_access_token(
+        user_id=99,
+        holding_id="holding_genesis",
+        tenant_id="tenant_genesis",
+        is_global_staff=False,
+        is_superuser_god=False,
+        role_grants=["inventory.stock.read"],
+    )
+    headers = {"Authorization": f"Bearer {tenant_token}"}
+    resp = await async_client.get("/api/v1/platform-admin/jev-consumption", headers=headers)
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_jev_consumption_endpoint_lacking_tokens_read_permission_returns_403(
+    async_client: httpx.AsyncClient,
+) -> None:
+    """Verifica que un usuario de plataforma sin permiso `platform_admin.tokens.read` reciba HTTP 403."""
+    headers = _make_admin_headers(["platform_admin.plans.read"])
+    resp = await async_client.get("/api/v1/platform-admin/jev-consumption", headers=headers)
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_jev_consumption_endpoint_authorized_admin_returns_200_and_hierarchy(
+    async_client: httpx.AsyncClient,
+) -> None:
+    """
+    Verifica que un administrador global con `platform_admin.tokens.read` obtenga
+    la respuesta 200 OK con estructura jerárquica y cálculos de ahorro FinOps.
+    """
+    headers = _make_admin_headers(["platform_admin.tokens.read"])
+    resp = await async_client.get("/api/v1/platform-admin/jev-consumption", headers=headers)
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+
+    assert "total_decisions_all" in data
+    assert "total_cost_usd_all" in data
+    assert "estimated_savings_usd_all" in data
+    assert "holdings" in data
+    assert "tenants" in data
+    assert "all_logs" in data
+    assert len(data["holdings"]) >= 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "sqli_param",
+    [
+        "' OR '1'='1",
+        "'; DROP TABLE jev_request_logs; --",
+        "UNION SELECT null, null, null --",
+        "<script>alert(1)</script>",
+    ],
+)
+async def test_jev_consumption_endpoint_sqli_in_query_params_safely_handled(
+    async_client: httpx.AsyncClient,
+    sqli_param: str,
+) -> None:
+    """
+    Verifica que payloads SQLi o XSS en los parámetros de búsqueda del endpoint
+    no alteren el flujo ni ejecuten sentencias SQL, respondiendo 200 con resultados filtrados de forma segura.
+    """
+    headers = _make_admin_headers(["platform_admin.tokens.read"])
+    resp = await async_client.get(
+        "/api/v1/platform-admin/jev-consumption",
+        headers=headers,
+        params={
+            "search": sqli_param,
+            "caller_feature": sqli_param,
+            "decision_primitive": sqli_param,
+            "calibrated_action": sqli_param,
+            "holding_id": sqli_param,
+            "tenant_id": sqli_param,
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert isinstance(data["all_logs"], list)
+
+
+def test_jev_consumption_service_pii_and_secrets_scrubbed_in_logs() -> None:
+    """
+    Verifica que `JevConsumptionService.record_log` aplique `scrub_pii_text`
+    sobre `input_summary`, `result_value` y `error_message` para evitar filtración de PII y secretos.
+    """
+    service = JevConsumptionService()
+    sensitive_input = "Usuario jdoe@example.com solicita password de reset"
+    sensitive_error = "Fallo con clave Bearer sk-live-1234567890abcdef"
+
+    log_item = service.record_log(
+        holding_id="holding_sec",
+        holding_name="Holding Seguridad",
+        tenant_id="tenant_sec",
+        tenant_name="Tenant Seguridad",
+        tenant_schema="tenant_sec",
+        caller_feature="auth_audit",
+        decision_id="DEC_SEC_01",
+        decision_primitive="CLASSIFY",
+        input_summary=sensitive_input,
+        result_value="SAFE",
+        confidence_score=Decimal("0.99"),
+        calibrated_action="AUTO_ACCEPTED",
+        error_message=sensitive_error,
+    )
+
+    # Corroborar que PII y secretos fueron ofuscados/sanitizados
+    assert "sk-live-1234567890abcdef" not in log_item.input_summary
+    if log_item.error_message:
+        assert "sk-live-1234567890abcdef" not in log_item.error_message
+

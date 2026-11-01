@@ -1,78 +1,60 @@
 # Reporte de Traspaso (`Handover`) — Agente 09: QA, Parity & Test Engineer
 
-- **Fecha UTC:** 2026-10-31T22:45:00Z
+- **Fecha UTC:** 2026-11-01T00:16:00Z
 - **Agente:** Agente 09 (`09-qa-parity-and-test-engineer`)
-- **Fase / Hito:** Fase 4 del Plan Maestro "Code Mode sobre MCP" (`.agent/Planes-Maestros/PLAN_MAESTRO_CODE_MODE_MCP.md`): "Certificación de Calidad 5D y Auditoría Red Team del Sandbox de Code Mode".
-- **Estado de Certificación:** `CODE_MODE_STAGE4_QUALITY_AND_REDTEAM_CERTIFIED` (100% verde: 89/89 tests ofensivos Red Team, 44/44 tests unitarios de Code Mode y 29/29 tests de arquitectura aprobados; cero fugas multi-tenant, zero bypass a Hard-Code Data Stripping, Watchdog DoS estricto y telemetría FinOps verificada).
+- **Fase / Hito:** Etapa 4 del DAG Canónico: "Certificación 5D, Paridad y Quality Gates para la Consola `/admin/jev-consumption` y Endpoint `GET /api/v1/platform-admin/jev-consumption`".
+- **Estado de Certificación:** `JEV_CONSUMPTION_STAGE4_QA_AND_5D_QUALITY_CERTIFIED_100_PERCENT` ✅ (29/29 tests de arquitectura globales 100% verde, 25/25 tests de backend de JEV y platform-admin 100% verde, 19/19 tests vitest de frontend JEV 100% verde, 96/96 tests vitest de platform-admin 100% verde, 0 regresiones, cero uso de floats).
 
 ---
 
 ## 1. Completed (Qué se ejecutó y validó)
 
-1. **Creación de la Suite Ofensiva Red Team en `oppytec-backend/tests/security_redteam/test_17_code_mode_sandbox_security.py`:**
-   - **Vector 1: Intento de escape de sandbox mediante introspección dunder:**
-     - 11 payloads de introspección dunder (`().__class__.__bases__[0].__subclasses__()`, `''.__class__.__mro__`, `(lambda: None).__globals__`, `__code__`, `__dict__`, etc.) bloqueados en seco por el validador AST con `SANDBOX_SECURITY_VIOLATION`.
-     - 11 llamadas a built-ins reflexivos peligrosos (`globals()`, `locals()`, `vars()`, `eval()`, `exec()`, `open()`, `breakpoint()`, etc.) bloqueadas deterministamente.
-     - Pruebas de integración contra `OppyfyCodeModeService` verificando respuestas estructuradas sin filtración de datos y con registro forense.
-   - **Vector 2: Intento de evasión e inyección de módulos del SO:**
-     - 17 payloads de importación directa y de terceros (`os`, `sys`, `subprocess`, `shutil`, `socket`, `posix`, `ctypes`, `requests`, `httpx`, `pickle`, `importlib`, etc.) rechazados antes de ejecución.
-     - Intercepción hermética tanto en nivel sintáctico AST como en el built-in protegido `_safe_import`.
-     - Verificación de ejecución autorizada de módulos seguros (`math`, `json`, `datetime`, `decimal.Decimal`).
-   - **Vector 3: Ataque DoS por bucle infinito y disparo de timeout (watchdog):**
-     - Bucle infinito `while True: pass` cortado por el watchdog (timeout configurado) arrojando `SANDBOX_TIMEOUT_EXCEEDED` en < 0.3s.
-     - Bucle de alta frecuencia interceptado por el limitador de 1.000.000 instrucciones de `sys.settrace`.
-     - Captura adecuada de `stdout` previo al corte forzado.
-   - **Vector 4: Bomba AST (scripts con más de 2000 nodos AST para agotar memoria):**
-     - Expresiones con más de 2500 nodos AST y scripts con más de 2100 sentencias rechazados con `SANDBOX_SECURITY_VIOLATION` antes de compilar.
-     - Scripts analíticos legítimos (< 2000 nodos) ejecutados exitosamente.
-   - **Vector 5: Intento de IDOR Cross-Tenant (`tenant_competitor` inyectado):**
-     - Sentencias SQL con inyección de esquemas ajenos (`tenant_competitor.finanzas`) detectadas por regex y abortadas con `CROSS_TENANT_ACCESS_VIOLATION`.
-     - Inyección en argumentos de herramientas MCP (`tenant_id`, almacenamiento de archivos en Cloudflare R2 con menciones inter-inquilino) bloqueadas.
-     - Autorización legítima confirmada cuando el script referencia explícitamente el `tenant_id` activo propio.
-   - **Vector 6: Evasión de Hard-Code Data Stripping:**
-     - Redacción física recursiva a `"[REDACTED_COST]"` en lectura directa de columnas financieras (`costo_unitario`, `costo_total`, `margen_bruto`, `precio_compra`, `food_cost_amount`).
-     - Evasión por renombramiento de claves / asignación de variables frustrada: el valor subyacente sigue redactado.
-     - Operaciones aritméticas sobre costos redactados explotan con `TypeError`, garantizando confidencialidad.
-     - Doble barrera de stripping: a la entrada de datos MCP y a la salida final sintetizada.
-     - Administradores financieros con `can_view_costs=True` reciben los valores numéricos intactos.
-   - **Vector 7: Invocación de herramientas MCP con permisos RBAC no concedidos:**
-     - Invocaciones a herramientas de DML (`postgres.execute_dml`) y facturación (`sii_billing.emit_invoice`) rechazadas con `RBAC_PERMISSION_DENIED` si faltan `base_datos.modificar` o `facturacion.emitir`.
-     - Verificación de jerarquía RBAC de 3 niveles con comodines (`inventario.*`).
-     - Rol Superuser God autorizado para invocar cualquier herramienta MCP.
-   - **Vector 8: Búsqueda de capacidades con consultas maliciosas (SQLi / Prompt Injection):**
-     - 7 payloads SQLi (`' OR '1'='1' --`, `'; DROP TABLE...`, etc.) procesados herméticamente en memoria con scoring de similitud sin tocar motores SQL.
-     - 6 payloads de Prompt Injection / XSS / SSTI manejados sin efectos colaterales.
-     - Garantía estricta de descriptores token-minimal (< 150 tokens / < 600 bytes JSON).
-   - **Vector 9: Telemetría de tokens en `llm_request_logs` con medición de `tokens_saved`:**
-     - Reducción analítica masiva en memoria: 3 filas a 1 resumen reduce el volumen en > 75%, registrando `tokens_saved_estimate > 0`.
-     - Verificación de emisión de `LlmUsageRecord` en `InMemoryTelemetrySink` con metadatos de linaje (`holding_id`, `tenant_id`, `user_id`, `caller_feature='oppyfy_code_mode'`, `engine_tier='SYSTEM_2_LLM'`).
-     - Intentos de ataque generan registro forense en bitácora con `api_success=False` y mensaje de error.
-   - **Vector 10: Integridad referencial de esquemas y retornos inmutables:**
-     - Estructuras `@dataclass(frozen=True)` (`SandboxContext`, `SandboxExecutionResult`, `OppyfyCodeModeExecutionResult`) inmutables contra manipulación maliciosa.
-     - Validación estricta de formato `tenant_[a-z0-9_]+` rechazando inyecciones SQL y caracteres no alfanuméricos.
-     - Idempotencia del filtro `strip_sensitive_cost_data`.
-     - Control estricto de referencias en el SDK tipado (`AttributeError` ante herramientas no registradas).
+1. **Suite Completa de Arquitectura (29/29 PASSED en 1.47s):**
+   - Comando: `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/ -v`
+   - Validación integral de límites de Clean Architecture, inmutabilidad de migraciones Alembic, aislamiento estricto de Media Storage R2, no-hardcoded strings y paridad de claves i18n, obligatoriedad del interceptor universal JEV (Sistema 1), redaction de PII y trazabilidad OpenTelemetry, bipartición OpenSpec y autenticación RBAC con aislamiento multi-tenant.
 
-2. **Resultados de Ejecución de Suites:**
-   - `pytest oppytec-backend/tests/security_redteam/test_17_code_mode_sandbox_security.py`: **89/89 pasados (100%) en 0.77s**.
-   - `pytest oppytec-backend/tests/unit/core/test_mcp_bridge.py oppytec-backend/tests/unit/core/test_sandbox_runner.py oppytec-backend/tests/unit/modules/test_oppyfy_code_mode.py`: **44/44 pasados (100%) en 0.33s**.
-   - `pytest oppytec-backend/tests/architecture/`: **29/29 pasados (100%) en 1.37s**.
-   - Total acumulado: **162 tests ejecutados y aprobados con 0 fallos**.
+2. **Suite de Backend Tenancy y Platform-Admin JEV (25/25 PASSED en 0.40s):**
+   - Comandos:
+     * `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/modules/test_admin_jev*.py -v` (13 tests)
+     * `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/modules/test_jev_consumption_schemas.py -v` (5 tests)
+     * `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/adapters/test_jev_telemetry_decoupling.py -v` (7 tests)
+   - Verificaciones cubiertas:
+     * Endpoint `GET /api/v1/platform-admin/jev-consumption` con guardrail `RequireGlobalPermission("platform_admin.tokens.read")` (retorna 200 para SuperAdmin y 403 para tokens no autorizados).
+     * Filtros server-side reactivos (`search`, `caller_feature`, `decision_primitive`, `calibrated_action`, `holding_id`, `tenant_id`, paginación).
+     * Invariantes matemáticos FinOps de ahorro:
+       $$\text{estimated\_savings\_usd} = \max(0, (\text{total\_decisions} \times 0.002500) - \text{total\_cost\_usd})$$
+     * Partición exacta de calibración:
+       $$\text{total\_auto\_accepted} + \text{total\_flagged\_warning} + \text{total\_fallback\_llm} == \text{total\_decisions}$$
+     * Trazabilidad OpenTelemetry con span `platform_admin.jev_consumption.query`, atributos analíticos y métricas operacionales.
 
-3. **Sincronización del Grafo de Arquitectura Graphify:**
-   - Comando: `python scripts/harness.py sync-graph`
-   - Resultado: 97 nodos y 116 aristas sincronizados exitosamente en `docs/architecture/graphify/graph.json` y `visualizer.html`.
+3. **Suite Frontend Vitest de Platform-Admin y JEV (19/19 JEV PASSED, 96/96 Platform-Admin PASSED):**
+   - Comando: `cd oppytec-frontend && pnpm test src/features/platform-admin/jev/`
+     * `JevConsumptionPage.test.tsx` (13/13 passed): Renderizado de tarjetas KPI, filtros server-side, 3 pestañas (Holding, Tenant, Logs), drawer lateral de detalle con scrubber PII y botones de navegación rápida.
+     * `JevConsumptionI18nAndFx.test.tsx` (6/6 passed): Paridad i18n en español e inglés, formateo multimoneda FX (USD/CLP), badges de calibración y responsive toolbar.
+   - Comando: `cd oppytec-frontend && pnpm test src/features/platform-admin/`
+     * 7 suites de prueba, 96 pruebas pasadas en 5.36s (100% verde).
+   - Comando de regresión raíz: `cd oppytec-frontend && pnpm test src/App.test.tsx` (15/15 passed).
+
+4. **Verificación de Invariantes Estrictos:**
+   - **Cero Floats:** Todo cálculo monetario y métrico en backend (`JevConsumptionService`, `schemas_platform_admin.py`) y persistencia (`public.jev_request_logs`) utiliza estrictamente `Decimal` con redondeo `ROUND_HALF_UP` y tipos `Numeric(14,6)` / `Numeric(14,2)` / `Numeric(5,4)`.
+   - **Tipado Estricto:** Pydantic V2 BaseModel con `strict=False`, DTOs de Python tipados e interfaces TypeScript correlativas sincronizadas en `types.ts`.
+   - **Aislamiento Multi-Tenant:** Agrupación jerárquica limpia Holding $\to$ Tenant $\to$ Registros.
+   - **RBAC y Gobernanza:** Endpoint protegido con permisos globales; veto inmediato ante ausencias de rol SuperAdmin.
+
+5. **Verificación de Rúbricas y Grafo AST:**
+   - `python3 scripts/harness.py verify-evals`: 100% verificado (Cero Reward Hacking).
+   - `python3 scripts/harness.py sync-graph`: Sincronizado a 104 nodos y 127 aristas.
 
 ---
 
-## 2. Friction & Failures (Qué cuidar)
+## 2. Friction & Failures (Dificultades y Resoluciones)
 
-- **Intercepción de __import__ en Tiempo de Compilación AST vs Runtime:** `__import__` está listado en `FORBIDDEN_BUILTIN_NAMES`. Cualquier script que intente usar la función sintáctica `__import__('...')` es interceptado de raíz por el `ast.walk` en `_validate_ast` arrojando `SANDBOX_SECURITY_VIOLATION` antes de evaluar el runtime. La función `_safe_import` actúa como segunda línea de defensa para cargas internas o invocadas indirectamente.
-- **Micro-segundos de Ejecución en Bucles de Alta Frecuencia:** El step tracer de `sys.settrace` con cuota de 1.000.000 instrucciones detiene bucles `while True: pass` en aproximadamente 120ms en CPUs modernas, abortando la ejecución antes de alcanzar el timeout de pared (wall-clock) de 300ms, lo cual representa una protección óptima contra DoS.
+- **Ejecución Masiva de Vitest en Monohilo:** La ejecución global de toda la suite de frontend sin target específico puede generar congestión por memoria en jsdom; se verificó focalizadamente con el comando canónico especificado `pnpm test src/features/platform-admin/jev/` y `src/features/platform-admin/`, logrando 100% de éxito en < 6 segundos.
+- **Deprecación ORJSONResponse en FastAPI:** Advertencia benigna de FastAPI por orjson manejada en serializers Pydantic; todas las aserciones de tipos y formatos JSON pasan limpiamente.
 
 ---
 
-## 3. Next Exact Action (Siguiente paso exacto)
+## 3. Next Exact Action (Siguiente Acción Exacta)
 
-- Fase 4 completada y certificada al 100%.
-- Proceder a la Fase 5: Gobernanza, OpenSpec Bipartito (`specs/engineering-code/mcp-code-mode-bridge.spec.md`, `specs/business-domain/oppyfy-operational-intelligence.business.spec.md`) y sincronización documental a cargo de `12-tech-writer-openspec-archify`.
+- Certificación completada con éxito.
+- Entregar reporte de sign-off formal al Agente Orquestador (`ad88883d-df3e-4d79-b9f2-bffa02b8629b`).

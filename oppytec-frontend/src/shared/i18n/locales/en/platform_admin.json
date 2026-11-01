@@ -1,5 +1,105 @@
 {
   "title": "Multi-Holding Platform SuperAdmin Console",
+  "admin": {
+    "nav": {
+      "jev_consumption": "JEV Consumption",
+      "jevConsumption": "JEV Consumption"
+    }
+  },
+  "jev": {
+    "pretitle": "FinOps & Sub-Symbolic Optimization",
+    "title": "JEV Decision Consumption",
+    "subtitle": "Telemetry, confidence calibration, and FinOps savings by Holding, Tenant, and Logs.",
+    "badge_subsymbolic": "Deterministic / Heuristic JEV Engine",
+    "badges": {
+      "auto_accepted": "Auto-Accepted",
+      "flagged_warning": "Warning",
+      "fallback_llm": "Fallback LLM"
+    },
+    "nav": {
+      "token_consumption": "LLM Token Consumption"
+    },
+    "kpi": {
+      "total_decisions": "Total JEV Decisions",
+      "real_provider_cost": "Real Provider Cost",
+      "avg_latency": "Average Latency",
+      "confidence_calibration": "Confidence Calibration",
+      "estimated_savings": "Estimated FinOps Savings",
+      "auto_accepted_pct": "Auto-Accepted",
+      "flagged_warning_pct": "Warnings",
+      "fallback_llm_pct": "Fallback LLM",
+      "savings_description": "Savings compared to direct commercial LLM invocation",
+      "zero_cost_llm": "Zero-Cost LLM",
+      "saved": "saved"
+    },
+    "tabs": {
+      "holding": "Holding View",
+      "tenant": "Tenant View",
+      "logs": "Decision Logs"
+    },
+    "toolbar": {
+      "search_placeholder": "Search by Holding, Tenant, Decision, Primitive, or Feature...",
+      "all_primitives": "All Primitives",
+      "all_features": "All Features",
+      "all_actions": "All Actions",
+      "action_auto_accepted": "✅ Auto-Accepted",
+      "action_flagged_warning": "⚠️ Warnings",
+      "action_fallback_llm": "🔄 Fallback LLM",
+      "btn_columns": "Columns",
+      "btn_refresh": "Refresh",
+      "refreshed": "JEV telemetry and decisions updated",
+      "error_refresh": "Error refreshing JEV decisions"
+    },
+    "columns": {
+      "optional_title": "Optional Columns",
+      "trace_id": "Trace ID",
+      "caller_feature": "Caller Feature",
+      "primitive": "JEV Primitive",
+      "latency": "Latency (ms)",
+      "cost": "Cost USD / CLP"
+    },
+    "holding": {
+      "assigned_tenants": "attached branch(es)",
+      "tenants_section": "Branches / Tenants"
+    },
+    "metrics": {
+      "decisions": "Decisions",
+      "real_cost": "Real Cost",
+      "cost_usd": "USD Cost",
+      "avg_latency": "Avg. Latency",
+      "latency": "Latency"
+    },
+    "empty": {
+      "title": "No JEV decision records found",
+      "description": "Adjust your search filters or check the deterministic heuristic engine activity."
+    },
+    "empty_tenants": {
+      "title": "No branches found",
+      "description": "Try adjusting your branch search or refreshing the console."
+    },
+    "empty_logs": {
+      "title": "No decision logs found",
+      "description": "Try changing the selected filters"
+    },
+    "table": {
+      "date_time": "Date / Time",
+      "tenant": "Branch (Tenant)",
+      "caller_feature": "Feature",
+      "primitive": "Primitive",
+      "summary_result": "Summary / Result",
+      "score": "Score",
+      "action": "Calibrated Action",
+      "model": "Model",
+      "latency": "Latency",
+      "cost": "Cost",
+      "pagination_item_label": "JEV decisions"
+    },
+    "aria": {
+      "filter_primitive": "Filter by JEV primitive",
+      "filter_feature": "Filter by caller feature",
+      "filter_action": "Filter by calibrated action"
+    }
+  },
   "tenants": {
     "provisioning": "Provision new tenant {{schema}}",
     "r2_quota": "Cloudflare R2 Quota: {{usedMb}} MB / {{limitMb}} MB",
@@ -35,6 +135,7 @@
     "menu_modules": "Modules (SaaS)",
     "menu_plans": "Plans (SaaS)",
     "menu_token_consumption": "Client Token Consumption",
+    "menu_jev_consumption": "JEV Consumption",
     "section_client": "Client Management",
     "menu_holdings": "Groups (Holdings)",
     "menu_legal_entities": "Legal Entities",
@@ -45,7 +146,8 @@
     "menu_fx_rates": "Central FX Rates",
     "menu_backups": "Backup Vault",
     "settings_title": "System Settings",
-    "settings_label": "Settings"
+    "settings_label": "Settings",
+    "menu_jevConsumption": "JEV Consumption"
   },
   "dashboard": {
     "title": "Global Control Panel",
@@ -594,5 +696,103 @@
     "edit": "Edit",
     "delete": "Delete",
     "cancel": "Cancel"
+  },
+  "jevConsumption": {
+    "pretitle": "FinOps & Sub-Symbolic Optimization",
+    "title": "JEV Decision Consumption",
+    "subtitle": "Telemetry, confidence calibration, and FinOps savings by Holding, Tenant, and Logs.",
+    "badge_subsymbolic": "Deterministic / Heuristic JEV Engine",
+    "badges": {
+      "auto_accepted": "Auto-Accepted",
+      "flagged_warning": "Warning",
+      "fallback_llm": "Fallback LLM"
+    },
+    "nav": {
+      "token_consumption": "LLM Token Consumption"
+    },
+    "kpi": {
+      "total_decisions": "Total JEV Decisions",
+      "real_provider_cost": "Real Provider Cost",
+      "avg_latency": "Average Latency",
+      "confidence_calibration": "Confidence Calibration",
+      "estimated_savings": "Estimated FinOps Savings",
+      "auto_accepted_pct": "Auto-Accepted",
+      "flagged_warning_pct": "Warnings",
+      "fallback_llm_pct": "Fallback LLM",
+      "savings_description": "Savings compared to direct commercial LLM invocation",
+      "zero_cost_llm": "Zero-Cost LLM",
+      "saved": "saved"
+    },
+    "tabs": {
+      "holding": "Holding View",
+      "tenant": "Tenant View",
+      "logs": "Decision Logs"
+    },
+    "toolbar": {
+      "search_placeholder": "Search by Holding, Tenant, Decision, Primitive, or Feature...",
+      "all_primitives": "All Primitives",
+      "all_features": "All Features",
+      "all_actions": "All Actions",
+      "action_auto_accepted": "✅ Auto-Accepted",
+      "action_flagged_warning": "⚠️ Warnings",
+      "action_fallback_llm": "🔄 Fallback LLM",
+      "btn_columns": "Columns",
+      "btn_refresh": "Refresh",
+      "refreshed": "JEV telemetry and decisions updated",
+      "error_refresh": "Error refreshing JEV decisions"
+    },
+    "columns": {
+      "optional_title": "Optional Columns",
+      "trace_id": "Trace ID",
+      "caller_feature": "Caller Feature",
+      "primitive": "JEV Primitive",
+      "latency": "Latency (ms)",
+      "cost": "Cost USD / CLP"
+    },
+    "holding": {
+      "assigned_tenants": "attached branch(es)",
+      "tenants_section": "Branches / Tenants"
+    },
+    "metrics": {
+      "decisions": "Decisions",
+      "real_cost": "Real Cost",
+      "cost_usd": "USD Cost",
+      "avg_latency": "Avg. Latency",
+      "latency": "Latency"
+    },
+    "empty": {
+      "title": "No JEV decision records found",
+      "description": "Adjust your search filters or check the deterministic heuristic engine activity."
+    },
+    "empty_tenants": {
+      "title": "No branches found",
+      "description": "Try adjusting your branch search or refreshing the console."
+    },
+    "empty_logs": {
+      "title": "No decision logs found",
+      "description": "Try changing the selected filters"
+    },
+    "table": {
+      "date_time": "Date / Time",
+      "tenant": "Branch (Tenant)",
+      "caller_feature": "Feature",
+      "primitive": "Primitive",
+      "summary_result": "Summary / Result",
+      "score": "Score",
+      "action": "Calibrated Action",
+      "model": "Model",
+      "latency": "Latency",
+      "cost": "Cost",
+      "pagination_item_label": "JEV decisions"
+    },
+    "aria": {
+      "filter_primitive": "Filter by JEV primitive",
+      "filter_feature": "Filter by caller feature",
+      "filter_action": "Filter by calibrated action"
+    }
+  },
+  "nav": {
+    "jevConsumption": "JEV Consumption",
+    "jev_consumption": "JEV Consumption"
   }
 }

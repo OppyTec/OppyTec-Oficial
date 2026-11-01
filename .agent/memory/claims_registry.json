@@ -413,6 +413,27 @@
       "claimed_by": "04-backend-senior-dev",
       "intent": "Support dynamic FXService rate in calculate_token_cost",
       "claimed_at": "2026-10-29T21:47:18.060381+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/tenancy/presentation/schemas_platform_admin.py",
+      "symbol_path": "JevConsumptionSummaryResponse",
+      "claimed_by": "02-software-architect",
+      "intent": "Diseño de esquemas Pydantic v2 para la consola FinOps JEV",
+      "claimed_at": "2026-10-31T23:32:18.451755+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/platform-admin/jev/JevConsumptionPage.tsx",
+      "symbol_path": "JevConsumptionPage",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implementar la consola FinOps de decisiones JEV",
+      "claimed_at": "2026-10-31T23:39:24.198446+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/platform-admin/hooks/useJevConsumption.ts",
+      "symbol_path": "useJevConsumption",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Hook de telemetría y consulta FinOps para decisiones JEV",
+      "claimed_at": "2026-10-31T23:39:31.544189+00:00"
     }
   ]
 }

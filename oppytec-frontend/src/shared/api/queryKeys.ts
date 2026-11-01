@@ -329,6 +329,8 @@ export const queryKeys = {
     saasPolicy: () => ["oppytec", "platformAdmin", "saasPolicy"] as const,
     tokenConsumption: (filters?: Record<string, unknown>) =>
       ["oppytec", "platformAdmin", "tokenConsumption", filters ?? {}] as const,
+    jevConsumption: (filters?: Record<string, unknown>) =>
+      ["oppytec", "platformAdmin", "jevConsumption", filters ?? {}] as const,
     finopsLogs: (envFilter: string) =>
       ["oppytec", "platformAdmin", "finopsLogs", envFilter] as const,
     observability: (subview: string, envFilter: string) =>

@@ -307,6 +307,36 @@ def clear_in_memory_oppyfy_metrics() -> None:
     _in_memory_oppyfy_metrics.clear()
 
 
+@dataclass(frozen=True)
+class JevOperationMetric:
+    """Métrica determinista de consultas, agregaciones y decisiones JEV."""
+
+    operation: str
+    status: str
+    duration_ms: float
+    tenant_id: str | None = None
+    holding_id: str | None = None
+    user_id: str | None = None
+    total_decisions: int = 0
+    avg_latency_ms: str = "0.00"
+    trace_id: str = ""
+    timestamp: str = ""
+
+
+_in_memory_jev_metrics: list[JevOperationMetric] = []
+MAX_IN_MEMORY_METRICS_CAPACITY: int = 1000
+
+
+def get_in_memory_jev_metrics() -> list[JevOperationMetric]:
+    """Devuelve las métricas operativas de JEV registradas en memoria."""
+    return list(_in_memory_jev_metrics)
+
+
+def clear_in_memory_jev_metrics() -> None:
+    """Limpia las métricas operativas de JEV en memoria."""
+    _in_memory_jev_metrics.clear()
+
+
 def record_alert_operational_metric(
     *,
     tenant_id: str,
@@ -699,6 +729,32 @@ def trace_span(
                 )
                 _in_memory_oppyfy_metrics.append(oppy_metric)
 
+            if name.startswith(("jev.", "platform_admin.jev")) or tracer_name.startswith("oppytec.tenancy.jev"):
+                raw_decisions = dynamic_attrs.get("total_decisions_all", dynamic_attrs.get("total_decisions", 0))
+                try:
+                    metric_decisions = int(str(raw_decisions))
+                except (ValueError, TypeError):
+                    metric_decisions = 0
+
+                raw_avg_lat = dynamic_attrs.get("avg_latency_ms_all", dynamic_attrs.get("avg_latency_ms", "0.00"))
+                metric_avg_lat = str(raw_avg_lat)
+
+                jev_metric = JevOperationMetric(
+                    operation=name,
+                    status=status_str,
+                    duration_ms=round(duration_ms, 3),
+                    tenant_id=metric_tenant,
+                    holding_id=ctx.holding_id or (str(dynamic_attrs.get("holding_id", "")) if dynamic_attrs.get("holding_id") else None),
+                    user_id=metric_user,
+                    total_decisions=metric_decisions,
+                    avg_latency_ms=metric_avg_lat,
+                    trace_id=resolved_trace,
+                    timestamp=datetime.now(UTC).isoformat(),
+                )
+                if len(_in_memory_jev_metrics) >= MAX_IN_MEMORY_METRICS_CAPACITY:
+                    del _in_memory_jev_metrics[0]
+                _in_memory_jev_metrics.append(jev_metric)
+
 
 def record_quota_semaphore_metric(
     *,
@@ -908,3 +964,9 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
             return response
         finally:
             reset_tenant_telemetry_context(tokens)
+
+
+def setup_observability(app: ASGIApp) -> None:
+    """Configura la observabilidad 4-pilares registrando ObservabilityMiddleware."""
+    app.add_middleware(ObservabilityMiddleware)
+

@@ -683,3 +683,304 @@ export const MOCK_AI_CREDIT_PACKS: readonly AiCreditPackItem[] = [
   },
 ];
 
+// ============================================================================
+// 6. CONTRATOS FINOPS DE CONSUMO DE DECISIONES JEV (SUB-SIMBÓLICO / DETERMINISTA)
+// ============================================================================
+
+export interface JevLogItem {
+  readonly id: string;
+  readonly created_at: string;
+  readonly holding_id: string;
+  readonly holding_name: string;
+  readonly tenant_id: string;
+  readonly tenant_name: string;
+  readonly tenant_schema: string;
+  readonly user_id?: number | null;
+  readonly trace_id?: string | null;
+  readonly caller_feature: string;
+  readonly decision_id: string;
+  readonly decision_primitive: string;
+  readonly input_summary: string;
+  readonly result_value: string;
+  readonly confidence_score: number;
+  readonly calibrated_action: string;
+  readonly model_name: string;
+  readonly estimated_tokens: number;
+  readonly provider_cost_usd: number;
+  readonly provider_cost_clp: number;
+  readonly credits_deducted: number;
+  readonly latency_ms: number;
+  readonly is_success: boolean;
+  readonly error_message?: string | null;
+}
+
+export interface JevTenantGroup {
+  readonly tenant_id: string;
+  readonly tenant_name: string;
+  readonly tenant_schema: string;
+  readonly holding_id: string;
+  readonly total_decisions: number;
+  readonly total_cost_usd: number;
+  readonly total_cost_clp: number;
+  readonly total_credits_deducted: number;
+  readonly avg_latency_ms: number;
+  readonly auto_accepted_count: number;
+  readonly flagged_warning_count: number;
+  readonly fallback_llm_count: number;
+  readonly logs: readonly JevLogItem[];
+}
+
+export interface JevHoldingGroup {
+  readonly holding_id: string;
+  readonly holding_name: string;
+  readonly total_decisions: number;
+  readonly total_cost_usd: number;
+  readonly total_cost_clp: number;
+  readonly total_credits_deducted: number;
+  readonly avg_latency_ms: number;
+  readonly tenants: readonly JevTenantGroup[];
+}
+
+export interface JevConsumptionSummaryResponse {
+  readonly total_decisions_all: number;
+  readonly total_cost_usd_all: number;
+  readonly total_cost_clp_all: number;
+  readonly total_credits_deducted_all: number;
+  readonly avg_latency_ms_all: number;
+  readonly total_auto_accepted_all: number;
+  readonly total_flagged_warning_all: number;
+  readonly total_fallback_llm_all: number;
+  readonly estimated_savings_usd_all: number;
+  readonly estimated_savings_clp_all: number;
+  readonly holdings: readonly JevHoldingGroup[];
+  readonly tenants: readonly JevTenantGroup[];
+  readonly all_logs: readonly JevLogItem[];
+  readonly page: number;
+  readonly page_size: number;
+  readonly total_logs_count: number;
+}
+
+export const MOCK_JEV_LOGS: readonly JevLogItem[] = [
+  {
+    id: "jev-log-001",
+    created_at: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+    holding_id: "holding-gastro-sur",
+    holding_name: "Holding Gastronomía del Sur",
+    tenant_id: "tenant_rest_central",
+    tenant_name: "Restaurante Central Providencia",
+    tenant_schema: "tenant_rest_central",
+    user_id: 1,
+    trace_id: "trace-jev-001-abc",
+    caller_feature: "mermas_detection",
+    decision_id: "dec-merm-9812",
+    decision_primitive: "anomaly_score",
+    input_summary: "Desviación merma carne lomo vacuno 2.8%",
+    result_value: "Aceptada sin anomalía (Riesgo Bajo)",
+    confidence_score: 0.98,
+    calibrated_action: "AUTO_ACCEPTED",
+    model_name: "jev-rules-engine-v2",
+    estimated_tokens: 150,
+    provider_cost_usd: 0.00008,
+    provider_cost_clp: 0.076,
+    credits_deducted: 1,
+    latency_ms: 12,
+    is_success: true,
+    error_message: null,
+  },
+  {
+    id: "jev-log-002",
+    created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    holding_id: "holding-gastro-sur",
+    holding_name: "Holding Gastronomía del Sur",
+    tenant_id: "tenant_rest_central",
+    tenant_name: "Restaurante Central Providencia",
+    tenant_schema: "tenant_rest_central",
+    user_id: 2,
+    trace_id: "trace-jev-002-def",
+    caller_feature: "demand_prediction",
+    decision_id: "dec-dem-4521",
+    decision_primitive: "bayesian_filter",
+    input_summary: "Previsión demanda fin de semana lluvia",
+    result_value: "Incremento sugerido +14.5% stock masas",
+    confidence_score: 0.93,
+    calibrated_action: "AUTO_ACCEPTED",
+    model_name: "jev-fast-heuristic",
+    estimated_tokens: 220,
+    provider_cost_usd: 0.00012,
+    provider_cost_clp: 0.114,
+    credits_deducted: 1,
+    latency_ms: 16,
+    is_success: true,
+    error_message: null,
+  },
+  {
+    id: "jev-log-003",
+    created_at: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    holding_id: "holding-gastro-sur",
+    holding_name: "Holding Gastronomía del Sur",
+    tenant_id: "tenant_rest_mall_plaza",
+    tenant_name: "Sucursal Mall Plaza El Trébol",
+    tenant_schema: "tenant_rest_mall_plaza",
+    user_id: 3,
+    trace_id: "trace-jev-003-ghi",
+    caller_feature: "recipe_costing",
+    decision_id: "dec-rec-1104",
+    decision_primitive: "cost_optimality",
+    input_summary: "Actualización costo insumo Queso Gouda importado",
+    result_value: "Margen operativo en riesgo (38.2%)",
+    confidence_score: 0.74,
+    calibrated_action: "FLAGGED_WARNING",
+    model_name: "jev-rules-engine-v2",
+    estimated_tokens: 180,
+    provider_cost_usd: 0.00009,
+    provider_cost_clp: 0.086,
+    credits_deducted: 1,
+    latency_ms: 19,
+    is_success: true,
+    error_message: null,
+  },
+  {
+    id: "jev-log-004",
+    created_at: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
+    holding_id: "holding-andes",
+    holding_name: "Grupo Restaurantero Andes",
+    tenant_id: "tenant_andes_las_condes",
+    tenant_name: "Bistro Andes Las Condes",
+    tenant_schema: "tenant_andes_las_condes",
+    user_id: 4,
+    trace_id: "trace-jev-004-jkl",
+    caller_feature: "order_anomaly",
+    decision_id: "dec-ord-8831",
+    decision_primitive: "threshold_gate",
+    input_summary: "OC irregular 200kg Salmón Premium",
+    result_value: "Desviación > 3 sigma. Derivado a Gemini 2.5",
+    confidence_score: 0.58,
+    calibrated_action: "FALLBACK_LLM",
+    model_name: "gemini-2.5-flash-fallback",
+    estimated_tokens: 850,
+    provider_cost_usd: 0.0018,
+    provider_cost_clp: 1.71,
+    credits_deducted: 3,
+    latency_ms: 420,
+    is_success: true,
+    error_message: null,
+  },
+  {
+    id: "jev-log-005",
+    created_at: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
+    holding_id: "holding-andes",
+    holding_name: "Grupo Restaurantero Andes",
+    tenant_id: "tenant_andes_las_condes",
+    tenant_name: "Bistro Andes Las Condes",
+    tenant_schema: "tenant_andes_las_condes",
+    user_id: 5,
+    trace_id: "trace-jev-005-mno",
+    caller_feature: "inventory_replenishment",
+    decision_id: "dec-inv-3329",
+    decision_primitive: "exact_match",
+    input_summary: "Reabastecimiento automático stock Vino Reserva",
+    result_value: "Punto de reorden alcanzado (8 botellas)",
+    confidence_score: 0.99,
+    calibrated_action: "AUTO_ACCEPTED",
+    model_name: "jev-rules-engine-v2",
+    estimated_tokens: 110,
+    provider_cost_usd: 0.00006,
+    provider_cost_clp: 0.057,
+    credits_deducted: 1,
+    latency_ms: 11,
+    is_success: true,
+    error_message: null,
+  },
+];
+
+export const MOCK_JEV_TENANTS: readonly JevTenantGroup[] = [
+  {
+    tenant_id: "tenant_rest_central",
+    tenant_name: "Restaurante Central Providencia",
+    tenant_schema: "tenant_rest_central",
+    holding_id: "holding-gastro-sur",
+    total_decisions: 6850,
+    total_cost_usd: 0.92,
+    total_cost_clp: 874,
+    total_credits_deducted: 6900,
+    avg_latency_ms: 14.8,
+    auto_accepted_count: 6240,
+    flagged_warning_count: 490,
+    fallback_llm_count: 120,
+    logs: MOCK_JEV_LOGS.filter((l) => l.tenant_id === "tenant_rest_central"),
+  },
+  {
+    tenant_id: "tenant_rest_mall_plaza",
+    tenant_name: "Sucursal Mall Plaza El Trébol",
+    tenant_schema: "tenant_rest_mall_plaza",
+    holding_id: "holding-gastro-sur",
+    total_decisions: 3420,
+    total_cost_usd: 0.48,
+    total_cost_clp: 456,
+    total_credits_deducted: 3450,
+    avg_latency_ms: 18.2,
+    auto_accepted_count: 3100,
+    flagged_warning_count: 260,
+    fallback_llm_count: 60,
+    logs: MOCK_JEV_LOGS.filter((l) => l.tenant_id === "tenant_rest_mall_plaza"),
+  },
+  {
+    tenant_id: "tenant_andes_las_condes",
+    tenant_name: "Bistro Andes Las Condes",
+    tenant_schema: "tenant_andes_las_condes",
+    holding_id: "holding-andes",
+    total_decisions: 2210,
+    total_cost_usd: 0.445,
+    total_cost_clp: 422.75,
+    total_credits_deducted: 2150,
+    avg_latency_ms: 22.5,
+    auto_accepted_count: 1910,
+    flagged_warning_count: 230,
+    fallback_llm_count: 70,
+    logs: MOCK_JEV_LOGS.filter((l) => l.tenant_id === "tenant_andes_las_condes"),
+  },
+];
+
+export const MOCK_JEV_HOLDINGS: readonly JevHoldingGroup[] = [
+  {
+    holding_id: "holding-gastro-sur",
+    holding_name: "Holding Gastronomía del Sur",
+    total_decisions: 10270,
+    total_cost_usd: 1.40,
+    total_cost_clp: 1330,
+    total_credits_deducted: 10350,
+    avg_latency_ms: 16.5,
+    tenants: MOCK_JEV_TENANTS.filter((t) => t.holding_id === "holding-gastro-sur"),
+  },
+  {
+    holding_id: "holding-andes",
+    holding_name: "Grupo Restaurantero Andes",
+    total_decisions: 2210,
+    total_cost_usd: 0.445,
+    total_cost_clp: 422.75,
+    total_credits_deducted: 2150,
+    avg_latency_ms: 22.5,
+    tenants: MOCK_JEV_TENANTS.filter((t) => t.holding_id === "holding-andes"),
+  },
+];
+
+export const MOCK_JEV_CONSUMPTION: JevConsumptionSummaryResponse = {
+  total_decisions_all: 12480,
+  total_cost_usd_all: 1.845,
+  total_cost_clp_all: 1752.75,
+  total_credits_deducted_all: 12500,
+  avg_latency_ms_all: 18.4,
+  total_auto_accepted_all: 11250,
+  total_flagged_warning_all: 980,
+  total_fallback_llm_all: 250,
+  estimated_savings_usd_all: 485.60,
+  estimated_savings_clp_all: 461320,
+  holdings: MOCK_JEV_HOLDINGS,
+  tenants: MOCK_JEV_TENANTS,
+  all_logs: MOCK_JEV_LOGS,
+  page: 1,
+  page_size: 50,
+  total_logs_count: 12480,
+};
+
+

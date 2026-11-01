@@ -29,6 +29,7 @@ import {
   PlansPage,
   PlatformAdminFeatureView,
   TokenConsumptionPage,
+  JevConsumptionPage,
 } from "@/features/platform-admin";
 
 import { ProcurementFeatureView, ProveedoresPage } from "@/features/procurement";
@@ -263,6 +264,7 @@ export function AppRouter() {
           <Route path="modules" element={<AdminModulesView />} />
           <Route path="plans" element={<PlansPage />} />
           <Route path="token-consumption" element={<TokenConsumptionPage />} />
+          <Route path="jev-consumption" element={<JevConsumptionPage />} />
           <Route path="holdings" element={<AdminHoldingsView />} />
           <Route path="legal-entities" element={<AdminLegalEntitiesView />} />
           <Route path="tenants" element={<AdminTenantsView />} />

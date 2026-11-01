@@ -95,6 +95,14 @@ graph TD
     - `idx_jev_logs_confidence` (`confidence_score`): Auditoría analítica de calibración, distribución de confianza y detección de derivas semánticas.
     - Índices individuales adicionales: `created_at`, `tenant_schema`, `user_id`.
   - **Soporte de Inserción Masiva en Lote (*Batching*):** Integrado nativamente con `DatabaseJevTelemetrySink` mediante `session.add_all(...)` y `MeteredJevAdapter.decide_choice_batch`, permitiendo procesar importaciones masivas de catálogos de miles de filas (`IMPORTADOR_EXCEL_SPEC.md`) y conciliaciones masivas de facturas OCR sin contención ni degradación de latencia.
+  - **Consulta FinOps y Reportería Analítica (`/admin/jev-consumption`):**
+    - **Servicio y Endpoint:** Expuesto a través de `JevConsumptionService` y `GET /api/v1/platform-admin/jev-consumption` (protegido con `platform_admin.tokens.read`).
+    - **Agrupación Jerárquica:** Agregación en 3 niveles (Holdings $\to$ Tenants $\to$ Logs individuales) con paginación server-side.
+    - **Métrica de Ahorro Estimado FinOps:** Diferencial entre el costo real JEV y la tarifa base de modelo generativo ($0.0025 USD Gemini Pro):
+      $$\text{estimated\_savings\_usd} = \max(0, (\text{total\_decisions} \times 0.002500) - \text{total\_cost\_usd})$$
+      Demuestra una reducción superior al 99.7% en gasto de tokens por micro-decisión de Sistema 1 resuelta.
+    - **Invarianza de Calibración:** $\text{total\_auto\_accepted} + \text{total\_flagged\_warning} + \text{total\_fallback\_llm} == \text{total\_decisions}$.
+    - **Filtros Indexados:** Consultas ágiles mediante `idx_jev_logs_tenant_created`, `idx_jev_logs_holding_created`, `idx_jev_logs_feature` e `idx_jev_logs_confidence`.
 - **`public.llm_request_logs` (Registro Estricto y Sin Excepción de Toda Llamada IA Sistema 2 / Embeddings):**
   - `id` (`BIGSERIAL` PK), `created_at` (`TIMESTAMPTZ` Indexed), `holding_id` (`UUID` Indexed), `tenant_id` (`UUID` Indexed), `tenant_schema` (`VARCHAR(100)` Indexed), `user_id` (`INTEGER`), `thread_id` (`UUID NULL`).
   - `engine_tier` (`'SYSTEM_1_JEV' | 'SYSTEM_2_LLM' | 'EMBEDDING'`), `caller_feature` (`'oppyfy_chat'`, `'oppyfy_tool_router'`, `'excel_import'`, `'invoice_ocr'`, `'merma_judge'`, `'i18n_auto_translate'`), `model_name`, `input_tokens`, `cached_tokens`, `output_tokens`, `total_tokens`.

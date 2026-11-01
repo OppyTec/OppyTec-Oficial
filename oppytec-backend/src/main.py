@@ -173,12 +173,32 @@ def create_app() -> FastAPI:
         trace_id = incoming_trace_id if incoming_trace_id else uuid.uuid4().hex
         request.state.trace_id = trace_id
 
-        response = await call_next(request)
-        if "X-Trace-ID" not in response.headers:
-            response.headers["X-Trace-ID"] = trace_id
-        response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("X-Frame-Options", "DENY")
-        return response
+        tokens = None
+        with suppress(Exception):
+            core_obs = importlib.import_module("src.core.observability")
+            bind_fn = getattr(core_obs, "bind_tenant_telemetry_context", None)
+            if callable(bind_fn):
+                tokens = bind_fn(
+                    trace_id=trace_id,
+                    holding_id=request.headers.get("x-holding-id"),
+                    tenant_id=request.headers.get("x-tenant-id"),
+                    tenant_schema=request.headers.get("x-tenant-schema"),
+                )
+
+        try:
+            response = await call_next(request)
+            if "X-Trace-ID" not in response.headers:
+                response.headers["X-Trace-ID"] = trace_id
+            response.headers.setdefault("X-Content-Type-Options", "nosniff")
+            response.headers.setdefault("X-Frame-Options", "DENY")
+            return response
+        finally:
+            if tokens is not None:
+                with suppress(Exception):
+                    core_obs = importlib.import_module("src.core.observability")
+                    reset_fn = getattr(core_obs, "reset_tenant_telemetry_context", None)
+                    if callable(reset_fn):
+                        reset_fn(tokens)
 
     @app.exception_handler(OppyTecError)
     async def oppytec_domain_exception_handler(

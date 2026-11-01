@@ -1,5 +1,105 @@
 {
   "title": "Consola SuperAdmin de Plataforma Multi-Holding",
+  "admin": {
+    "nav": {
+      "jev_consumption": "Consumo de JEV",
+      "jevConsumption": "Consumo de JEV"
+    }
+  },
+  "jev": {
+    "pretitle": "FinOps & Optimización Sub-Simbólica",
+    "title": "Consumo de Decisiones JEV",
+    "subtitle": "Telemetría, calibración de confianza y ahorro FinOps por Holding, Sucursal y Bitácora.",
+    "badge_subsymbolic": "Motor JEV Heurístico / Determinista",
+    "badges": {
+      "auto_accepted": "Auto-Aceptada",
+      "flagged_warning": "Advertencia",
+      "fallback_llm": "Fallback LLM"
+    },
+    "nav": {
+      "token_consumption": "Consumo Tokens LLM"
+    },
+    "kpi": {
+      "total_decisions": "Total de Decisiones JEV",
+      "real_provider_cost": "Costo Real Proveedor",
+      "avg_latency": "Latencia Promedio",
+      "confidence_calibration": "Calibración de Confianza",
+      "estimated_savings": "Ahorro Estimado FinOps",
+      "auto_accepted_pct": "Auto-Aceptadas",
+      "flagged_warning_pct": "Advertencias",
+      "fallback_llm_pct": "Fallback LLM",
+      "savings_description": "Ahorro comparado con llamada directa a LLMs comerciales",
+      "zero_cost_llm": "Cero-Costo LLM",
+      "saved": "ahorrados"
+    },
+    "tabs": {
+      "holding": "Vista por Holding",
+      "tenant": "Vista por Tenant",
+      "logs": "Bitácora de Decisiones"
+    },
+    "toolbar": {
+      "search_placeholder": "Buscar por Holding, Tenant, Decisión, Primitiva o Feature...",
+      "all_primitives": "Todas las Primitivas",
+      "all_features": "Todas las Features",
+      "all_actions": "Todas las Acciones",
+      "action_auto_accepted": "✅ Auto-Aceptadas",
+      "action_flagged_warning": "⚠️ Advertencias",
+      "action_fallback_llm": "🔄 Fallback LLM",
+      "btn_columns": "Columnas",
+      "btn_refresh": "Actualizar",
+      "refreshed": "Telemetría y decisiones JEV actualizadas",
+      "error_refresh": "Error al refrescar decisiones JEV"
+    },
+    "columns": {
+      "optional_title": "Columnas Opcionales",
+      "trace_id": "Trace ID",
+      "caller_feature": "Caller Feature",
+      "primitive": "Primitiva JEV",
+      "latency": "Latencia (ms)",
+      "cost": "Costo USD / CLP"
+    },
+    "holding": {
+      "assigned_tenants": "sucursal(es) adscrita(s)",
+      "tenants_section": "Sucursales / Tenants"
+    },
+    "metrics": {
+      "decisions": "Decisiones",
+      "real_cost": "Costo Real",
+      "cost_usd": "Costo USD",
+      "avg_latency": "Latencia Prom.",
+      "latency": "Latencia"
+    },
+    "empty": {
+      "title": "No se encontraron registros de decisiones JEV",
+      "description": "Ajusta los filtros de búsqueda o verifica la actividad del motor heurístico determinista."
+    },
+    "empty_tenants": {
+      "title": "No se encontraron sucursales",
+      "description": "Prueba a ajustar tu búsqueda de sucursales o recargar la consola."
+    },
+    "empty_logs": {
+      "title": "No se encontraron logs de decisiones",
+      "description": "Intenta cambiar los filtros seleccionados"
+    },
+    "table": {
+      "date_time": "Fecha / Hora",
+      "tenant": "Sucursal (Tenant)",
+      "caller_feature": "Feature",
+      "primitive": "Primitiva",
+      "summary_result": "Resumen / Resultado",
+      "score": "Score",
+      "action": "Acción Calibrada",
+      "model": "Modelo",
+      "latency": "Latencia",
+      "cost": "Costo",
+      "pagination_item_label": "decisiones JEV"
+    },
+    "aria": {
+      "filter_primitive": "Filtro por primitiva JEV",
+      "filter_feature": "Filtro por feature llamadora",
+      "filter_action": "Filtro por acción calibrada"
+    }
+  },
   "tenants": {
     "provisioning": "Aprovisionar nuevo tenant {{schema}}",
     "r2_quota": "Cuota Cloudflare R2: {{usedMb}} MB / {{limitMb}} MB",
@@ -35,6 +135,7 @@
     "menu_modules": "Módulos (SaaS)",
     "menu_plans": "Planes (SaaS)",
     "menu_token_consumption": "Consumo Tokens Cliente",
+    "menu_jev_consumption": "Consumo de JEV",
     "section_client": "Gestión Cliente",
     "menu_holdings": "Grupos (Holdings)",
     "menu_legal_entities": "Entidades Legales",
@@ -45,7 +146,8 @@
     "menu_fx_rates": "Tasas FX Centrales",
     "menu_backups": "Bóveda de Respaldos",
     "settings_title": "Configuración de Sistema",
-    "settings_label": "Configuración"
+    "settings_label": "Configuración",
+    "menu_jevConsumption": "Consumo de JEV"
   },
   "dashboard": {
     "title": "Panel de Control Global",
@@ -594,5 +696,103 @@
     "edit": "Editar",
     "delete": "Eliminar",
     "cancel": "Cancelar"
+  },
+  "jevConsumption": {
+    "pretitle": "FinOps & Optimización Sub-Simbólica",
+    "title": "Consumo de Decisiones JEV",
+    "subtitle": "Telemetría, calibración de confianza y ahorro FinOps por Holding, Sucursal y Bitácora.",
+    "badge_subsymbolic": "Motor JEV Heurístico / Determinista",
+    "badges": {
+      "auto_accepted": "Auto-Aceptada",
+      "flagged_warning": "Advertencia",
+      "fallback_llm": "Fallback LLM"
+    },
+    "nav": {
+      "token_consumption": "Consumo Tokens LLM"
+    },
+    "kpi": {
+      "total_decisions": "Total de Decisiones JEV",
+      "real_provider_cost": "Costo Real Proveedor",
+      "avg_latency": "Latencia Promedio",
+      "confidence_calibration": "Calibración de Confianza",
+      "estimated_savings": "Ahorro Estimado FinOps",
+      "auto_accepted_pct": "Auto-Aceptadas",
+      "flagged_warning_pct": "Advertencias",
+      "fallback_llm_pct": "Fallback LLM",
+      "savings_description": "Ahorro comparado con llamada directa a LLMs comerciales",
+      "zero_cost_llm": "Cero-Costo LLM",
+      "saved": "ahorrados"
+    },
+    "tabs": {
+      "holding": "Vista por Holding",
+      "tenant": "Vista por Tenant",
+      "logs": "Bitácora de Decisiones"
+    },
+    "toolbar": {
+      "search_placeholder": "Buscar por Holding, Tenant, Decisión, Primitiva o Feature...",
+      "all_primitives": "Todas las Primitivas",
+      "all_features": "Todas las Features",
+      "all_actions": "Todas las Acciones",
+      "action_auto_accepted": "✅ Auto-Aceptadas",
+      "action_flagged_warning": "⚠️ Advertencias",
+      "action_fallback_llm": "🔄 Fallback LLM",
+      "btn_columns": "Columnas",
+      "btn_refresh": "Actualizar",
+      "refreshed": "Telemetría y decisiones JEV actualizadas",
+      "error_refresh": "Error al refrescar decisiones JEV"
+    },
+    "columns": {
+      "optional_title": "Columnas Opcionales",
+      "trace_id": "Trace ID",
+      "caller_feature": "Caller Feature",
+      "primitive": "Primitiva JEV",
+      "latency": "Latencia (ms)",
+      "cost": "Costo USD / CLP"
+    },
+    "holding": {
+      "assigned_tenants": "sucursal(es) adscrita(s)",
+      "tenants_section": "Sucursales / Tenants"
+    },
+    "metrics": {
+      "decisions": "Decisiones",
+      "real_cost": "Costo Real",
+      "cost_usd": "Costo USD",
+      "avg_latency": "Latencia Prom.",
+      "latency": "Latencia"
+    },
+    "empty": {
+      "title": "No se encontraron registros de decisiones JEV",
+      "description": "Ajusta los filtros de búsqueda o verifica la actividad del motor heurístico determinista."
+    },
+    "empty_tenants": {
+      "title": "No se encontraron sucursales",
+      "description": "Prueba a ajustar tu búsqueda de sucursales o recargar la consola."
+    },
+    "empty_logs": {
+      "title": "No se encontraron logs de decisiones",
+      "description": "Intenta cambiar los filtros seleccionados"
+    },
+    "table": {
+      "date_time": "Fecha / Hora",
+      "tenant": "Sucursal (Tenant)",
+      "caller_feature": "Feature",
+      "primitive": "Primitiva",
+      "summary_result": "Resumen / Resultado",
+      "score": "Score",
+      "action": "Acción Calibrada",
+      "model": "Modelo",
+      "latency": "Latencia",
+      "cost": "Costo",
+      "pagination_item_label": "decisiones JEV"
+    },
+    "aria": {
+      "filter_primitive": "Filtro por primitiva JEV",
+      "filter_feature": "Filtro por feature llamadora",
+      "filter_action": "Filtro por acción calibrada"
+    }
+  },
+  "nav": {
+    "jevConsumption": "Consumo de JEV",
+    "jev_consumption": "Consumo de JEV"
   }
 }

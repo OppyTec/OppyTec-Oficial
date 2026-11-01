@@ -59,13 +59,14 @@ El sistema acompaña al usuario y a los administradores con un indicador visual 
 ### 7. Asistencia y Soporte con Acompañamiento ("Entrar como Local")
 - Los administradores de soporte global de OppyTec disponen de una función de impersonación segura para ingresar temporalmente a la vista de un local específico y prestar asistencia técnica directa ante configuraciones de inventario, con registro estricto en la bitácora de auditoría.
 
-### 8. Panel de Administración de Plataforma y sus 4 Vistas Operativas
-Para la gestión centralizada de clientes y recursos de la nube SaaS, los administradores de plataforma cuentan con 4 vistas operativas gobernadas bajo el principio de mínimo privilegio:
+### 8. Panel de Administración de Plataforma y Consolas Operativas
+Para la gestión centralizada de clientes, recursos y optimización de costos en la nube SaaS, los administradores de plataforma cuentan con vistas operativas gobernadas bajo el principio de mínimo privilegio:
 1. **Gestión de Empresas Matrices (Holdings):** Visión global de marcas gastronómicas, vinculación al plan comercial base y configuración de excepciones de capacidad corporativas.
 2. **Gestión de Sociedades Tributarias (Entidades Legales):** Registro de razones sociales e identificación fiscal (RUT verificado bajo norma oficial), manteniendo relación uno a uno estricta con cada restaurante.
 3. **Aprovisionamiento de Restaurantes y Sucursales (Locales):** Creación de sucursales aisladas, activación guiada de módulos mediante el árbol oficial de funciones (con selector directo de los 10 módulos del Plan Básico), selección de moneda principal y cuotas personalizadas.
 4. **Directorio de Usuarios Clientes:** Supervisión de cuentas operativas, validación estricta de cupos de personal, botón de archivo (baja lógica) con liberación inmediata de vacantes y botón de asistencia técnica ("Entrar como Local").
-- **Protección de Acceso por Roles:** Las acciones de alta, edición, baja y soporte están protegidas contra accesos no autorizados; el personal sin facultades de administración global no visualiza botones ni controles que no le correspondan.
+5. **Consola FinOps de Decisiones JEV (`/admin/jev-consumption`):** Panel de control y auditoría de decisiones rápidas de Sistema 1, mostrando volumen de micro-decisiones, nivel de confianza estadística (acciones automáticas, advertencias y derivaciones), latencia de respuesta y cálculo de ahorro económico real frente al costo de modelos generativos tradicionales.
+- **Protección de Acceso por Roles:** Las acciones de alta, edición, baja, auditoría y soporte están protegidas contra accesos no autorizados; el personal sin facultades de administración global no visualiza botones ni controles que no le correspondan.
 - **Experiencia Multilingüe Completa:** Todas las tablas, etiquetas de estado, formularios y diálogos de confirmación están adaptados al idioma elegido (español o inglés) sin textos mixtos ni términos sin traducir.
 
 ## Escenarios de Negocio
