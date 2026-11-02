@@ -326,6 +326,8 @@ export const queryKeys = {
     plans: () => ["oppytec", "platformAdmin", "plans"] as const,
     aiPacks: (isActiveOnly?: boolean) =>
       ["oppytec", "platformAdmin", "aiPacks", String(isActiveOnly ?? false)] as const,
+    aiModels: (filters?: Record<string, unknown>) =>
+      ["oppytec", "platformAdmin", "aiModels", filters ?? {}] as const,
     saasPolicy: () => ["oppytec", "platformAdmin", "saasPolicy"] as const,
     tokenConsumption: (filters?: Record<string, unknown>) =>
       ["oppytec", "platformAdmin", "tokenConsumption", filters ?? {}] as const,
@@ -341,5 +343,31 @@ export const queryKeys = {
         subview,
         envFilter,
       ] as const,
+  },
+  events: {
+    all: (tenantId: string) => ["oppytec", "events", tenantId] as const,
+    list: (tenantId: string, filters?: Record<string, unknown>) =>
+      ["oppytec", "events", "list", tenantId, filters ?? {}] as const,
+    detail: (tenantId: string, eventId: string) =>
+      ["oppytec", "events", "detail", tenantId, eventId] as const,
+    salones: (tenantId: string, areaId?: string) =>
+      ["oppytec", "events", "salones", tenantId, areaId ?? "all"] as const,
+    faltantes: (tenantId: string, areaId?: string) =>
+      ["oppytec", "events", "faltantes", tenantId, areaId ?? "all"] as const,
+    committedStock: (tenantId: string, bodegaId?: string) =>
+      ["oppytec", "events", "committedStock", tenantId, bodegaId ?? "all"] as const,
+    alerts: (tenantId: string) =>
+      ["oppytec", "events", "alerts", tenantId] as const,
+  },
+  projection: {
+    all: (tenantId: string) => ["oppytec", "projection", tenantId] as const,
+    snapshots: (tenantId: string, filters?: Record<string, unknown>) =>
+      ["oppytec", "projection", "snapshots", tenantId, filters ?? {}] as const,
+    curve: (tenantId: string, productId: string | number, bodegaId?: string | number, horizonDays?: number) =>
+      ["oppytec", "projection", "curve", tenantId, String(productId), String(bodegaId ?? "all"), horizonDays ?? 30] as const,
+    alerts: (tenantId: string, bodegaId?: string | number, horizonDays?: number) =>
+      ["oppytec", "projection", "alerts", tenantId, String(bodegaId ?? "all"), horizonDays ?? 30] as const,
+    transfers: (tenantId: string, productId: string | number, bodegaId?: string | number) =>
+      ["oppytec", "projection", "transfers", tenantId, String(productId), String(bodegaId ?? "all")] as const,
   },
 } as const;

@@ -76,44 +76,115 @@ class ModelTariff:
     output_cost_per_1m_usd: Decimal = Decimal("0.600000")
     embedding_cost_per_1m_usd: Decimal = Decimal("0.000000")
     is_enabled: bool = True
+    provider: str = "google"
+    min_confidence_score: Decimal | None = None
+    max_context_tokens: int = 128000
+    display_name: str = ""
+    latency_p95_ms: int = 500
 
 
 DEFAULT_MODEL_TARIFFS: dict[str, ModelTariff] = {
     "gemini-1.5-flash": ModelTariff(
         model_slug="gemini-1.5-flash",
+        display_name="Gemini 1.5 Flash",
+        provider="google",
         engine_tier="SYSTEM_2_LLM",
         input_cost_per_1m_usd=Decimal("0.075000"),
         cached_cost_per_1m_usd=Decimal("0.018750"),
         output_cost_per_1m_usd=Decimal("0.300000"),
+        latency_p95_ms=500,
+        max_context_tokens=1048576,
     ),
     "gemini-1.5-pro": ModelTariff(
         model_slug="gemini-1.5-pro",
+        display_name="Gemini 1.5 Pro",
+        provider="google",
         engine_tier="SYSTEM_2_LLM",
         input_cost_per_1m_usd=Decimal("1.250000"),
         cached_cost_per_1m_usd=Decimal("0.312500"),
         output_cost_per_1m_usd=Decimal("5.000000"),
+        latency_p95_ms=1200,
+        max_context_tokens=2097152,
     ),
     "gemini-2.5-flash": ModelTariff(
         model_slug="gemini-2.5-flash",
+        display_name="Gemini 2.5 Flash",
+        provider="google",
         engine_tier="SYSTEM_2_LLM",
         input_cost_per_1m_usd=Decimal("0.150000"),
         cached_cost_per_1m_usd=Decimal("0.037500"),
         output_cost_per_1m_usd=Decimal("0.600000"),
+        latency_p95_ms=450,
+        max_context_tokens=1048576,
     ),
     "gemini-3.8-flash": ModelTariff(
         model_slug="gemini-3.8-flash",
+        display_name="Gemini 3.8 Flash",
+        provider="google",
         engine_tier="SYSTEM_2_LLM",
         input_cost_per_1m_usd=Decimal("0.150000"),
         cached_cost_per_1m_usd=Decimal("0.037500"),
         output_cost_per_1m_usd=Decimal("0.600000"),
+        latency_p95_ms=450,
+        max_context_tokens=1048576,
+    ),
+    "gemini-4-argon": ModelTariff(
+        model_slug="gemini-4-argon",
+        display_name="Gemini 4 Argon",
+        provider="google",
+        engine_tier="SYSTEM_2_LLM",
+        input_cost_per_1m_usd=Decimal("1.250000"),
+        cached_cost_per_1m_usd=Decimal("0.312500"),
+        output_cost_per_1m_usd=Decimal("5.000000"),
+        latency_p95_ms=1200,
+        max_context_tokens=2097152,
+    ),
+    "claude-3-7-sonnet": ModelTariff(
+        model_slug="claude-3-7-sonnet",
+        display_name="Claude 3.7 Sonnet",
+        provider="anthropic",
+        engine_tier="SYSTEM_2_LLM",
+        input_cost_per_1m_usd=Decimal("3.000000"),
+        cached_cost_per_1m_usd=Decimal("0.750000"),
+        output_cost_per_1m_usd=Decimal("15.000000"),
+        latency_p95_ms=1500,
+        max_context_tokens=200000,
+    ),
+    "gpt-4o": ModelTariff(
+        model_slug="gpt-4o",
+        display_name="GPT-4o",
+        provider="openai",
+        engine_tier="SYSTEM_2_LLM",
+        input_cost_per_1m_usd=Decimal("2.500000"),
+        cached_cost_per_1m_usd=Decimal("1.250000"),
+        output_cost_per_1m_usd=Decimal("10.000000"),
+        latency_p95_ms=800,
+        max_context_tokens=128000,
+    ),
+    "jev-fast-classifier": ModelTariff(
+        model_slug="jev-fast-classifier",
+        display_name="JEV Fast Classifier",
+        provider="oppytec",
+        engine_tier="SYSTEM_1_JEV",
+        input_cost_per_1m_usd=Decimal("0.000000"),
+        cached_cost_per_1m_usd=Decimal("0.000000"),
+        output_cost_per_1m_usd=Decimal("0.000000"),
+        embedding_cost_per_1m_usd=Decimal("0.000000"),
+        min_confidence_score=Decimal("0.8500"),
+        latency_p95_ms=50,
+        max_context_tokens=8192,
     ),
     "text-embedding-004": ModelTariff(
         model_slug="text-embedding-004",
+        display_name="Text Embedding 004",
+        provider="google",
         engine_tier="EMBEDDING",
         input_cost_per_1m_usd=Decimal("0.000000"),
         cached_cost_per_1m_usd=Decimal("0.000000"),
         output_cost_per_1m_usd=Decimal("0.000000"),
         embedding_cost_per_1m_usd=Decimal("0.025000"),
+        latency_p95_ms=100,
+        max_context_tokens=8192,
     ),
 }
 
@@ -129,6 +200,7 @@ class AiModelConfigLike(Protocol):
     output_cost_per_1m_usd: Decimal
     embedding_cost_per_1m_usd: Decimal
     is_enabled: bool
+    min_confidence_score: Decimal | None
 
 
 class ModelConfigRegistry:
@@ -148,14 +220,24 @@ class ModelConfigRegistry:
     def get_tariff(self, model_slug: str) -> ModelTariff:
         """Retorna la tarifa configurada para `model_slug` o el fallback estándar."""
         normalized = model_slug.lower().strip()
+        if normalized in self._tariffs:
+            return self._tariffs[normalized]
         for key, tariff in self._tariffs.items():
-            if key in normalized:
+            if key in normalized or normalized in key:
                 return tariff
-        return self._tariffs.get("gemini-2.5-flash", DEFAULT_MODEL_TARIFFS["gemini-2.5-flash"])
+        return self._tariffs.get("gemini-3.8-flash", self._tariffs.get("gemini-2.5-flash", DEFAULT_MODEL_TARIFFS["gemini-3.8-flash"]))
 
     def set_tariff(self, tariff: ModelTariff) -> None:
         """Actualiza o registra una tarifa para un modelo específico."""
         self._tariffs[tariff.model_slug.lower().strip()] = tariff
+
+    def remove_tariff(self, model_slug: str) -> bool:
+        """Elimina una tarifa del registro en memoria si existe."""
+        normalized = model_slug.lower().strip()
+        if normalized in self._tariffs:
+            del self._tariffs[normalized]
+            return True
+        return False
 
     def list_tariffs(self) -> list[ModelTariff]:
         """Retorna la lista de todas las tarifas de modelos IA configuradas."""
@@ -171,6 +253,11 @@ class ModelConfigRegistry:
         output_cost_per_1m_usd: Decimal | None = None,
         embedding_cost_per_1m_usd: Decimal | None = None,
         is_enabled: bool | None = None,
+        min_confidence_score: Decimal | None = None,
+        provider: str | None = None,
+        display_name: str | None = None,
+        latency_p95_ms: int | None = None,
+        max_context_tokens: int | None = None,
     ) -> ModelTariff:
         """Actualiza dinámicamente las tarifas de un modelo en el registry."""
         normalized = model_slug.lower().strip()
@@ -200,6 +287,19 @@ class ModelConfigRegistry:
                     else existing.embedding_cost_per_1m_usd
                 ),
                 is_enabled=is_enabled if is_enabled is not None else existing.is_enabled,
+                provider=provider if provider is not None else existing.provider,
+                min_confidence_score=(
+                    min_confidence_score
+                    if min_confidence_score is not None
+                    else existing.min_confidence_score
+                ),
+                display_name=display_name if display_name is not None else existing.display_name,
+                latency_p95_ms=latency_p95_ms if latency_p95_ms is not None else existing.latency_p95_ms,
+                max_context_tokens=(
+                    max_context_tokens
+                    if max_context_tokens is not None
+                    else existing.max_context_tokens
+                ),
             )
         else:
             updated = ModelTariff(
@@ -218,6 +318,11 @@ class ModelConfigRegistry:
                     embedding_cost_per_1m_usd if embedding_cost_per_1m_usd is not None else Decimal("0.000000")
                 ),
                 is_enabled=is_enabled if is_enabled is not None else True,
+                provider=provider or "google",
+                min_confidence_score=min_confidence_score,
+                display_name=display_name or model_slug,
+                latency_p95_ms=latency_p95_ms if latency_p95_ms is not None else 500,
+                max_context_tokens=max_context_tokens if max_context_tokens is not None else 128000,
             )
         self._tariffs[normalized] = updated
         return updated
@@ -238,9 +343,16 @@ class ModelConfigRegistry:
                         output_cost_per_1m_usd=r.output_cost_per_1m_usd,
                         embedding_cost_per_1m_usd=r.embedding_cost_per_1m_usd,
                         is_enabled=r.is_enabled,
+                        provider=getattr(r, "provider", "google"),
+                        min_confidence_score=getattr(r, "min_confidence_score", None),
+                        display_name=getattr(r, "display_name", ""),
+                        latency_p95_ms=getattr(r, "latency_p95_ms", 500),
+                        max_context_tokens=getattr(r, "max_context_tokens", 128000),
                     )
                 )
             elif isinstance(r, Mapping):
+                raw_score = r.get("min_confidence_score")
+                min_score = Decimal(str(raw_score)) if raw_score is not None else None
                 self.set_tariff(
                     ModelTariff(
                         model_slug=str(r["model_slug"]),
@@ -250,6 +362,11 @@ class ModelConfigRegistry:
                         output_cost_per_1m_usd=Decimal(str(r.get("output_cost_per_1m_usd", "0.600000"))),
                         embedding_cost_per_1m_usd=Decimal(str(r.get("embedding_cost_per_1m_usd", "0.000000"))),
                         is_enabled=bool(r.get("is_enabled", True)),
+                        provider=str(r.get("provider", "google")),
+                        min_confidence_score=min_score,
+                        display_name=str(r.get("display_name", "")),
+                        latency_p95_ms=int(r.get("latency_p95_ms", 500)),
+                        max_context_tokens=int(r.get("max_context_tokens", 128000)),
                     )
                 )
 

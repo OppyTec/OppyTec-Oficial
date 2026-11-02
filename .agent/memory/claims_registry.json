@@ -434,6 +434,104 @@
       "claimed_by": "05-frontend-senior-dev",
       "intent": "Hook de telemetría y consulta FinOps para decisiones JEV",
       "claimed_at": "2026-10-31T23:39:31.544189+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/projection",
+      "symbol_path": "feature_projection",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Implement Phase 3 Frontend Core and Reactive Hooks",
+      "claimed_at": "2026-11-01T20:28:35.148845+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/oppy_ai/application/tool_router.py",
+      "symbol_path": "OppyfyToolRouter",
+      "claimed_by": "06-ai-oppyfy-and-jev-engineer",
+      "intent": "Integrate projection tools into OppyFy tool router",
+      "claimed_at": "2026-11-01T21:25:58.792836+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/projection/application/snapshot_service.py",
+      "symbol_path": "ProjectionSnapshotService",
+      "claimed_by": "10-cybersecurity-redteam-auditor",
+      "intent": "security patch: tenant scope after commit, lock, search escape, whitelist",
+      "claimed_at": "2026-11-02T00:30:06.806093+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/projection/presentation/router.py",
+      "symbol_path": "get_projection_tenant_db",
+      "claimed_by": "10-cybersecurity-redteam-auditor",
+      "intent": "security patch: fail-closed tenant session, query bounds",
+      "claimed_at": "2026-11-02T00:30:06.870961+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/core/observability.py",
+      "symbol_path": "EventOperationMetric",
+      "claimed_by": "08-environments-and-observability-engineer",
+      "intent": "Add EventOperationMetric for events module observability",
+      "claimed_at": "2026-11-02T00:33:37.773932+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/events/application/services.py",
+      "symbol_path": "EventService",
+      "claimed_by": "08-environments-and-observability-engineer",
+      "intent": "Ensure OpenTelemetry spans and attributes for events operations",
+      "claimed_at": "2026-11-02T00:33:42.840318+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/projection/application/snapshot_service.py",
+      "symbol_path": "ProjectionSnapshotService.get_paginated_snapshots",
+      "claimed_by": "09",
+      "intent": "Fix total_items fallback bug when no consolidated snapshots match filters",
+      "claimed_at": "2026-11-02T00:48:47.448154+00:00"
+    },
+    {
+      "file": "oppytec-backend/tests/security_redteam/test_21_events_offensive_security_and_rbac.py",
+      "symbol_path": "test_events_security_suite",
+      "claimed_by": "10-cybersecurity-redteam-auditor",
+      "intent": "Vector 21 Red Team Security Test Suite for Events and Salones",
+      "claimed_at": "2026-11-02T00:50:05.512599+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/shared/components/layout/Navbar.tsx",
+      "symbol_path": "Navbar.useEffect.fetch",
+      "claimed_by": "09",
+      "intent": "Defensive guard for fetch in single-thread test runner",
+      "claimed_at": "2026-11-02T00:52:16.527627+00:00"
+    },
+    {
+      "file": "oppytec-frontend/vite.config.ts",
+      "symbol_path": "defineConfig.test.setupFiles",
+      "claimed_by": "09",
+      "intent": "Configure test setupFiles for automatic cleanup and DOM isolation",
+      "claimed_at": "2026-11-02T00:53:15.462708+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/configuracion/ConfiguracionPage.test.tsx",
+      "symbol_path": "ConfiguracionPage.test",
+      "claimed_by": "09",
+      "intent": "Wrap Sidebar in QueryClientProvider and adjust getAllByText for animated header subtitle",
+      "claimed_at": "2026-11-02T00:56:18.144420+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/users/UsuariosPage.test.tsx",
+      "symbol_path": "UsuariosPage.test.sectionHeader",
+      "claimed_by": "09",
+      "intent": "Fix getAllByText for animated SectionHeader",
+      "claimed_at": "2026-11-02T00:57:41.413851+00:00"
+    },
+    {
+      "file": "oppytec-backend/tests/security_redteam/test_20_projection_offensive_security_and_rbac.py",
+      "symbol_path": "test_sqli_resilience_in_search_and_filters",
+      "claimed_by": "10-cybersecurity-redteam-auditor",
+      "intent": "Fix SQLi assertion for whitelisted params and configure test env NullPool",
+      "claimed_at": "2026-11-02T01:13:34.011235+00:00"
+    },
+    {
+      "file": "oppytec-backend/tests/integration/test_projection_api.py",
+      "symbol_path": "_clean_db_engine",
+      "claimed_by": "10-cybersecurity-redteam-auditor",
+      "intent": "Add NullPool fixture for test isolation",
+      "claimed_at": "2026-11-02T01:13:42.498279+00:00"
     }
   ]
 }

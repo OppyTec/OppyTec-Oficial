@@ -36,7 +36,7 @@ describe("UsuariosPage Component Suite", () => {
   it("renders SectionHeader with title and subtitle", () => {
     renderUsuariosPage();
     expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
-    expect(screen.getByText(/Administración de accesos, roles y cargos del personal/i)).toBeTruthy();
+    expect(screen.getAllByText(/Administración de accesos, roles y cargos del personal/i)[0]).toBeTruthy();
   });
 
   it("renders toolbar with search input, area filter, and new user button", () => {

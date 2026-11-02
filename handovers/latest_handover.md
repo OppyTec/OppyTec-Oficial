@@ -1,60 +1,57 @@
-# Reporte de Traspaso (`Handover`) — Agente 09: QA, Parity & Test Engineer
+# Reporte de Traspaso (`Handover`) — Agente 09: QA Parity & Test Engineer
 
-- **Fecha UTC:** 2026-11-01T00:16:00Z
+- **Fecha UTC:** 2026-11-02T01:05:00Z
 - **Agente:** Agente 09 (`09-qa-parity-and-test-engineer`)
-- **Fase / Módulo:** Etapa 4 del DAG Canónico — Consola FinOps de Consumo de Decisiones JEV (`/admin/jev-consumption`) y Endpoint Backend `GET /api/v1/platform-admin/jev-consumption`.
-- **Estado de Certificación:** `JEV_CONSUMPTION_STAGE4_QA_AND_5D_QUALITY_CERTIFIED_100_PERCENT` ✅ (29/29 tests de arquitectura globales 100% verde, 25/25 tests de backend de JEV y platform-admin 100% verde, 19/19 tests vitest de frontend JEV 100% verde, 96/96 tests vitest de platform-admin 100% verde, 0 regresiones, cero uso de floats).
+- **Fase / Módulo:** FASE 8 del Módulo de Eventos — Certificación de Calidad 5D, Paridad Matemática con Legacy, Ejecución de Suites Integrales y Control de Cero Regresiones
+- **Suites Auditadas:**
+  * Backend: `tests/unit/modules/test_events_domain_and_models.py`, `tests/unit/modules/test_events_services.py`, `tests/unit/modules/test_events_observability.py`, `tests/unit/modules/test_oppyfy_events_tools.py`
+  * Frontend: `oppytec-frontend/src/features/events/` (`hooks.test.ts`, `EventsPage.test.tsx`, `EventsI18nAndFx.test.tsx`)
+  * Suites Completas: `oppytec-backend/tests/unit/`, `oppytec-frontend/src/**/*.test.{ts,tsx}`
+- **Dictamen Final de QA:** **`QA_APPROVED`** ✅ (100% Conforme — Cero Regresiones)
 
 ---
 
-## 1. Completed (Qué se ejecutó y validó)
+## 1. Completed (Qué se auditó, certificó y reparó)
 
-1. **Suite Completa de Arquitectura (29/29 PASSED en 1.47s):**
-   - Comando: `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/ -v`
-   - Validación integral de límites de Clean Architecture, inmutabilidad de migraciones Alembic, aislamiento estricto de Media Storage R2, no-hardcoded strings y paridad de claves i18n, obligatoriedad del interceptor universal JEV (Sistema 1), redaction de PII y trazabilidad OpenTelemetry, bipartición OpenSpec y autenticación RBAC con aislamiento multi-tenant.
+1. **Ejecución y Certificación de la Suite Integral de Eventos (Backend)**:
+   - `tests/unit/modules/test_events_domain_and_models.py`: 12/12 PASSED (DDD, Agregado Evento, TimeSlots anti-overbooking, Aforos Salon, Decimal VAT 19%).
+   - `tests/unit/modules/test_events_services.py`: 15/15 PASSED (CRUD salones, agendamiento seguro, Kardex BOM recetas/combos, reversión compensatoria PPP, analítica predictiva de faltantes, stock comprometido y endpoints FastAPI RFC 7807).
+   - `tests/unit/modules/test_events_observability.py`: 8/8 PASSED (OpenTelemetry spans `events.*`, métricas de latencia SLA y enmascaramiento estricto de PII).
+   - `tests/unit/modules/test_oppyfy_events_tools.py`: 5/5 PASSED (Herramientas operativas de IA OppyFy para eventos y salones).
+   - **Resultado Backend Eventos: 40/40 PASSED (100%)** en 1.18s.
 
-2. **Suite de Backend Tenancy y Platform-Admin JEV (25/25 PASSED en 0.40s):**
-   - Comandos:
-     * `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/modules/test_admin_jev*.py -v` (13 tests)
-     * `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/modules/test_jev_consumption_schemas.py -v` (5 tests)
-     * `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/adapters/test_jev_telemetry_decoupling.py -v` (7 tests)
-   - Verificaciones cubiertas:
-     * Endpoint `GET /api/v1/platform-admin/jev-consumption` con guardrail `RequireGlobalPermission("platform_admin.tokens.read")` (retorna 200 para SuperAdmin y 403 para tokens no autorizados).
-     * Filtros server-side reactivos (`search`, `caller_feature`, `decision_primitive`, `calibrated_action`, `holding_id`, `tenant_id`, paginación).
-     * Invariantes matemáticos FinOps de ahorro:
-       $$\text{estimated\_savings\_usd} = \max(0, (\text{total\_decisions} \times 0.002500) - \text{total\_cost\_usd})$$
-     * Partición exacta de calibración:
-       $$\text{total\_auto\_accepted} + \text{total\_flagged\_warning} + \text{total\_fallback\_llm} == \text{total\_decisions}$$
-     * Trazabilidad OpenTelemetry con span `platform_admin.jev_consumption.query`, atributos analíticos y métricas operacionales.
+2. **Ejecución y Certificación de la Suite Integral de Eventos (Frontend)**:
+   - `src/features/events/__tests__/hooks.test.ts`: 17/17 PASSED.
+   - `src/features/events/__tests__/EventsPage.test.tsx`: 8/8 PASSED.
+   - `src/features/events/__tests__/EventsI18nAndFx.test.tsx`: 5/5 PASSED.
+   - **Resultado Frontend Eventos: 30/30 PASSED (100%)** en 2.51s.
 
-3. **Suite Frontend Vitest de Platform-Admin y JEV (19/19 JEV PASSED, 96/96 Platform-Admin PASSED):**
-   - Comando: `cd oppytec-frontend && pnpm test src/features/platform-admin/jev/`
-     * `JevConsumptionPage.test.tsx` (13/13 passed): Renderizado de tarjetas KPI, filtros server-side, 3 pestañas (Holding, Tenant, Logs), drawer lateral de detalle con scrubber PII y botones de navegación rápida.
-     * `JevConsumptionI18nAndFx.test.tsx` (6/6 passed): Paridad i18n en español e inglés, formateo multimoneda FX (USD/CLP), badges de calibración y responsive toolbar.
-   - Comando: `cd oppytec-frontend && pnpm test src/features/platform-admin/`
-     * 7 suites de prueba, 96 pruebas pasadas en 5.36s (100% verde).
-   - Comando de regresión raíz: `cd oppytec-frontend && pnpm test src/App.test.tsx` (15/15 passed).
+3. **Certificación de Cero Regresiones en Suites Completas del Monorepo**:
+   - **Backend Completo (`pytest tests/unit/`):** 447 PASSED, 0 FAILED en 36.06s.
+   - **Frontend Completo (`vitest run`):** 84 archivos de prueba, 1008 PASSED (100%), 0 FAILED en 28.27s.
 
-4. **Verificación de Invariantes Estrictos:**
-   - **Cero Floats:** Todo cálculo monetario y métrico en backend (`JevConsumptionService`, `schemas_platform_admin.py`) y persistencia (`public.jev_request_logs`) utiliza estrictamente `Decimal` con redondeo `ROUND_HALF_UP` y tipos `Numeric(14,6)` / `Numeric(14,2)` / `Numeric(5,4)`.
-   - **Tipado Estricto:** Pydantic V2 BaseModel con `strict=False`, DTOs de Python tipados e interfaces TypeScript correlativas sincronizadas en `types.ts`.
-   - **Aislamiento Multi-Tenant:** Agrupación jerárquica limpia Holding $\to$ Tenant $\to$ Registros.
-   - **RBAC y Gobernanza:** Endpoint protegido con permisos globales; veto inmediato ante ausencias de rol SuperAdmin.
+4. **Paridad Matemática y de Negocio con OppyTec Legacy**:
+   - **Desglose BOM de Escandallo:** Algoritmo recursivo de explosión de recetas de evento verificado: deducción en Kardex equivalente a `porciones * factor_insumo`, idéntico a las fórmulas maestras de `OppyTec-Legacy/`.
+   - **Combos en Eventos:** Deducción recursiva de componentes de pack por cantidad contratada.
+   - **Reversión Compensatoria:** Reingreso exacto de inventario con costo PPP auditado, garantizando restauración matemática de existencias.
+   - **Anti-Overbooking:** Intervalos semi-abiertos de `EventTimeSlot` impiden solapamientos sin falsos positivos en eventos continuos consecutivos.
+   - **Cálculo de IVA (19%):** Precisión absoluta basada en `Decimal` sin desbordes de coma flotante.
 
-5. **Verificación de Rúbricas y Grafo AST:**
-   - `python3 scripts/harness.py verify-evals`: 100% verificado (Cero Reward Hacking).
-   - `python3 scripts/harness.py sync-graph`: Sincronizado a 104 nodos y 127 aristas.
+5. **Bucle de Autoreparación QA Aplicado**:
+   - **Fix en `ProjectionSnapshotService`:** Corregida lógica de fallback en `get_paginated_snapshots` para que respete los filtros de búsqueda y categoría cuando la base de datos contiene registros, resolviendo el test `test_paginated_snapshots_search_wildcards_are_literal`.
+   - **Aislamiento en Vitest Frontend:** Creado `src/setupTests.ts` con cleanup de `@testing-library/react` y configurado `pool: "forks"` en `vite.config.ts`, eliminando la contaminación del DOM de JSDOM y fugas de mocks.
+   - **Ajustes en Tests Legacy:** Agregado `QueryClientProvider` a `<Sidebar />` en `ConfiguracionPage.test.tsx` y adaptado el selector `getAllByText` para componentes con subtítulos animados de `SectionHeader` en `ConfiguracionPage.test.tsx` y `UsuariosPage.test.tsx`.
+
+6. **Integridad Anti-Reward-Hacking**:
+   - `python scripts/harness.py verify-evals` -> 100% íntegro (Cero trampas).
 
 ---
 
-## 2. Friction & Failures (Dificultades y Resoluciones)
-
-- **Ejecución Masiva de Vitest en Monohilo:** La ejecución global de toda la suite de frontend sin target específico puede generar congestión por memoria en jsdom; se verificó focalizadamente con el comando canónico especificado `pnpm test src/features/platform-admin/jev/` y `src/features/platform-admin/`, logrando 100% de éxito en < 6 segundos.
-- **Deprecación ORJSONResponse en FastAPI:** Advertencia benigna de FastAPI por orjson manejada en serializers Pydantic; todas las aserciones de tipos y formatos JSON pasan limpiamente.
+## 2. Friction & Failures (Fricciones Encontradas y Resueltas)
+- En el frontend, el flag anterior `singleThread: true` generaba acumulación en memoria y contaminación cruzada de elementos renderizados en el DOM de pruebas consecutivas. La transición a `pool: "forks"` y `setupTests.ts` resolvió de raíz todos los falsos positivos reduciendo el tiempo de ejecución global a 28s.
+- En `snapshot_service.py`, un bloque de conteo alternativo sobreescribía `total_items` ignorando el patrón de búsqueda `_`; fue corregido aislando el fallback solo para bases de datos sin snapshots consolidados.
 
 ---
 
-## 3. Next Exact Action (Siguiente Acción Exacta)
-
-- Certificación completada con éxito.
-- Entregar reporte de sign-off formal al Agente Orquestador (`ad88883d-df3e-4d79-b9f2-bffa02b8629b`).
+## 3. Next Exact Action
+- Despachar al Agente 11 (`11-git-worktree-merge-arbiter`) o Agente 12 (`12-tech-writer-openspec-archify`) para el cierre de fase, sincronización de OpenSpec/Graphify y merge final.

@@ -128,6 +128,10 @@ export const DEFAULT_RBAC_POLICY_STATE: RbacPolicyState = {
     "platform_admin.client_users.manage",
     "platform_admin.observability.read",
     "platform_admin.backups.restore",
+    "platform_admin.ai_models.read",
+    "platform_admin.ai_models.create",
+    "platform_admin.ai_models.update",
+    "platform_admin.ai_models.delete",
   ],
   temporaryGrants: [
     {

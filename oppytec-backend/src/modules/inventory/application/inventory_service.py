@@ -252,7 +252,12 @@ class InventoryService:
             if lote_codigo or fecha_vencimiento_lote:
                 lots = self._lots.setdefault((producto_id, bodega_id), [])
                 # Si es entrada, agregamos o incrementamos lote
-                if parsed_type in (MovementType.ENTRADA, MovementType.COMPRA, MovementType.TRASPASO_IN, MovementType.AJUSTE_POSITIVO) or (
+                if parsed_type in (
+                    MovementType.ENTRADA,
+                    MovementType.COMPRA,
+                    MovementType.TRASPASO_IN,
+                    MovementType.AJUSTE_POSITIVO,
+                ) or (
                     parsed_type == MovementType.AJUSTE_AUDITORIA and (is_positive_adjustment is True or quantity > 0)
                 ):
                     matched = next((lot for lot in lots if lot.get("lote_codigo") == lote_codigo), None)
@@ -264,7 +269,13 @@ class InventoryService:
                             "fecha_vencimiento": fecha_vencimiento_lote,
                             "cantidad": abs(quantity),
                         })
-                elif parsed_type in (MovementType.SALIDA, MovementType.CONSUMO, MovementType.MERMA, MovementType.TRASPASO_OUT, MovementType.AJUSTE_NEGATIVO) or (
+                elif parsed_type in (
+                    MovementType.SALIDA,
+                    MovementType.CONSUMO,
+                    MovementType.MERMA,
+                    MovementType.TRASPASO_OUT,
+                    MovementType.AJUSTE_NEGATIVO,
+                ) or (
                     parsed_type == MovementType.AJUSTE_AUDITORIA and (is_positive_adjustment is False or quantity < 0)
                 ):
                     matched = next((lot for lot in lots if lot.get("lote_codigo") == lote_codigo), None)

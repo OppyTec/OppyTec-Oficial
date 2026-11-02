@@ -20,10 +20,15 @@ from src.modules.oppy_ai.application.operational_tools import (
     analyze_event_supply_feasibility,
     analyze_waste_and_merma_impact,
     build_optimal_purchase_order_draft,
+    check_salon_availability,
+    estimate_event_budget_and_feasibility,
     evaluate_supplier_lead_times_and_price_drift,
     get_expiring_batches_fefo,
+    get_preventive_transfer_recommendations,
     get_sales_and_food_cost_variance,
     get_stock_health_and_reorder_alerts,
+    get_stockout_projections_and_autonomy,
+    query_upcoming_events,
     render_canvas_chart,
     render_canvas_table,
 )
@@ -40,8 +45,12 @@ HardCodedToolCode = Literal[
     "evaluate_supplier_lead_times_and_price_drift",
     "build_optimal_purchase_order_draft",
     "analyze_event_supply_feasibility",
+    "check_salon_availability",
+    "estimate_event_budget_and_feasibility",
     "get_sales_and_food_cost_variance",
     "analyze_waste_and_merma_impact",
+    "get_stockout_projections_and_autonomy",
+    "get_preventive_transfer_recommendations",
     "render_canvas_table",
     "render_canvas_chart",
 ]
@@ -57,8 +66,12 @@ HARD_CODED_TOOL_CATALOG: tuple[HardCodedToolCode, ...] = (
     "evaluate_supplier_lead_times_and_price_drift",
     "build_optimal_purchase_order_draft",
     "analyze_event_supply_feasibility",
+    "check_salon_availability",
+    "estimate_event_budget_and_feasibility",
     "get_sales_and_food_cost_variance",
     "analyze_waste_and_merma_impact",
+    "get_stockout_projections_and_autonomy",
+    "get_preventive_transfer_recommendations",
     "render_canvas_table",
     "render_canvas_chart",
 )
@@ -74,8 +87,12 @@ TOOL_DEFAULT_SUBDOMAIN_MAP: dict[HardCodedToolCode, str] = {
     "evaluate_supplier_lead_times_and_price_drift": "abastecimiento_y_eventos",
     "build_optimal_purchase_order_draft": "abastecimiento_y_eventos",
     "analyze_event_supply_feasibility": "abastecimiento_y_eventos",
+    "check_salon_availability": "abastecimiento_y_eventos",
+    "estimate_event_budget_and_feasibility": "abastecimiento_y_eventos",
     "get_sales_and_food_cost_variance": "finanzas_y_rentabilidad",
     "analyze_waste_and_merma_impact": "finanzas_y_rentabilidad",
+    "get_stockout_projections_and_autonomy": "proyeccion_y_quiebres",
+    "get_preventive_transfer_recommendations": "proyeccion_y_quiebres",
     "render_canvas_table": "analitica_y_reportes",
     "render_canvas_chart": "analitica_y_reportes",
 }
@@ -242,6 +259,22 @@ class OppyfyToolRouter:
                 guest_count=kw.get("guest_count", 120),
                 event_date=kw.get("event_date"),
             )
+        if tool_code == "check_salon_availability":
+            return check_salon_availability(
+                tenant_schema,
+                fecha=kw.get("fecha", "2026-11-20"),
+                hora_inicio=kw.get("hora_inicio", "14:00"),
+                hora_fin=kw.get("hora_fin", "18:00"),
+                guest_count=kw.get("guest_count", 50),
+                salon_id=kw.get("salon_id"),
+            )
+        if tool_code == "estimate_event_budget_and_feasibility":
+            return estimate_event_budget_and_feasibility(
+                tenant_schema,
+                guest_count=kw.get("guest_count", 100),
+                salon_id=kw.get("salon_id"),
+                menu_tier=kw.get("menu_tier", "premium"),
+            )
         if tool_code == "get_sales_and_food_cost_variance":
             return get_sales_and_food_cost_variance(
                 tenant_schema,
@@ -251,6 +284,19 @@ class OppyfyToolRouter:
             return analyze_waste_and_merma_impact(
                 tenant_schema,
                 days=kw.get("days", 30),
+            )
+        if tool_code == "get_stockout_projections_and_autonomy":
+            return get_stockout_projections_and_autonomy(
+                tenant_schema,
+                horizon_days=kw.get("horizon_days", 30),
+                critical_only=kw.get("critical_only", False),
+                product_id=kw.get("product_id"),
+            )
+        if tool_code == "get_preventive_transfer_recommendations":
+            return get_preventive_transfer_recommendations(
+                tenant_schema,
+                horizon_days=kw.get("horizon_days", 30),
+                product_id=kw.get("product_id"),
             )
         if tool_code == "render_canvas_table":
             return render_canvas_table(
@@ -301,15 +347,12 @@ class OppyfyToolRouter:
                 "precio_compra": Decimal("14900.00"),
             }
         if tool_code == "query_upcoming_events":
-            return {
-                "tenant_schema": tenant_schema,
-                "tool": "query_upcoming_events",
-                "evento_proximo": "Banquete Corporativo 120 pax",
-                "invitados_confirmados": 120,
-                "stock_suficiente": False,
-                "insumo_faltante_kg": Decimal("6.50"),
-                "costo_total": Decimal("890000.00"),
-            }
+            return query_upcoming_events(
+                tenant_schema,
+                days_ahead=kw.get("days_ahead", 30),
+                salon_id=kw.get("salon_id"),
+                status_filter=kw.get("status_filter"),
+            )
         if tool_code == "query_supplier_delays":
             return {
                 "tenant_schema": tenant_schema,

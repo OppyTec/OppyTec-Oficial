@@ -49,6 +49,8 @@ RUN groupadd --gid 10001 oppytec && \
 WORKDIR /app
 
 COPY --from=builder /opt/venv /opt/venv
+COPY --chown=oppytec:oppytec alembic ./alembic
+COPY --chown=oppytec:oppytec alembic.ini ./alembic.ini
 COPY --chown=oppytec:oppytec src ./src
 
 USER oppytec

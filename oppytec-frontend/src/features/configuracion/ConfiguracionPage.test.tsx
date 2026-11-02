@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Sidebar } from "@/shared/components/layout/Sidebar";
 import { ConfiguracionPage } from "./ConfiguracionPage";
 import { AparienciaConfig } from "./tabs/AparienciaConfig";
@@ -11,15 +12,28 @@ import { SoporteConfig } from "./tabs/SoporteConfig";
 import { AreasOperativasConfig } from "./tabs/AreasOperativasConfig";
 import { setActiveLanguage, I18N_RESOURCES } from "@/shared/i18n";
 
+function renderWithClient(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+    },
+  });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        {ui}
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+}
+
 describe("Configuración Feature & Sidebar Gear Popover", () => {
   beforeEach(() => {
     setActiveLanguage("es");
   });
   it("renders Sidebar footer with emerald pulse dot, OPPYTEC label and settings button", () => {
-    render(
-      <MemoryRouter>
-        <Sidebar isCollapsed={false} />
-      </MemoryRouter>
+    renderWithClient(
+      <Sidebar isCollapsed={false} />
     );
 
     expect(screen.getByText("OPPYTEC")).toBeTruthy();
@@ -28,10 +42,8 @@ describe("Configuración Feature & Sidebar Gear Popover", () => {
   });
 
   it("opens the settings popover with 6 configuration links when clicking gear button", async () => {
-    render(
-      <MemoryRouter>
-        <Sidebar isCollapsed={false} />
-      </MemoryRouter>
+    renderWithClient(
+      <Sidebar isCollapsed={false} />
     );
 
     const settingsBtn = screen.getByTestId("sidebar-settings-btn");
@@ -49,11 +61,11 @@ describe("Configuración Feature & Sidebar Gear Popover", () => {
   });
 
   it("closes settings popover when clicking outside", async () => {
-    render(
-      <MemoryRouter>
+    renderWithClient(
+      <>
         <div data-testid="outside-area">Outside</div>
         <Sidebar isCollapsed={false} />
-      </MemoryRouter>
+      </>
     );
 
     const settingsBtn = screen.getByTestId("sidebar-settings-btn");
@@ -205,10 +217,8 @@ describe("Configuración Feature & Sidebar Gear Popover", () => {
   it("renders English translations when active language is set to 'en'", () => {
     setActiveLanguage("en");
 
-    render(
-      <MemoryRouter>
-        <Sidebar isCollapsed={false} />
-      </MemoryRouter>
+    renderWithClient(
+      <Sidebar isCollapsed={false} />
     );
 
     const settingsBtn = screen.getByTestId("sidebar-settings-btn");
@@ -236,7 +246,7 @@ describe("Configuración Feature & Sidebar Gear Popover", () => {
     );
 
     expect(screen.getByTestId("configuracion-page")).toBeTruthy();
-    expect(screen.getByText("System Settings and Administration")).toBeTruthy();
+    expect(screen.getAllByText("System Settings and Administration")[0]).toBeTruthy();
     expect(screen.getByText("Business")).toBeTruthy();
     expect(screen.getByText("Warehouses")).toBeTruthy();
     expect(screen.getByText("Operational Areas")).toBeTruthy();

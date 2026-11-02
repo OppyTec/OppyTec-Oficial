@@ -48,9 +48,9 @@ describe("Frontend i18n Suite (12 Namespaces, SVG Flags & Pollo King Proper Noun
     setActiveLanguage("es");
   });
 
-  it("initializes all 22 namespaces for both es and en with 1:1 parity", () => {
+  it("initializes all 24 namespaces for both es and en with 1:1 parity", () => {
     expect(SUPPORTED_LANGUAGES).toEqual(["es", "en"]);
-    expect(I18N_NAMESPACES).toHaveLength(22);
+    expect(I18N_NAMESPACES).toHaveLength(24);
     expect(I18N_NAMESPACES).toContain("configuracion");
     expect(I18N_NAMESPACES).toContain("profile");
     expect(I18N_NAMESPACES).toContain("users");
@@ -62,6 +62,8 @@ describe("Frontend i18n Suite (12 Namespaces, SVG Flags & Pollo King Proper Noun
     expect(I18N_NAMESPACES).toContain("alerts");
     expect(I18N_NAMESPACES).toContain("history");
     expect(I18N_NAMESPACES).toContain("notifications");
+    expect(I18N_NAMESPACES).toContain("projection");
+    expect(I18N_NAMESPACES).toContain("events");
     expect(i18next.isInitialized).toBe(true);
 
     for (const ns of I18N_NAMESPACES) {
@@ -92,6 +94,11 @@ describe("Frontend i18n Suite (12 Namespaces, SVG Flags & Pollo King Proper Noun
     expect(translateKey("notifications", "header.title")).toBe(
       "Centro de Notificaciones y Aprobaciones"
     );
+    expect(translateKey("events", "header.title")).toBe("Eventos y Banquetes");
+    expect(translateKey("events", "header.subtitle")).toBe(
+      "Programación y Control de Consumo"
+    );
+    expect(translateKey("events", "toolbar.salones")).toBe("Salones");
 
     setActiveLanguage("en");
     expect(getActiveLanguage()).toBe("en");
@@ -118,11 +125,34 @@ describe("Frontend i18n Suite (12 Namespaces, SVG Flags & Pollo King Proper Noun
     expect(translateKey("notifications", "header.title")).toBe(
       "Notifications & Approvals Center"
     );
+    expect(translateKey("events", "header.title")).toBe("Events & Banquets");
+    expect(translateKey("events", "header.subtitle")).toBe(
+      "Scheduling and Consumption Control"
+    );
+    expect(translateKey("events", "toolbar.salones")).toBe("Halls");
   });
 
   it("preserves protected proper nouns like 'Pollo King' and 'Savory' across all languages", () => {
     expect(IMMUTABLE_PROPER_NOUNS).toContain("Pollo King");
     expect(IMMUTABLE_PROPER_NOUNS).toContain("Savory");
+    expect(IMMUTABLE_PROPER_NOUNS).toContain("OppyTec");
+    expect(IMMUTABLE_PROPER_NOUNS).toContain("Google");
+    expect(IMMUTABLE_PROPER_NOUNS).toContain("Anthropic");
+    expect(IMMUTABLE_PROPER_NOUNS).toContain("OpenAI");
+    expect(IMMUTABLE_PROPER_NOUNS).toContain("JEV");
+
+    const properNounsToVerify = ["OppyTec", "Google", "Anthropic", "OpenAI", "JEV"];
+    for (const noun of properNounsToVerify) {
+      const record: TranslatableDynamicRecord = {
+        name: noun,
+        name_i18n: {
+          es: `${noun} Traducido`,
+          en: `${noun} Translated`,
+        },
+      };
+      expect(resolveDynamicFieldI18n(record, "es")).toBe(noun);
+      expect(resolveDynamicFieldI18n(record, "en")).toBe(noun);
+    }
 
     const polloKingRecord: TranslatableDynamicRecord = {
       name: "Pollo King",
@@ -665,5 +695,127 @@ describe("Frontend i18n Suite (12 Namespaces, SVG Flags & Pollo King Proper Noun
     expect(translateKey("history", "toolbar.badge_immutable")).toBe("Immutable Audit");
     expect(translateKey("history", "filters.all_products")).toBe("All products");
     expect(translateKey("history", "table.headers.datetime")).toBe("Date and time");
+  });
+
+  it("verifies 1:1 parity and full canonical coverage for 'platform_admin' namespace (including ai_models, jev, fx_admin)", () => {
+    function extractLeafKeys(obj: unknown, prefix = ""): string[] {
+      if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+        return prefix ? [prefix] : [];
+      }
+      return Object.entries(obj).flatMap(([k, v]) =>
+        extractLeafKeys(v, prefix ? `${prefix}.${k}` : k)
+      );
+    }
+
+    const esPlatformAdmin = I18N_RESOURCES.es?.platform_admin;
+    const enPlatformAdmin = I18N_RESOURCES.en?.platform_admin;
+
+    expect(esPlatformAdmin).toBeDefined();
+    expect(enPlatformAdmin).toBeDefined();
+
+    const esKeys = extractLeafKeys(esPlatformAdmin).sort();
+    const enKeys = extractLeafKeys(enPlatformAdmin).sort();
+
+    expect(esKeys).toEqual(enKeys);
+    expect(esKeys.length).toBeGreaterThanOrEqual(750);
+
+    // Verificación de ai_models en ES y EN
+    setActiveLanguage("es");
+    expect(translateKey("platform_admin", "ai_models.title")).toBe("Modelos LLM y Motores JEV");
+    expect(translateKey("platform_admin", "ai_models.badge_catalog")).toBe("Catálogo Maestro de Inferencia");
+    expect(translateKey("platform_admin", "ai_models.kpi.total_models")).toBe("Total de Modelos");
+    expect(translateKey("platform_admin", "ai_models.kpi.jev_engines")).toBe("Motores JEV System 1");
+    expect(translateKey("platform_admin", "ai_models.filter.tier_system_1_jev")).toBe("System 1 - JEV Local (0 Costo)");
+    expect(translateKey("platform_admin", "ai_models.actions.new_model")).toBe("Nuevo Modelo");
+    expect(translateKey("platform_admin", "jev.badge_subsymbolic")).toBe("Motor JEV Heurístico / Determinista");
+
+    setActiveLanguage("en");
+    expect(translateKey("platform_admin", "ai_models.title")).toBe("LLM Models & JEV Engines");
+    expect(translateKey("platform_admin", "ai_models.badge_catalog")).toBe("Master Inference Catalog");
+    expect(translateKey("platform_admin", "ai_models.kpi.total_models")).toBe("Total Models");
+    expect(translateKey("platform_admin", "ai_models.kpi.jev_engines")).toBe("System 1 JEV Engines");
+    expect(translateKey("platform_admin", "ai_models.filter.tier_system_1_jev")).toBe("System 1 - Local JEV (Zero Cost)");
+    expect(translateKey("platform_admin", "ai_models.actions.new_model")).toBe("New Model");
+    expect(translateKey("platform_admin", "jev.badge_subsymbolic")).toBe("Deterministic / Heuristic JEV Engine");
+  });
+
+  it("verifies 1:1 parity and full canonical coverage for 'projection' namespace", () => {
+    function extractLeafKeys(obj: unknown, prefix = ""): string[] {
+      if (typeof obj !== "object" || obj === null) return [prefix];
+      return Object.entries(obj).flatMap(([k, v]) =>
+        extractLeafKeys(v, prefix ? `${prefix}.${k}` : k)
+      );
+    }
+
+    const esProjection = I18N_RESOURCES.es?.projection;
+    const enProjection = I18N_RESOURCES.en?.projection;
+
+    expect(esProjection).toBeDefined();
+    expect(enProjection).toBeDefined();
+
+    const esKeys = extractLeafKeys(esProjection).sort();
+    const enKeys = extractLeafKeys(enProjection).sort();
+
+    expect(esKeys).toEqual(enKeys);
+    expect(esKeys.length).toBeGreaterThanOrEqual(50);
+
+    setActiveLanguage("es");
+    expect(translateKey("projection", "header.title")).toBe("Proyección");
+    expect(translateKey("projection", "header.subtitle")).toBe(
+      "Simulación de Disponibilidad y Alertas"
+    );
+    expect(translateKey("projection", "toolbar.search_placeholder")).toBe(
+      "Buscar por producto, SKU o categoría..."
+    );
+
+    setActiveLanguage("en");
+    expect(translateKey("projection", "header.title")).toBe("Projection");
+    expect(translateKey("projection", "header.subtitle")).toBe(
+      "Availability Simulation & Alerts"
+    );
+    expect(translateKey("projection", "toolbar.search_placeholder")).toBe(
+      "Search by product, SKU or category..."
+    );
+  });
+
+  it("verifies 1:1 parity and full canonical coverage for 'events' namespace", () => {
+    function extractLeafKeys(obj: unknown, prefix = ""): string[] {
+      if (typeof obj !== "object" || obj === null) return [prefix];
+      return Object.entries(obj).flatMap(([k, v]) =>
+        extractLeafKeys(v, prefix ? `${prefix}.${k}` : k)
+      );
+    }
+
+    const esEvents = I18N_RESOURCES.es?.events;
+    const enEvents = I18N_RESOURCES.en?.events;
+
+    expect(esEvents).toBeDefined();
+    expect(enEvents).toBeDefined();
+
+    const esKeys = extractLeafKeys(esEvents).sort();
+    const enKeys = extractLeafKeys(enEvents).sort();
+
+    expect(esKeys).toEqual(enKeys);
+    expect(esKeys.length).toBeGreaterThanOrEqual(40);
+
+    setActiveLanguage("es");
+    expect(translateKey("events", "header.title")).toBe("Eventos y Banquetes");
+    expect(translateKey("events", "header.subtitle")).toBe(
+      "Programación y Control de Consumo"
+    );
+    expect(translateKey("events", "toolbar.salones")).toBe("Salones");
+    expect(translateKey("events", "tabs.proximos")).toBe("Próximos / Agendados");
+    expect(translateKey("events", "salones_dialog.title")).toBe("Gestión de Salones y Espacios");
+    expect(translateKey("events", "dialog.title_create")).toBe("Nuevo Evento o Banquete");
+
+    setActiveLanguage("en");
+    expect(translateKey("events", "header.title")).toBe("Events & Banquets");
+    expect(translateKey("events", "header.subtitle")).toBe(
+      "Scheduling and Consumption Control"
+    );
+    expect(translateKey("events", "toolbar.salones")).toBe("Halls");
+    expect(translateKey("events", "tabs.proximos")).toBe("Upcoming / Scheduled");
+    expect(translateKey("events", "salones_dialog.title")).toBe("Halls and Spaces Management");
+    expect(translateKey("events", "dialog.title_create")).toBe("New Event or Banquet");
   });
 });

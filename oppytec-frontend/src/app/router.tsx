@@ -30,6 +30,7 @@ import {
   PlatformAdminFeatureView,
   TokenConsumptionPage,
   JevConsumptionPage,
+  AiModelsPage,
 } from "@/features/platform-admin";
 
 import { ProcurementFeatureView, ProveedoresPage } from "@/features/procurement";
@@ -42,6 +43,8 @@ import { GestionPage } from "@/features/gestion";
 import { HistorialPage } from "@/features/historial";
 import { RegistroConsumoPage, ManosLibresPage, BuffetPage } from "@/features/consumo";
 import { NotificationsPage } from "@/features/notifications";
+import { EventsPage } from "@/features/events";
+import { ProyeccionView } from "@/features/projection";
 import { useAuth } from "@/shared/auth/usePermissions";
 import { HomeDashboard } from "@/features/home";
 import {
@@ -195,8 +198,10 @@ export function ClientAppShell() {
         <Route path="/notificaciones/*" element={<NotificationsPage />} />
         <Route path="/alertas" element={<AlertasPage />} />
         <Route path="/alertas/*" element={<AlertasPage />} />
-        <Route path="/eventos/*" element={<ModulePlaceholderView title="Planificación de Eventos y Banquetes" moduleSlug="module:eventos" />} />
-        <Route path="/proyeccion/*" element={<ModulePlaceholderView title="Proyección de Demanda y Análisis Financiero" moduleSlug="module:proyeccion" />} />
+        <Route path="/eventos" element={<EventsPage />} />
+        <Route path="/eventos/*" element={<EventsPage />} />
+        <Route path="/proyeccion" element={<ProyeccionView />} />
+        <Route path="/proyeccion/*" element={<ProyeccionView />} />
         <Route path="/historial" element={<HistorialPage />} />
         <Route path="/historial/*" element={<HistorialPage />} />
         <Route path="/contabilidad/*" element={<ModulePlaceholderView title="Contabilidad y Facturas DTE" moduleSlug="module:contabilidad" />} />
@@ -263,6 +268,7 @@ export function AppRouter() {
           <Route path="business-types" element={<AdminBusinessTypesView />} />
           <Route path="modules" element={<AdminModulesView />} />
           <Route path="plans" element={<PlansPage />} />
+          <Route path="ai-models" element={<AiModelsPage />} />
           <Route path="token-consumption" element={<TokenConsumptionPage />} />
           <Route path="jev-consumption" element={<JevConsumptionPage />} />
           <Route path="holdings" element={<AdminHoldingsView />} />

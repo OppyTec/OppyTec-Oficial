@@ -485,21 +485,26 @@ export function Navbar({
   // Fetch tenants if available
   useEffect(() => {
     let isMounted = true;
-    fetch(resolveApiEndpointUrl("/user/my-tenants"), {
-      headers: buildApiHeaders(),
-    })
-      .then((res) => {
-        if (res.ok) return res.json();
-        return null;
-      })
-      .then((data) => {
-        if (isMounted && Array.isArray(data) && data.length > 0) {
-          setMyHoldings(data);
-        }
-      })
-      .catch(() => {
-        // Safe fallback already in place
-      });
+    try {
+      const call = typeof fetch === "function" ? fetch(resolveApiEndpointUrl("/user/my-tenants"), {
+        headers: buildApiHeaders(),
+      }) : undefined;
+      call
+        ?.then?.((res) => {
+          if (res?.ok) return res.json();
+          return null;
+        })
+        ?.then?.((data) => {
+          if (isMounted && Array.isArray(data) && data.length > 0) {
+            setMyHoldings(data);
+          }
+        })
+        ?.catch?.(() => {
+          // Safe fallback already in place
+        });
+    } catch {
+      // Safe fallback
+    }
     return () => {
       isMounted = false;
     };

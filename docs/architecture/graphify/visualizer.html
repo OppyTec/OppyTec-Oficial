@@ -1138,6 +1138,12 @@
       "path": "oppytec-frontend/src/features/platform-admin/AdminManagementViews.tsx"
     },
     {
+      "id": "frontend:ai_models_page",
+      "label": "Platform Admin AI Models & JEV Engine Catalog View (RBAC 3-Tier CRUD & KPIs)",
+      "type": "frontend_feature_submodule",
+      "path": "oppytec-frontend/src/features/platform-admin/ai-models/AiModelsPage.tsx"
+    },
+    {
       "id": "frontend:app_shell",
       "label": "React 19 App Shell (AppProviders, AppRouter, HoldingTenantSwitcher & ThemeProvider)",
       "type": "frontend_shell",
@@ -1396,6 +1402,24 @@
       "path": "oppytec-backend/alembic/versions/0011_public_jev_request_logs_and_finops_telemetry.py"
     },
     {
+      "id": "migration:0012_public_ai_model",
+      "label": "Alembic 0012 Migration: Public ai model configs catalog extension",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0012_public_ai_model_configs_catalog_extension.py"
+    },
+    {
+      "id": "migration:0013_tenant_events_salones",
+      "label": "Alembic 0013 Migration: Tenant events salones and reservations",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0013_tenant_events_salones_and_reservations.py"
+    },
+    {
+      "id": "migration:0014_tenant_projection_snapshots",
+      "label": "Alembic 0014 Migration: Tenant projection snapshots and consumption rates",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0014_tenant_projection_snapshots_and_consumption_rates.py"
+    },
+    {
       "id": "module:analytics",
       "label": "Analytics Module (Executive Margins, Kasavana Menu Engineering, Loss Control & Projections)",
       "type": "backend_module",
@@ -1492,6 +1516,12 @@
       "path": "oppytec-backend/src/core/realtime/router.py"
     },
     {
+      "id": "router:events",
+      "label": "Backend Presentation Router (events) /api/v1/events",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/events/presentation/router.py"
+    },
+    {
       "id": "router:identity",
       "label": "Backend Presentation Router (identity) /api/v1/identity",
       "type": "backend_router",
@@ -1522,6 +1552,12 @@
       "path": "oppytec-backend/src/modules/procurement/presentation/router.py"
     },
     {
+      "id": "router:projection",
+      "label": "Backend Presentation Router (projection) /api/v1/projection",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/projection/presentation/router.py"
+    },
+    {
       "id": "router:recipes",
       "label": "Backend Presentation Router (recipes) /api/v1/recipes",
       "type": "backend_router",
@@ -1534,10 +1570,34 @@
       "path": "oppytec-backend/src/modules/tenancy/presentation/router.py"
     },
     {
+      "id": "service:ai_model_catalog",
+      "label": "AI Model & JEV Catalog Application Service (CRUD, Hot-Reload & RBAC Guard)",
+      "type": "backend_service",
+      "path": "oppytec-backend/src/modules/oppy_ai/application/ai_model_catalog_service.py"
+    },
+    {
       "id": "service:oppyfy_code_mode",
       "label": "OppyFy Code Mode Application Service (Multi-Tenant & FinOps Telemetry)",
       "type": "backend_service",
       "path": "oppytec-backend/src/modules/oppy_ai/application/code_mode_service.py"
+    },
+    {
+      "id": "suite:ai_model_catalog_observability_test",
+      "label": "AI Model Catalog OpenTelemetry & Latency SLA Observability Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/modules/test_ai_model_catalog_observability.py"
+    },
+    {
+      "id": "suite:ai_model_catalog_security_test",
+      "label": "AI Model Catalog Security & Red Team Offensive Suite (RBAC, IDOR & Soft-Delete)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/security_redteam/test_19_ai_model_catalog_security_and_rbac.py"
+    },
+    {
+      "id": "suite:ai_model_catalog_unit_test",
+      "label": "AI Model Catalog Domain & CRUD API Unit Test Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/modules/test_ai_model_catalog.py"
     },
     {
       "id": "suite:architecture",
@@ -1568,6 +1628,12 @@
       "label": "Frontend Admin Views & RBAC Interactive Vitest Suite",
       "type": "verification_suite",
       "path": "oppytec-frontend/src/features/platform-admin/AdminManagementViews.test.tsx"
+    },
+    {
+      "id": "suite:frontend_ai_models_vitest",
+      "label": "Frontend Platform Admin AI Models Page Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/platform-admin/ai-models/__tests__/AiModelsPage.test.tsx"
     },
     {
       "id": "suite:frontend_currency_test",
@@ -1732,6 +1798,11 @@
     },
     {
       "source": "app:backend_main",
+      "target": "router:events",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
       "target": "router:identity",
       "relation": "mounts_api_router"
     },
@@ -1753,6 +1824,11 @@
     {
       "source": "app:backend_main",
       "target": "router:procurement",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:projection",
       "relation": "mounts_api_router"
     },
     {
@@ -1836,6 +1912,16 @@
       "relation": "consumes_admin_rest_api"
     },
     {
+      "source": "frontend:ai_models_page",
+      "target": "migration:0012_public_ai_model",
+      "relation": "displays_ai_model_configs_schema"
+    },
+    {
+      "source": "frontend:ai_models_page",
+      "target": "service:ai_model_catalog",
+      "relation": "consumes_ai_models_crud_api"
+    },
+    {
       "source": "frontend:app_shell",
       "target": "frontend:currency_selector",
       "relation": "renders_navbar_currency_selector"
@@ -1914,6 +2000,11 @@
       "source": "frontend:feature_platform_admin",
       "target": "frontend:admin_management_views",
       "relation": "contains_crud_views"
+    },
+    {
+      "source": "frontend:feature_platform_admin",
+      "target": "frontend:ai_models_page",
+      "relation": "mounts_ai_models_catalog"
     },
     {
       "source": "frontend:feature_platform_admin",
@@ -2156,6 +2247,11 @@
       "relation": "routes_to_domain_module"
     },
     {
+      "source": "router:oppy_ai",
+      "target": "service:ai_model_catalog",
+      "relation": "dispatches_catalog_crud_requests"
+    },
+    {
       "source": "router:procurement",
       "target": "module:procurement",
       "relation": "routes_to_domain_module"
@@ -2171,6 +2267,16 @@
       "relation": "routes_to_domain_module"
     },
     {
+      "source": "service:ai_model_catalog",
+      "target": "migration:0012_public_ai_model",
+      "relation": "reads_and_writes_ai_model_configs"
+    },
+    {
+      "source": "service:ai_model_catalog",
+      "target": "module:oppy_ai",
+      "relation": "manages_ai_models_and_tariffs"
+    },
+    {
       "source": "service:oppyfy_code_mode",
       "target": "core:code_mode_sandbox",
       "relation": "invokes_isolated_sandbox"
@@ -2184,6 +2290,31 @@
       "source": "service:oppyfy_code_mode",
       "target": "module:oppy_ai",
       "relation": "orchestrates_code_mode"
+    },
+    {
+      "source": "suite:ai_model_catalog_observability_test",
+      "target": "service:ai_model_catalog",
+      "relation": "verifies_otel_spans_and_latency_sla"
+    },
+    {
+      "source": "suite:ai_model_catalog_security_test",
+      "target": "router:oppy_ai",
+      "relation": "audits_rbac_privilege_escalation_and_idor"
+    },
+    {
+      "source": "suite:ai_model_catalog_security_test",
+      "target": "service:ai_model_catalog",
+      "relation": "audits_soft_delete_and_invariants"
+    },
+    {
+      "source": "suite:ai_model_catalog_unit_test",
+      "target": "router:oppy_ai",
+      "relation": "tests_rbac_authorization_matrix"
+    },
+    {
+      "source": "suite:ai_model_catalog_unit_test",
+      "target": "service:ai_model_catalog",
+      "relation": "tests_crud_hot_reload_and_soft_delete"
     },
     {
       "source": "suite:architecture",
@@ -2219,6 +2350,11 @@
       "source": "suite:frontend_admin_views_test",
       "target": "frontend:admin_management_views",
       "relation": "verifies_modal_crud_and_rbac_veto"
+    },
+    {
+      "source": "suite:frontend_ai_models_vitest",
+      "target": "frontend:ai_models_page",
+      "relation": "verifies_modal_crud_filters_and_rbac"
     },
     {
       "source": "suite:frontend_currency_test",
@@ -2297,7 +2433,7 @@
     "frontend_features": 10,
     "frontend_shared_kernels": 5,
     "cross_feature_imports": 0,
-    "verification_suites": 19,
+    "verification_suites": 23,
     "redteam_vectors": 11,
     "e2e_flows": 5,
     "archify_atlas_maps": 5,
@@ -2306,12 +2442,12 @@
     "load_test_target_rps": 500,
     "load_test_p95_budget_ms": 120,
     "rubric_score": "10/10",
-    "nodes_count": 104,
-    "edges_count": 127,
+    "nodes_count": 115,
+    "edges_count": 141,
     "frontend_admin_views": 4,
-    "backend_routers": 11,
-    "alembic_migrations": 13,
-    "updated_at": "2026-11-01T00:14:08.111809+00:00"
+    "backend_routers": 13,
+    "alembic_migrations": 16,
+    "updated_at": "2026-11-02T01:15:45.623752+00:00"
   }
 }
   </script>

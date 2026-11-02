@@ -31,6 +31,7 @@ SENSITIVE_COST_KEYS: frozenset[str] = frozenset(
         "costo_total",
         "costo_receta",
         "costo_total_merma",
+        "costo_total_quiebre",
         "costo_teorico_clp",
         "costo_real_clp",
         "precio_compra",
@@ -43,6 +44,7 @@ SENSITIVE_COST_KEYS: frozenset[str] = frozenset(
         "total_draft_neto_clp",
         "total_draft_bruto_clp",
         "total_estimated_reorder_cost",
+        "total_estimated_transfer_cost",
         "total_at_risk_cost",
         "total_shortage_cost_neto",
         "margen",
@@ -57,6 +59,17 @@ SENSITIVE_COST_KEYS: frozenset[str] = frozenset(
         "gasto_total",
         "total_monetario",
         "monto_total",
+        "total_bruto",
+        "costo_total_acumulado",
+        "ingreso_proyectado",
+        "margen_proyectado",
+        "precio_venta",
+        "precio_neto",
+        "precio_bruto",
+        "iva",
+        "salon_alquiler_neto",
+        "catering_costo_neto",
+        "staff_costo_neto",
     }
 )
 

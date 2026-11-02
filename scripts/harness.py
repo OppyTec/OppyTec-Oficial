@@ -630,6 +630,22 @@ def sync_graph_cmd() -> None:
         if "core:mcp_bridge" in nodes_map:
             add_edge("service:oppyfy_code_mode", "core:mcp_bridge", "searches_capabilities")
 
+    ai_catalog_service = ROOT_DIR / "oppytec-backend" / "src" / "modules" / "oppy_ai" / "application" / "ai_model_catalog_service.py"
+    if ai_catalog_service.exists():
+        add_node(
+            "service:ai_model_catalog",
+            "AI Model & JEV Catalog Application Service (CRUD, Hot-Reload & RBAC Guard)",
+            "backend_service",
+            str(ai_catalog_service.relative_to(ROOT_DIR)),
+        )
+        if "module:oppy_ai" in nodes_map:
+            add_edge("service:ai_model_catalog", "module:oppy_ai", "manages_ai_models_and_tariffs")
+        m0012 = next((nid for nid in nodes_map if "0012" in nid), None)
+        if m0012:
+            add_edge("service:ai_model_catalog", m0012, "reads_and_writes_ai_model_configs")
+        if "router:oppy_ai" in nodes_map:
+            add_edge("router:oppy_ai", "service:ai_model_catalog", "dispatches_catalog_crud_requests")
+
     # 3. Componentes Clave de Frontend
     fe_i18n_selector = ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "i18n" / "LanguageFlagSelector.tsx"
     if fe_i18n_selector.exists():
@@ -737,6 +753,23 @@ def sync_graph_cmd() -> None:
             str(fe_admin_form.relative_to(ROOT_DIR)),
         )
 
+    fe_ai_models_page = ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "ai-models" / "AiModelsPage.tsx"
+    if fe_ai_models_page.exists():
+        rel_path = str(fe_ai_models_page.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:ai_models_page",
+            "Platform Admin AI Models & JEV Engine Catalog View (RBAC 3-Tier CRUD & KPIs)",
+            "frontend_feature_submodule",
+            rel_path,
+        )
+        if "frontend:feature_platform_admin" in nodes_map:
+            add_edge("frontend:feature_platform_admin", "frontend:ai_models_page", "mounts_ai_models_catalog")
+        if "service:ai_model_catalog" in nodes_map:
+            add_edge("frontend:ai_models_page", "service:ai_model_catalog", "consumes_ai_models_crud_api")
+        m0012 = next((nid for nid in nodes_map if "0012" in nid), None)
+        if m0012:
+            add_edge("frontend:ai_models_page", m0012, "displays_ai_model_configs_schema")
+
     # 4. Suites de Test
     fe_test_map = {
         "suite:frontend_admin_views_test": (
@@ -789,6 +822,36 @@ def sync_graph_cmd() -> None:
             ROOT_DIR / "oppytec-backend" / "tests" / "unit" / "core" / "test_sandbox_runner.py",
             "Code Mode Sandbox Runner Unit Test Suite",
             [("suite:sandbox_runner_test", "core:code_mode_sandbox", "verifies_ast_limits_and_stripping")],
+        ),
+        "suite:ai_model_catalog_unit_test": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "unit" / "modules" / "test_ai_model_catalog.py",
+            "AI Model Catalog Domain & CRUD API Unit Test Suite",
+            [
+                ("suite:ai_model_catalog_unit_test", "service:ai_model_catalog", "tests_crud_hot_reload_and_soft_delete"),
+                ("suite:ai_model_catalog_unit_test", "router:oppy_ai", "tests_rbac_authorization_matrix"),
+            ],
+        ),
+        "suite:ai_model_catalog_observability_test": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "unit" / "modules" / "test_ai_model_catalog_observability.py",
+            "AI Model Catalog OpenTelemetry & Latency SLA Observability Suite",
+            [
+                ("suite:ai_model_catalog_observability_test", "service:ai_model_catalog", "verifies_otel_spans_and_latency_sla"),
+            ],
+        ),
+        "suite:frontend_ai_models_vitest": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "ai-models" / "__tests__" / "AiModelsPage.test.tsx",
+            "Frontend Platform Admin AI Models Page Vitest Suite",
+            [
+                ("suite:frontend_ai_models_vitest", "frontend:ai_models_page", "verifies_modal_crud_filters_and_rbac"),
+            ],
+        ),
+        "suite:ai_model_catalog_security_test": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "security_redteam" / "test_19_ai_model_catalog_security_and_rbac.py",
+            "AI Model Catalog Security & Red Team Offensive Suite (RBAC, IDOR & Soft-Delete)",
+            [
+                ("suite:ai_model_catalog_security_test", "service:ai_model_catalog", "audits_soft_delete_and_invariants"),
+                ("suite:ai_model_catalog_security_test", "router:oppy_ai", "audits_rbac_privilege_escalation_and_idor"),
+            ],
         ),
     }
     for s_id, (s_path, s_label, s_edges) in fe_test_map.items():

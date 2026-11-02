@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Coins,
+  Cpu,
   Layers,
   LayoutDashboard,
   type LucideIcon,
@@ -93,6 +94,14 @@ export const GESTION_NEGOCIO_ITEMS = [
     color: "#06b6d4",
     rgb: "6,182,212",
     badge: "JEV",
+  },
+  {
+    path: "/admin/ai-models",
+    label: "Modelos LLM y JEV",
+    icon: Cpu,
+    color: "#8b5cf6",
+    rgb: "139,92,246",
+    badge: "AI",
   },
 ] as const;
 
@@ -229,6 +238,12 @@ export function AdminSidebar({
         translateKey("platform_admin", "admin.nav.jev_consumption") ||
         translateKey("platform_admin", "sidebar.menu_jev_consumption") ||
         "Consumo de JEV",
+    },
+    {
+      ...GESTION_NEGOCIO_ITEMS[5],
+      label:
+        translateKey("platform_admin", "sidebar.menu_ai_models") ||
+        "Modelos LLM y JEV",
     },
   ];
 
@@ -419,7 +434,9 @@ export function AdminSidebar({
                         ? "admin-nav-item-token-consumption"
                         : subItem.path === "/admin/jev-consumption"
                           ? "admin-nav-item-jev-consumption"
-                          : `admin-nav-item-${subItem.path.replace("/admin/", "")}`;
+                          : subItem.path === "/admin/ai-models"
+                            ? "admin-nav-item-ai-models"
+                            : `admin-nav-item-${subItem.path.replace("/admin/", "")}`;
 
                   return (
                     <Link

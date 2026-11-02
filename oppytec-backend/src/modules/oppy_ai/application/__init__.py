@@ -15,6 +15,9 @@ from src.modules.oppy_ai.application.ai_credit_packs_service import (
     CreditPackDTO,
     CreditPackPurchaseQuoteDTO,
 )
+from src.modules.oppy_ai.application.ai_model_catalog_service import (
+    AiModelCatalogService,
+)
 from src.modules.oppy_ai.application.code_mode_service import (
     OppyfyCodeModeExecutionResult,
     OppyfyCodeModeService,
@@ -57,6 +60,7 @@ __all__ = [
     "HARD_CODED_TOOL_CATALOG",
     "AiCreditPackNotFoundError",
     "AiCreditPacksService",
+    "AiModelCatalogService",
     "BusinessSpecChunkRecord",
     "CreditPackDTO",
     "CreditPackPurchaseQuoteDTO",

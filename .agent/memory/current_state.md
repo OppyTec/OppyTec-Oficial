@@ -125,4 +125,39 @@
   - `python scripts/harness.py nav "tenancy"`: 4 nodos, 10 aristas (< 100 tokens).
   - `python scripts/harness.py verify-evals`: 100% OK (Cero Reward Hacking, hashes SHA-256 inalterados).
 
-
+## Hito Cerrado: Catálogo y CRUD de Modelos LLM y Motores JEV (Etapas 1 a 4 Certificadas 10/10)
+- **Estado de Certificación:** `SYNC_APPROVED`, `QA_APPROVED` y `SECURITY_APPROVED`.
+- **Arquitectura de Base de Datos y Migración Alembic:**
+  - Migración `0012_public_ai_model_configs_catalog_extension.py`: Extensión de `public.ai_model_configs` con columnas de tarificación detallada (`cached_cost_per_1m_usd`, `embedding_cost_per_1m_usd`), métricas de SLA y calidad (`latency_p95_ms`, `min_confidence_score`, `max_context_tokens`), banderas de contingencia (`is_fallback`) y marcas de tiempo con soporte idempotente `_has_column()`.
+  - Script Seed `oppytec-backend/scripts/seed_ai_models.py`: Carga inicial de catálogo con modelos de primer nivel (`gemini-2.5-flash`, `gemini-1.5-pro`, `claude-3-5-sonnet`, `gpt-4o`, `jev-fast-classifier`, `text-embedding-004`).
+- **Capa de Dominio DDD Puro y Reglas de Negocio (`src/modules/oppy_ai/domain/`):**
+  - Entidad `AiModelConfigEntity`, Enum `AiEngineTier` (`SYSTEM_1_JEV`, `SYSTEM_2_LLM`, `EMBEDDING`), Value Object inmutable `AiModelTariffSpec` (`Numeric(12, 6)` con tipos `Decimal`, cero `float`).
+  - Invariante de Modelo Predeterminado Único por Tier: Conmutación atómica del predeterminado anterior al asignar uno nuevo.
+  - Invariante de Protección del Modelo Predeterminado: Imposibilidad de desactivar o borrar el modelo activo por defecto.
+  - Invariante Financiera de Soft Delete Obligatorio: Verificación de telemetría histórica en `public.llm_request_logs` y `public.jev_request_logs`; cualquier intento de eliminación sobre modelos con historial se degrada automáticamente a baja lógica (`is_enabled = False`).
+- **Capa de Aplicación y Endpoints REST (`src/modules/oppy_ai/`):**
+  - Servicio `AiModelCatalogService` con gestión de ciclo de vida, hot-reload de modelos y protección RBAC.
+  - Router `/api/v1/oppy_ai/models` integrado en FastAPI con matriz RBAC de 3 niveles:
+    - `platform_admin.ai_models.read`: Lectura global para todo el personal autorizado.
+    - `platform_admin.ai_models.create`: Alta de nuevos modelos por administradores globales.
+    - `platform_admin.ai_models.update`: Modificación de tarifas y parámetros operativos en caliente.
+    - `platform_admin.ai_models.delete`: Retiro controlado (soft/hard delete según telemetría).
+  - Trazabilidad OpenTelemetry con spans enriquecidos (`ai.model_slug`, `ai.provider`, `ai.engine_tier`, `tenant_id`) y SLA P95 garantizado.
+- **Frontend Platform Admin (`oppytec-frontend/src/features/platform-admin/ai-models/`):**
+  - Componente `AiModelsPage.tsx` con diseño Mobile-First y ADN Visual Legacy (3 temas: `light`, `dark`, `ocean-blue`).
+  - Filtros reactivos por Tier, Proveedor y búsqueda por texto.
+  - Modales accesibles e interactivos para Inspección Técnica, Creación de Modelos, Edición y Confirmación con advertencia de Soft-Delete.
+  - Protección de acciones en UI con guardia declarativa `<Can permission="..." />`.
+  - Soporte i18n completo en español e inglés (`platform_admin.json`).
+- **Bóvedas OpenSpec Sincronizadas 1:1:**
+  - `specs/business-domain/ai-model-catalog.business.spec.md` (0% SQL o código técnico, 100% reglas de negocio y escenarios).
+  - `specs/engineering-code/ai-model-catalog.code.spec.md` (DDD, Value Objects, DTOs, esquemas Pydantic, endpoints y suites de test).
+  - Test de Arquitectura: `pytest oppytec-backend/tests/architecture/test_openspec_bipartition_and_sync.py` `PASSED`.
+- **Sincronización Graphify y Navegación AST:**
+  - `python3 scripts/harness.py sync-graph`: **115 nodos** y **141 aristas** indexados en `docs/architecture/graphify/graph.json` y `visualizer.html`.
+  - `python3 scripts/harness.py nav "ai_model_configs"`: 1 nodo, 2 aristas validadas.
+  - `python3 scripts/harness.py nav "ai_model"`: 7 nodos, 12 aristas mapeadas (conectando backend, routers, base de datos, frontend y suites de verificación unitarias, observabilidad y red team).
+  - `python3 scripts/harness.py verify-evals`: 100% OK (Integridad anti-trampa verificada, Cero Reward Hacking).
+- **Resultados de las Suites de Prueba:**
+  - Backend Unit, Observability & Red Team Security: **47 passed** (`test_ai_model_catalog.py`, `test_ai_model_catalog_observability.py`, `test_19_ai_model_catalog_security_and_rbac.py`).
+  - Frontend Vitest: **9 passed** (`AiModelsPage.test.tsx`).

@@ -64,7 +64,37 @@ SEMANTIC_AFFINITIES: dict[str, tuple[str, ...]] = {
         "invitado",
         "invitados",
         "reserva",
+        "agendado",
+        "agendados",
+        "proximos eventos",
+    ),
+    "check_salon_availability": (
         "salon",
+        "salones",
+        "disponibilidad",
+        "disponible",
+        "ocupado",
+        "overbooking",
+        "aforo",
+        "capacidad salon",
+    ),
+    "estimate_event_budget_and_feasibility": (
+        "presupuesto",
+        "cotizar",
+        "cotizacion",
+        "estimar costo",
+        "presupuesto banquete",
+        "calcular evento",
+        "estimar presupuesto",
+    ),
+    "analyze_event_supply_feasibility": (
+        "factibilidad",
+        "faltantes",
+        "insumos evento",
+        "banquete",
+        "cubrir",
+        "abastecer",
+        "stock banquete",
     ),
     "query_supplier_delays": (
         "proveedor",
@@ -85,6 +115,28 @@ SEMANTIC_AFFINITIES: dict[str, tuple[str, ...]] = {
         "food cost",
         "margen",
         "plato",
+    ),
+    "get_stockout_projections_and_autonomy": (
+        "proyeccion",
+        "proyecciones",
+        "quiebre",
+        "quiebres",
+        "autonomia",
+        "dias de stock",
+        "desabastecimiento",
+        "stockout",
+        "forecast",
+        "curva",
+    ),
+    "get_preventive_transfer_recommendations": (
+        "traspaso",
+        "traspasos",
+        "preventivo",
+        "preventiva",
+        "reorden",
+        "reposicion",
+        "transferencia",
+        "alerta preventiva",
     ),
     "costo_neto": ("precio", "valor", "costo", "neto", "unit cost", "price"),
     "nombre": ("producto", "descripcion", "articulo", "item", "insumo", "name"),
@@ -160,7 +212,9 @@ def _score_candidates(prompt_or_input: str, candidates: Sequence[str]) -> list[t
             if not keywords:
                 keywords = tuple(tok for tok in cand_norm.replace("_", " ").split() if len(tok) > 2)
             matches = sum(1 for kw in keywords if kw in normalized)
-            if matches >= 2:
+            if matches >= 3:
+                score = Decimal("0.96")
+            elif matches >= 2:
                 score = Decimal("0.95")
             elif matches == 1:
                 score = Decimal("0.91")

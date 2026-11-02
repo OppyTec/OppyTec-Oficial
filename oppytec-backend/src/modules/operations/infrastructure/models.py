@@ -79,37 +79,7 @@ class VentaReceta(TenantBase, AuditTimestampsMixin):
     precio_unitario_bruto: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
 
 
-class Salon(TenantBase, AuditTimestampsMixin, SoftDeleteMixin, TranslatableI18nMixin):
-    """Salón o espacio físico del restaurante/hotel para eventos y servicio."""
-
-    __tablename__ = "salones"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    nombre: Mapped[str] = mapped_column(String(120), nullable=False)
-    capacidad_personas: Mapped[int] = mapped_column(Integer, default=50, nullable=False)
-
-
-class Evento(TenantBase, AuditTimestampsMixin, SoftDeleteMixin, TranslatableI18nMixin):
-    """Banquete, matrimonio o evento corporativo programado en un `Salon`."""
-
-    __tablename__ = "eventos"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    salon_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("salones.id", ondelete="RESTRICT"),
-        nullable=False,
-        index=True,
-    )
-    nombre_evento: Mapped[str] = mapped_column(String(180), nullable=False)
-    fecha_inicio: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    fecha_fin: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    asistentes_confirmados: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    presupuesto_acordado: Mapped[Decimal] = mapped_column(
-        Numeric(14, 2),
-        default=Decimal("0.00"),
-        nullable=False,
-    )
+from src.modules.events.infrastructure.models import Evento, Salon
 
 
 class BuffetTemplate(TenantBase, AuditTimestampsMixin, SoftDeleteMixin, TranslatableI18nMixin):

@@ -76,6 +76,7 @@ class MovementSign(StrEnum):
             "COMPRA",
             "AJUSTE_POSITIVO",
             "TRASPASO_IN",
+            "AJUSTE_EVENTO_REVERSA",
         }:
             return cls.POSITIVE
 
@@ -83,6 +84,7 @@ class MovementSign(StrEnum):
         if normalized in {
             "SALIDA",
             "CONSUMO",
+            "CONSUMO_EVENTO",
             "MERMA",
             "VENTA",
             "AJUSTE_NEGATIVO",
@@ -287,6 +289,10 @@ class MovementType(StrEnum):
                 context={"value": str(value)},
             )
         normalized = value.strip().upper()
+        if normalized == "CONSUMO_EVENTO":
+            return cls.CONSUMO
+        if normalized == "AJUSTE_EVENTO_REVERSA":
+            return cls.AJUSTE_POSITIVO
         try:
             return cls(normalized)
         except ValueError as exc:
@@ -297,7 +303,12 @@ class MovementType(StrEnum):
 
 
 ENTRY_MOVEMENTS: frozenset[str] = frozenset(
-    {MovementType.ENTRADA.value, MovementType.COMPRA.value, MovementType.AJUSTE_POSITIVO.value, MovementType.TRASPASO_IN.value}
+    {
+        MovementType.ENTRADA.value,
+        MovementType.COMPRA.value,
+        MovementType.AJUSTE_POSITIVO.value,
+        MovementType.TRASPASO_IN.value,
+    }
 )
 EXIT_MOVEMENTS: frozenset[str] = frozenset(
     {

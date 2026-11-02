@@ -12,6 +12,14 @@ from src.modules.oppy_ai.domain.ai_credit_packs import (
     evaluate_pack_plan_match,
     stack_ai_credit_packs,
 )
+from src.modules.oppy_ai.domain.ai_model_catalog import (
+    AiEngineTier,
+    AiModelConfigEntity,
+    AiModelTariffSpec,
+    validate_default_model_protection,
+    validate_fallback_invariants,
+    validate_single_default_per_tier,
+)
 from src.modules.oppy_ai.domain.context_meter import (
     AMBER_MAX_PERCENT,
     AMBER_START_PERCENT,
@@ -72,6 +80,9 @@ __all__ = [
     "REDACTED_COST_MARKER",
     "SENSITIVE_COST_KEYS",
     "AiCreditPack",
+    "AiEngineTier",
+    "AiModelConfigEntity",
+    "AiModelTariffSpec",
     "ContextHealthEvaluation",
     "ContextHealthStatus",
     "CreditDeductionResult",

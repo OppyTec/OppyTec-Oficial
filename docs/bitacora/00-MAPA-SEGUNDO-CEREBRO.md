@@ -5,7 +5,7 @@ tags:
   - segundo-cerebro
   - arquitectura
   - bitacora
-updated: "2026-10-29"
+updated: "2026-11-01"
 ---
 
 # 🧠 Segundo Cerebro de OppyTec v2.0 — Mapa Maestro para Humanos (Obsidian Ready)
@@ -39,6 +39,7 @@ Aquí el **Agente 12 (`12-tech-writer-openspec-archify`)** documenta en lenguaje
 - **[[10-Opcion-3-Persistencia-Real-PostgreSQL-Alembic-0003-y-Verificacion-5D|Bitácora 10 — Opción 3: Persistencia Real en Base de Datos PostgreSQL, Migración Alembic 0003 en Vivo y Verificación 5D]]** ✅ *(DAG Pipeline de 4 Etapas: Alembic 0003 aplicado en PostgreSQL Docker, 196 pytest + 40 vitest certificados con sello QA_APPROVED y SYNC_APPROVED)*
 - **[[11-Marco-de-los-7-Niveles-de-Observabilidad-y-Control-de-Cardinalidad|Bitácora 11 — El Marco de los 7 Niveles de Observabilidad y la Regla de Oro de Cardinalidad Multi-Tenant]]** ✅ *(Los 4 pilares OTel/LGTM/Sentry/Umami, propagación W3C X-Trace-ID, SLOs P95 <= 120ms y la Regla de Oro Multi-Tenant: Métricas para tendencias de baja cardinalidad; Trazas y Logs para causa raíz de alta cardinalidad)*
 - **[[12-Asignacion-Dinamica-Modelos-LLM-JEV-Complejidad-Cognitiva-y-Graphify|Bitácora 12 — Asignación Dinámica de Modelos LLM por Complejidad Cognitiva JEV & Graphify AST]]** ✅ *(Evaluador matemático C_task de 4 factores en < 0.2ms, umbrales de tiers, promoción dinámica, resiliencia anti-429, auto-escalado reactivo y CLI --explain-complexity)*
+- **[[13-Construccion-Modulo-Eventos-Salones-Banquetes-Kardex-BOM|Bitácora 13 — Construcción del Módulo de Eventos, Salones, Banquetes y Consumo Transaccional de Inventario (Fases 1 a 8)]]** ✅ *(Módulo /eventos certificado: DDL 0013, RFC 7807, Wizard 2 pasos, BOM recursivo, Kardex CONSUMO_EVENTO, Stock Comprometido, 35 Pytest + 30 Vitest, OpenSpec y Graphify 115 nodos / 141 aristas)*
 
 ---
 
@@ -54,12 +55,12 @@ Aquí el **Agente 12 (`12-tech-writer-openspec-archify`)** documenta en lenguaje
   - **[Mapa 3 — Clean Architecture, 10 Módulos, Decimal, Kardex, JEV, i18n, FX y R2](../architecture/atlas/03-clean-architecture-and-domain.archify.html)** ✅ *(Disponible para abrir en navegador)*
   - **[Mapa 4 — Flujos Críticos E2E en Runtime, 4 Guardias HTTP Deterministas, Resiliencia/Caos y 11 Vectores Red Team + Schemathesis](../architecture/atlas/04-critical-runtime-flows-and-resilience.archify.html)** ✅ *(Disponible para abrir en navegador)*
   - **[Mapa 5 — Gobernanza Agéntica, 5 Entornos y Observabilidad 4-Pilares](../architecture/atlas/05-environments-and-agentic-harness.archify.html)** ✅ *(Disponible para abrir en navegador)*
-  - **[Grafo AST Maestro Consolidado (`graph.json`)](../architecture/graphify/graph.json) / [`v2_phase6_master_graph.json`](../architecture/graphify/v2_phase6_master_graph.json)** ✅ *(Grafo unificado Full-Stack: 83 nodos, 111 aristas, soporte CLI 'nav' y 'sync-graph' a costo `< 150 tokens`)*
+  - **[Grafo AST Maestro Consolidado (`graph.json`)](../architecture/graphify/graph.json) / [`v2_phase6_master_graph.json`](../architecture/graphify/v2_phase6_master_graph.json)** ✅ *(Grafo unificado Full-Stack: 115 nodos, 141 aristas, soporte CLI 'nav' y 'sync-graph' a costo `< 150 tokens`)*
   - **[Snapshot AST Graphify Fase 5 (`v2_phase5_frontend_graph.json`)](../architecture/graphify/v2_phase5_frontend_graph.json)** ✅ *(Grafo React 19 Feature-Driven con 0 imports cruzados)*
   - **[Snapshot AST Graphify Fase 4 (`v2_phase4_api_and_security_graph.json`)](../architecture/graphify/v2_phase4_api_and_security_graph.json)** ✅ *(Grafo API REST, 4 Guardias HTTP y 11 Vectores Red Team)*
   - **[Snapshot AST Graphify Fase 3 (`v2_phase3_domain_graph.json`)](../architecture/graphify/v2_phase3_domain_graph.json)** ✅ *(Grafo determinista a costo 0 tokens)*
   - **[Snapshot AST Graphify Fase 2 (`v2_phase2_schema_graph.json`)](../architecture/graphify/v2_phase2_schema_graph.json)** ✅ *(Grafo determinista a costo 0 tokens)*
-  - **Bóvedas OpenSpec:** `specs/business-domain/` (13 specs de negocio) y `specs/engineering-code/` (15 specs de ingeniería con `jev_system1_evaluation`).
+  - **Bóvedas OpenSpec:** `specs/business-domain/` (14 specs de negocio) y `specs/engineering-code/` (16 specs de ingeniería con `jev_system1_evaluation`).
 
 ---
 

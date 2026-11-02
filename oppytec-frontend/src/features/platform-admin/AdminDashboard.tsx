@@ -3,6 +3,7 @@ import {
   Briefcase,
   Building,
   Building2,
+  Cpu,
   ExternalLink,
   Layers,
   Plus,
@@ -203,6 +204,15 @@ export function AdminDashboard() {
           >
             <Layers className="h-4 w-4 text-purple-500" />
             <span>Planes SaaS</span>
+          </button>
+          <button
+            type="button"
+            data-testid="quick-btn-ai-models"
+            onClick={() => navigate("/admin/ai-models")}
+            className="touch-target inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary transition-colors"
+          >
+            <Cpu className="h-4 w-4 text-violet-500" />
+            <span>Modelos LLM & JEV</span>
           </button>
         </div>
       </div>

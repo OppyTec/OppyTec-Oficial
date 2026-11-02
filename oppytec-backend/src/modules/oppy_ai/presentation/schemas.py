@@ -343,3 +343,179 @@ class AiModelTariffUpdateRequest(BaseModel):
     embedding_cost_per_1m_usd: Decimal | None = Field(default=None, ge=Decimal("0"))
     is_enabled: bool | None = None
 
+
+# ============================================================================
+# 9. AI MODEL CATALOG & JEV ENGINES SCHEMAS
+# ============================================================================
+
+
+VALID_ENGINE_TIERS = ("SYSTEM_1_JEV", "SYSTEM_2_LLM", "EMBEDDING")
+
+
+class AiModelConfigCreateRequest(BaseModel):
+    """Alta de configuración para un modelo cognitivo o motor JEV en Platform Admin."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    model_slug: str = Field(
+        ...,
+        min_length=2,
+        max_length=64,
+        pattern=r"^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+        description="Slug único del modelo en minúsculas y caracteres alfanuméricos.",
+    )
+    display_name: str = Field(..., min_length=2, max_length=128)
+    provider: str = Field(..., min_length=2, max_length=64)
+    engine_tier: str = Field(default="SYSTEM_2_LLM")
+    input_cost_per_1m_usd: Decimal = Field(default=Decimal("0.000000"), ge=Decimal("0.000000"))
+    cached_cost_per_1m_usd: Decimal = Field(default=Decimal("0.000000"), ge=Decimal("0.000000"))
+    output_cost_per_1m_usd: Decimal = Field(default=Decimal("0.000000"), ge=Decimal("0.000000"))
+    embedding_cost_per_1m_usd: Decimal = Field(default=Decimal("0.000000"), ge=Decimal("0.000000"))
+    latency_p95_ms: int = Field(default=100, ge=0)
+    min_confidence_score: Decimal | None = Field(
+        default=None,
+        ge=Decimal("0.0000"),
+        le=Decimal("1.0000"),
+    )
+    max_context_tokens: int = Field(default=128000, ge=0)
+    is_enabled: bool = True
+    is_default: bool = False
+    is_fallback: bool = False
+    description: str = Field(default="", max_length=1000)
+
+    @field_validator(
+        "input_cost_per_1m_usd",
+        "cached_cost_per_1m_usd",
+        "output_cost_per_1m_usd",
+        "embedding_cost_per_1m_usd",
+        "min_confidence_score",
+        mode="before",
+    )
+    @classmethod
+    def _validate_decimal_no_float(cls, v: Any) -> Any:
+        if isinstance(v, float):
+            raise ValueError("Float type is strictly forbidden. Use Decimal or string representation.")
+        return v
+
+    @field_validator("engine_tier")
+    @classmethod
+    def _validate_engine_tier(cls, v: str) -> str:
+        if v not in VALID_ENGINE_TIERS:
+            raise ValueError(f"Invalid engine_tier '{v}'. Must be one of {VALID_ENGINE_TIERS}.")
+        return v
+
+    @field_validator("model_slug")
+    @classmethod
+    def _normalize_slug(cls, v: str) -> str:
+        return v.lower().strip()
+
+    @field_validator("display_name", "provider", "description")
+    @classmethod
+    def _sanitize_fields(cls, v: str) -> str:
+        return sanitize_text_input(v, field_name="ai_model_meta")
+
+
+class AiModelConfigUpdateRequest(BaseModel):
+    """Modificación de configuración para un modelo cognitivo o motor JEV en Platform Admin."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    display_name: str | None = Field(default=None, min_length=2, max_length=128)
+    provider: str | None = Field(default=None, min_length=2, max_length=64)
+    engine_tier: str | None = None
+    input_cost_per_1m_usd: Decimal | None = Field(default=None, ge=Decimal("0.000000"))
+    cached_cost_per_1m_usd: Decimal | None = Field(default=None, ge=Decimal("0.000000"))
+    output_cost_per_1m_usd: Decimal | None = Field(default=None, ge=Decimal("0.000000"))
+    embedding_cost_per_1m_usd: Decimal | None = Field(default=None, ge=Decimal("0.000000"))
+    latency_p95_ms: int | None = Field(default=None, ge=0)
+    min_confidence_score: Decimal | None = Field(
+        default=None,
+        ge=Decimal("0.0000"),
+        le=Decimal("1.0000"),
+    )
+    max_context_tokens: int | None = Field(default=None, ge=0)
+    is_enabled: bool | None = None
+    is_default: bool | None = None
+    is_fallback: bool | None = None
+    description: str | None = Field(default=None, max_length=1000)
+
+    @field_validator(
+        "input_cost_per_1m_usd",
+        "cached_cost_per_1m_usd",
+        "output_cost_per_1m_usd",
+        "embedding_cost_per_1m_usd",
+        "min_confidence_score",
+        mode="before",
+    )
+    @classmethod
+    def _validate_decimal_no_float(cls, v: Any) -> Any:
+        if isinstance(v, float):
+            raise ValueError("Float type is strictly forbidden. Use Decimal or string representation.")
+        return v
+
+    @field_validator("engine_tier")
+    @classmethod
+    def _validate_engine_tier(cls, v: str | None) -> str | None:
+        if v is not None and v not in VALID_ENGINE_TIERS:
+            raise ValueError(f"Invalid engine_tier '{v}'. Must be one of {VALID_ENGINE_TIERS}.")
+        return v
+
+    @field_validator("display_name", "provider", "description")
+    @classmethod
+    def _sanitize_fields(cls, v: str | None) -> str | None:
+        if v is not None:
+            return sanitize_text_input(v, field_name="ai_model_meta")
+        return v
+
+
+class AiModelConfigResponse(BaseModel):
+    """Representación completa de configuración de un modelo de IA o motor JEV."""
+
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+    id: int
+    model_slug: str
+    display_name: str
+    provider: str
+    engine_tier: str
+    input_cost_per_1m_usd: Decimal
+    cached_cost_per_1m_usd: Decimal
+    output_cost_per_1m_usd: Decimal
+    embedding_cost_per_1m_usd: Decimal
+    latency_p95_ms: int
+    min_confidence_score: Decimal | None = None
+    max_context_tokens: int
+    is_enabled: bool
+    is_default: bool
+    is_fallback: bool
+    description: str = ""
+    is_deleted: bool = False
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class AiModelConfigListResponse(BaseModel):
+    """Listado paginado/completo de modelos del catálogo AI."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[AiModelConfigResponse]
+    total: int
+
+
+class AiModelDeleteResponse(BaseModel):
+    """Respuesta estructurada ante deshabilitación/baja lógica por preservación de telemetría."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    action: str
+    model_slug: str
+    is_enabled: bool
+    historical_telemetry_logs_preserved: int
+    message: str
+
+
+# Aliases de compatibilidad con spec técnica
+AiModelCatalogResponse = AiModelConfigResponse
+AiModelCreateRequest = AiModelConfigCreateRequest
+AiModelUpdateRequest = AiModelConfigUpdateRequest

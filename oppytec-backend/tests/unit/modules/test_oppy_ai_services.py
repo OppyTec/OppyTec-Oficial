@@ -895,3 +895,204 @@ def test_token_consumption_finops_analytics() -> None:
     assert finops.model_breakdown["gemini-1.5-flash"]["tokens"] > 0
 
 
+def test_ai_model_config_catalog_fields_and_soft_delete() -> None:
+    """
+    Verifica que el modelo AiModelConfig soporte todos los campos del catálogo integral LLM y JEV:
+    display_name, provider, latency_p95_ms, min_confidence_score, max_context_tokens,
+    is_default, is_fallback, description, is_deleted y soft delete reversible.
+    """
+    from src.modules.oppy_ai.infrastructure.models import AiModelConfig
+
+    config = AiModelConfig(
+        model_slug="gemini-3.8-flash",
+        display_name="Gemini 3.8 Flash",
+        provider="google",
+        engine_tier="SYSTEM_2_LLM",
+        input_cost_per_1m_usd=Decimal("0.150000"),
+        cached_cost_per_1m_usd=Decimal("0.037500"),
+        output_cost_per_1m_usd=Decimal("0.600000"),
+        embedding_cost_per_1m_usd=Decimal("0.000000"),
+        latency_p95_ms=450,
+        min_confidence_score=None,
+        max_context_tokens=1048576,
+        is_default=True,
+        is_fallback=False,
+        description="Google Gemini 3.8 Flash",
+        is_enabled=True,
+        is_deleted=False,
+    )
+
+    assert config.model_slug == "gemini-3.8-flash"
+    assert config.display_name == "Gemini 3.8 Flash"
+    assert config.provider == "google"
+    assert config.latency_p95_ms == 450
+    assert config.min_confidence_score is None
+    assert config.max_context_tokens == 1048576
+    assert config.is_default is True
+    assert config.is_fallback is False
+    assert config.is_deleted is False
+
+    # Soft delete & restore
+    config.mark_soft_deleted()
+    assert config.is_deleted is True
+    config.restore_soft_deleted()
+    assert config.is_deleted is False
+
+
+def test_model_config_registry_seeded_models_and_db_hydration() -> None:
+    """
+    Verifica que ModelConfigRegistry consuma de forma transparente los 6 modelos sembrados
+    (gemini-3.8-flash, gemini-4-argon, claude-3-7-sonnet, gpt-4o, jev-fast-classifier, text-embedding-004)
+    y preserve la calibración de min_confidence_score y tarifas en Decimal.
+    """
+    from src.modules.oppy_ai.application.metered_ai_service import (
+        DEFAULT_MODEL_TARIFFS,
+        ModelConfigRegistry,
+        ModelTariff,
+    )
+    from src.modules.oppy_ai.infrastructure.models import AiModelConfig
+
+    registry = ModelConfigRegistry()
+
+    # 1. Verificar catálogo sembrado canónico en memoria
+    seeded_slugs = {
+        "gemini-3.8-flash",
+        "gemini-4-argon",
+        "claude-3-7-sonnet",
+        "gpt-4o",
+        "jev-fast-classifier",
+        "text-embedding-004",
+    }
+    configured_slugs = {t.model_slug for t in registry.list_tariffs()}
+    assert seeded_slugs.issubset(configured_slugs)
+
+    # 2. Verificar tarifa JEV Fast Classifier
+    jev_tariff = registry.get_tariff("jev-fast-classifier")
+    assert jev_tariff.model_slug == "jev-fast-classifier"
+    assert jev_tariff.engine_tier == "SYSTEM_1_JEV"
+    assert jev_tariff.input_cost_per_1m_usd == Decimal("0.000000")
+    assert jev_tariff.output_cost_per_1m_usd == Decimal("0.000000")
+    assert jev_tariff.min_confidence_score == Decimal("0.8500")
+    assert jev_tariff.provider == "oppytec"
+
+    # 3. Verificar tarifas de razonamiento extendido y multimodal
+    argon = registry.get_tariff("gemini-4-argon")
+    assert argon.input_cost_per_1m_usd == Decimal("1.250000")
+    assert argon.output_cost_per_1m_usd == Decimal("5.000000")
+
+    claude = registry.get_tariff("claude-3-7-sonnet")
+    assert claude.input_cost_per_1m_usd == Decimal("3.000000")
+    assert claude.output_cost_per_1m_usd == Decimal("15.000000")
+
+    # 4. Hidratación desde DB records (AiModelConfigLike y Mappings)
+    db_model = AiModelConfig(
+        model_slug="gemini-custom-pro",
+        display_name="Custom Pro",
+        provider="google",
+        engine_tier="SYSTEM_2_LLM",
+        input_cost_per_1m_usd=Decimal("0.250000"),
+        cached_cost_per_1m_usd=Decimal("0.050000"),
+        output_cost_per_1m_usd=Decimal("1.000000"),
+        embedding_cost_per_1m_usd=Decimal("0.000000"),
+        latency_p95_ms=600,
+        min_confidence_score=Decimal("0.9000"),
+        max_context_tokens=524288,
+        is_default=False,
+        is_fallback=False,
+        is_enabled=True,
+    )
+    dict_record = {
+        "model_slug": "dict-model-v1",
+        "display_name": "Dict Model",
+        "provider": "openrouter",
+        "engine_tier": "SYSTEM_2_LLM",
+        "input_cost_per_1m_usd": "0.500000",
+        "cached_cost_per_1m_usd": "0.100000",
+        "output_cost_per_1m_usd": "2.000000",
+        "embedding_cost_per_1m_usd": "0.000000",
+        "is_enabled": True,
+        "min_confidence_score": "0.7500",
+    }
+
+    registry.load_from_db_records([db_model, dict_record])
+    loaded_db = registry.get_tariff("gemini-custom-pro")
+    assert loaded_db.input_cost_per_1m_usd == Decimal("0.250000")
+    assert loaded_db.min_confidence_score == Decimal("0.9000")
+
+    loaded_dict = registry.get_tariff("dict-model-v1")
+    assert loaded_dict.input_cost_per_1m_usd == Decimal("0.500000")
+    assert loaded_dict.min_confidence_score == Decimal("0.7500")
+
+
+def test_jev_telemetry_confidence_calibration_and_decimal_precision() -> None:
+    """
+    Verifica que la telemetría de decisiones en public.jev_request_logs y public.llm_request_logs
+    registre correctamente los micro-costos con Decimal estricto y respete los umbrales de confianza
+    (AUTO_ACCEPTED, FLAGGED_WARNING, FALLBACK_LLM).
+    """
+    from src.adapters.ai.jev_adapter import (
+        InMemoryJevTelemetrySink,
+        InMemoryTelemetrySink,
+        MeteredJevAdapter,
+        _determine_calibrated_action,
+    )
+
+    # 1. Calibración contra umbral
+    threshold = Decimal("0.8500")
+    assert _determine_calibrated_action(Decimal("0.9500"), threshold) == "AUTO_ACCEPTED"
+    assert _determine_calibrated_action(Decimal("0.8500"), threshold) == "AUTO_ACCEPTED"
+    assert _determine_calibrated_action(Decimal("0.7500"), threshold) == "FLAGGED_WARNING"
+    assert _determine_calibrated_action(Decimal("0.6900"), threshold) == "FALLBACK_LLM"
+
+    # 2. Emisión con Decimal estricto hacia sinks
+    llm_sink = InMemoryTelemetrySink()
+    jev_sink = InMemoryJevTelemetrySink()
+    holding_id = uuid.uuid4()
+    tenant_id = uuid.uuid4()
+
+    adapter = MeteredJevAdapter(
+        telemetry_sink=llm_sink,
+        jev_telemetry_sink=jev_sink,
+        model_name="jev-fast-classifier",
+        input_cost_per_1m_usd=Decimal("0.000000"),
+        output_cost_per_1m_usd=Decimal("0.000000"),
+        default_credits_per_call=Decimal("0.00"),
+    )
+
+    res = adapter.decide_boolean(
+        decision_id="SECURITY_CHECK",
+        prompt_or_input="¿Cuál es el stock disponible de harina en bodega?",
+        holding_id=holding_id,
+        tenant_id=tenant_id,
+        tenant_schema="tenant_test",
+        user_id=10,
+        caller_feature="test_audit",
+        threshold=threshold,
+    )
+
+    assert res.value is True or res.value is False
+    assert res.confidence >= Decimal("0.90")
+    assert res.meets_threshold is True
+    assert res.jev_record is not None
+    assert res.jev_record.calibrated_action == "AUTO_ACCEPTED"
+
+    # Validar tipos Decimal en registros de telemetría JEV
+    assert len(jev_sink.records) == 1
+    jev_log = jev_sink.records[0]
+    assert isinstance(jev_log.provider_cost_usd, Decimal)
+    assert isinstance(jev_log.provider_cost_clp, Decimal)
+    assert isinstance(jev_log.credits_deducted, Decimal)
+    assert isinstance(jev_log.confidence_score, Decimal)
+    assert jev_log.provider_cost_usd == Decimal("0.000000")
+    assert jev_log.credits_deducted == Decimal("0.00")
+    assert jev_log.model_name == "jev-fast-classifier"
+    assert jev_log.calibrated_action == "AUTO_ACCEPTED"
+
+    # Validar tipos Decimal en registros de telemetría LLM (retrocompatibilidad dual)
+    assert len(llm_sink.records) == 1
+    llm_log = llm_sink.records[0]
+    assert isinstance(llm_log.provider_cost_usd, Decimal)
+    assert isinstance(llm_log.provider_cost_clp, Decimal)
+    assert isinstance(llm_log.credits_deducted, Decimal)
+    assert llm_log.engine_tier == "SYSTEM_1_JEV"
+    assert llm_log.provider_cost_usd == Decimal("0.000000")

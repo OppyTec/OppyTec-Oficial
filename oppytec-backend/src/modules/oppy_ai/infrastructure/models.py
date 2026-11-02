@@ -163,6 +163,8 @@ class AiModelConfig(PublicBase, AuditTimestampsMixin):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     model_slug: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    display_name: Mapped[str] = mapped_column(String(120), default="", nullable=False)
+    provider: Mapped[str] = mapped_column(String(64), default="google", nullable=False, index=True)
     engine_tier: Mapped[str] = mapped_column(String(32), default="SYSTEM_2_LLM", nullable=False)
     input_cost_per_1m_usd: Mapped[Decimal] = mapped_column(Numeric(12, 6), nullable=False)
     cached_cost_per_1m_usd: Mapped[Decimal] = mapped_column(
@@ -176,7 +178,22 @@ class AiModelConfig(PublicBase, AuditTimestampsMixin):
         default=Decimal("0.000000"),
         nullable=False,
     )
+    latency_p95_ms: Mapped[int] = mapped_column(Integer, default=500, nullable=False)
+    min_confidence_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 4), default=None, nullable=True)
+    max_context_tokens: Mapped[int] = mapped_column(Integer, default=128000, nullable=False)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    is_fallback: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, default=None, nullable=True)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+
+    def mark_soft_deleted(self) -> None:
+        """Marca el modelo como deshabilitado/eliminado lógicamente."""
+        self.is_deleted = True
+
+    def restore_soft_deleted(self) -> None:
+        """Restaura el modelo eliminado lógicamente."""
+        self.is_deleted = False
 
 
 class AiCreditPackage(PublicBase, AuditTimestampsMixin, TranslatableI18nMixin):

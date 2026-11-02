@@ -30,6 +30,8 @@ import facturaImportEn from "./locales/en/factura_import.json";
 import alertsEn from "./locales/en/alerts.json";
 import historyEn from "./locales/en/history.json";
 import notificationsEn from "./locales/en/notifications.json";
+import projectionEn from "./locales/en/projection.json";
+import eventsEn from "./locales/en/events.json";
 
 import analyticsEs from "./locales/es/analytics.json";
 import authEs from "./locales/es/auth.json";
@@ -53,6 +55,8 @@ import facturaImportEs from "./locales/es/factura_import.json";
 import alertsEs from "./locales/es/alerts.json";
 import historyEs from "./locales/es/history.json";
 import notificationsEs from "./locales/es/notifications.json";
+import projectionEs from "./locales/es/projection.json";
+import eventsEs from "./locales/es/events.json";
 
 export const LANGUAGE_STORAGE_KEY = "oppytec_lang";
 
@@ -91,6 +95,8 @@ export const I18N_NAMESPACES: readonly I18nNamespace[] = [
   "alerts",
   "history",
   "notifications",
+  "projection",
+  "events",
 ] as const;
 
 /**
@@ -112,6 +118,11 @@ export const IMMUTABLE_PROPER_NOUNS: readonly string[] = [
   "Agrícola y Comercial Valle Central Ltda",
   "Lácteos del Sur S.A.",
   "Importadora y Distribuidora Gourmet Pacific",
+  "OppyTec",
+  "Google",
+  "Anthropic",
+  "OpenAI",
+  "JEV",
 ] as const;
 
 export const I18N_RESOURCES: Resource = {
@@ -138,6 +149,8 @@ export const I18N_RESOURCES: Resource = {
     alerts: alertsEs,
     history: historyEs,
     notifications: notificationsEs,
+    projection: projectionEs,
+    events: eventsEs,
   },
   en: {
     common: commonEn,
@@ -162,6 +175,8 @@ export const I18N_RESOURCES: Resource = {
     alerts: alertsEn,
     history: historyEn,
     notifications: notificationsEn,
+    projection: projectionEn,
+    events: eventsEn,
   },
 };
 

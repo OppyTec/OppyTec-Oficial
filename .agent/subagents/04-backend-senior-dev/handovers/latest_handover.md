@@ -1,52 +1,78 @@
 # Reporte de Traspaso (`Handover`) — Agente 04: Backend Senior FastAPI, Clean Architecture & RBAC 3-Niveles
 
-- **Fecha UTC:** 2026-10-31T22:30:00Z
+- **Fecha UTC:** 2026-11-01T21:25:00Z
 - **Agente:** Agente 04 (`04-backend-senior-dev`)
-- **Fase / Hito:** Etapa 2 — Desacoplamiento de Telemetría JEV (Sistema 1) y Adaptador Medido Asíncrono/Transaccional (`jev_protocol.py`, `jev_adapter.py`, `test_jev_telemetry_decoupling.py`).
-- **Estado de Certificación:** `JEV_TELEMETRY_DECOUPLING_CERTIFIED` (Suites de tests unitarios y de arquitectura pasando al 100%, Graphify sincronizado con 97 nodos y 116 aristas).
+- **Fase / Hito:** Fase 7 del Módulo de Eventos (`.agent/Planes-Maestros/PLAN_MAESTRO_EVENTOS.md`) — Stock Comprometido, Fórmula de Existencias Disponibles, Alertas de Eventos Críticas y Preventivas y Endpoints REST.
+- **Estado de Certificación:** `EVENTS_MODULE_PHASE_7_BACKEND_CERTIFIED` (15/15 tests de eventos passing al 100%, 424/424 unit tests backend passing en 30.7s).
 
 ---
 
 ## 1. Completed (Qué se ejecutó y validó)
 
-1. **Definición de Contratos y Protocolos en `oppytec-backend/src/adapters/ai/jev_protocol.py`:**
-   - Dataclass inmutable `JevUsageRecord` (`@dataclass(frozen=True, kw_only=True)`) con todos los campos y tipos correspondientes a `public.jev_request_logs`:
-     * Identificadores: `holding_id`, `tenant_id`, `tenant_schema`, `user_id`, `trace_id`.
-     * Primitivas y contexto: `caller_feature`, `decision_id`, `decision_primitive` (BOOLEAN, CHOICE, SCORE), `input_summary`, `result_value`.
-     * Calibración: `confidence_score` (`Decimal`), `calibrated_action` ('AUTO_ACCEPTED', 'FLAGGED_WARNING', 'FALLBACK_LLM').
-     * FinOps y Rendimiento: `model_name`, `estimated_tokens`, `provider_cost_usd` (`Decimal`), `provider_cost_clp` (`Decimal`), `credits_deducted` (`Decimal`), `latency_ms` (`int`), `is_success` (`bool`), `error_message`, `created_at`.
-   - Protocolo `@runtime_checkable class JevTelemetrySinkPort(Protocol)`:
-     * `def record_jev_usage(self, record: JevUsageRecord) -> None: ...`
-     * `def record_jev_usage_batch(self, records: Sequence[JevUsageRecord]) -> None: ...`
-   - Dataclass `JevChoiceBatchItem` para evaluación por lotes y extensión de `JevDecisionPort` con `decide_choice_batch`.
-   - Dataclasses de resultado (`JevBooleanResult`, `JevChoiceResult`, `JevScoreResult`) extendidos con `jev_record: JevUsageRecord | None = None` preservando retrocompatibilidad total con `usage_record: LlmUsageRecord`.
+1. **7.1 Definición Matemática de Existencias y Stock Comprometido**:
+   - Implementado en `EventService` (`oppytec-backend/src/modules/events/application/services.py`):
+     * `get_committed_stock_summary(tenant_id, bodega_id=None) -> CommittedStockSummaryResponse`:
+       - Calcula la demanda futura reservada por insumo:
+         $$\text{Stock Comprometido} = \sum_{\text{eventos agendados futuros}} \text{BOM Insumos}$$
+         desglosando insumos directos, recetas gastronómicas y combos (directos + sub-recetas).
+       - Aplica rigurosamente la fórmula canónica de saldo libre para operación diaria / buffet:
+         $$\text{Stock Disponible Real} = \max(0, \text{Stock Actual} - \text{Stock Comprometido})$$
+         garantizando precisión con `Decimal` y que no devuelva valores negativos.
+       - Asocia cada evento a la lista de demanda por producto y bodega (`CommittedStockEventRef`).
+       - Excluye eventos cancelados, ejecutados o con fechas pasadas.
+       - Permite filtrado opcional por `bodega_id`.
+   - Implementado endpoint REST:
+     * `GET /api/v1/events/analytics/committed-stock`:
+       - Respuesta: `CommittedStockSummaryResponse`
+       - Guard: `RequireTenantPermission("events.events.read")`
+       - Query param: `bodega_id` opcional.
 
-2. **Implementación de Sinks y Adaptador Medido en `oppytec-backend/src/adapters/ai/jev_adapter.py`:**
-   - `InMemoryJevTelemetrySink(JevTelemetrySinkPort)`: Colector en memoria inmutable para tests y desarrollo con `records`, `record_jev_usage`, `record_jev_usage_batch` y `clear()`.
-   - `DatabaseJevTelemetrySink(JevTelemetrySinkPort)`:
-     * Soporte transaccional directo sobre SQLAlchemy `AsyncSession` activa (`session.add(model)` y `session.add_all(models)`).
-     * Mapeo defensivo de `JevUsageRecord` hacia el modelo SQLAlchemy `JevRequestLog`.
-     * Soporte para `session_factory: async_sessionmaker[AsyncSession]` con métodos asíncronos `flush()`, `commit()`, `record_jev_usage_async` y `record_jev_usage_batch_async`.
-   - Actualización de `MeteredJevAdapter`:
-     * Constructor extendido con `jev_telemetry_sink: JevTelemetrySinkPort | None = None` (fallback `InMemoryJevTelemetrySink()`).
-     * Determinación calibrada de acciones mediante `_determine_calibrated_action(confidence, threshold)`: `'AUTO_ACCEPTED'`, `'FLAGGED_WARNING'`, `'FALLBACK_LLM'`.
-     * Registro dual sinérgico: emite a `LlmUsageRecord` (retrocompatibilidad) y `JevUsageRecord` (nuevo pipeline de telemetría especializada).
-     * Implementación de `decide_choice_batch`: evaluación por lotes ultrarrápida (<500 ms) para catálogos y facturas OCR masivas, con registro atómico por lotes en `record_jev_usage_batch`.
+2. **7.3 Integración con el Módulo de Alertas Operativas**:
+   - Implementado en `EventService`:
+     * `get_event_alerts(tenant_id, reference_datetime=None) -> list[EventAlertOut]`:
+       - Evalúa eventos futuros activos en orden cronológico (FIFO).
+       - Clasificación de severidad estricta:
+         * `CRITICAL`: Evento programado en $< 48\text{h}$ con faltantes de stock o insumos en quiebre.
+         * `WARNING`: Evento programado en los próximos 14 días (hasta 336h) con quiebre proyectado o stock insuficiente.
+       - Enriquecimiento completo de cada alerta: `alerta_id`, `evento_id`, `evento_nombre`, `fecha_evento`, `hora_inicio`, `severidad`, `horas_restantes`, `dias_restantes`, `total_insumos_deficit`, `insumos_deficit` (producto, bodega, cantidad requerida, stock actual, déficit) y mensaje descriptivo.
+       - Ordenamiento: Alertas `CRITICAL` primero, seguidas por `WARNING` ordenadas por horas restantes.
+   - Implementado endpoint REST:
+     * `GET /api/v1/events/alerts`:
+       - Respuesta: `list[EventAlertOut]`
+       - Guard: `RequireTenantPermission("events.events.read")`
 
-3. **Exportación Modular en `oppytec-backend/src/adapters/ai/__init__.py`:**
-   - Exposición pública de `JevUsageRecord`, `JevTelemetrySinkPort`, `JevChoiceBatchItem`, `InMemoryJevTelemetrySink` y `DatabaseJevTelemetrySink`.
+3. **Esquemas Pydantic V2 (`schemas.py`)**:
+   - `CommittedStockEventRef`: detalle de eventos que comprometen existencias.
+   - `CommittedStockItemOut`: balance de stock actual, comprometido y disponible real.
+   - `CommittedStockSummaryResponse`: respuesta analítica consolidada.
+   - `EventAlertInsumoDeficit`: especificación de cada insumo en quiebre para el evento.
+   - `EventAlertOut`: modelo de alerta enriquecida con severidades y tiempos.
+   - `EventAlertsResponse`: contenedor estructurado.
 
-4. **Suite de Pruebas Unitarias Exhaustiva en `oppytec-backend/tests/unit/adapters/test_jev_telemetry_decoupling.py`:**
-   - 7 pruebas cubriendo inmutabilidad, sinks de memoria y base de datos con mock `AsyncSession`, emisión dual, acciones calibradas, batch processing y retrocompatibilidad: 7/7 PASSED en 0.18s.
-   - Suite de 26 pruebas de AI y JEV (`test_oppy_ai_services.py`, `test_jev_cognitive_task_router.py`, `test_jev_system1_enforcement.py`, `test_oppyfy_observability.py`): 26/26 PASSED.
-   - Pruebas de seguridad redteam (`test_08_ai_prompt_injection_and_rag_isolation.py`, `test_16_oppyfy_offensive_security_and_firewall.py`): 36/36 PASSED.
+4. **Integración con Notificaciones WebSocket Zero-Polling**:
+   - `_dispatch_realtime_notification` actualizado en todos los flujos mutacionales (`created`, `updated`, `deleted`, `cancelled`, `reactivated`, `executed`, `reversed`):
+     * Invalida quirúgicamente los query keys: `["events"]`, `["events_faltantes"]`, `["events", "committed-stock"]`, `["events", "alerts"]`.
 
-5. **Sincronización Graphify:**
-   - Ejecutado `python3 scripts/harness.py sync-graph`. Grafo sincronizado exitosamente con 97 nodos y 116 aristas.
+5. **Pruebas Automatizadas (Pytest)**:
+   - Nuevos tests en `oppytec-backend/tests/unit/modules/test_events_services.py`:
+     * `test_committed_stock_calculation_and_available_stock_formula`: valida cálculo de stock comprometido, eventos asociados, fórmula $\max(0, \text{Stock Actual} - \text{Stock Comprometido})$, filtro de bodega y liberación tras cancelación.
+     * `test_event_alerts_classification_and_severities`: valida severidades `CRITICAL` (<48h), `WARNING` (<=14d), ausencia de alertas en eventos sin déficit o más allá de 14 días, y orden prioritario.
+     * `test_fastapi_endpoints_committed_stock_and_alerts`: valida endpoints REST con guardias RBAC de 3 niveles `events.events.read` (denegación 403 vs 200 OK y payloads).
+   - Resultado: **15/15 tests passing** en `test_events_services.py`.
+   - Resultado global backend: **424/424 unit tests passing** (100% verde).
+
+6. **Gobernanza y Sincronización Graphify**:
+   - Sincronizado AST con `python3 scripts/harness.py sync-graph` (115 nodos, 141 aristas).
 
 ---
 
-## 2. Friction & Failures (Qué cuidar)
+## 2. Friction & Failures (Fricciones o Aprendizajes)
 
-- En `decide_choice_batch`, se aceptan instancias de `JevChoiceBatchItem`, diccionarios o tuplas para permitir tanto consumo tipado estricto como ingesta ágil desde parsers de Excel o extractores de PDF/OCR.
-- Las columnas de texto (`input_summary`, `result_value`, `caller_feature`) se truncan defensivamente al mapear a `JevRequestLog` para evitar excepciones de longitud en Postgres.
+- Ninguna fricción bloqueante. Se añadió el método `set_inventory(inventory)` en `EventService` para facilitar la inyección limpia del servicio de inventario en pruebas unitarias e integración.
+- Los cálculos temporales admiten `reference_datetime` opcional para asegurar pruebas deterministas independientes del reloj del sistema.
+
+---
+
+## 3. Next Exact Action (Siguiente Acción Exacta)
+
+- Delegar al Agente 05 (`05-frontend-senior-dev`) o frontend squad para la Fase 7.2 (Terminal de Inventario con columna y tooltip "Comprometido en Eventos", y consumo de `/api/v1/events/analytics/committed-stock` y `/api/v1/events/alerts`).

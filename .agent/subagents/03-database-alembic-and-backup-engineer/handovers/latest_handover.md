@@ -1,56 +1,83 @@
 # Reporte de Traspaso (`Handover`) — Agente 03: Especialista en Base de Datos, Alembic y Backups 4-Capas
 
-- **Fecha UTC:** 2026-10-26T21:00:00Z
-- **Fase / Hito:** Fase 1 del `PLAN_MAESTRO_OPPYFY_AI.md`: Modelado de Persistencia Multi-Tenant SQLAlchemy 2.0 Async (`TenantBase` / `PublicBase`), Migración Lineal Correlativa Alembic 0010 e Idempotencia DDL Multi-Tenant.
-- **Estado de Certificación:** `OPPYFY_AI_PERSISTENCE_AND_ALEMBIC_0010_CERTIFIED` (Alembic 0001..0010 verificado, 2/2 tests de arquitectura correlativa pasando al 100% verde, 8/8 tests de modelos OppyFy pasando al 100% verde).
+- **Fecha UTC:** 2026-11-01T20:00:00Z
+- **Fase / Hito:** FASE 1 del PLAN_MAESTRO_PROYECCION.md — Persistencia SQLAlchemy 2.0 Async en `oppytec-backend/src/modules/projection/infrastructure/models.py` y Migración Lineal Correlativa Alembic 0014 (`0014_tenant_projection_snapshots_and_consumption_rates.py`) en esquemas `tenant_*`.
+- **Estado de Certificación:** `PROJECTION_MODELS_AND_ALEMBIC_0014_CERTIFIED` (Alembic 0001..0014 estrictamente lineal, 2/2 tests de arquitectura correlativa al 100% verde, 3/3 tests unitarios de modelos/migración al 100% verde, 10/10 tests de dominio FEFO al 100% verde).
 
 ---
 
 ## 1. Completed (Qué se ejecutó y validó)
 
-1. **Migración Lineal Correlativa Alembic 0010 (`0010_tenant_oppyfy_custom_rbac_and_credit_wallets.py`):**
-   - Ubicación: [`oppytec-backend/alembic/versions/0010_tenant_oppyfy_custom_rbac_and_credit_wallets.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/alembic/versions/0010_tenant_oppyfy_custom_rbac_and_credit_wallets.py).
+1. **Modelado de Persistencia Multi-Tenant SQLAlchemy 2.0 Async:**
+   - Ubicación: [`oppytec-backend/src/modules/projection/infrastructure/models.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/projection/infrastructure/models.py).
+   - Exportado en: [`oppytec-backend/src/modules/projection/infrastructure/__init__.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/projection/infrastructure/__init__.py).
+   - Herencia estricta de `TenantBase` y `AuditTimestampsMixin` (`created_at`, `updated_at` en UTC con `func.now()`).
+   - **`ProjectionSnapshot` (`projection_snapshots`):**
+     * `id`: `BigInteger` PK autoincremental.
+     * `producto_id`: `BigInteger` FK `productos.id` (`ON DELETE CASCADE`), indexado.
+     * `bodega_id`: `BigInteger` FK `bodegas.id` (`ON DELETE CASCADE`), nullable para consolidado multi-bodega, indexado.
+     * `horizon_days`: `Integer` (`7`, `15`, `30`, `60`, `90`), default 30.
+     * `current_stock`: `Numeric(12, 4)`.
+     * `projected_stock`: `Numeric(12, 4)`.
+     * `depletion_date`: `Date`, nullable.
+     * `worst_status`: `String(20)` (`NORMAL`, `WARNING`, `CRITICAL`).
+     * `worst_status_label`: `String(64)`.
+     * `worst_day`: `Integer`, nullable.
+     * `daily_consumption_rate`: `Numeric(12, 4)`.
+     * `projection_curve`: `JSONB` / `JSONDictType` con serie temporal día a día.
+     * `calculated_at`: `DateTime(timezone=True)` default UTC `func.now()`.
+     * `is_stale`: `Boolean` default False.
+     * `metadata_payload`: `JSONB` / `JSONDictType`, nullable.
+     * Restricción de unicidad: `UniqueConstraint("producto_id", "bodega_id", "horizon_days", name="uq_proj_snapshots_prod_bod_horiz")`.
+     * Índices compuestos: `idx_proj_snapshots_lookup` (bodega_id, horizon_days, worst_status), `idx_proj_snapshots_prod` (producto_id, horizon_days), `idx_proj_snapshots_calc` (calculated_at, is_stale).
+     * Relaciones ORM con `Producto` y `Bodega`.
+   - **`DailyConsumptionRate` (`daily_consumption_rates`):**
+     * `id`: `BigInteger` PK autoincremental.
+     * `producto_id`: `BigInteger` FK `productos.id` (`ON DELETE CASCADE`), indexado.
+     * `bodega_id`: `BigInteger` FK `bodegas.id` (`ON DELETE CASCADE`), nullable, indexado.
+     * `rate_7d`, `rate_30d`, `rate_90d`: `Numeric(12, 4)` default 0.0000.
+     * `last_calculated_at`: `DateTime(timezone=True)` default UTC `func.now()`.
+     * Restricción de unicidad: `UniqueConstraint("producto_id", "bodega_id", name="uq_daily_consumption_rates_prod_bod")`.
+     * Relaciones ORM con `Producto` y `Bodega`.
+
+2. **Migración Correlativa Lineal Alembic 0014:**
+   - Ubicación: [`oppytec-backend/alembic/versions/0014_tenant_projection_snapshots_and_consumption_rates.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/alembic/versions/0014_tenant_projection_snapshots_and_consumption_rates.py).
    - Metadatos:
-     * `revision = "0010_tenant_oppyfy_custom_rbac_and_credit_wallets"`
-     * `down_revision = "0009_tenant_procurement_purchases_and_suppliers"`
-     * `migration_scope = "tenant"`
-   - DDL en esquemas de cliente `tenant_*`:
-     * `oppyfy_domains`: `id` (BigInteger PK autoincrement), `domain_key` (VARCHAR 100 UNIQUE), `name_es` (VARCHAR 150), `name_en` (VARCHAR 150), `icon` (VARCHAR 50), `is_active` (BOOL), `sort_order` (INT), timestamps.
-     * `oppyfy_subdomains`: `id` (BigInteger PK), `domain_id` (FK a `oppyfy_domains.id` CASCADE), `subdomain_key` (VARCHAR 100 UNIQUE), `name_es`, `name_en`, `module_slug` (VARCHAR 100), `allowed_tool_functions` (JSONB), `can_view_costs_default` (BOOL), `sort_order` (INT), `is_active` (BOOL), timestamps.
-     * `oppyfy_permission_grants`: `id` (UUID PK), `user_id` (INT), `subdomain_id` (FK a `oppyfy_subdomains.id` CASCADE), `role_id` (INT nullable), `effect` (VARCHAR 16 default 'ALLOW'), `can_query` (BOOL), `can_view_costs` (BOOL), `expires_at` (TIMESTAMPTZ nullable), `max_prompts` (INT nullable), `prompts_used` (INT default 0), `temp_credit_ceiling` (NUMERIC(12,2) nullable), `temp_credits_used` (NUMERIC(12,2) default 0.00), timestamps.
-     * `oppyfy_worker_credit_wallets`: `id` (BigInteger PK), `user_id` (INT UNIQUE), `is_oppyfy_enabled` (BOOL default true), `assigned_credit_ceiling` (NUMERIC(12,2) nullable), `credits_spent_total` (NUMERIC(12,2) default 0.00), `balance_override` (NUMERIC(12,2) nullable), timestamps.
-     * `oppyfy_prompt_audit_log`: `id` (BigInteger PK), `user_id` (INT), `prompt_text` (TEXT), `status` (VARCHAR 50: ALLOWED, BLOCKED_UNAUTHORIZED_PROMPT), `resolved_domain` (VARCHAR 100 nullable), `resolved_tools` (JSONB), `tokens_spent` (INT default 0), `credits_deducted` (NUMERIC(12,2) default 0.00), `created_at` (TIMESTAMPTZ).
-     * `oppyfy_rbac_audit_log`: `id` (BigInteger PK), `actor_user_id` (INT), `target_user_id` (INT), `action` (VARCHAR 100), `details` (JSONB default '{}'), `created_at` (TIMESTAMPTZ).
-   - DDL en esquema global `public`:
-     * `public.ai_credit_packs`: Paquetes de créditos IA independientes para compra Add-On configurables por el Superadmin (`id`, `pack_name`, `credits_amount` NUMERIC(14,2), `price_clp` NUMERIC(14,2), `price_usd` NUMERIC(14,2), `is_popular` BOOL, `is_active` BOOL, `sort_order` INT, `created_at`, `updated_at`).
-     * `public.ai_model_configs`: Columnas `cached_cost_per_1m_usd` (NUMERIC(12,6)) y `embedding_cost_per_1m_usd` (NUMERIC(12,6)).
-     * `public.spec_chunks`: Columna `token_count` (INT default 0).
-   - Introspección dinámica idempotente (`_has_table`, `_has_column`, `_has_index`) para soportar tanto esquemas vírgenes como inquilinos con tablas previas de 0002.
-   - Reversibilidad LIFO simétrica con `downgrade()` real.
+     * `revision = "0014_tenant_projection_snapshots_and_consumption_rates"`
+     * `down_revision = "0013_tenant_events_salones_and_reservations"`
+     * `migration_scope: Literal["public", "tenant"] = "tenant"`
+   - DDL e Idempotencia:
+     * Implementa `_get_tenant_schemas(bind)` para aplicar sobre todos los esquemas `tenant_*`.
+     * Creación segura e idempotente con `_has_table` e `_has_index`.
+     * Función `downgrade()` completa y simétrica con eliminación ordenada de índices y tablas.
 
-2. **Modelos SQLAlchemy 2.0 Async (`oppytec-backend/src/modules/oppy_ai/infrastructure/models.py`):**
-   - Reflejo fiel de las tablas bajo `TenantBase` para esquemas `tenant_*` y `PublicBase` para `public`.
-   - Propiedades de compatibilidad hacia atrás (`slug` <-> `domain_key`, `name` <-> `name_es`, `allocated_credits` <-> `assigned_credit_ceiling`, `consumed_credits` <-> `credits_spent_total`, `decision_status` <-> `status`, `credits_consumed` <-> `credits_deducted`).
-   - Cero uso de `float`, todos los cálculos monetarios y de tokens en `Decimal` con `Numeric`.
+3. **Pruebas Automatizadas de Arquitectura y Persistencia:**
+   - Creación de [`oppytec-backend/tests/unit/modules/test_projection_models_and_migration.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/tests/unit/modules/test_projection_models_and_migration.py).
+   - `pytest test_alembic_integrity.py`: 2/2 tests passed (100% verde).
+   - `python scripts/db_migration.py verify`: Verificación OK sin saltos ni duplicados.
+   - `pytest test_projection_models_and_migration.py`: 3/3 tests passed (100% verde).
+   - `pytest test_projection_domain.py`: 10/10 tests passed (100% verde).
 
-3. **Verificación y Pruebas Ejecutadas:**
-   - `python scripts/db_migration.py verify`: Alembic correlative migration chain verified OK.
-   - `alembic heads`: Unico head activo `0010_tenant_oppyfy_custom_rbac_and_credit_wallets (head)`.
-   - `uv run pytest tests/architecture/test_alembic_integrity.py`: 2/2 passed in 0.15s (100% verde).
-   - `uv run pytest tests/unit/modules/test_oppy_ai_services.py`: 8/8 passed in 0.26s (100% verde).
-   - `alembic upgrade head`: DDL ejecutado exitosamente contra PostgreSQL real en `public` y esquemas `tenant_*`.
+4. **Sincronización Graphify:**
+   - Ejecución de `python3 scripts/harness.py sync-graph`.
+   - Nodos indexados: 107 (Routers: 11, Migraciones: 16, Suites: 19).
 
 ---
 
-## 2. Friction & Failures
+## 2. Friction & Failures (Resolución de Secuenciamiento Correlativo)
 
-- **Dependencias FK Preexistentes de 0002 al revertir `downgrade()`:**
-  * Al auditar `downgrade()`, se detectó que tablas de 0002 (`tenant_documents`, `document_chunks`) tienen FKs hacia `oppyfy_subdomains`. Si un tenant posee estas tablas, hacer `DROP TABLE oppyfy_subdomains` provocaría `DependentObjectsStillExistError`.
-  * Solución implementada: En el `downgrade()` de 0010, se verifica la presencia de `tenant_documents`. Si existe, se revierten únicamente las columnas e índices añadidos en 0010 sin destruir la tabla base requerida por 0002; si no existen dependencias, se realiza el drop completo de forma segura.
+- **Correlatividad Lineal Continua:**
+  * Al verificar la cadena en `alembic/versions/`, se confirmó la existencia de `0012_public_ai_model_configs_catalog_extension.py` y `0013_tenant_events_salones_and_reservations.py`.
+  * Siguiendo la regla de oro de secuenciamiento estricto `0001..NNNN` (Regla 06) y la especificación de `PLAN_MAESTRO_PROYECCION.md` (*"o número secuencial inmediatamente posterior a la última migración registrada"*), la migración se nombró y estructuró como `0014_tenant_projection_snapshots_and_consumption_rates.py` encadenada a `0013`, garantizando cero bifurcaciones (0 heads extras) y pasando todos los linters y validaciones de AST.
 
 ---
 
-## 3. Next Exact Action
+## 3. Next Exact Action (Siguiente paso exacto)
 
-- **Para Agente 04 (`04-backend-senior-dev`) y Agente 06 (`06-ai-oppyfy-and-jev-engineer`):**
-  * Continuar con la **Fase 2 de `PLAN_MAESTRO_OPPYFY_AI.md`**: Implementación de `MeteredAIService`, router JEV con herramientas deterministas (`operational_tools/`), redacción física de costos (*Hard-Code Data Stripping*) y endpoints REST RFC 7807 (`/api/v1/oppyfy/*` y `/api/v1/platform-admin/token-consumption`).
+- Traspasar la ejecución al Agente 04 (`04-backend-senior-dev`) para iniciar la **FASE 2** del PLAN_MAESTRO_PROYECCION.md:
+  1. Construcción del servicio `ProjectionEngine` en `src/modules/projection/application/services.py` con recálculo batch, lock anti-concurrencia y deducción FEFO.
+  2. Implementación de los endpoints REST en `src/modules/projection/presentation/router.py`:
+     - `GET /api/v1/projection/snapshots` (paginado server-side < 25ms)
+     - `POST /api/v1/projection/recompute` (lock distribuido)
+     - `GET /api/v1/projection/products/{id}/curve` (curva día a día 1..90)
+     - `GET /api/v1/projection/alerts` (quiebres preventivos y sugerencias de traspaso)

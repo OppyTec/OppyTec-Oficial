@@ -10,10 +10,11 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 import time
 import uuid
 from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from contextvars import ContextVar, Token
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -337,6 +338,62 @@ def clear_in_memory_jev_metrics() -> None:
     _in_memory_jev_metrics.clear()
 
 
+@dataclass(frozen=True)
+class ProjectionOperationMetric:
+    """Métrica determinista de recálculos y consultas de proyección de demanda y snapshots."""
+
+    operation: str
+    status: str
+    duration_ms: float
+    tenant_id: str | None = None
+    products_processed: int = 0
+    bodega_id: int | None = None
+    horizon_days: int = 30
+    page: int = 1
+    page_size: int = 30
+    timestamp: str = ""
+
+
+_in_memory_projection_metrics: list[ProjectionOperationMetric] = []
+
+
+def get_in_memory_projection_metrics() -> list[ProjectionOperationMetric]:
+    """Devuelve las métricas operativas de proyección registradas en memoria."""
+    return list(_in_memory_projection_metrics)
+
+
+def clear_in_memory_projection_metrics() -> None:
+    """Limpia las métricas operativas de proyección en memoria."""
+    _in_memory_projection_metrics.clear()
+
+
+@dataclass(frozen=True)
+class EventOperationMetric:
+    """Métrica determinista de operaciones del módulo de Eventos, Salones y Consumos."""
+
+    operation: str
+    status: str
+    duration_ms: float
+    tenant_id: str | None = None
+    event_id: str | None = None
+    salon_id: str | None = None
+    user_id: str | None = None
+    timestamp: str = ""
+
+
+_in_memory_events_metrics: list[EventOperationMetric] = []
+
+
+def get_in_memory_events_metrics() -> list[EventOperationMetric]:
+    """Devuelve las métricas de operaciones de eventos registradas en memoria."""
+    return list(_in_memory_events_metrics)
+
+
+def clear_in_memory_events_metrics() -> None:
+    """Limpia las métricas de operaciones de eventos en memoria."""
+    _in_memory_events_metrics.clear()
+
+
 def record_alert_operational_metric(
     *,
     tenant_id: str,
@@ -547,6 +604,36 @@ def format_structured_log(
     return json.dumps(record, ensure_ascii=False)
 
 
+class _NoOpSpan:
+    """Implementación nula de Span de OTel para fallbacks seguros."""
+
+    def set_attribute(self, key: str, value: object) -> None:
+        pass
+
+    def set_status(self, status: object) -> None:
+        pass
+
+    def record_exception(self, exception: BaseException) -> None:
+        pass
+
+
+@contextmanager
+def _safe_start_span(tracer_name: str, span_name: str) -> Iterator[object]:
+    """Inicia un span de OTel con fallback transparente a NoOp en caso de error o mock incompleto."""
+    try:
+        tracer = trace.get_tracer(tracer_name)
+        span_cm = tracer.start_as_current_span(span_name)
+        otel_span = span_cm.__enter__()
+    except Exception:
+        yield _NoOpSpan()
+        return
+
+    try:
+        yield otel_span
+    finally:
+        span_cm.__exit__(*sys.exc_info())
+
+
 @contextmanager
 def trace_span(
     name: str,
@@ -572,19 +659,20 @@ def trace_span(
     if ctx.user_id and "user_id" not in dynamic_attrs:
         dynamic_attrs["user_id"] = ctx.user_id
 
-    tracer = trace.get_tracer(tracer_name)
     span_status_code = 200
     status_str = "SUCCESS"
 
-    with tracer.start_as_current_span(name) as otel_span:
+    with _safe_start_span(tracer_name, name) as otel_span:
         initial_clean_attrs = scrub_telemetry_payload(dynamic_attrs)
         for k, v in initial_clean_attrs.items():
             if v is not None:
-                otel_span.set_attribute(str(k), v if isinstance(v, (bool, str, int, float)) else str(v))
+                with suppress(Exception):
+                    otel_span.set_attribute(str(k), v if isinstance(v, (bool, str, int, float)) else str(v))
 
         try:
             yield dynamic_attrs
-            otel_span.set_status(Status(StatusCode.OK))
+            with suppress(Exception):
+                otel_span.set_status(Status(StatusCode.OK))
             safe_payload = scrub_telemetry_payload(dynamic_attrs)
             logging.getLogger(tracer_name).info(
                 format_structured_log("INFO", name, safe_payload)
@@ -594,8 +682,9 @@ def trace_span(
             from src.core.exceptions import OppyTecError
 
             span_status_code = exc.status_code if isinstance(exc, OppyTecError) else 500
-            otel_span.record_exception(exc)
-            otel_span.set_status(Status(StatusCode.ERROR, str(exc)))
+            with suppress(Exception):
+                otel_span.record_exception(exc)
+                otel_span.set_status(Status(StatusCode.ERROR, str(exc)))
             err_payload = scrub_telemetry_payload(
                 {
                     **dynamic_attrs,
@@ -612,7 +701,8 @@ def trace_span(
             clean_attrs = scrub_telemetry_payload(dynamic_attrs)
             for k, v in clean_attrs.items():
                 if v is not None:
-                    otel_span.set_attribute(str(k), v if isinstance(v, (bool, str, int, float)) else str(v))
+                    with suppress(Exception):
+                        otel_span.set_attribute(str(k), v if isinstance(v, (bool, str, int, float)) else str(v))
 
             raw_bodega = dynamic_attrs.get("bodega_id")
             metric_bodega: int | None = None
@@ -628,10 +718,11 @@ def trace_span(
             raw_user = dynamic_attrs.get("user_id")
             metric_user = str(raw_user) if raw_user is not None else ctx.user_id
 
-            if metric_tenant is not None:
-                otel_span.set_attribute("oppytec.tenant_id", metric_tenant)
-            if metric_user is not None:
-                otel_span.set_attribute("oppytec.user_id", metric_user)
+            with suppress(Exception):
+                if metric_tenant is not None:
+                    otel_span.set_attribute("oppytec.tenant_id", metric_tenant)
+                if metric_user is not None:
+                    otel_span.set_attribute("oppytec.user_id", metric_user)
 
             merged_attrs: dict[str, str | int | float | bool] = {
                 **ctx.to_attributes(),
@@ -754,6 +845,64 @@ def trace_span(
                 if len(_in_memory_jev_metrics) >= MAX_IN_MEMORY_METRICS_CAPACITY:
                     del _in_memory_jev_metrics[0]
                 _in_memory_jev_metrics.append(jev_metric)
+
+            if name.startswith("projection.") or tracer_name.startswith("oppytec.projection"):
+                raw_prods = dynamic_attrs.get("projection.products_processed", dynamic_attrs.get("products_processed", 0))
+                try:
+                    metric_prods = int(str(raw_prods))
+                except (ValueError, TypeError):
+                    metric_prods = 0
+
+                raw_horizon = dynamic_attrs.get("horizon_days", 30)
+                try:
+                    metric_horizon = int(str(raw_horizon))
+                except (ValueError, TypeError):
+                    metric_horizon = 30
+
+                raw_page = dynamic_attrs.get("page", 1)
+                try:
+                    metric_page = int(str(raw_page))
+                except (ValueError, TypeError):
+                    metric_page = 1
+
+                raw_page_size = dynamic_attrs.get("page_size", 30)
+                try:
+                    metric_page_size = int(str(raw_page_size))
+                except (ValueError, TypeError):
+                    metric_page_size = 30
+
+                proj_metric = ProjectionOperationMetric(
+                    operation=name,
+                    status=status_str,
+                    duration_ms=round(duration_ms, 3),
+                    tenant_id=metric_tenant,
+                    products_processed=metric_prods,
+                    bodega_id=metric_bodega,
+                    horizon_days=metric_horizon,
+                    page=metric_page,
+                    page_size=metric_page_size,
+                    timestamp=datetime.now(UTC).isoformat(),
+                )
+                if len(_in_memory_projection_metrics) >= MAX_IN_MEMORY_METRICS_CAPACITY:
+                    del _in_memory_projection_metrics[0]
+                _in_memory_projection_metrics.append(proj_metric)
+
+            if name.startswith("events.") or tracer_name.startswith("oppytec.events"):
+                metric_event_id = str(dynamic_attrs.get("event_id")) if dynamic_attrs.get("event_id") else None
+                metric_salon_id = str(dynamic_attrs.get("salon_id")) if dynamic_attrs.get("salon_id") else None
+                event_metric = EventOperationMetric(
+                    operation=name,
+                    status=status_str,
+                    duration_ms=round(duration_ms, 3),
+                    tenant_id=metric_tenant,
+                    event_id=metric_event_id,
+                    salon_id=metric_salon_id,
+                    user_id=metric_user,
+                    timestamp=datetime.now(UTC).isoformat(),
+                )
+                if len(_in_memory_events_metrics) >= MAX_IN_MEMORY_METRICS_CAPACITY:
+                    del _in_memory_events_metrics[0]
+                _in_memory_events_metrics.append(event_metric)
 
 
 def record_quota_semaphore_metric(
@@ -938,6 +1087,10 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
             ui_language=ui_lang,
             display_currency=display_currency,
         )
+        try:
+            request.state.trace_id = trace_id
+        except Exception:
+            pass
         start_ns = time.perf_counter_ns()
         try:
             response = await call_next(request)

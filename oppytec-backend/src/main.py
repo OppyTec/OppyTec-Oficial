@@ -26,10 +26,12 @@ from src.modules.audit.presentation.router import router as audit_router
 from src.modules.catalog.presentation.router import router as catalog_router
 from src.modules.identity.presentation.router import router as identity_router
 from src.modules.inventory.presentation.router import router as inventory_router
+from src.modules.events.presentation.router import router as events_router
 from src.modules.operations.presentation.router import router as operations_router
 from src.modules.operations.presentation.router_approvals import router as operations_approvals_router
 from src.modules.oppy_ai.presentation.router import router as oppy_ai_router
 from src.modules.procurement.presentation.router import router as procurement_router
+from src.modules.projection.presentation.router import router as projection_router
 from src.modules.recipes.presentation.router import router as recipes_router
 from src.modules.tenancy.presentation.platform_admin_router import router as platform_admin_router
 from src.modules.tenancy.presentation.router import router as tenancy_router
@@ -169,7 +171,14 @@ def create_app() -> FastAPI:
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
-        incoming_trace_id = request.headers.get("X-Trace-ID", "").strip()
+        incoming_trace_id = (
+            request.headers.get("X-Trace-ID", "").strip()
+            or getattr(request.state, "trace_id", "")
+        )
+        if not incoming_trace_id:
+            with suppress(Exception):
+                core_obs = importlib.import_module("src.core.observability")
+                incoming_trace_id = core_obs.get_current_trace_id()
         trace_id = incoming_trace_id if incoming_trace_id else uuid.uuid4().hex
         request.state.trace_id = trace_id
 
@@ -244,8 +253,10 @@ def create_app() -> FastAPI:
     app.include_router(procurement_router)
     app.include_router(operations_router)
     app.include_router(operations_approvals_router)
+    app.include_router(events_router)
     app.include_router(analytics_router)
     app.include_router(oppy_ai_router)
+    app.include_router(projection_router)
 
     return app
 

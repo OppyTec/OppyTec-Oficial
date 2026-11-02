@@ -13,6 +13,10 @@ Traspaso de Hilo al 5%, Operational Tools, Platform Admin FinOps y Paquetes de C
 - `GET /api/v1/platform-admin/ai-packs` y `POST /api/v1/platform-admin/ai-packs`
 - `GET /api/v1/platform-admin/ai-packs/{pack_id}/quote`
 - `GET /api/v1/platform-admin/ai-tariffs` y `PUT /api/v1/platform-admin/ai-tariffs/{model_slug}`
+- `GET /api/v1/platform-admin/ai-models` y `POST /api/v1/platform-admin/ai-models`
+- `GET /api/v1/platform-admin/ai-models/{model_slug}`
+- `PUT /api/v1/platform-admin/ai-models/{model_slug}`
+- `DELETE /api/v1/platform-admin/ai-models/{model_slug}`
 """
 from __future__ import annotations
 
@@ -20,7 +24,7 @@ import uuid
 from decimal import Decimal
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from src.adapters.ai.gemini_adapter import MeteredGeminiAdapter
 from src.adapters.ai.jev_adapter import InMemoryTelemetrySink, MeteredJevAdapter
@@ -31,10 +35,15 @@ from src.core.guards.rbac_dependencies import (
     RequireGlobalPermission,
     RequireTenantPermission,
 )
+from src.core.observability import trace_span
 from src.modules.oppy_ai.application.ai_credit_packs_service import (
     AiCreditPacksService,
     CreditPackDTO,
 )
+from src.modules.oppy_ai.application.ai_model_catalog_service import (
+    AiModelCatalogService,
+)
+from src.modules.oppy_ai.infrastructure.models import AiModelConfig
 from src.modules.oppy_ai.application.metered_ai_service import (
     MeteredAIService,
     ModelConfigRegistry,
@@ -70,6 +79,11 @@ from src.modules.oppy_ai.presentation.schemas import (
     AiCreditPackCreateRequest,
     AiCreditPackQuoteResponse,
     AiCreditPackResponse,
+    AiModelConfigCreateRequest,
+    AiModelConfigListResponse,
+    AiModelConfigResponse,
+    AiModelConfigUpdateRequest,
+    AiModelDeleteResponse,
     AiModelTariffResponse,
     AiModelTariffUpdateRequest,
     OppyfyChatRequest,
@@ -124,6 +138,7 @@ _metered_ai_service = MeteredAIService(
 )
 _token_consumption_service = TokenConsumptionAggregatorService()
 _ai_credit_packs_service = AiCreditPacksService()
+_ai_model_catalog_service = AiModelCatalogService(model_registry=_model_registry)
 
 _worker_wallets_store: dict[int, WorkerCreditWalletState] = {
     1: WorkerCreditWalletState(
@@ -206,6 +221,29 @@ _domain_tree_store: list[OppyfyDomainTreeResponse] = [
             )
         ],
     ),
+    OppyfyDomainTreeResponse(
+        id=4,
+        domain_key="proyeccion",
+        name_es="Proyección y Quiebres de Stock",
+        name_en="Projection & Stockouts",
+        icon="TrendingUp",
+        is_active=True,
+        sort_order=4,
+        subdomains=[
+            OppyfySubdomainDetailResponse(
+                id=4,
+                subdomain_key="proyeccion_y_quiebres",
+                name_es="Proyección y Quiebres",
+                name_en="Projections & Stockouts",
+                allowed_tool_functions=[
+                    "get_stockout_projections_and_autonomy",
+                    "get_preventive_transfer_recommendations",
+                ],
+                can_view_costs_default=False,
+                is_active=True,
+            )
+        ],
+    ),
 ]
 
 
@@ -251,6 +289,7 @@ async def oppyfy_chat_endpoint(
             "abastecimiento_y_eventos",
             "finanzas_y_rentabilidad",
             "analitica_y_reportes",
+            "proyeccion_y_quiebres",
         }
         user_grants = [
             OppyfyPermissionGrantSpec(
@@ -773,3 +812,200 @@ async def update_ai_model_tariff_endpoint(
         is_enabled=updated.is_enabled,
     )
 
+
+# ============================================================================
+# 9. PLATFORM ADMIN: AI MODEL CATALOG & JEV ENGINES
+# ============================================================================
+
+
+def _map_ai_model_config(m: AiModelConfig) -> AiModelConfigResponse:
+    """Mapea la entidad de configuración a esquema Pydantic V2 sin tipos float."""
+    return AiModelConfigResponse(
+        id=m.id,
+        model_slug=m.model_slug,
+        display_name=m.display_name,
+        provider=m.provider,
+        engine_tier=m.engine_tier,
+        input_cost_per_1m_usd=m.input_cost_per_1m_usd,
+        cached_cost_per_1m_usd=m.cached_cost_per_1m_usd,
+        output_cost_per_1m_usd=m.output_cost_per_1m_usd,
+        embedding_cost_per_1m_usd=m.embedding_cost_per_1m_usd,
+        latency_p95_ms=m.latency_p95_ms,
+        min_confidence_score=m.min_confidence_score,
+        max_context_tokens=m.max_context_tokens,
+        is_enabled=m.is_enabled,
+        is_default=m.is_default,
+        is_fallback=m.is_fallback,
+        description=m.description or "",
+        is_deleted=m.is_deleted,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
+
+
+@router.get(
+    "/api/v1/platform-admin/ai-models",
+    response_model=list[AiModelConfigResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def list_ai_models_endpoint(
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("platform_admin.ai_models.read")),
+    ],
+    engine_tier: str | None = Query(default=None),
+    is_enabled: bool | None = Query(default=None),
+    provider: str | None = Query(default=None),
+    include_deleted: bool = Query(default=False),
+) -> list[AiModelConfigResponse]:
+    """Lista todos los modelos cognitivos y motores JEV del catálogo global."""
+    with trace_span(
+        "platform_admin.ai_models.list",
+        attributes={
+            "filter.engine_tier": engine_tier or "ALL",
+            "filter.is_enabled": str(is_enabled) if is_enabled is not None else "ALL",
+            "filter.provider": provider or "ALL",
+        },
+    ):
+        models = _ai_model_catalog_service.list_models(
+            include_deleted=include_deleted,
+            tier=engine_tier,
+            is_enabled=is_enabled,
+            provider=provider,
+        )
+        return [_map_ai_model_config(m) for m in models]
+
+
+@router.get(
+    "/api/v1/platform-admin/ai-models/{model_slug}",
+    response_model=AiModelConfigResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_ai_model_endpoint(
+    model_slug: str,
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("platform_admin.ai_models.read")),
+    ],
+) -> AiModelConfigResponse:
+    """Obtiene la configuración y cotas de un modelo de IA específico."""
+    with trace_span(
+        "platform_admin.ai_models.get",
+        attributes={"model_slug": model_slug},
+    ):
+        model = _ai_model_catalog_service.get_model_by_slug(model_slug)
+        return _map_ai_model_config(model)
+
+
+@router.post(
+    "/api/v1/platform-admin/ai-models",
+    response_model=AiModelConfigResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_ai_model_endpoint(
+    payload: AiModelConfigCreateRequest,
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("platform_admin.ai_models.create")),
+    ],
+) -> AiModelConfigResponse:
+    """Registra un nuevo modelo cognitivo o motor JEV en el catálogo."""
+    with trace_span(
+        "platform_admin.ai_models.create",
+        attributes={
+            "model_slug": payload.model_slug,
+            "provider": payload.provider,
+            "engine_tier": payload.engine_tier,
+            "input_cost_per_1m_usd": str(payload.input_cost_per_1m_usd),
+        },
+    ):
+        created = _ai_model_catalog_service.create_model(payload)
+        return _map_ai_model_config(created)
+
+
+@router.put(
+    "/api/v1/platform-admin/ai-models/{model_slug}",
+    response_model=AiModelConfigResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def update_ai_model_endpoint(
+    model_slug: str,
+    payload: AiModelConfigUpdateRequest,
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("platform_admin.ai_models.update")),
+    ],
+) -> AiModelConfigResponse:
+    """Modifica la configuración de un modelo cognitivo y actualiza en caliente el registry."""
+    dumped = payload.model_dump(exclude_unset=True)
+    with trace_span(
+        "platform_admin.ai_models.update",
+        attributes={
+            "model_slug": model_slug,
+            "updated_fields": ",".join(dumped.keys()),
+            "is_default": str(payload.is_default),
+        },
+    ):
+        updated = _ai_model_catalog_service.update_model(model_slug, payload)
+        return _map_ai_model_config(updated)
+
+
+@router.delete(
+    "/api/v1/platform-admin/ai-models/{model_slug}",
+    response_model=None,
+    status_code=status.HTTP_200_OK,
+)
+async def delete_ai_model_endpoint(
+    model_slug: str,
+    _principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(RequireGlobalPermission("platform_admin.ai_models.delete")),
+    ],
+    hard_delete: bool = Query(default=False),
+) -> Any:
+    """
+    Elimina físicamente o archiva lógicamente un modelo de IA protegiendo trazabilidad financiera.
+    - Rechaza con HTTP 409 si model.is_default == True.
+    - Si posee llamadas históricas en telemetría: Soft Delete forzoso (HTTP 200 OK).
+    - Si posee 0 llamadas: Hard Delete físico (HTTP 204 No Content).
+    """
+    with trace_span(
+        "platform_admin.ai_models.delete",
+        attributes={
+            "model_slug": model_slug,
+            "hard_delete_requested": hard_delete,
+        },
+    ) as span_attrs:
+        model = _ai_model_catalog_service.get_model_by_slug(model_slug)
+        if model.is_default:
+            raise OppyTecError(
+                "No se puede eliminar ni desactivar el modelo predeterminado. Designe otro modelo antes de proceder.",
+                status_code=409,
+                error_code="CANNOT_DELETE_DEFAULT_MODEL",
+                context={"model_slug": model_slug},
+            )
+
+        telemetry_refs = _ai_model_catalog_service.count_telemetry_references(model_slug)
+        span_attrs["telemetry_references_count"] = telemetry_refs
+        if telemetry_refs > 0:
+            if hard_delete:
+                raise OppyTecError(
+                    "El modelo posee telemetría financiera histórica asociada. Queda terminantemente prohibida su eliminación física.",
+                    status_code=409,
+                    error_code="CANNOT_HARD_DELETE_REFERENCED_MODEL",
+                    context={"model_slug": model_slug, "telemetry_references": telemetry_refs},
+                )
+            _ai_model_catalog_service.delete_model(model_slug, hard_delete=False)
+            span_attrs["resolution"] = "soft_delete_archived"
+            return AiModelDeleteResponse(
+                action="SOFT_DELETED_ARCHIVED",
+                model_slug=model_slug,
+                is_enabled=False,
+                historical_telemetry_logs_preserved=telemetry_refs,
+                message="El modelo posee telemetría financiera histórica asociada. Ha sido desactivado lógicamente para proteger la trazabilidad de costos.",
+            )
+
+        # telemetry_refs == 0 -> Hard Delete físico
+        _ai_model_catalog_service.delete_model(model_slug, hard_delete=True)
+        span_attrs["resolution"] = "hard_deleted"
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
