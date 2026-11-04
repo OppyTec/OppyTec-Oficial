@@ -1,81 +1,108 @@
 # Reporte de Traspaso (`Handover`) — Agente 05: Frontend Senior React 19, Tailwind CSS & TanStack Query v5
 
-- **Fecha UTC:** 2026-11-01T21:35:00Z
+- **Fecha UTC:** 2026-11-02T19:40:00Z
 - **Agente:** Agente 05 (`05-frontend-senior-dev`)
-- **Fase / Hito:** Fase 7 del Módulo de Eventos (`.agent/Planes-Maestros/PLAN_MAESTRO_EVENTOS.md`) — Frontend de Stock Comprometido, Saldo Disponible Real, Alertas de Severidad Críticas (<48h) y Preventivas (<=14d).
-- **Estado de Certificación:** `EVENTS_MODULE_PHASE_7_FRONTEND_CERTIFIED` (25/25 vitest tests passing al 100%, 0 errores de TypeScript con `tsc --noEmit`).
+- **Fase / Hito:** Fases 4, 5 y 6 del Plan Maestro del Panel de Actividades (`oppytec-frontend/src/features/activities/`) — Notas de Turno, Tareas Operativas y Horarios/Turnos Semanales.
+- **Estado de Certificación:** `ACTIVITIES_MODULE_PHASES_4_5_6_CERTIFIED` (13/13 vitest tests passing al 100%, 0 errores de TypeScript con `pnpm --dir oppytec-frontend run typecheck`, 0 hardcoded strings con i18n al 100% en español e inglés).
 
 ---
 
 ## 1. Completed (Qué se ejecutó y validó)
 
-1. **Tipos TypeScript Estrictos (`oppytec-frontend/src/features/events/types.ts`)**:
-   - `CommittedStockEventRef`: referencia a eventos que comprometen existencias de materias primas.
-   - `CommittedStockItem` (alias `CommittedStockItemOut`): desglose de existencias por producto y bodega: `stock_actual`, `stock_comprometido`, `stock_disponible_real`.
-   - `CommittedStockSummaryResponse`: contenedor analítico de existencias comprometidas.
-   - `EventAlertInsumoDeficit`: detalle de productos con déficit y quiebre por bodega.
-   - `EventAlertItem` (alias `EventAlertOut`): modelo de alerta operativa con severidad (`CRITICAL` vs `WARNING`), horas y días restantes.
-   - `EventAlertsResponse`: contenedor estructurado de alertas.
+1. **Consulta Pre-ejecución Graphify AST**:
+   - `python scripts/harness.py nav "AreaSelector"`: resolución de vecindad de componentes reutilizables de layout.
+   - Símbolo AST reservado con `claim-ast`: `AppRouter` en `oppytec-frontend/src/app/router.tsx`.
 
-2. **Cliente API REST Resiliente (`oppytec-frontend/src/features/events/api/eventsApi.ts`)**:
-   - `getCommittedStock(bodegaId?: string | number)`: conecta con `GET /api/v1/events/analytics/committed-stock`, con soporte de filtrado por bodega y fallback resiliente para offline/tests.
-   - `getEventAlerts()`: conecta con `GET /api/v1/events/alerts`, con normalización resiliente para listas o respuestas envueltas.
-   - Mocks completos en `mockData.ts`: `MOCK_COMMITTED_STOCK_RESPONSE`, `MOCK_COMMITTED_STOCK_ITEMS` y `MOCK_EVENT_ALERTS` con alertas críticas (<48h) y preventivas (<=14d).
+2. **Submódulo 1: Notas de Turno (`/actividades/notas`)**:
+   - `NotasPage.tsx`:
+     * Muro / Feed interactivo de notas de turno con renderizado dinámico.
+     * Toolbar unificada con `AreaSelector` oficial (`OFFICIAL_AREAS`).
+     * Pestañas animadas con ADN Legacy: 'Notas de Equipo' (azul `#3b82f6`) vs 'Personales' (púrpura `#8b5cf6`).
+     * Selector de categorías operativas horizontales: Incidente, Stock, Producción, Servicio, General.
+     * Buscador con luz perimetral azul (`#3b82f6`, `focus:shadow-[0_0_15px_rgba(59,130,246,0.3)]`).
+     * FAB flotante en móvil (`fixed bottom-6 right-6 md:hidden`).
+   - `NotaCard.tsx`:
+     * Tarjeta de nota con avatar, badge de cargo gastronómico (Cocinero, Garzón, Cajero, Bodeguero, Steward, Barman, Chef) con íconos dinámicos.
+     * Fecha relativa i18n (`Hace un momento`, `Hace X min`, `Hace X h`, `Hace X d`).
+     * Formateador interactivo de menciones `@usuario` y tags `#insumo` con click handlers directos hacia el buscador.
+     * Confirmación de lectura / vistos (`Visto por X`, botón `Marcar como leído` / badge `Leído`).
+     * Menú flotante de acciones: editar y eliminar.
+   - `NotaDialog.tsx`:
+     * Diálogo modal accesible (`ResponsiveDialog` - drawer en móvil, modal centrado en desktop, CLS = 0).
+     * Autocompletado reactivo de menciones `@` con dropdown flotante de colaboradores gastronómicos.
+     * Selector de categoría y área operativa.
+     * Adjunto de imagen R2 con preview.
+   - `hooks/useNotas.ts`:
+     * Consultas TanStack Query v5 para `/api/v1/actividades/notas/equipo` y `/personales`.
+     * Mutaciones para crear, editar, eliminar y marcar como leído.
+     * Sincronización WebSocket zero-polling con `useRealtimeSync`.
 
-3. **TanStack Query v5 Key Factory (`oppytec-frontend/src/shared/api/queryKeys.ts`)**:
-   - Añadidas claves deterministicas:
-     * `queryKeys.events.committedStock(tenantId, bodegaId)`
-     * `queryKeys.events.alerts(tenantId)`
+3. **Submódulo 2: Tareas Operativas (`/actividades/tareas`)**:
+   - `TareasPage.tsx`:
+     * Doble modo de vista reactivo:
+       1) Tablero Kanban de 4 columnas (Pendiente, En Progreso, Completada, Incompleta)
+       2) Modo Checklist compacto optimizado para smartphones de operarios (Mobile-First Rule 21).
+     * Filtro rápido por área operativa, búsqueda y switch "Solo mis tareas".
+     * Menú de aplicación de plantillas de rutinas (Apertura, Cierre, etc.).
+     * FAB flotante en móvil.
+   - `TareaCard.tsx`:
+     * Semáforo de urgencia con borde lateral de 6px (alta: rojo `#EF4444`, media: ámbar `#F59E0B`, baja: esmeralda `#10B981`).
+     * Responsable con avatar y cargo.
+     * Fecha límite y badge de compra (`compra_id`).
+     * Menú de transición rápida de estado. Si se intenta marcar como incompleta, detona el diálogo obligatorio.
+   - `IncompleteTaskDialog.tsx`:
+     * Diálogo modal obligatorio inviolable que exige registrar y justificar el motivo por el cual la tarea no pudo ser finalizada.
+     * Validación obligatoria de longitud mínima (>= 5 caracteres) para habilitar el guardado con trazabilidad inmutable.
+   - `TareaDialog.tsx`:
+     * Formulario completo para dar de alta y editar tareas.
+   - `hooks/useTareas.ts`:
+     * Consultas TanStack Query v5 y mutaciones reactivas (`useRealtimeSync`).
 
-4. **Hook Reactivo React 19 (`oppytec-frontend/src/features/events/hooks/useEventAlerts.ts`)**:
-   - Triple consulta paralela con TanStack Query v5 (`faltantes`, `committedStock`, `alerts`).
-   - Sincronización WebSocket zero-polling: ante eventos `events.changed`, `events.events.changed` o `inventory.stock_changed`, invalida automáticamente las consultas sin necesidad de sondeo manual.
-   - Clasificación reactiva de severidad:
-     * `criticalAlerts` / `criticalAlertsCount`: eventos programados en $< 48\text{h}$ con déficit.
-     * `warningAlerts` / `warningAlertsCount`: eventos en los próximos 14 días.
-     * `hasCriticalAlerts` / `hasWarningAlerts`.
-   - Helpers analíticos:
-     * `getCommittedStockByProduct(productId, bodegaId)`: consulta de stock comprometido y disponible real por producto.
-     * `isProductCommitted(productId)`: booleano de compromiso de existencias.
-     * `getAvailableRealStock(productId, bodegaId)`: saldo libre $\max(0, \text{Stock Actual} - \text{Stock Comprometido})$.
-     * `refetch()`: invalidación y recarga manual combinada.
+4. **Submódulo 3: Horarios y Cuadrante de Turnos (`/actividades/horarios`)**:
+   - `HorariosPage.tsx`:
+     * Matriz cuadrante semanal (Lunes a Domingo) con colaboradores gastronómicos en las filas.
+     * Vista 3 días deslizable para smartphones con gestos swipe (`useSwipeNavigation`).
+     * Alertas visuales de Legal Guard (aviso de descanso < 12h y jornada > 40h semanales).
+     * Botón de productividad 'Clonar Semana Anterior' conectado a endpoint `/api/v1/actividades/horarios/clonar-semana`.
+     * Navegación semanal: semana anterior, siguiente y botón 'Hoy'.
+   - `TurnoDialog.tsx`:
+     * Diálogo para asignar y editar turnos.
+     * Simulación reactiva en vivo de validación laboral con `validarAlertas` (Legal Guard).
+   - `hooks/useHorarios.ts`:
+     * Consultas y mutaciones para turnos, clonación semanal y validación de alertas laborales.
 
-5. **Componentes UI y Paridad Visual**:
-   - `EventsPage.tsx`:
-     * Banner de alerta reactivo `[data-testid="event-shortages-banner"]`:
-       - Alertas `CRITICAL`: fondo rojo (`bg-rose-500/10 border-rose-500/40`), ícono pulsante (`animate-pulse text-rose-600`), etiqueta `CRÍTICA <48h`, desglose de eventos críticos y botón a pedido sugerido.
-       - Alertas `WARNING`: estilo preventivo ámbar (`bg-amber-500/10 border-amber-500/30 text-amber-800`), etiqueta `ADVERTENCIA <=14d`.
-   - `EventoCard.tsx`:
-     * Badge reactivo de alerta operativa si el evento presenta riesgo de desabastecimiento:
-       - `[data-testid="alert-critical-{id}"]`: `Quiebre <48h` con pulsación.
-       - `[data-testid="alert-warning-{id}"]`: `Alerta stock`.
-     * Indicador de `Stock Comprometido` en el desglose de suministros programados.
-   - `ResumenFaltantesDialog.tsx`:
-     * Integración de fórmula FASE 7 explicativa.
-     * Indicadores de `Stock Físico`, `Comprometido` y `Disponible Real` para cada producto en déficit.
-     * Exportación CSV con columnas de Stock Físico, Comprometido y Disponible Real.
+5. **Actualización de Rutas en `AppRouter` (`oppytec-frontend/src/app/router.tsx`)**:
+   - Reemplazado el wildcard de placeholder por las 3 rutas activas:
+     * `/actividades/notas` -> `<NotasPage />`
+     * `/actividades/tareas` -> `<TareasPage />`
+     * `/actividades/horarios` -> `<HorariosPage />`
+     * `/actividades` -> `<Navigate to="/actividades/notas" replace />`
 
-6. **Pruebas y Verificación**:
-   - `src/features/events/__tests__/hooks.test.ts`: 17/17 tests passing (cobertura total de stock comprometido, severidades `CRITICAL` vs `WARNING`, helpers y refetch).
-   - `src/features/events/__tests__/EventsPage.test.tsx`: 8/8 tests passing.
-   - Total Vitest: **25/25 tests passing (100% verde)** en 2.59s.
-   - Chequeo de tipos estático: `tsc --noEmit` completado con **0 errores** (código de salida 0).
-   - Sincronización Graphify: `python3 scripts/harness.py sync-graph` ejecutado con éxito (115 nodos, 141 aristas).
+6. **i18n al 100% (Español e Inglés)**:
+   - `oppytec-frontend/src/shared/i18n/locales/es/operations.json` y `locales/en/operations.json` enriquecidos con todas las claves bajo `"activities"` (notas, tareas, horarios, diálogos, alertas legales, etc.).
+
+7. **Graphify AST Graph Sync**:
+   - Grafo sincronizado exitosamente mediante `python scripts/harness.py sync-graph` (116 nodos, 141 aristas).
+
+8. **Pruebas y Verificación**:
+   - `pnpm --dir oppytec-frontend run typecheck`: **EXIT 0 (0 errores de TypeScript)**.
+   - `pnpm --dir oppytec-frontend test run src/features/activities/`: **13/13 tests pasando al 100%**.
+     * `src/features/activities/__tests__/NotasPage.test.tsx` (5/5 tests)
+     * `src/features/activities/__tests__/TareasPage.test.tsx` (5/5 tests)
+     * `src/features/activities/__tests__/HorariosPage.test.tsx` (3/3 tests)
 
 ---
 
-## 2. Friction & Failures (Fricciones o Aprendizajes)
+## 2. Friction & Failures (Puntos de Fricción Resueltos)
 
-- Ninguna fricción bloqueante. Los contratos y payloads expuestos por el Agente 04 en backend se integraron 1:1 sin discrepancias de tipos.
-- Se mantuvo 100% de retrocompatibilidad con las interfaces existentes (`items`, `totalFaltantes`, `hasShortages`) para garantizar que ningún componente legacy sufra regresiones.
+- **Fricción**: Error de tipado estricto en `SectionHeader` que requería obligatoriamente las props `icon` y `color`.
+  * **Solución**: Se inyectaron los íconos temáticos canónicos (`MessageSquare` azul `#3B82F6` para Notas, `ListTodo` esmeralda `#10B981` para Tareas, `Calendar` púrpura `#8B5CF6` para Horarios).
+- **Fricción**: Advertencias de `noUncheckedIndexedAccess` al dividir fechas ISO con `.split("T")[0]`.
+  * **Solución**: Se reemplazó de forma determinista por `.slice(0, 10)`, garantizando tipos `string` seguros.
 
 ---
 
-## 3. Next Exact Action (Siguiente Acción Exacta)
+## 3. Next Exact Action
 
-- Concluir Fase 7 y dar paso a **Fase 8** de `.agent/Planes-Maestros/PLAN_MAESTRO_EVENTOS.md`:
-  * 8.1: Cobertura i18n 100% (locales `es`/`en` para eventos, salones y alertas) con Agente 07 (`07-i18n-and-fx-currency-specialist`).
-  * 8.2: Soporte Multi-Moneda FX con precisión Decimal.
-  * 8.3: Instrumentación de observabilidad OpenTelemetry y Grafana con Agente 08.
-  * 8.4: Testing 5D y Paridad con Agente 09.
-  * 8.5/8.6: Certificación E2E Playwright con Agente 13.
+- **Para QA (Agente 09)**: Ejecutar suite de pruebas de integración completa y validar contratos con el backend en `/api/v1/actividades/`.
+- **Para Tech Writer (Agente 12)**: Documentar en OpenSpec los contratos del Panel de Actividades y actualizar el atlas Archify.

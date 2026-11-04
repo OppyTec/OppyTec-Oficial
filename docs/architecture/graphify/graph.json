@@ -408,6 +408,12 @@
       "path": "oppytec-backend/alembic/versions/0014_tenant_projection_snapshots_and_consumption_rates.py"
     },
     {
+      "id": "migration:0015_tenant_actividades_triada",
+      "label": "Alembic 0015 Migration: Tenant actividades triada enriquecida",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0015_tenant_actividades_triada_enriquecida.py"
+    },
+    {
       "id": "module:analytics",
       "label": "Analytics Module (Executive Margins, Kasavana Menu Engineering, Loss Control & Projections)",
       "type": "backend_module",
@@ -1430,11 +1436,11 @@
     "load_test_target_rps": 500,
     "load_test_p95_budget_ms": 120,
     "rubric_score": "10/10",
-    "nodes_count": 115,
+    "nodes_count": 116,
     "edges_count": 141,
     "frontend_admin_views": 4,
     "backend_routers": 13,
-    "alembic_migrations": 16,
-    "updated_at": "2026-11-02T01:15:45.623752+00:00"
+    "alembic_migrations": 17,
+    "updated_at": "2026-11-02T20:45:06.308936+00:00"
   }
 }

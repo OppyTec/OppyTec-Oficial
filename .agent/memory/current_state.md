@@ -161,3 +161,45 @@
 - **Resultados de las Suites de Prueba:**
   - Backend Unit, Observability & Red Team Security: **47 passed** (`test_ai_model_catalog.py`, `test_ai_model_catalog_observability.py`, `test_19_ai_model_catalog_security_and_rbac.py`).
   - Frontend Vitest: **9 passed** (`AiModelsPage.test.tsx`).
+
+## Hito Cerrado: Plan Maestro del Panel de Actividades — Notas, Tareas, Horarios y Sinergia OppyFy (Fases 1 a 8 Certificadas 10/10)
+- **Estado de Certificación:** `SECURITY_APPROVED`, `QA_APPROVED` y `SYNC_APPROVED` (Cero Vetos, 100% Conforme).
+- **Fase 1 (Persistencia Multi-Tenant, Modelos SQLAlchemy 2.0 y Migración Alembic 0015):**
+  - Migración lineal correlativa `0015_tenant_actividades_triada_enriquecida.py` sobre esquemas `tenant_*`.
+  - Modelos ORM enriquecidos en `src/modules/operations/infrastructure/models.py`: `TurnoHorario`, `NotaPersonal`, `NotaEquipo`, `NotaEquipoMencion`, `NotaEquipoLectura` (visto idempotente), `PlantillaRutina` y `Tarea`.
+  - Pruebas de integridad de migración y modelos: 29/29 tests de arquitectura y 7/7 tests de modelos pasando al 100%.
+- **Fase 2 (Capa de Aplicación Clean Architecture en Backend):**
+  - `ActividadesService` en `src/modules/operations/application/actividades_service.py`.
+  - Notas de equipo con menciones `@` y confirmación de lectura idempotente.
+  - Notas personales con privacidad estricta entre colaboradores (acceso restringido a `user_id == current_user_id`).
+  - Tareas operativas con semáforo de urgencia e invariante inviolable de justificación obligatoria (`nota_incompleta` no vacía al transicionar a `incompleta`).
+  - Plantillas de rutinas periódicas de apertura/cierre y aplicación masiva.
+  - Horarios con clonación semanal de turnos y validación laboral preventiva: descanso mínimo de 12h consecutivas (`DESCANSO_INSUFICIENTE`) y jornada semanal legal de 40h (`EXCESO_40_HORAS`).
+- **Fase 3 (Contratos Pydantic v2, Router REST FastAPI y WebSockets):**
+  - Contratos DTO con `ConfigDict(extra="forbid")`, aritmética `Decimal` y sanitización políglota XSS/SSTI en `schemas_actividades.py`.
+  - Enrutador REST montado en `/api/v1/actividades` con matriz RBAC de 3 niveles (`actividades.notas.*`, `actividades.tareas.*`, `actividades.horarios.*`).
+  - Despacho reactivo de eventos WebSocket `operations.nota.created`, etc.
+  - 10/10 pruebas unitarias y de integración de API pasando al 100%, 0 errores `mypy --strict`.
+- **Fase 4 (Frontend Submódulo 1 — Notas de Turno y Feed Operativo):**
+  - `NotasPage.tsx`, `NotaCard.tsx`, `NotaDialog.tsx` en `oppytec-frontend/src/features/activities/notas/`.
+  - Pestañas con ADN visual Legacy: 'Notas de Equipo' vs 'Personales', selector horizontal de categorías operativas, menciones `@` y tags `#` interactivos, feedback visual de confirmación de lectura.
+- **Fase 5 (Frontend Submódulo 2 — Tareas Operativas y Checklists):**
+  - `TareasPage.tsx`, `TareaCard.tsx`, `TareaDialog.tsx`, `IncompleteTaskDialog.tsx` en `src/features/activities/tareas/`.
+  - Doble modo reactivo: Tablero Kanban de 4 columnas y vista Checklist Mobile-First compacta.
+  - Modal obligatorio inviolable `IncompleteTaskDialog` que exige motivo con longitud $\ge 5$ caracteres antes de permitir marcar una tarea como incompleta.
+- **Fase 6 (Frontend Submódulo 3 — Horarios, Cuadrante Semanal y Alertas Laborales):**
+  - `HorariosPage.tsx`, `TurnoDialog.tsx` en `src/features/activities/horarios/`.
+  - Matriz cuadrante semanal (Lunes a Domingo) y vista móvil deslizable de 3 días con gestos swipe.
+  - Botón 'Clonar Semana Anterior' y simulación en vivo de alertas laborales (Legal Guard).
+  - 13/13 vitest tests pasando al 100% y 0 errores `pnpm run typecheck`.
+- **Fase 7 (Sinergia Inteligente con OppyFy — Minuta de Cierre y Traspaso de Turno):**
+  - Endpoint `POST /api/v1/actividades/minuta-traspaso` en backend que sintetiza los 4 puntos clave: Incidentes, Producción, Tareas Pendientes y Dotación.
+  - Componente modal `MinutaTraspasoDialog.tsx` con KPIs visuales, botón 'Copiar Minuta' al portapapeles y 'Guardar como Nota'.
+  - Botón `🤖 Resumen de Traspaso (OppyFy)` integrado en `NotasPage.tsx`.
+- **Fase 8 (Auditoría Ofensiva Red Team Kali, OpenSpec Bipartito y Graphify):**
+  - Suite Red Team `oppytec-backend/tests/security_redteam/test_18_actividades_security_and_idor.py`: 6/6 tests pasando al 100% validando aislamiento IDOR cross-tenant, privacidad de notas, justificación de incompletitud, RBAC de 3 niveles, sanitización políglota y aislamiento de turnos.
+  - Sello definitivo: **`SECURITY_APPROVED`** emitido por el Agente 10 (cero vetos ejercidos).
+  - Bóvedas OpenSpec sincronizadas y validadas por `test_openspec_bipartition_and_sync.py`:
+    * `specs/business-domain/activities-and-shift-handover.business.spec.md` (0% código/SQL).
+    * `specs/engineering-code/activities-and-shift-handover.code.spec.md` (arquitectura técnica, DDL, DTOs, RBAC y frontend).
+  - Grafo AST sincronizado con `python scripts/harness.py sync-graph`.

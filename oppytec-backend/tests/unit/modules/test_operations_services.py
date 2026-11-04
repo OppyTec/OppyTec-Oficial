@@ -20,7 +20,10 @@ from src.modules.operations.infrastructure.models import (
     ConsumptionTemplate,
     Evento,
     NotaEquipo,
+    NotaEquipoLectura,
+    NotaEquipoMencion,
     NotaPersonal,
+    PlantillaRutina,
     Salon,
     Tarea,
     TurnoHorario,
@@ -230,4 +233,130 @@ def test_alembic_0005_migration_metadata() -> None:
     assert m0005.migration_scope == "tenant"
     assert callable(m0005.upgrade)
     assert callable(m0005.downgrade)
+
+
+def test_alembic_0015_migration_metadata() -> None:
+    """Verifica que la migración correlativa 0015 esté debidamente enlazada a 0014."""
+    import importlib.util
+    from pathlib import Path
+
+    migration_path = Path(__file__).resolve().parents[3] / "alembic/versions/0015_tenant_actividades_triada_enriquecida.py"
+    assert migration_path.exists(), "La migración 0015 debe existir en alembic/versions/"
+    spec = importlib.util.spec_from_file_location("m0015", str(migration_path))
+    assert spec is not None and spec.loader is not None
+    m0015 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m0015)
+
+    assert m0015.revision == "0015_tenant_actividades_triada_enriquecida"
+    assert m0015.down_revision == "0014_tenant_projection_snapshots_and_consumption_rates"
+    assert m0015.migration_scope == "tenant"
+    assert callable(m0015.upgrade)
+    assert callable(m0015.downgrade)
+
+
+def test_operations_actividades_triada_enriquecida_models() -> None:
+    """Verifica modelos enriquecidos de la Tríada de Actividades: Notas, Tareas y Horarios."""
+    from datetime import time
+
+    now = datetime.now(UTC)
+    today = date(2026, 11, 2)
+
+    # 1. TurnoHorario enriquecido
+    turno = TurnoHorario(
+        usuario_id=12,
+        area_id="area-cocina-1",
+        fecha_inicio=today,
+        fecha_fin=today,
+        hora_inicio=time(8, 30),
+        hora_fin=time(17, 0),
+        nota="Turno apertura cocina principal",
+        color="#22c55e",
+        creado_por=1,
+    )
+    assert turno.user_id == 12
+    assert turno.usuario_id == 12
+    assert turno.area_id == "area-cocina-1"
+    assert turno.fecha_inicio == today
+    assert turno.hora_inicio == time(8, 30)
+    assert turno.color == "#22c55e"
+    assert turno.creado_por == 1
+
+    # 2. NotaPersonal con area y autor_id alias
+    nota_p = NotaPersonal(
+        user_id=12,
+        area_id="area-cocina-1",
+        titulo="Nota privada",
+        contenido="Revisar temperatura de mantenedor",
+        fecha=now,
+    )
+    assert nota_p.autor_id == 12
+    assert nota_p.area_id == "area-cocina-1"
+    assert nota_p.fecha == now
+
+    # 3. NotaEquipo con menciones y lecturas
+    nota_e = NotaEquipo(
+        autor_user_id=12,
+        titulo="Entrega de Turno Mañana",
+        contenido="Se dejó mise en place lista para el servicio de cena",
+        area_id="area-cocina-1",
+        categoria="urgente",
+        fecha=now,
+        insumo_id="insumo-harina-01",
+        receta_id=5,
+        foto_url="https://r2.oppytec.com/turnos/foto-entrega.webp",
+    )
+    assert nota_e.autor_id == 12
+    assert nota_e.categoria == "urgente"
+    assert nota_e.insumo_id == "insumo-harina-01"
+    assert nota_e.receta_id == 5
+    assert nota_e.foto_url == "https://r2.oppytec.com/turnos/foto-entrega.webp"
+
+    mencion = NotaEquipoMencion(user_id=14)
+    lectura = NotaEquipoLectura(user_id=14, read_at=now)
+    nota_e.menciones.append(mencion)
+    nota_e.lecturas.append(lectura)
+
+    assert len(nota_e.menciones) == 1
+    assert nota_e.menciones[0].user_id == 14
+    assert len(nota_e.lecturas) == 1
+    assert nota_e.lecturas[0].read_at == now
+
+    # 4. PlantillaRutina y Tarea
+    plantilla = PlantillaRutina(
+        nombre="Checklist Apertura Barra",
+        descripcion="Pasos obligatorios antes de abrir la estación de coctelería",
+        area_id="area-barra-1",
+        tipo_rutina="APERTURA",
+        frecuencia="DIARIA",
+        items_json=[{"paso": 1, "desc": "Encender máquina de hielo"}, {"paso": 2, "desc": "Verificar stock cristalería"}],
+        is_active=True,
+        usuario_creador_id=1,
+    )
+    assert plantilla.tipo_rutina == "APERTURA"
+    assert len(plantilla.items_json) == 2
+
+    tarea = Tarea(
+        titulo="Limpieza de filtros de campana",
+        creador_user_id=1,
+        asignado_a_user_id=12,
+        area_id="area-cocina-1",
+        descripcion="Desmontar y lavar con desengrasante industrial",
+        estado="progreso",
+        urgencia="alta",
+        fecha_limite=now,
+        nota_incompleta=None,
+        compra_id="comp-9988",
+        foto_evidencia_url="https://r2.oppytec.com/evidencias/tarea-filtro.webp",
+        completada=False,
+    )
+    assert tarea.creador_id == 1
+    assert tarea.asignado_id == 12
+    assert tarea.urgencia == "alta"
+    assert tarea.estado == "progreso"
+    assert tarea.compra_id == "comp-9988"
+
+    # Enlace con plantilla
+    plantilla.tareas.append(tarea)
+    assert len(plantilla.tareas) == 1
+    assert tarea.plantilla == plantilla
 

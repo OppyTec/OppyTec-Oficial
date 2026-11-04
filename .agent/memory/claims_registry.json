@@ -532,6 +532,55 @@
       "claimed_by": "10-cybersecurity-redteam-auditor",
       "intent": "Add NullPool fixture for test isolation",
       "claimed_at": "2026-11-02T01:13:42.498279+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/operations/infrastructure/models.py",
+      "symbol_path": "NotaEquipo",
+      "claimed_by": "03-database-alembic-and-backup-engineer",
+      "intent": "Enriquecer modelos de actividades y notas con menciones, lecturas y categorias",
+      "claimed_at": "2026-11-02T18:41:18.852744+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/operations/infrastructure/models.py",
+      "symbol_path": "Tarea",
+      "claimed_by": "03-database-alembic-and-backup-engineer",
+      "intent": "Enriquecer modelo Tarea con creador, urgencia, fechas y estados",
+      "claimed_at": "2026-11-02T18:41:39.288954+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/operations/infrastructure/models.py",
+      "symbol_path": "TurnoHorario",
+      "claimed_by": "03-database-alembic-and-backup-engineer",
+      "intent": "Enriquecer modelo TurnoHorario con horarios y areas",
+      "claimed_at": "2026-11-02T18:41:39.441494+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/operations/application/actividades_service.py",
+      "symbol_path": "ActividadesService",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Implementar servicios DDD de Actividades: Notas, Tareas, Horarios",
+      "claimed_at": "2026-11-02T18:50:43.125323+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/operations/presentation/router_actividades.py",
+      "symbol_path": "router_actividades",
+      "claimed_by": "04-backend-senior-dev",
+      "intent": "Implementar router FastAPI con RBAC de 3 niveles para Actividades",
+      "claimed_at": "2026-11-02T18:50:50.207985+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/app/router.tsx",
+      "symbol_path": "AppRouter",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Add activities routes",
+      "claimed_at": "2026-11-02T19:12:03.693939+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/operations/application/actividades_service.py",
+      "symbol_path": "ActividadesService.generar_minuta_traspaso",
+      "claimed_by": "06-ai-oppyfy-and-jev-engineer",
+      "intent": "Minuta de traspaso inteligente con OppyFy",
+      "claimed_at": "2026-11-02T19:40:57.923703+00:00"
     }
   ]
 }

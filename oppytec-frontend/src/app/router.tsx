@@ -45,6 +45,7 @@ import { RegistroConsumoPage, ManosLibresPage, BuffetPage } from "@/features/con
 import { NotificationsPage } from "@/features/notifications";
 import { EventsPage } from "@/features/events";
 import { ProyeccionView } from "@/features/projection";
+import { NotasPage, TareasPage, HorariosPage } from "@/features/activities";
 import { useAuth } from "@/shared/auth/usePermissions";
 import { HomeDashboard } from "@/features/home";
 import {
@@ -206,9 +207,13 @@ export function ClientAppShell() {
         <Route path="/historial/*" element={<HistorialPage />} />
         <Route path="/contabilidad/*" element={<ModulePlaceholderView title="Contabilidad y Facturas DTE" moduleSlug="module:contabilidad" />} />
         <Route path="/reportes/*" element={<ModulePlaceholderView title="Panel Ejecutivo y Reportes Estratégicos" moduleSlug="module:panel_ejecutivo" />} />
+        <Route path="/actividades/notas" element={<NotasPage />} />
+        <Route path="/actividades/tareas" element={<TareasPage />} />
+        <Route path="/actividades/horarios" element={<HorariosPage />} />
         <Route path="/actividades/usuarios" element={<UsuariosPage />} />
         <Route path="/usuarios" element={<UsuariosPage />} />
-        <Route path="/actividades/*" element={<ModulePlaceholderView title="Panel de Actividades y Turnos" moduleSlug="module:panel_de_actividades" />} />
+        <Route path="/actividades" element={<Navigate to="/actividades/notas" replace />} />
+        <Route path="/actividades/*" element={<Navigate to="/actividades/notas" replace />} />
         <Route path="/oppyfy" element={<OppyfyWorkspacePage />} />
         <Route path="/oppybot" element={<Navigate to="/oppyfy" replace />} />
         <Route path="/perfil" element={<ProfilePage />} />

@@ -41,6 +41,10 @@
      * Si el requerimiento no requiere añadir código directo de su dominio, el agente actúa obligatoriamente como **Certificador de Impacto Cero (*Sign-off Auditor*)**, validando que la solución respete sus invariantes (ej: Agente 07 certifica ausencia de strings duros sin i18n, Agente 08 certifica trazas OTel/latencia, Agente 10 emite veto de seguridad, Agente 11 certifica limpieza de ramas/worktrees, Agente 12 sincroniza OpenSpec y Graphify).
    - El Orquestador tiene **ESTRICTAMENTE PROHIBIDO** cerrar o dar por concluido un `DAG_PIPELINE` sin contar con el reporte o certificación de todos los agentes convocados en las 4 etapas.
    - El modo `FAST_TRACK` queda restringido estrictamente a tareas atómicas, correcciones cosméticas o fixes menores de un único archivo.
+10. **PROHIBICIÓN ESTRICTA Y ABSOLUTA DEL USO DE 'npm' / 'yarn' (OBLIGATORIEDAD DE 'pnpm'):**
+    - Está terminantemente prohibido que cualquier agente ejecute `npm`, `npx` (salvo vía `pnpm dlx`) o `yarn` en cualquier contexto dentro del monorepo.
+    - Toda gestión de dependencias, scripts (`build`, `dev`, `lint`, `knip`, `depcruise`), verificación de tipos (`pnpm run typecheck`), auditorías (`pnpm audit`) y pruebas (`pnpm test`) deben ejecutarse única y exclusivamente con `pnpm`.
+    - El uso o invocación de `npm` o `yarn` constituye una **VIOLACIÓN CRÍTICA DE GOBERNANZA DE NIVEL 1**.
 
 ---
 

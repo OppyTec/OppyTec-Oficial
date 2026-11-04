@@ -1,87 +1,91 @@
 # Reporte de Traspaso (`Handover`) — Agente 07: Especialista en i18n y Multi-Moneda FX
 
-- **Fecha UTC:** 2026-11-02T00:45:00Z
-- **Fase / Hito:** FASE 8 del Módulo de Eventos — Creación y Sincronización del Namespace `events` (es/en), Registro Global en i18n, Certificación Multi-Moneda FX (Decimal) y Refactorización de Componentes de Eventos
-- **Estado de Certificación:** `I18N_AND_FX_EVENTS_MODULE_CERTIFIED` (Sign-Off Técnico Aprobado)
-  - **Paridad 1:1 Estricta:** 24/24 namespaces JSON verificados con paridad matemática total entre `oppytec-frontend/src/shared/i18n/locales/es/` y `locales/en/`. El namespace `events.json` cuenta con más de 50 claves estructuradas idénticas en ambos idiomas (header, toolbar, tabs, alerts_banner, card, empty_state, calendar, salones_dialog, dialog, detail_dialog, shortages_dialog, export).
-  - **Registro Global en Config i18n:** Actualizados `oppytec-frontend/src/shared/i18n/config.ts` y `oppytec-frontend/src/shared/i18n/i18next.d.ts` para incorporar `"events"` como namespace oficial y recurso cargado globalmente en `I18N_RESOURCES`.
-  - **Cero Strings Duros en UI:** Todos los componentes y modales de `oppytec-frontend/src/features/events/` (`EventsPage.tsx`, `EventoCard.tsx`, `EventosCalendar.tsx`, `SalonesDialog.tsx`, `ResumenFaltantesDialog.tsx`, `EventoDialog.tsx`, `EventoDetailDialog.tsx`) refactorizados para usar `useTranslation("events")` con textos canónicos en español e inglés.
-  - **Multi-Moneda FX y Precisión Decimal:** Aranceles de salones (precio neto, IVA 19%, precio bruto) y cotización de insumos/recetas/combos en eventos certificados con `formatMoney` y `formatCurrencyAmount` (CLP 0 decimales, USD/EUR 2 decimales, UF 4 decimales), sin pérdidas por IEEE-754.
+- **Fecha UTC:** 2026-11-02T20:58:00Z
+- **Fase / Hito:** Auditoría Integral y Certificación de Internacionalización (i18n) para el Panel de Actividades (Notas de Turno, Tareas Operativas, Cuadrante de Horarios y Minuta de Traspaso OppyFy)
+- **Estado de Certificación:** `I18N_APPROVED` (Sello de Certificación Formal Concedido)
+  - **Paridad 1:1 Estricta:** 24/24 namespaces JSON verificados con paridad matemática total entre `oppytec-frontend/src/shared/i18n/locales/es/` y `locales/en/`. El submódulo de actividades (`operations.json`) cuenta con 182 claves hoja simétricas en ambos idiomas (common, notas, minuta, tareas, horarios).
+  - **Cero Textos Hardcodeados (Zero Hardcoding):** 100% de los componentes de `oppytec-frontend/src/features/activities/` auditados y refactorizados. Se eliminaron todos los textos fijos en toasts, placeholders, tooltips, etiquetas de métricas y atributos `aria-label`.
+  - **Protección de Nombres Propios:** Protección estricta e inviolable de marcas y nombres de proveedores ("Pollo King").
   - **Test Suites 100% Verdes:**
-    - Vitest Eventos (`src/features/events`): **30/30 tests aprobados** (100% pass, incluyendo 5 tests de certificación en `EventsI18nAndFx.test.tsx`, 17 tests de hooks y 8 tests de integración de `EventsPage.test.tsx`).
-    - Vitest i18n Suite (`src/shared/i18n`): **13/13 tests aprobados** (100% pass con validación de 24 namespaces y paridad estricta).
-    - TypeScript Typecheck (`npm run typecheck`): **0 errores** (`tsc --noEmit` completado exitosamente).
+    - Vitest Actividades (`src/features/activities/`): **14/14 tests aprobados** (100% pass en NotasPage, TareasPage y HorariosPage).
+    - TypeScript Typecheck (`pnpm --dir oppytec-frontend exec tsc --noEmit`): **0 errores** (100% clean).
 
 ---
 
-## 1. Completed (Qué se auditó e implementó)
+## 1. Completed (Qué se auditó y corrigió)
 
-### 1.1 Archivos de Internacionalización (`events.json`)
-- Creados en:
-  - `oppytec-frontend/src/shared/i18n/locales/es/events.json`
-  - `oppytec-frontend/src/shared/i18n/locales/en/events.json`
-- Estructura canónica:
-  - `header`: title, subtitle ("Eventos y Banquetes" / "Events & Banquets")
-  - `toolbar`: salones, salones_tooltip, exportar, exportar_minuta, view_grid, view_calendar, nuevo_evento, all_areas
-  - `tabs`: proximos, historial, cancelados
-  - `alerts_banner`: badge_critical, badge_warning, title_prefix, critical_summary, critical_summary_single, warning_summary, desc_critical, desc_critical_suffix, desc_warning, btn_view_shortages
-  - `card`: titular, badge_critical, badge_warning, badge_agendado, badge_finalizado, badge_cancelado, sin_hora, comensales, supplies_scheduled, items_count, recetas_count, combos_count, committed_stock_indicator, committed_stock_tooltip, btn_execute, btn_executing, btn_edit, btn_cancel, btn_delete, btn_reactivate, btn_view_detail, confirm_execute, confirm_cancel, confirm_delete, cancel_reason_default
-  - `empty_state`: title, desc_proximos, desc_historial, desc_cancelados, btn_create_first
-  - `calendar`: prev, next, today, view_month, view_week, view_3days, view_day, quick_add_title, collision_alert, days_short, days_full, months
-  - `salones_dialog`: title, description, title_create, title_edit, cancel_edit, nombre_label, nombre_placeholder, capacidad_label, capacidad_placeholder, neto_label, iva_label, bruto_label, estado_label, color_label, btn_create, btn_update, registered_salones, capacity_pers, gross_price, btn_edit_tooltip, btn_delete_tooltip, confirm_delete, estados (limpio, en_uso, mantenimiento, sucio, activo)
-  - `dialog` (EventoDialog): title_create, title_edit, description, step1_title, step2_title, theoretical_cost, nombre_label, nombre_placeholder, titular_label, titular_placeholder, salon_label, no_salon_option, salon_option, lugar_label, lugar_placeholder, fecha_label, invitados_label, hora_inicio_label, hora_fin_label, color_label, notas_label, notas_placeholder, tab_insumos, tab_recetas, tab_combos, item_name_label, item_name_placeholder, item_qty_label, item_cost_label, receta_name_label, receta_name_placeholder, receta_portions_label, combo_name_label, combo_name_placeholder, combo_qty_label, btn_add, no_items, no_recetas, no_combos, portions_unit, packages_unit, btn_back, btn_next, btn_save_create, btn_save_edit, validation_name_required, validation_date_required
-  - `detail_dialog`: description_default, description_titular, status_agendado, status_finalizado, status_cancelado, salon_label, no_salon, guests_label, guests_unit, supplies_title, estimated_cost_label, items_header, recipes_header, combos_header, notes_label, btn_cancel, btn_edit, btn_execute, btn_close
-  - `shortages_dialog`: title, description, alert_detected, alert_detected_single, btn_download_csv, formula_title, formula_text, warehouse_label, critical_badge, metric_physical, metric_committed, metric_available, no_shortages
-  - `export`: no_events_to_export, export_success, filename_prefix, suggested_order_prefix, headers, status_labels, shortages_headers
+### 1.1 Archivos de Localización (`operations.json`)
+- Ubicación:
+  - `oppytec-frontend/src/shared/i18n/locales/es/operations.json`
+  - `oppytec-frontend/src/shared/i18n/locales/en/operations.json`
+- Se incorporaron y sincronizaron 182 claves bajo `activities`:
+  - `common`: `all_areas`, `search_placeholder`, `create`, `edit`, `delete`, `cancel`, `save`, `saving`, `loading`, `empty`, `area`, `author`, `user`, `actions`, `close`, `date`, `confirm_delete_title`, `confirm_delete_desc`, `success_created`, `success_updated`, `success_deleted`.
+  - `notas`: títulos, subtítulos, pestañas (`tab_team`, `tab_personal`), buscador, nueva/editar nota, botón OppyFy minuta (`oppyfy_minuta_btn`), fallbacks de rol/autor, mensajes de error toast (`error_delete`, `error_mark_read`, `error_save`), categorías operativas (incidente, stock, produccion, servicio, general), formulario con menciones (@) e insumos (#), preview de imagen R2 y colaboradores sugeridos.
+  - `minuta`: resumen de traspaso OppyFy AI, selector de fecha y área, métricas operativas (incidentes, producción, pendientes, colaboradores), 4 puntos clave estructurados, alerta sin tareas pendientes, vista previa markdown copiable, toasts y acciones de copia y guardado como nota destacada.
+  - `tareas`: títulos, modos de vista (kanban, checklist), urgencias (alta, media, baja con semáforo 6px), plantilla de rutinas con conteo de pasos, cambio de estados, motivo y modal obligatorio de tarea incompleta (`incomplete_dialog`: justificación, aviso de auditoría inmutable, validación de caracteres mínimos), toasts de éxito y error.
+  - `horarios`: cuadrante semanal, matriz de colaboradores, clonación de semana previa, navegación (semana anterior, hoy, semana siguiente), vistas (semana completa vs 3 días móvil), Legal Guard laboral (alertas de jornada >40h y descanso <12h), formulario con colaboradores, área, horas, observaciones y paleta de colores.
 
-### 1.2 Registro Global del Namespace
-- `oppytec-frontend/src/shared/i18n/config.ts`:
-  - Importados `eventsEn` y `eventsEs`.
-  - Añadido `"events"` a `I18N_NAMESPACES` (totalizando 24 namespaces).
-  - Añadido `events: eventsEs` a `I18N_RESOURCES.es`.
-  - Añadido `events: eventsEn` a `I18N_RESOURCES.en`.
-- `oppytec-frontend/src/shared/i18n/i18next.d.ts`:
-  - Añadido `"events"` al tipo unión `I18nNamespace`.
-
-### 1.3 Refactorización de Componentes a `useTranslation("events")`
-- Actualizados los siguientes componentes para consumir `useTranslation("events")`:
-  - `EventsPage.tsx`
-  - `components/EventoCard.tsx`
-  - `components/EventosCalendar.tsx`
-  - `dialogs/SalonesDialog.tsx`
-  - `dialogs/ResumenFaltantesDialog.tsx`
-  - `dialogs/EventoDialog.tsx`
-  - `dialogs/EventoDetailDialog.tsx`
-
-### 1.4 Soporte y Certificación Multi-Moneda FX con Decimal
-- Cálculo bidireccional de aranceles de salones (Neto <-> IVA 19% <-> Bruto) con consistencia matemática total.
-- Formateo estandarizado mediante `formatMoney` y `formatCurrencyAmount` de `@/shared/currency` en salones, tarjetas de eventos, totales estimados y diálogos de desglose.
-- Soporte para visualización en CLP (`$`), USD (`US$`), EUR (`€`) y UF (`UF`).
-
-### 1.5 Suites de Pruebas de Certificación
-- Creado `oppytec-frontend/src/features/events/__tests__/EventsI18nAndFx.test.tsx` (5 tests):
-  - Paridad estructural 1:1 entre diccionarios `es` y `en`.
-  - Renderizado dinámico en español (`es`).
-  - Conmutación en caliente a inglés (`en`).
-  - Certificación Multi-Moneda FX con Decimal para aranceles y presupuestos.
-  - Traducción de modales, alertas y diálogos.
-- Actualizado `oppytec-frontend/src/shared/i18n/i18n.test.tsx`:
-  - Validación de 24 namespaces y paridad estricta 1:1 en `events`.
+### 1.2 Refactorización de Componentes para Cero Textos Hardcodeados
+Se intervinieron y limpiaron los siguientes 10 componentes:
+1. `oppytec-frontend/src/features/activities/notas/NotasPage.tsx`:
+   - Toasts con `t("activities.notas.error_delete")`, `t("activities.notas.error_mark_read")`, `t("activities.notas.error_save")`.
+   - Botón flotante móvil con `aria-label={t("activities.notas.new_note")}`.
+2. `oppytec-frontend/src/features/activities/notas/NotaCard.tsx`:
+   - Atributos `alt` con `t("activities.notas.author_fallback")`.
+   - Etiquetas de autor fallback y notas privadas con `t("activities.notas.personal_note")` y `t("activities.notas.collaborator_fallback")`.
+   - Botón de menú contextual con `aria-label={t("activities.common.actions")}`.
+3. `oppytec-frontend/src/features/activities/notas/NotaDialog.tsx`:
+   - Encabezado de colaboradores sugeridos con `t("activities.notas.form.suggested_collaborators")`.
+   - Atributo `alt` de vista previa de imagen Cloudflare R2 con `t("activities.notas.form.image_preview")`.
+   - Estado de envío con `t("activities.common.saving")`.
+4. `oppytec-frontend/src/features/activities/notas/MinutaTraspasoDialog.tsx`:
+   - Opción "Todas las áreas" con `t("activities.common.all_areas")`.
+   - Toasts con `t("activities.minuta.error_copy")` y `t("activities.minuta.error_save_as_note")`.
+   - Título de nota generada con prefijo traducido `t("activities.minuta.note_title_prefix")`.
+   - Descripción de generación AI y métricas de cierre con `t("activities.minuta.metrics.*")`.
+   - Puntos clave y aviso de sin tareas pendientes con `t("activities.minuta.sections.*")` y `t("activities.minuta.no_pending_tasks")`.
+   - Formateo de colaboradores en turno y turnos programados con interpolación dinámica.
+   - Botones de acción y estado "Copiado" traducidos.
+5. `oppytec-frontend/src/features/activities/tareas/TareasPage.tsx`:
+   - Toasts con `t("activities.tareas.error_delete")`, `t("activities.tareas.error_update_status")`, `t("activities.tareas.warning_incomplete_marked")`, `t("activities.tareas.error_incomplete_mark")`, `t("activities.tareas.error_save")`, `t("activities.tareas.template_applied_success")`, `t("activities.tareas.error_apply_template")`.
+   - Menú de plantillas con `t("activities.tareas.routine_templates")` y pluralización de pasos `t("activities.tareas.steps_count")`.
+   - Botón flotante móvil con `aria-label={t("activities.tareas.new_task")}`.
+6. `oppytec-frontend/src/features/activities/tareas/TareaCard.tsx`:
+   - Botón de toggle con `aria-label={t("activities.tareas.toggle_status")}`.
+   - Menú de opciones con `aria-label={t("activities.common.actions")}` y encabezado `t("activities.tareas.change_status")`.
+   - Etiqueta de motivo incompleto con `t("activities.tareas.incomplete_reason_label")`.
+   - Atributo `alt` de avatar con `t("activities.common.user")`.
+7. `oppytec-frontend/src/features/activities/tareas/TareaDialog.tsx`:
+   - Botón guardar en estado de envío con `t("activities.common.saving")`.
+8. `oppytec-frontend/src/features/activities/tareas/IncompleteTaskDialog.tsx`:
+   - Advertencia de auditoría inmutable con `t("activities.tareas.incomplete_dialog.audit_notice")`.
+   - Hint de longitud mínima con `t("activities.tareas.incomplete_dialog.min_length_hint")`.
+   - Botón de envío con `t("activities.tareas.incomplete_dialog.submitting")`.
+9. `oppytec-frontend/src/features/activities/horarios/HorariosPage.tsx`:
+   - Toasts con `t("activities.horarios.error_clone")`, `t("activities.horarios.error_delete")`, `t("activities.horarios.error_save")`.
+   - Paginador de semanas con `aria-label={t("activities.horarios.prev_week")}`, `t("activities.horarios.today")` y `aria-label={t("activities.horarios.next_week")}`.
+   - Encabezados de columna "Colaborador" y badge "Legal Guard" traducidos.
+   - Acciones de eliminar turno y FAB móvil con `aria-label` traducidos.
+10. `oppytec-frontend/src/features/activities/horarios/TurnoDialog.tsx`:
+    - Placeholder de notas con `t("activities.horarios.form.notes_placeholder")`.
+    - Botón de guardar con `t("activities.common.saving")`.
 
 ---
 
 ## 2. Quality Gates & Verificación
 
-| Validación | Suite / Comando | Pruebas | Resultado |
-| :--- | :--- | :--- | :--- |
-| **Frontend Events Tests** | `npm --prefix oppytec-frontend test src/features/events` | 30 tests | **30/30 PASSED** (100%) |
-| **Frontend i18n Suite** | `npm --prefix oppytec-frontend test src/shared/i18n` | 13 tests | **13/13 PASSED** (100%) |
-| **TypeScript Strict Typecheck** | `npm --prefix oppytec-frontend run typecheck` | `tsc --noEmit` | **0 errors** (100% clean) |
-| **Paridad de Namespaces JSON** | `locales/es/events.json` vs `locales/en/events.json` | 65 leaf keys | **100% Exact Key Parity** |
+| Validación | Suite / Comando | Resultado |
+| :--- | :--- | :--- |
+| **Paridad de Namespaces JSON** | 24 archivos en `locales/es/` vs `locales/en/` | **100% 1:1 Symmetric (384 keys en operations.json, 182 en activities)** |
+| **Cero Textos Hardcodeados** | Escaneo AST regex en JSX, Toasts y Aria-Labels | **0 textos duros detectados** |
+| **TypeScript Strict Typecheck** | `pnpm --dir oppytec-frontend exec tsc --noEmit` | **0 errores (Exit code 0)** |
+| **Vitest Actividades Suite** | `pnpm --dir oppytec-frontend test run src/features/activities/` | **14/14 tests PASSED (100%)** |
 
 ---
 
-## 3. Dictamen de Sign-Off Técnico
+## 3. Dictamen de Certificación
 
-Se emite el **Sign-Off Técnico Aprobado** (`SIGN_OFF: APPROVED`) para la FASE 8 del Módulo de Eventos.
-- La internacionalización 100% es/en, el registro global del namespace `events`, el soporte Multi-Moneda FX con Decimal y la ausencia de textos duros en la interfaz de usuario cumplen estrictamente las directrices del proyecto y las reglas del escuadrón OppyTec v2.0.
+Se otorga el sello oficial **`I18N_APPROVED`** al Panel de Actividades de OppyTec v2.0.
+- Zero Hardcoding verificado.
+- Simetría 1:1 perfecta en español e inglés.
+- Cumplimiento estricto de gobernanza y directrices AGENTS.md.

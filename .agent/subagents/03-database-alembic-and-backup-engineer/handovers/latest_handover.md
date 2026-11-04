@@ -1,83 +1,75 @@
 # Reporte de Traspaso (`Handover`) — Agente 03: Especialista en Base de Datos, Alembic y Backups 4-Capas
 
-- **Fecha UTC:** 2026-11-01T20:00:00Z
-- **Fase / Hito:** FASE 1 del PLAN_MAESTRO_PROYECCION.md — Persistencia SQLAlchemy 2.0 Async en `oppytec-backend/src/modules/projection/infrastructure/models.py` y Migración Lineal Correlativa Alembic 0014 (`0014_tenant_projection_snapshots_and_consumption_rates.py`) en esquemas `tenant_*`.
-- **Estado de Certificación:** `PROJECTION_MODELS_AND_ALEMBIC_0014_CERTIFIED` (Alembic 0001..0014 estrictamente lineal, 2/2 tests de arquitectura correlativa al 100% verde, 3/3 tests unitarios de modelos/migración al 100% verde, 10/10 tests de dominio FEFO al 100% verde).
+- **Fecha UTC:** 2026-11-02T18:50:00Z
+- **Fase / Hito:** FASE 1 del Plan Maestro del Panel de Actividades (Notas, Tareas y Horarios) — Extensión de modelos ORM en `oppytec-backend/src/modules/operations/infrastructure/models.py` y Migración Lineal Correlativa Alembic 0015 (`0015_tenant_actividades_triada_enriquecida.py`) en esquemas `tenant_*`.
+- **Estado de Certificación:** `ACTIVIDADES_MODELS_AND_ALEMBIC_0015_CERTIFIED` (Alembic 0001..0015 estrictamente lineal, 29/29 tests de arquitectura al 100% verde, 9/9 tests de operaciones al 100% verde, cero errores de integridad).
 
 ---
 
 ## 1. Completed (Qué se ejecutó y validó)
 
-1. **Modelado de Persistencia Multi-Tenant SQLAlchemy 2.0 Async:**
-   - Ubicación: [`oppytec-backend/src/modules/projection/infrastructure/models.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/projection/infrastructure/models.py).
-   - Exportado en: [`oppytec-backend/src/modules/projection/infrastructure/__init__.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/projection/infrastructure/__init__.py).
-   - Herencia estricta de `TenantBase` y `AuditTimestampsMixin` (`created_at`, `updated_at` en UTC con `func.now()`).
-   - **`ProjectionSnapshot` (`projection_snapshots`):**
-     * `id`: `BigInteger` PK autoincremental.
-     * `producto_id`: `BigInteger` FK `productos.id` (`ON DELETE CASCADE`), indexado.
-     * `bodega_id`: `BigInteger` FK `bodegas.id` (`ON DELETE CASCADE`), nullable para consolidado multi-bodega, indexado.
-     * `horizon_days`: `Integer` (`7`, `15`, `30`, `60`, `90`), default 30.
-     * `current_stock`: `Numeric(12, 4)`.
-     * `projected_stock`: `Numeric(12, 4)`.
-     * `depletion_date`: `Date`, nullable.
-     * `worst_status`: `String(20)` (`NORMAL`, `WARNING`, `CRITICAL`).
-     * `worst_status_label`: `String(64)`.
-     * `worst_day`: `Integer`, nullable.
-     * `daily_consumption_rate`: `Numeric(12, 4)`.
-     * `projection_curve`: `JSONB` / `JSONDictType` con serie temporal día a día.
-     * `calculated_at`: `DateTime(timezone=True)` default UTC `func.now()`.
-     * `is_stale`: `Boolean` default False.
-     * `metadata_payload`: `JSONB` / `JSONDictType`, nullable.
-     * Restricción de unicidad: `UniqueConstraint("producto_id", "bodega_id", "horizon_days", name="uq_proj_snapshots_prod_bod_horiz")`.
-     * Índices compuestos: `idx_proj_snapshots_lookup` (bodega_id, horizon_days, worst_status), `idx_proj_snapshots_prod` (producto_id, horizon_days), `idx_proj_snapshots_calc` (calculated_at, is_stale).
-     * Relaciones ORM con `Producto` y `Bodega`.
-   - **`DailyConsumptionRate` (`daily_consumption_rates`):**
-     * `id`: `BigInteger` PK autoincremental.
-     * `producto_id`: `BigInteger` FK `productos.id` (`ON DELETE CASCADE`), indexado.
-     * `bodega_id`: `BigInteger` FK `bodegas.id` (`ON DELETE CASCADE`), nullable, indexado.
-     * `rate_7d`, `rate_30d`, `rate_90d`: `Numeric(12, 4)` default 0.0000.
-     * `last_calculated_at`: `DateTime(timezone=True)` default UTC `func.now()`.
-     * Restricción de unicidad: `UniqueConstraint("producto_id", "bodega_id", name="uq_daily_consumption_rates_prod_bod")`.
-     * Relaciones ORM con `Producto` y `Bodega`.
+1. **Consulta Graphify y AST Claims:**
+   - Mapeo inicial de AST con `python scripts/harness.py nav "NotaEquipo"`.
+   - Reserva atómica de símbolos AST (`fcntl.flock`): `NotaEquipo`, `Tarea`, `TurnoHorario` en `claims_registry.json`.
 
-2. **Migración Correlativa Lineal Alembic 0014:**
-   - Ubicación: [`oppytec-backend/alembic/versions/0014_tenant_projection_snapshots_and_consumption_rates.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/alembic/versions/0014_tenant_projection_snapshots_and_consumption_rates.py).
+2. **Modelado de Persistencia Multi-Tenant SQLAlchemy 2.0 Async:**
+   - Ubicación: [`oppytec-backend/src/modules/operations/infrastructure/models.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/operations/infrastructure/models.py).
+   - Exportado en: [`oppytec-backend/src/modules/operations/infrastructure/__init__.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/operations/infrastructure/__init__.py).
+   - Herencia estricta de `TenantBase`, `AuditTimestampsMixin`, `SoftDeleteMixin` y `TranslatableI18nMixin`.
+   - **`TurnoHorario` (`turnos_horarios`):**
+     * Enriquecido con: `usuario_id` (Integer nullable, indexado con sincronización bidireccional a `user_id`), `area_id` (String(64) nullable, indexado), `fecha_inicio` (Date nullable, indexado), `fecha_fin` (Date nullable, indexado), `hora_inicio` (Time nullable), `hora_fin` (Time nullable), `inicio_turno` / `fin_turno` flexibilizados a nullable, `nota` (String(500) nullable), `color` (String(20) nullable), `creado_por` (Integer nullable, indexado).
+     * Constructor polimórfico que admite indistintamente la firma v2 y la heredada de legacy.
+   - **`NotaPersonal` (`notas_personales`):**
+     * Enriquecida con: `area_id` (String(64) nullable, indexado), `fecha` (DateTime nullable), property `autor_id` mapeada a `user_id`.
+   - **`NotaEquipo` (`notas_equipo`):**
+     * Enriquecida con: `area_id` (String(64) nullable, indexado), `categoria` (String(40), default 'general', indexado), `fecha` (DateTime nullable), `insumo_id` (String(64) nullable, indexado), `receta_id` (Integer nullable, indexado), `foto_url` (String(500) nullable), property `autor_id` mapeada a `autor_user_id`.
+     * Relaciones ORM `cascade="all, delete-orphan"` a `menciones` (`NotaEquipoMencion`) y `lecturas` (`NotaEquipoLectura`).
+   - **`NotaEquipoMencion` (`nota_equipo_menciones`):**
+     * Tabla relacional con `id`, `nota_id` FK a `notas_equipo.id` ON DELETE CASCADE, `user_id`, `created_at`, `updated_at`.
+     * Restricción de unicidad: `UniqueConstraint("nota_id", "user_id", name="uq_nota_equipo_menciones_nota_user")`.
+   - **`NotaEquipoLectura` (`nota_equipo_lecturas`):**
+     * Tabla relacional para auditoría de lecturas / vistos de novedades con `id`, `nota_id` FK a `notas_equipo.id` ON DELETE CASCADE, `user_id`, `read_at` (DateTime timezone=True, default func.now()), `created_at`, `updated_at`.
+     * Restricción de unicidad: `UniqueConstraint("nota_id", "user_id", name="uq_nota_equipo_lecturas_nota_user")`.
+   - **`PlantillaRutina` (`plantillas_rutinas`):**
+     * Modelo para rutinas periódicas de apertura, cierre y mantenimiento con `id`, `nombre` (String(160)), `descripcion` (Text), `area_id` (String(64)), `tipo_rutina` (String(40), default 'APERTURA'), `frecuencia` (String(30), default 'DIARIA'), `items_json` (JSONB / JSONDictType), `is_active` (Boolean, default True), `usuario_creador_id` (Integer), `is_deleted` (SoftDeleteMixin), timestamps UTC.
+     * Relación 1:N con `Tarea` (`tareas`).
+   - **`Tarea` (`tareas`):**
+     * Enriquecida con: `creador_user_id` (Integer nullable, indexado), `asignado_a_user_id` (Integer nullable, indexado), `area_id` (String(64) nullable, indexado), `descripcion` (Text nullable), `estado` (String(30), default 'pendiente': 'pendiente', 'progreso', 'completada', 'incompleta', indexado), `urgencia` (String(20), default 'media': 'alta', 'media', 'baja', indexado), `fecha_limite` (DateTime timezone=True nullable), `nota_incompleta` (Text nullable), `compra_id` (String(64) nullable, indexado), `foto_evidencia_url` (String(500) nullable), `plantilla_id` (Integer FK `plantillas_rutinas.id` ON DELETE SET NULL, indexado), `completada` (Boolean, default False).
+     * Relación ORM a `plantilla` (`PlantillaRutina`), properties `creador_id` y `asignado_id`.
+
+3. **Migración Correlativa Lineal Alembic 0015:**
+   - Ubicación: [`oppytec-backend/alembic/versions/0015_tenant_actividades_triada_enriquecida.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/alembic/versions/0015_tenant_actividades_triada_enriquecida.py).
    - Metadatos:
-     * `revision = "0014_tenant_projection_snapshots_and_consumption_rates"`
-     * `down_revision = "0013_tenant_events_salones_and_reservations"`
+     * `revision = "0015_tenant_actividades_triada_enriquecida"`
+     * `down_revision = "0014_tenant_projection_snapshots_and_consumption_rates"`
      * `migration_scope: Literal["public", "tenant"] = "tenant"`
    - DDL e Idempotencia:
-     * Implementa `_get_tenant_schemas(bind)` para aplicar sobre todos los esquemas `tenant_*`.
-     * Creación segura e idempotente con `_has_table` e `_has_index`.
-     * Función `downgrade()` completa y simétrica con eliminación ordenada de índices y tablas.
+     * Detección dinámica y multi-esquema con `_get_tenant_schemas(bind)`.
+     * Inspección idempotente de tablas, columnas e índices con `_has_table`, `_has_column`, `_has_index`.
+     * Sincronización y backfill de compatibilidad en `turnos_horarios`, `notas_equipo` y `tareas`.
+     * Función `downgrade()` estrictamente simétrica y reversible.
 
-3. **Pruebas Automatizadas de Arquitectura y Persistencia:**
-   - Creación de [`oppytec-backend/tests/unit/modules/test_projection_models_and_migration.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/tests/unit/modules/test_projection_models_and_migration.py).
-   - `pytest test_alembic_integrity.py`: 2/2 tests passed (100% verde).
-   - `python scripts/db_migration.py verify`: Verificación OK sin saltos ni duplicados.
-   - `pytest test_projection_models_and_migration.py`: 3/3 tests passed (100% verde).
-   - `pytest test_projection_domain.py`: 10/10 tests passed (100% verde).
-
-4. **Sincronización Graphify:**
-   - Ejecución de `python3 scripts/harness.py sync-graph`.
-   - Nodos indexados: 107 (Routers: 11, Migraciones: 16, Suites: 19).
-
----
-
-## 2. Friction & Failures (Resolución de Secuenciamiento Correlativo)
-
-- **Correlatividad Lineal Continua:**
-  * Al verificar la cadena en `alembic/versions/`, se confirmó la existencia de `0012_public_ai_model_configs_catalog_extension.py` y `0013_tenant_events_salones_and_reservations.py`.
-  * Siguiendo la regla de oro de secuenciamiento estricto `0001..NNNN` (Regla 06) y la especificación de `PLAN_MAESTRO_PROYECCION.md` (*"o número secuencial inmediatamente posterior a la última migración registrada"*), la migración se nombró y estructuró como `0014_tenant_projection_snapshots_and_consumption_rates.py` encadenada a `0013`, garantizando cero bifurcaciones (0 heads extras) y pasando todos los linters y validaciones de AST.
+4. **Pruebas Automatizadas de Arquitectura y Modelos:**
+   - Pruebas añadidas en [`oppytec-backend/tests/unit/modules/test_operations_services.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/tests/unit/modules/test_operations_services.py):
+     * `test_alembic_0015_migration_metadata`: Validación de cadena de revisions y callables `upgrade`/`downgrade`.
+     * `test_operations_actividades_triada_enriquecida_models`: Cobertura exhaustiva de instanciación, propiedades y relaciones de `TurnoHorario`, `NotaPersonal`, `NotaEquipo`, `NotaEquipoMencion`, `NotaEquipoLectura`, `PlantillaRutina`, `Tarea`.
+   - Resultados de ejecución:
+     * `oppytec-backend/.venv/bin/pytest tests/architecture/test_alembic_integrity.py`: 2 passed (100% verde).
+     * `oppytec-backend/.venv/bin/pytest tests/architecture/`: 29 passed (100% verde).
+     * `oppytec-backend/.venv/bin/pytest tests/unit/modules/test_operations_services.py`: 7 passed (100% verde).
 
 ---
 
-## 3. Next Exact Action (Siguiente paso exacto)
+## 2. Friction & Failures (Invariantes observadas y resueltas)
 
-- Traspasar la ejecución al Agente 04 (`04-backend-senior-dev`) para iniciar la **FASE 2** del PLAN_MAESTRO_PROYECCION.md:
-  1. Construcción del servicio `ProjectionEngine` en `src/modules/projection/application/services.py` con recálculo batch, lock anti-concurrencia y deducción FEFO.
-  2. Implementación de los endpoints REST en `src/modules/projection/presentation/router.py`:
-     - `GET /api/v1/projection/snapshots` (paginado server-side < 25ms)
-     - `POST /api/v1/projection/recompute` (lock distribuido)
-     - `GET /api/v1/projection/products/{id}/curve` (curva día a día 1..90)
-     - `GET /api/v1/projection/alerts` (quiebres preventivos y sugerencias de traspaso)
+- **Compatibilidad de Nombres de Columnas (v2 vs Legacy):** En `TurnoHorario`, v2 utilizaba `user_id` mientras que legacy usaba `usuario_id`. Se agregaron ambas columnas al esquema de BD junto con un constructor kwargs sincronizador y backfill automático, asegurando cero fallos tanto en código existente como en contratos legacy.
+- **Relaciones con Plantillas:** En `Tarea`, `plantilla_id` referencia `plantillas_rutinas.id` con `ondelete="SET NULL"` para no romper tareas históricas si una rutina es dada de baja.
+- **Auditoría de Vistos:** Se crearon restricciones únicas `(nota_id, user_id)` en `nota_equipo_menciones` y `nota_equipo_lecturas` para garantizar idempotencia en confirmaciones de lectura.
+
+---
+
+## 3. Next Exact Action (Para los siguientes agentes en el DAG)
+
+1. **Agente 04 (Backend Senior Dev):** Implementar o actualizar los endpoints y servicios de aplicación de Actividades (`src/modules/operations/presentation/` y `application/`) para soportar CRUD completo de notas de equipo con menciones, checklist de tareas y cuadrante de horarios.
+2. **Agente 05 (Frontend Senior Dev):** Conectar la interfaz de `/actividades` con los nuevos campos (menciones, filtros por área, urgencia y estados de tareas, cuadrante de turnos).
+3. **Agente 12 (Tech Writer / OpenSpec / Graphify):** Ejecutar `python scripts/harness.py sync-graph` para indexar los nuevos modelos y migración en `graph.json`.

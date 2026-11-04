@@ -3,3 +3,4 @@
 - **Inviolabilidad:** Prohibido modificar `OppyTec-Legacy/`, `.agent/rules/`, `.agent/evals/` o `oppytec-backend/tests/architecture/`.
 - **Contexto como Variable:** En el REPL de Prime Agent, nunca vuelques archivos gigantes ni `graph.json` crudo al prompt; usa `.agent/skills/graphify/graph_navigator.py`.
 - **Compacción Temprana:** Mantén `compaction.thresholdPercent: 75` para prevenir *attention drift*.
+- **Gestores de Paquetes Autorizados:** Backend gestionado exclusivamente con `uv` (prohibido `pip` directo). Frontend gestionado única y exclusivamente con `pnpm` (prohibido terminantemente `npm`, `npx` [salvo vía `pnpm dlx`] y `yarn`).

@@ -370,4 +370,17 @@ export const queryKeys = {
     transfers: (tenantId: string, productId: string | number, bodegaId?: string | number) =>
       ["oppytec", "projection", "transfers", tenantId, String(productId), String(bodegaId ?? "all")] as const,
   },
+  activities: {
+    all: (tenantId: string) => ["oppytec", "activities", tenantId] as const,
+    notasEquipo: (tenantId: string, params?: Record<string, unknown>) =>
+      ["oppytec", "activities", "notasEquipo", tenantId, params ?? {}] as const,
+    notasPersonales: (tenantId: string, params?: Record<string, unknown>) =>
+      ["oppytec", "activities", "notasPersonales", tenantId, params ?? {}] as const,
+    tareas: (tenantId: string, params?: Record<string, unknown>) =>
+      ["oppytec", "activities", "tareas", tenantId, params ?? {}] as const,
+    plantillas: (tenantId: string, params?: Record<string, unknown>) =>
+      ["oppytec", "activities", "plantillas", tenantId, params ?? {}] as const,
+    horarios: (tenantId: string, params?: Record<string, unknown>) =>
+      ["oppytec", "activities", "horarios", tenantId, params ?? {}] as const,
+  },
 } as const;

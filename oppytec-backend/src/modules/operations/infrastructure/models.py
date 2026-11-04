@@ -10,7 +10,7 @@ Modelos SQLAlchemy 2.0 de Operaciones Gastronómicas, Hoteleras y Consumo (`Tena
 """
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Any
 
@@ -24,6 +24,9 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Time,
+    UniqueConstraint,
+    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -273,8 +276,24 @@ class TurnoHorario(TenantBase, AuditTimestampsMixin, SoftDeleteMixin):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    inicio_turno: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    fin_turno: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    usuario_id: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True, index=True)
+    area_id: Mapped[str | None] = mapped_column(String(64), default=None, nullable=True, index=True)
+    fecha_inicio: Mapped[date | None] = mapped_column(Date, default=None, nullable=True, index=True)
+    fecha_fin: Mapped[date | None] = mapped_column(Date, default=None, nullable=True, index=True)
+    hora_inicio: Mapped[time | None] = mapped_column(Time, default=None, nullable=True)
+    hora_fin: Mapped[time | None] = mapped_column(Time, default=None, nullable=True)
+    inicio_turno: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
+    fin_turno: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
+    nota: Mapped[str | None] = mapped_column(String(500), default=None, nullable=True)
+    color: Mapped[str | None] = mapped_column(String(20), default=None, nullable=True)
+    creado_por: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True, index=True)
+
+    def __init__(self, **kwargs: Any) -> None:
+        if "usuario_id" in kwargs and "user_id" not in kwargs:
+            kwargs["user_id"] = kwargs["usuario_id"]
+        elif "user_id" in kwargs and "usuario_id" not in kwargs:
+            kwargs["usuario_id"] = kwargs["user_id"]
+        super().__init__(**kwargs)
 
 
 class NotaPersonal(TenantBase, AuditTimestampsMixin, SoftDeleteMixin):
@@ -284,8 +303,18 @@ class NotaPersonal(TenantBase, AuditTimestampsMixin, SoftDeleteMixin):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    area_id: Mapped[str | None] = mapped_column(String(64), default=None, nullable=True, index=True)
     titulo: Mapped[str] = mapped_column(String(160), nullable=False)
     contenido: Mapped[str] = mapped_column(Text, nullable=False)
+    fecha: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
+
+    @property
+    def autor_id(self) -> int:
+        return self.user_id
+
+    @autor_id.setter
+    def autor_id(self, value: int) -> None:
+        self.user_id = value
 
 
 class NotaEquipo(TenantBase, AuditTimestampsMixin, SoftDeleteMixin, TranslatableI18nMixin):
@@ -297,6 +326,103 @@ class NotaEquipo(TenantBase, AuditTimestampsMixin, SoftDeleteMixin, Translatable
     autor_user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     titulo: Mapped[str] = mapped_column(String(160), nullable=False)
     contenido: Mapped[str] = mapped_column(Text, nullable=False)
+    area_id: Mapped[str | None] = mapped_column(String(64), default=None, nullable=True, index=True)
+    categoria: Mapped[str] = mapped_column(String(40), default="general", nullable=False, index=True)
+    fecha: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
+    insumo_id: Mapped[str | None] = mapped_column(String(64), default=None, nullable=True, index=True)
+    receta_id: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True, index=True)
+    foto_url: Mapped[str | None] = mapped_column(String(500), default=None, nullable=True)
+
+    @property
+    def autor_id(self) -> int:
+        return self.autor_user_id
+
+    @autor_id.setter
+    def autor_id(self, value: int) -> None:
+        self.autor_user_id = value
+
+    menciones: Mapped[list[NotaEquipoMencion]] = relationship(
+        "NotaEquipoMencion",
+        back_populates="nota",
+        cascade="all, delete-orphan",
+    )
+    lecturas: Mapped[list[NotaEquipoLectura]] = relationship(
+        "NotaEquipoLectura",
+        back_populates="nota",
+        cascade="all, delete-orphan",
+    )
+
+
+class NotaEquipoMencion(TenantBase, AuditTimestampsMixin):
+    """Menciones de colaboradores en notas de equipo para notificaciones push/realtime."""
+
+    __tablename__ = "nota_equipo_menciones"
+    __table_args__ = (
+        UniqueConstraint("nota_id", "user_id", name="uq_nota_equipo_menciones_nota_user"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nota_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("notas_equipo.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+
+    nota: Mapped[NotaEquipo] = relationship("NotaEquipo", back_populates="menciones")
+
+
+class NotaEquipoLectura(TenantBase, AuditTimestampsMixin):
+    """Confirmación de lectura y auditoría de 'visto' de novedades compartidas."""
+
+    __tablename__ = "nota_equipo_lecturas"
+    __table_args__ = (
+        UniqueConstraint("nota_id", "user_id", name="uq_nota_equipo_lecturas_nota_user"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nota_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("notas_equipo.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    read_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=func.now(),
+        nullable=False,
+    )
+
+    nota: Mapped[NotaEquipo] = relationship("NotaEquipo", back_populates="lecturas")
+
+
+class PlantillaRutina(TenantBase, AuditTimestampsMixin, SoftDeleteMixin, TranslatableI18nMixin):
+    """Plantilla de rutinas periódicas y checklists (apertura, cierre, limpieza)."""
+
+    __tablename__ = "plantillas_rutinas"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nombre: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    descripcion: Mapped[str | None] = mapped_column(Text, default=None, nullable=True)
+    area_id: Mapped[str | None] = mapped_column(String(64), default=None, nullable=True, index=True)
+    tipo_rutina: Mapped[str] = mapped_column(
+        String(40),
+        default="APERTURA",
+        nullable=False,
+        index=True,
+    )  # APERTURA | CIERRE | LIMPIEZA | MANTENIMIENTO
+    frecuencia: Mapped[str] = mapped_column(
+        String(30),
+        default="DIARIA",
+        nullable=False,
+    )  # DIARIA | SEMANAL | MENSUAL
+    items_json: Mapped[Any] = mapped_column(JSONDictType, default=list, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    usuario_creador_id: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True, index=True)
+
+    tareas: Mapped[list[Tarea]] = relationship("Tarea", back_populates="plantilla")
 
 
 class Tarea(TenantBase, AuditTimestampsMixin, SoftDeleteMixin, TranslatableI18nMixin):
@@ -306,8 +432,52 @@ class Tarea(TenantBase, AuditTimestampsMixin, SoftDeleteMixin, TranslatableI18nM
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     titulo: Mapped[str] = mapped_column(String(180), nullable=False)
-    asignado_a_user_id: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True)
+    creador_user_id: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True, index=True)
+    asignado_a_user_id: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True, index=True)
+    area_id: Mapped[str | None] = mapped_column(String(64), default=None, nullable=True, index=True)
+    descripcion: Mapped[str | None] = mapped_column(Text, default=None, nullable=True)
+    estado: Mapped[str] = mapped_column(
+        String(30),
+        default="pendiente",
+        nullable=False,
+        index=True,
+    )  # 'pendiente', 'progreso', 'completada', 'incompleta'
+    urgencia: Mapped[str] = mapped_column(
+        String(20),
+        default="media",
+        nullable=False,
+        index=True,
+    )  # 'alta', 'media', 'baja'
+    fecha_limite: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None, nullable=True)
+    nota_incompleta: Mapped[str | None] = mapped_column(Text, default=None, nullable=True)
+    compra_id: Mapped[str | None] = mapped_column(String(64), default=None, nullable=True, index=True)
+    foto_evidencia_url: Mapped[str | None] = mapped_column(String(500), default=None, nullable=True)
+    plantilla_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("plantillas_rutinas.id", ondelete="SET NULL"),
+        default=None,
+        nullable=True,
+        index=True,
+    )
     completada: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    plantilla: Mapped[PlantillaRutina | None] = relationship("PlantillaRutina", back_populates="tareas")
+
+    @property
+    def creador_id(self) -> int | None:
+        return self.creador_user_id
+
+    @creador_id.setter
+    def creador_id(self, value: int | None) -> None:
+        self.creador_user_id = value
+
+    @property
+    def asignado_id(self) -> int | None:
+        return self.asignado_a_user_id
+
+    @asignado_id.setter
+    def asignado_id(self, value: int | None) -> None:
+        self.asignado_a_user_id = value
 
 
 # ==============================================================================

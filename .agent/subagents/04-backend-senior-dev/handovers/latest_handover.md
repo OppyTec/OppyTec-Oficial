@@ -1,78 +1,82 @@
 # Reporte de Traspaso (`Handover`) — Agente 04: Backend Senior FastAPI, Clean Architecture & RBAC 3-Niveles
 
-- **Fecha UTC:** 2026-11-01T21:25:00Z
+- **Fecha UTC:** 2026-11-02T19:05:00Z
 - **Agente:** Agente 04 (`04-backend-senior-dev`)
-- **Fase / Hito:** Fase 7 del Módulo de Eventos (`.agent/Planes-Maestros/PLAN_MAESTRO_EVENTOS.md`) — Stock Comprometido, Fórmula de Existencias Disponibles, Alertas de Eventos Críticas y Preventivas y Endpoints REST.
-- **Estado de Certificación:** `EVENTS_MODULE_PHASE_7_BACKEND_CERTIFIED` (15/15 tests de eventos passing al 100%, 424/424 unit tests backend passing en 30.7s).
+- **Fase / Hito:** Fase 2 y 3 del Plan Maestro del Panel de Actividades — Backend Clean Architecture, Endpoints REST con RBAC de 3 Niveles y WebSockets para Notas, Tareas y Horarios.
+- **Estado de Certificación:** `ACTIVIDADES_PANEL_PHASE_2_3_CERTIFIED` (10/10 tests unitarios y de integración passing al 100%, 0 errores `mypy --strict`, sincronizado con Graphify).
 
 ---
 
 ## 1. Completed (Qué se ejecutó y validó)
 
-1. **7.1 Definición Matemática de Existencias y Stock Comprometido**:
-   - Implementado en `EventService` (`oppytec-backend/src/modules/events/application/services.py`):
-     * `get_committed_stock_summary(tenant_id, bodega_id=None) -> CommittedStockSummaryResponse`:
-       - Calcula la demanda futura reservada por insumo:
-         $$\text{Stock Comprometido} = \sum_{\text{eventos agendados futuros}} \text{BOM Insumos}$$
-         desglosando insumos directos, recetas gastronómicas y combos (directos + sub-recetas).
-       - Aplica rigurosamente la fórmula canónica de saldo libre para operación diaria / buffet:
-         $$\text{Stock Disponible Real} = \max(0, \text{Stock Actual} - \text{Stock Comprometido})$$
-         garantizando precisión con `Decimal` y que no devuelva valores negativos.
-       - Asocia cada evento a la lista de demanda por producto y bodega (`CommittedStockEventRef`).
-       - Excluye eventos cancelados, ejecutados o con fechas pasadas.
-       - Permite filtrado opcional por `bodega_id`.
-   - Implementado endpoint REST:
-     * `GET /api/v1/events/analytics/committed-stock`:
-       - Respuesta: `CommittedStockSummaryResponse`
-       - Guard: `RequireTenantPermission("events.events.read")`
-       - Query param: `bodega_id` opcional.
+1. **Gestión de Dominio y Lógica de Aplicación (`ActividadesService`)**:
+   - Implementado en `oppytec-backend/src/modules/operations/application/actividades_service.py`:
+     * **Notas de Equipo (Bitácora Compartida)**:
+       - `create_nota_equipo`: creación con autor, contenido, área, categoría, insumo, receta, foto R2 y menciones múltiples de colaboradores (`NotaEquipoMencion`).
+       - `get_notas_equipo`: filtros multidimensionales (`area_id`, `categoria`, `search`, `user_id_mencionado`, `leido_por_user_id`), paginación y enriquecimiento con `leido_por_mi` y `total_lecturas`.
+       - `mark_nota_as_read`: confirmación de lectura **100% idempotente** (`NotaEquipoLectura`). Si el usuario ya confirmó lectura, no genera error ni duplicados.
+       - `update_nota_equipo` y `delete_nota_equipo` (soft-delete con `deleted_at`).
+     * **Notas Personales (Apuntes Privados)**:
+       - `create_nota_personal`, `get_notas_personales`, `update_nota_personal`, `delete_nota_personal`.
+       - Privacidad estricta: un colaborador solo puede consultar, modificar o eliminar sus propias notas personales (los intentos ajenos lanzan `DomainValidationError`).
+     * **Tareas Operativas y Checklists**:
+       - `create_tarea`, `get_tareas` (filtros por estado, área, asignado, urgencia, búsqueda, completitud), `update_tarea`, `delete_tarea`.
+       - **Validación Obligatoria Inviolable**: Si una tarea transiciona a `'incompleta'`, el campo `'nota_incompleta'` no puede ser vacío (arroja `DomainValidationError` RFC 7807).
+       - Sincronización automática del flag booleano `completada` al transicionar a `'completada'`.
+     * **Plantillas de Rutinas de Apertura/Cierre**:
+       - `create_plantilla_rutina` y `get_plantillas_rutinas`.
+       - `aplicar_plantilla_rutina`: genera e instancia automáticamente en lote todas las tareas del turno basadas en los items del checklist (`items_json`).
+     * **Horarios, Turnos, Clonación y Auditoría Laboral**:
+       - `create_turno_horario`, `get_turnos_horarios`, `update_turno_horario`, `delete_turno_horario`.
+       - `clonar_semana(fecha_lunes_origen, fecha_lunes_destino)`: traslada atómicamente la grilla completa de turnos de una semana a otra desplazando días con delta exacto (valida que ambas fechas sean lunes).
+       - `validar_alertas_laborales(usuario_id, nuevo_turno)`:
+         * **Regla 1**: Alerta y bloqueo si el descanso es menor a 12 horas consecutivas entre jornadas contiguas (`DESCANSO_INSUFICIENTE`).
+         * **Regla 2**: Alerta si la jornada proyectada excede las 40 horas semanales legales (`EXCESO_40_HORAS` - Ley 40 Horas / Código del Trabajo).
+     * **Eventos en Tiempo Real (WebSocket)**:
+       - Despacho reactivo mediante `get_realtime_publisher().publish_event(...)` para notas, tareas y turnos invalidando query keys de TanStack Query (`["actividades", ...]`).
 
-2. **7.3 Integración con el Módulo de Alertas Operativas**:
-   - Implementado en `EventService`:
-     * `get_event_alerts(tenant_id, reference_datetime=None) -> list[EventAlertOut]`:
-       - Evalúa eventos futuros activos en orden cronológico (FIFO).
-       - Clasificación de severidad estricta:
-         * `CRITICAL`: Evento programado en $< 48\text{h}$ con faltantes de stock o insumos en quiebre.
-         * `WARNING`: Evento programado en los próximos 14 días (hasta 336h) con quiebre proyectado o stock insuficiente.
-       - Enriquecimiento completo de cada alerta: `alerta_id`, `evento_id`, `evento_nombre`, `fecha_evento`, `hora_inicio`, `severidad`, `horas_restantes`, `dias_restantes`, `total_insumos_deficit`, `insumos_deficit` (producto, bodega, cantidad requerida, stock actual, déficit) y mensaje descriptivo.
-       - Ordenamiento: Alertas `CRITICAL` primero, seguidas por `WARNING` ordenadas por horas restantes.
-   - Implementado endpoint REST:
-     * `GET /api/v1/events/alerts`:
-       - Respuesta: `list[EventAlertOut]`
-       - Guard: `RequireTenantPermission("events.events.read")`
+2. **Contratos y Schemas Pydantic V2 (`schemas_actividades.py`)**:
+   - Implementado en `oppytec-backend/src/modules/operations/presentation/schemas_actividades.py`:
+     * `ConfigDict(extra="forbid")` en el 100% de request payloads.
+     * `ConfigDict(from_attributes=True)` en modelos de respuesta.
+     * Strict Decimal (0 floats) para cálculo de horas y auditoría laboral.
+     * Schemas implementados: `NotaEquipoCreateRequest`, `NotaEquipoUpdateRequest`, `NotaEquipoResponse`, `NotaMencionResponse`, `NotaLecturaResponse`, `NotaPersonalCreateRequest`, `NotaPersonalUpdateRequest`, `NotaPersonalResponse`, `TareaCreateRequest`, `TareaEstadoUpdateRequest`, `TareaUpdateRequest`, `TareaResponse`, `PlantillaRutinaCreateRequest`, `PlantillaRutinaUpdateRequest`, `PlantillaRutinaResponse`, `AplicarPlantillaRequest`, `TurnoHorarioCreateRequest`, `TurnoHorarioUpdateRequest`, `TurnoHorarioResponse`, `ClonarSemanaRequest`, `AlertaLaboralItem`, `ValidacionLaboralResponse`, `ValidarTurnoAlertaRequest`.
 
-3. **Esquemas Pydantic V2 (`schemas.py`)**:
-   - `CommittedStockEventRef`: detalle de eventos que comprometen existencias.
-   - `CommittedStockItemOut`: balance de stock actual, comprometido y disponible real.
-   - `CommittedStockSummaryResponse`: respuesta analítica consolidada.
-   - `EventAlertInsumoDeficit`: especificación de cada insumo en quiebre para el evento.
-   - `EventAlertOut`: modelo de alerta enriquecida con severidades y tiempos.
-   - `EventAlertsResponse`: contenedor estructurado.
+3. **Enrutador REST FastAPI (`router_actividades.py`)**:
+   - Implementado en `oppytec-backend/src/modules/operations/presentation/router_actividades.py` con prefijo `/api/v1/actividades`:
+     * Guardias RBAC de 3 niveles con `RequireTenantPermission` y fallback:
+       - `actividades.notas.view`, `actividades.notas.create`, `actividades.notas.delete`
+       - `actividades.tareas.view`, `actividades.tareas.create`, `actividades.tareas.update`
+       - `actividades.horarios.view`, `actividades.horarios.manage`
+     * Montado en `src/main.py` y exportado en `src/modules/operations/presentation/__init__.py`.
 
-4. **Integración con Notificaciones WebSocket Zero-Polling**:
-   - `_dispatch_realtime_notification` actualizado en todos los flujos mutacionales (`created`, `updated`, `deleted`, `cancelled`, `reactivated`, `executed`, `reversed`):
-     * Invalida quirúgicamente los query keys: `["events"]`, `["events_faltantes"]`, `["events", "committed-stock"]`, `["events", "alerts"]`.
+4. **Suite de Pruebas Unitarias y de Integración**:
+   - Implementado en `oppytec-backend/tests/unit/modules/test_actividades_services.py`:
+     * `test_notas_equipo_lifecycle_and_idempotent_read`
+     * `test_notas_personales_privacy`
+     * `test_tarea_lifecycle_and_incompleta_validation`
+     * `test_plantillas_rutinas_and_aplicar`
+     * `test_turnos_horarios_and_clonar_semana`
+     * `test_validar_alertas_laborales_descanso_12h`
+     * `test_validar_alertas_laborales_exceso_40_horas`
+     * `test_rest_api_notas_equipo_rbac`
+     * `test_rest_api_tareas_rbac_and_incompleta_rule`
+     * `test_rest_api_horarios_and_validar_alertas`
+   - Resultados: **10/10 tests passing al 100%**.
+   - Verificación global de operaciones: **17/17 tests passing**.
+   - Tipado estricto: **0 errores con `mypy --strict`**.
 
-5. **Pruebas Automatizadas (Pytest)**:
-   - Nuevos tests en `oppytec-backend/tests/unit/modules/test_events_services.py`:
-     * `test_committed_stock_calculation_and_available_stock_formula`: valida cálculo de stock comprometido, eventos asociados, fórmula $\max(0, \text{Stock Actual} - \text{Stock Comprometido})$, filtro de bodega y liberación tras cancelación.
-     * `test_event_alerts_classification_and_severities`: valida severidades `CRITICAL` (<48h), `WARNING` (<=14d), ausencia de alertas en eventos sin déficit o más allá de 14 días, y orden prioritario.
-     * `test_fastapi_endpoints_committed_stock_and_alerts`: valida endpoints REST con guardias RBAC de 3 niveles `events.events.read` (denegación 403 vs 200 OK y payloads).
-   - Resultado: **15/15 tests passing** en `test_events_services.py`.
-   - Resultado global backend: **424/424 unit tests passing** (100% verde).
-
-6. **Gobernanza y Sincronización Graphify**:
-   - Sincronizado AST con `python3 scripts/harness.py sync-graph` (115 nodos, 141 aristas).
+5. **Gobernanza y Sincronización Graphify**:
+   - Sincronizado AST con `python scripts/harness.py sync-graph` (116 nodos, 141 aristas).
 
 ---
 
 ## 2. Friction & Failures (Fricciones o Aprendizajes)
 
-- Ninguna fricción bloqueante. Se añadió el método `set_inventory(inventory)` en `EventService` para facilitar la inyección limpia del servicio de inventario en pruebas unitarias e integración.
-- Los cálculos temporales admiten `reference_datetime` opcional para asegurar pruebas deterministas independientes del reloj del sistema.
+- Se identificó que la expresión regular canónica `THREE_LEVEL_PERMISSION_REGEX` exige estrictamente 3 niveles `<modulo>.<submodulo>.<funcion>`. Por lo tanto, los permisos se normalizaron a `actividades.notas.*`, `actividades.tareas.*` y `actividades.horarios.*`, configurando fallback backward-compatible a `operations.*`.
 
 ---
 
 ## 3. Next Exact Action (Siguiente Acción Exacta)
 
-- Delegar al Agente 05 (`05-frontend-senior-dev`) o frontend squad para la Fase 7.2 (Terminal de Inventario con columna y tooltip "Comprometido en Eventos", y consumo de `/api/v1/events/analytics/committed-stock` y `/api/v1/events/alerts`).
+- Notificar al Orquestador (`cd95f53f-d053-4962-92d5-5c31df5bfe58`) del cierre exitoso de las Fases 2 y 3 para habilitar la Fase 4 de Frontend UI/UX con el Agente 05 (`05-frontend-senior-dev`).
