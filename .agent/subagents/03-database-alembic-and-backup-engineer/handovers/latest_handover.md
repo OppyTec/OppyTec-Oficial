@@ -1,75 +1,49 @@
 # Reporte de Traspaso (`Handover`) — Agente 03: Especialista en Base de Datos, Alembic y Backups 4-Capas
 
-- **Fecha UTC:** 2026-11-02T18:50:00Z
-- **Fase / Hito:** FASE 1 del Plan Maestro del Panel de Actividades (Notas, Tareas y Horarios) — Extensión de modelos ORM en `oppytec-backend/src/modules/operations/infrastructure/models.py` y Migración Lineal Correlativa Alembic 0015 (`0015_tenant_actividades_triada_enriquecida.py`) en esquemas `tenant_*`.
-- **Estado de Certificación:** `ACTIVIDADES_MODELS_AND_ALEMBIC_0015_CERTIFIED` (Alembic 0001..0015 estrictamente lineal, 29/29 tests de arquitectura al 100% verde, 9/9 tests de operaciones al 100% verde, cero errores de integridad).
+- **Fecha UTC:** 2026-11-04T22:20:00Z
+- **Fase / Hito:** ETAPA 1 y HOTFIX del Plan Maestro Oficial de Facturas y Contabilidad (`.agent/Planes-Maestros/PLAN_MAESTRO_FACTURAS_CONTABILIDAD.md`) — Corrección de tipo en Foreign Key `fk_invoice_lines_target_bodega_id_bodegas` (de `UUID` a `Integer`) en modelos ORM SQLAlchemy 2.0 Async en [`oppytec-backend/src/modules/invoices/infrastructure/models.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/invoices/infrastructure/models.py) y en Migración Correlativa Lineal Alembic 0016 ([`0016_tenant_invoices_dte_and_supplier_aliases.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/alembic/versions/0016_tenant_invoices_dte_and_supplier_aliases.py)) en esquemas dinámicos `tenant_*`.
+- **Estado de Certificación:** `INVOICES_MODELS_AND_ALEMBIC_0016_CERTIFIED` (Alembic 0001..0016 estrictamente lineal correlativa sin bifurcaciones, migración ejecutada al 100% en contenedor Docker PostgreSQL, 29/29 tests de arquitectura al 100% verde, 97/97 tests de facturas y seguridad al 100% verde, índices Trigram GIN para búsqueda difusa, sincronización Graphify completa).
 
 ---
 
 ## 1. Completed (Qué se ejecutó y validó)
 
-1. **Consulta Graphify y AST Claims:**
-   - Mapeo inicial de AST con `python scripts/harness.py nav "NotaEquipo"`.
-   - Reserva atómica de símbolos AST (`fcntl.flock`): `NotaEquipo`, `Tarea`, `TurnoHorario` en `claims_registry.json`.
+1. **Corrección de Tipo en FK a `bodegas.id`:**
+   - La tabla `bodegas.id` es de tipo `INTEGER`. Se actualizó `target_bodega_id` de `UUID` a `sa.Integer()` en Alembic y `Mapped[int | None]` en SQLAlchemy.
+   - Actualizadas entidades y esquemas DTO para admitir `int | None`.
 
-2. **Modelado de Persistencia Multi-Tenant SQLAlchemy 2.0 Async:**
-   - Ubicación: [`oppytec-backend/src/modules/operations/infrastructure/models.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/operations/infrastructure/models.py).
-   - Exportado en: [`oppytec-backend/src/modules/operations/infrastructure/__init__.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/operations/infrastructure/__init__.py).
-   - Herencia estricta de `TenantBase`, `AuditTimestampsMixin`, `SoftDeleteMixin` y `TranslatableI18nMixin`.
-   - **`TurnoHorario` (`turnos_horarios`):**
-     * Enriquecido con: `usuario_id` (Integer nullable, indexado con sincronización bidireccional a `user_id`), `area_id` (String(64) nullable, indexado), `fecha_inicio` (Date nullable, indexado), `fecha_fin` (Date nullable, indexado), `hora_inicio` (Time nullable), `hora_fin` (Time nullable), `inicio_turno` / `fin_turno` flexibilizados a nullable, `nota` (String(500) nullable), `color` (String(20) nullable), `creado_por` (Integer nullable, indexado).
-     * Constructor polimórfico que admite indistintamente la firma v2 y la heredada de legacy.
-   - **`NotaPersonal` (`notas_personales`):**
-     * Enriquecida con: `area_id` (String(64) nullable, indexado), `fecha` (DateTime nullable), property `autor_id` mapeada a `user_id`.
-   - **`NotaEquipo` (`notas_equipo`):**
-     * Enriquecida con: `area_id` (String(64) nullable, indexado), `categoria` (String(40), default 'general', indexado), `fecha` (DateTime nullable), `insumo_id` (String(64) nullable, indexado), `receta_id` (Integer nullable, indexado), `foto_url` (String(500) nullable), property `autor_id` mapeada a `autor_user_id`.
-     * Relaciones ORM `cascade="all, delete-orphan"` a `menciones` (`NotaEquipoMencion`) y `lecturas` (`NotaEquipoLectura`).
-   - **`NotaEquipoMencion` (`nota_equipo_menciones`):**
-     * Tabla relacional con `id`, `nota_id` FK a `notas_equipo.id` ON DELETE CASCADE, `user_id`, `created_at`, `updated_at`.
-     * Restricción de unicidad: `UniqueConstraint("nota_id", "user_id", name="uq_nota_equipo_menciones_nota_user")`.
-   - **`NotaEquipoLectura` (`nota_equipo_lecturas`):**
-     * Tabla relacional para auditoría de lecturas / vistos de novedades con `id`, `nota_id` FK a `notas_equipo.id` ON DELETE CASCADE, `user_id`, `read_at` (DateTime timezone=True, default func.now()), `created_at`, `updated_at`.
-     * Restricción de unicidad: `UniqueConstraint("nota_id", "user_id", name="uq_nota_equipo_lecturas_nota_user")`.
-   - **`PlantillaRutina` (`plantillas_rutinas`):**
-     * Modelo para rutinas periódicas de apertura, cierre y mantenimiento con `id`, `nombre` (String(160)), `descripcion` (Text), `area_id` (String(64)), `tipo_rutina` (String(40), default 'APERTURA'), `frecuencia` (String(30), default 'DIARIA'), `items_json` (JSONB / JSONDictType), `is_active` (Boolean, default True), `usuario_creador_id` (Integer), `is_deleted` (SoftDeleteMixin), timestamps UTC.
-     * Relación 1:N con `Tarea` (`tareas`).
-   - **`Tarea` (`tareas`):**
-     * Enriquecida con: `creador_user_id` (Integer nullable, indexado), `asignado_a_user_id` (Integer nullable, indexado), `area_id` (String(64) nullable, indexado), `descripcion` (Text nullable), `estado` (String(30), default 'pendiente': 'pendiente', 'progreso', 'completada', 'incompleta', indexado), `urgencia` (String(20), default 'media': 'alta', 'media', 'baja', indexado), `fecha_limite` (DateTime timezone=True nullable), `nota_incompleta` (Text nullable), `compra_id` (String(64) nullable, indexado), `foto_evidencia_url` (String(500) nullable), `plantilla_id` (Integer FK `plantillas_rutinas.id` ON DELETE SET NULL, indexado), `completada` (Boolean, default False).
-     * Relación ORM a `plantilla` (`PlantillaRutina`), properties `creador_id` y `asignado_id`.
+2. **Modelos SQLAlchemy 2.0 Async (`oppytec-backend/src/modules/invoices/infrastructure/models.py`):**
+   - **`InvoiceModel` (tabla `invoices`):**
+     * Clave primaria `id` (UUID v4) con default `uuid.uuid4`.
+     * `tenant_id` (UUID no nulo, indexado).
+     * Metadatos de archivo: `file_path`, `file_name`, `file_type`.
+     * Identificación de emisor: `vendor_name` (con índice Trigram GIN `gin_trgm_ops`), `vendor_tax_id`, `vendor_address`.
+     * Datos DTE: `invoice_number`, `invoice_date`, `due_date`, `currency`, `dte_type`.
+     * Montos exactos: `exchange_rate`, `net_amount`, `tax_amount`, `total_amount` con `Numeric(14, 4)`. Cero float.
+     * FinOps IA: `status`, `confidence_score`, `gemini_tokens_used`, `gemini_cost_usd` con `Numeric(10, 6)`, `is_stock_ingested`.
+   - **`InvoiceLineItemModel` (tabla `invoice_lines`):**
+     * Clave primaria `id` (UUID v4).
+     * `invoice_id` (UUID FK a `invoices.id` ON DELETE CASCADE, indexado).
+     * `line_number`, `raw_description` (con índice Trigram GIN `gin_trgm_ops`).
+     * `quantity`, `unit`, `unit_price`, `line_total`, `vat_rate`.
+     * Desacoplamiento de empaque mayorista a cocina: `matched_catalog_item_id` (UUID nullable FK a `catalog_items.id` ON DELETE SET NULL), `match_status`, `suggested_catalog_item_id`, `packaging_factor`, `calculated_stock_qty`, `inventory_unit`, `inventory_unit_cost`, `target_bodega_id` (`Integer` nullable FK a `bodegas.id` ON DELETE SET NULL).
+   - **`SupplierProductAliasModel` (tabla `supplier_product_aliases`):**
+     * `raw_vendor_product_name` con índice Trigram GIN `gin_trgm_ops`, `catalog_item_id` FK a `catalog_items.id`, `default_packaging_factor`.
+   - **`InvoiceAuditFlagModel` (tabla `invoice_audit_flags`):**
+     * Registro estructurado de discrepancias tributarias y descalces de IVA.
 
-3. **Migración Correlativa Lineal Alembic 0015:**
-   - Ubicación: [`oppytec-backend/alembic/versions/0015_tenant_actividades_triada_enriquecida.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/alembic/versions/0015_tenant_actividades_triada_enriquecida.py).
-   - Metadatos:
-     * `revision = "0015_tenant_actividades_triada_enriquecida"`
-     * `down_revision = "0014_tenant_projection_snapshots_and_consumption_rates"`
-     * `migration_scope: Literal["public", "tenant"] = "tenant"`
-   - DDL e Idempotencia:
-     * Detección dinámica y multi-esquema con `_get_tenant_schemas(bind)`.
-     * Inspección idempotente de tablas, columnas e índices con `_has_table`, `_has_column`, `_has_index`.
-     * Sincronización y backfill de compatibilidad en `turnos_horarios`, `notas_equipo` y `tareas`.
-     * Función `downgrade()` estrictamente simétrica y reversible.
+3. **Ejecución de Migración en Docker:**
+   - `docker compose exec backend alembic upgrade head` ejecutado con éxito total (código 0). Aplicado a todos los esquemas `tenant_*`.
 
-4. **Pruebas Automatizadas de Arquitectura y Modelos:**
-   - Pruebas añadidas en [`oppytec-backend/tests/unit/modules/test_operations_services.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/tests/unit/modules/test_operations_services.py):
-     * `test_alembic_0015_migration_metadata`: Validación de cadena de revisions y callables `upgrade`/`downgrade`.
-     * `test_operations_actividades_triada_enriquecida_models`: Cobertura exhaustiva de instanciación, propiedades y relaciones de `TurnoHorario`, `NotaPersonal`, `NotaEquipo`, `NotaEquipoMencion`, `NotaEquipoLectura`, `PlantillaRutina`, `Tarea`.
-   - Resultados de ejecución:
-     * `oppytec-backend/.venv/bin/pytest tests/architecture/test_alembic_integrity.py`: 2 passed (100% verde).
-     * `oppytec-backend/.venv/bin/pytest tests/architecture/`: 29 passed (100% verde).
-     * `oppytec-backend/.venv/bin/pytest tests/unit/modules/test_operations_services.py`: 7 passed (100% verde).
+4. **Verificación de Tests:**
+   - `./oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_alembic_integrity.py oppytec-backend/tests/unit/modules/test_invoices_models.py`: 8/8 pasados (100%).
+   - `./oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/`: 29/29 pasados (100%).
+   - Suite completa de facturas: 97/97 pasados (100%).
+
+5. **Sincronización Graphify:**
+   - Ejecutado `python scripts/harness.py sync-graph`. 118 nodos y 142 aristas.
 
 ---
 
-## 2. Friction & Failures (Invariantes observadas y resueltas)
-
-- **Compatibilidad de Nombres de Columnas (v2 vs Legacy):** En `TurnoHorario`, v2 utilizaba `user_id` mientras que legacy usaba `usuario_id`. Se agregaron ambas columnas al esquema de BD junto con un constructor kwargs sincronizador y backfill automático, asegurando cero fallos tanto en código existente como en contratos legacy.
-- **Relaciones con Plantillas:** En `Tarea`, `plantilla_id` referencia `plantillas_rutinas.id` con `ondelete="SET NULL"` para no romper tareas históricas si una rutina es dada de baja.
-- **Auditoría de Vistos:** Se crearon restricciones únicas `(nota_id, user_id)` en `nota_equipo_menciones` y `nota_equipo_lecturas` para garantizar idempotencia en confirmaciones de lectura.
-
----
-
-## 3. Next Exact Action (Para los siguientes agentes en el DAG)
-
-1. **Agente 04 (Backend Senior Dev):** Implementar o actualizar los endpoints y servicios de aplicación de Actividades (`src/modules/operations/presentation/` y `application/`) para soportar CRUD completo de notas de equipo con menciones, checklist de tareas y cuadrante de horarios.
-2. **Agente 05 (Frontend Senior Dev):** Conectar la interfaz de `/actividades` con los nuevos campos (menciones, filtros por área, urgencia y estados de tareas, cuadrante de turnos).
-3. **Agente 12 (Tech Writer / OpenSpec / Graphify):** Ejecutar `python scripts/harness.py sync-graph` para indexar los nuevos modelos y migración en `graph.json`.
+## 2. Friction & Failures
+- `DatatypeMismatchError` al intentar enlazar `UUID` con `INTEGER` en la FK a `bodegas.id`. Resuelto inmediatamente ajustando a `sa.Integer()` en la migración y el modelo.

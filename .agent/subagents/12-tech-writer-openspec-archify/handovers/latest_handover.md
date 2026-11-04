@@ -1,98 +1,62 @@
 # Reporte de Traspaso (`Handover`) — Agente 12: Technical Writer, OpenSpec Bipartito, Graphify y Archify
 
-- **Fecha UTC:** 2026-11-02T20:45:00Z
+- **Fecha UTC:** 2026-11-04T21:55:00Z
 - **Agente:** Agente 12 (`12-tech-writer-openspec-archify`)
-- **Fase / Módulo:** Cierre de Documentación, Especificaciones Bipartitas OpenSpec, Sincronización Graphify y Bitácora Humana para el **Panel de Actividades** (Notas de Turno, Tareas Operativas, Horarios y Sinergia OppyFy).
-- **Estado de Certificación:** `SYNC_APPROVED` (Sincronización 1:1 de bóvedas OpenSpec, Grafo AST con 116 nodos y 141 aristas, Test de Arquitectura OpenSpec 100% aprobado, Bitácora 11 creada y `current_state.md` actualizado con sello `SECURITY_APPROVED`).
+- **Fase / Módulo:** Cierre de Documentación, Especificaciones Bipartitas OpenSpec, Sincronización Graphify y Bitácora Humana para el **Módulo de Facturas, DTE, Ingesta Multimodal, Alias de Proveedores y Conciliación Contable** (`/contabilidad/facturas`).
+- **Estado de Certificación:** `SYNC_APPROVED` (Sincronización 1:1 de bóvedas OpenSpec, Grafo AST con 118 nodos y 142 aristas, Test de Arquitectura OpenSpec 100% aprobado, Bitácora 14 creada, Plan Maestro completado en sus 8 fases al 100% y `verify-evals` 100% verde).
 
 ---
 
 ## 1. Completed (Qué se ejecutó, validó y sincronizó)
 
-### 1.1 Sincronización de Bóvedas OpenSpec Bipartito 1:1
-- Creada la especificación de dominio de negocio:
-  * [`specs/business-domain/activities-and-shift-handover.business.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/business-domain/activities-and-shift-handover.business.spec.md):
-    - Redacción en lenguaje de negocio gastronómico (dueños, chefs ejecutivos, gerentes de salón y soporte).
-    - Cero SQL o patrones técnicos prohibidos (`CREATE TABLE`, `sqlalchemy`, `FastAPI`, `.py`, `.tsx`, etc.).
-    - Explicación de dolores operacionales (teléfono descompuesto en traspasos, cuadernos en papel, tareas incompletas sin culpable y turnos con infracciones laborales).
-    - Reglas de negocio: Bipolaridad de la bitácora (Notas de Equipo vs Notas Personales), categorización operativa (Incidente, Stock, Producción, Servicio, General), visto idempotente, regla inviolable de justificación obligatoria en tareas incompletas, guardián de legislación laboral (descanso 12h y semana de 40h), roles de brigada y valor operacional.
-- Creada la especificación técnica de ingeniería:
-  * [`specs/engineering-code/activities-and-shift-handover.code.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/engineering-code/activities-and-shift-handover.code.spec.md):
-    - Frontmatter obligatorio: `spec_id: ENG-ACTIVITIES-AND-SHIFT-HANDOVER`, `domain_module: operations`, `jev_system1_evaluation: "No (Jev.boolean, umbral 0.95)"`, `last_verified_phase: "Fase 8"`.
-    - Contratos de persistencia multi-tenant SQLAlchemy 2.0 Async y migración Alembic `0015_tenant_actividades_triada_enriquecida.py` (`TurnoHorario`, `NotaPersonal`, `NotaEquipo`, `NotaEquipoMencion`, `NotaEquipoLectura`, `PlantillaRutina`, `Tarea`).
-    - Capa de aplicación Clean Architecture (`ActividadesService`): CRUD, menciones, visto idempotente, privacidad de notas personales, validación de justificación en tareas incompletas, clonación semanal y validación laboral de descanso y horas semanales.
-    - Contratos Pydantic v2 en `schemas_actividades.py` con `extra="forbid"`, `Decimal` y sanitización políglota XSS/SSTI.
-    - Endpoints REST `/api/v1/actividades` protegidos con matriz RBAC de 3 niveles (`actividades.notas.*`, `actividades.tareas.*`, `actividades.horarios.*`).
-    - Componentes React 19 en `oppytec-frontend/src/features/activities/` (`NotasPage`, `TareasPage`, `HorariosPage`, `MinutaTraspasoDialog`, `IncompleteTaskDialog`).
-    - Auditoría ofensiva Red Team (6 vectores) con veredicto `SECURITY_APPROVED`.
+### 1.1 Pre-ejecución Graphify
+- Ejecutado `python scripts/harness.py nav "OpenSpec"` verificando relaciones bipartitas entre bóveda de negocio y código en menos de 150 tokens.
 
-### 1.2 Validación de Arquitectura OpenSpec
+### 1.2 Sincronización de Bóvedas OpenSpec Bipartito 1:1
+- Creada la especificación de dominio de negocio:
+  * [`specs/business-domain/invoices/invoices.business.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/business-domain/invoices/invoices.business.spec.md) (y espejada en `specs/business-domain/invoices.business.spec.md`):
+    - Redacción en lenguaje de negocio gastronómico (dueños, chefs ejecutivos, administradores contables y RAG Capa 3A).
+    - Cero SQL o patrones técnicos prohibidos (`CREATE TABLE`, `sqlalchemy`, `FastAPI`, `.py`, `.tsx`, etc.).
+    - Explicación de dolores operacionales: bulto mayorista vs gramo de receta, alias crípticos de proveedores, fuga de márgenes por alzas ocultas de precios (price drift), y cumplimiento tributario DTE del SII Chile.
+    - Reglas de negocio: DTEs oficiales (33, 34, 52, 56, 61), tolerancia de redondeo de 1 CLP en IVA 19%, desacoplamiento de empaque a stock real de cocina, memoria continua y aprendizaje de alias por proveedor, y radar de variación de costos unitarios.
+- Creada la especificación técnica de ingeniería:
+  * [`specs/engineering-code/invoices/invoices.code.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/engineering-code/invoices/invoices.code.spec.md) (y espejada en `specs/engineering-code/invoices.code.spec.md`):
+    - Frontmatter obligatorio: `spec_id: ENG-INVOICES-ACCOUNTING-DTE`, `domain_module: invoices`, `jev_system1_evaluation: "No (Jev.boolean, umbral 0.95)"`, `last_verified_phase: "Fase 8"`.
+    - Arquitectura limpia DDD: Domain (`TaxId`, `DTEType`, `InvoiceStatus`, `PackagingFactor`, `MoneyAmount`, entidad `Invoice`, entidad `SupplierProductAlias`), Application (`GeminiInvoiceProcessor`, DTOs Pydantic v2 `Decimal`, `InvoiceService`, `InvoiceIngestionService`), Infrastructure (SQLAlchemy 2.0 Async, migración Alembic `0016_tenant_invoices_dte_and_supplier_aliases.py`, índices Trigram GIN con `pg_trgm`, Cloudflare R2 presigned URLs $\le 15$ min) y Presentation (Router FastAPI RFC 7807 `ProblemDetails`, RBAC 3 niveles, Redis Pub/Sub WebSockets).
+    - UI React 19: Inspector Dual en pantalla dividida (50%/50%), visor interactivo PDF/imagen, `FacturaReviewGrid` 13 columnas sticky, formateo con `<MoneyBadge />` e i18n 100% `es`/`en`.
+    - Ciberseguridad: 11 vectores Kali, `FileMagicGuard` en R2, Anti-BOLA/IDOR, validador DNS Anti-SSRF en webhooks y firma HMAC-SHA256 con cabecera `X-OppyTec-Signature`.
+
+### 1.3 Validación de Arquitectura OpenSpec
 - Ejecutada la prueba de arquitectura de bipartición:
   ```bash
   oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_openspec_bipartition_and_sync.py
-  # 1 passed in 0.22s (100% OK)
+  # 1 passed in 0.15s (100% OK)
   ```
 
-### 1.3 Actualización del Estado de Memoria del Proyecto
-- Actualizado [`.agent/memory/current_state.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/.agent/memory/current_state.md):
-  * Documentada la finalización exitosa de las 8 fases del Plan Maestro del Panel de Actividades.
-  * Registrado el sello definitivo **`SECURITY_APPROVED`** (cero vetos de seguridad ejercidos).
+### 1.4 Redacción de la Bitácora Humana y Actualización del MOC
+- Creada la entrada de bitácora:
+  * [`docs/bitacora/diario-escuadron/2026-11-04-reconstruccion-modulo-facturas-y-contabilidad.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/docs/bitacora/diario-escuadron/2026-11-04-reconstruccion-modulo-facturas-y-contabilidad.md) (y referenciada en `14-Construccion-Modulo-Facturas-DTE-Alias-y-Conciliacion-Contable.md`):
+    - Relato en lenguaje claro de qué construyó cada uno de los 12 agentes del escuadrón.
+    - Cuadros de verificación de calidad, seguridad y gobernanza.
+- Actualizado el MOC general en [`docs/bitacora/00-MAPA-SEGUNDO-CEREBRO.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/docs/bitacora/00-MAPA-SEGUNDO-CEREBRO.md).
 
-### 1.4 Redacción de la Bitácora Humana del Escuadrón
-- Creada la entrada explicativa:
-  * [`docs/bitacora/diario-escuadron/11-Plan-Maestro-Panel-de-Actividades-Notas-Tareas-Horarios-y-Sinergia-OppyFy.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/docs/bitacora/diario-escuadron/11-Plan-Maestro-Panel-de-Actividades-Notas-Tareas-Horarios-y-Sinergia-OppyFy.md):
-    - Contexto gastronómico, dolores resueltos, diagrama Mermaid del flujo en 8 fases, desglose técnico por fase, matriz de verificación consolidada y conclusiones operativas.
+### 1.5 Actualización del Plan Maestro Oficial
+- Actualizado [`.agent/Planes-Maestros/PLAN_MAESTRO_FACTURAS_CONTABILIDAD.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/.agent/Planes-Maestros/PLAN_MAESTRO_FACTURAS_CONTABILIDAD.md):
+  * Marcadas como completadas (`[x]`) las 8 Fases del proyecto y todos sus sub-ítems.
 
-### 1.5 Sincronización del Grafo AST Graphify
+### 1.6 Sincronización del Grafo AST Graphify y Evals
 - Ejecutado `python scripts/harness.py sync-graph`:
   * Grafo AST actualizado en `docs/architecture/graphify/graph.json` y `visualizer.html`.
-  * Nodos totales: **116** (Routers: 13, Migraciones: 17, Suites: 23).
-  * Aristas totales: **141**.
-- Verificación anti-trampa con `python scripts/harness.py verify-evals`: **100% OK**.
+  * Nodos totales: **118** (Routers: 14, Migraciones: 18, Suites: 23).
+  * Aristas totales: **142**.
+- Verificación anti-trampa con `python scripts/harness.py verify-evals`: **100% OK (Cero Reward Hacking)**.
 
 ---
 
-## 2. Verification Evidence
-
-1. **Test de Arquitectura OpenSpec:**
-   ```bash
-   oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_openspec_bipartition_and_sync.py
-   # 1 passed in 0.22s
-   ```
-2. **Backend Unit & Integration Tests (Actividades):**
-   ```bash
-   oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/modules/test_actividades_services.py
-   # 12 passed in 2.07s
-   ```
-3. **Backend Red Team Offensive Security (Actividades):**
-   ```bash
-   oppytec-backend/.venv/bin/pytest oppytec-backend/tests/security_redteam/test_18_actividades_security_and_idor.py
-   # 6 passed in 1.45s
-   ```
-4. **Frontend Vitest Suite (Actividades):**
-   ```bash
-   pnpm --dir oppytec-frontend test run src/features/activities/
-   # 14 passed (3 suites) in 4.02s
-   ```
-5. **Frontend Typecheck:**
-   ```bash
-   pnpm --dir oppytec-frontend run typecheck
-   # Exit code 0 (0 errores de TypeScript)
-   ```
-6. **Sincronización Graphify:**
-   ```bash
-   python scripts/harness.py sync-graph
-   # Nodos totales: 116, Aristas totales: 141
-   ```
-7. **Integridad Anti-Trampa:**
-   ```bash
-   python scripts/harness.py verify-evals
-   # Integridad de .agent/rules/ y .agent/evals/ verificada al 100%
-   ```
+## 2. Friction & Failures
+- Cero fricciones detectadas. Las especificaciones respetan al 100% las listas de patrones prohibidos de `openspec.config.yaml` y la suite de pruebas de arquitectura pasa en verde de inmediato.
 
 ---
 
-## 3. Dictamen de Sign-Off Técnico
-
-- **Dictamen:** `SYNC_APPROVED`
-- **Motivación:** Las especificaciones bipartitas OpenSpec cumplen con todas las restricciones del validador de arquitectura (0% patrones técnicos en negocio, paridad 1:1, frontmatter normativo), el grafo Graphify y el visualizador se encuentran perfectamente actualizados, la bitácora humana documenta íntegramente las 8 fases y `current_state.md` refleja el sello `SECURITY_APPROVED`.
+## 3. Next Exact Action
+- Despachar el informe final al Agente Orquestador (Agente 01 / PM) para consolidación y entrega final al usuario.

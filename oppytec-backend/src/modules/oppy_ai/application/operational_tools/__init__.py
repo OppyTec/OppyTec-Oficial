@@ -18,6 +18,10 @@ from src.modules.oppy_ai.application.operational_tools.inventory_tools import (
     get_expiring_batches_fefo,
     get_stock_health_and_reorder_alerts,
 )
+from src.modules.oppy_ai.application.operational_tools.invoice_tools import (
+    get_supplier_price_drift_alerts,
+    query_invoices_summary,
+)
 from src.modules.oppy_ai.application.operational_tools.procurement_tools import (
     build_optimal_purchase_order_draft,
     evaluate_supplier_lead_times_and_price_drift,
@@ -44,6 +48,8 @@ __all__ = [
     "get_sales_and_food_cost_variance",
     "get_stock_health_and_reorder_alerts",
     "get_stockout_projections_and_autonomy",
+    "get_supplier_price_drift_alerts",
+    "query_invoices_summary",
     "query_upcoming_events",
     "render_canvas_chart",
     "render_canvas_table",

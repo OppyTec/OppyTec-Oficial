@@ -581,6 +581,34 @@
       "claimed_by": "06-ai-oppyfy-and-jev-engineer",
       "intent": "Minuta de traspaso inteligente con OppyFy",
       "claimed_at": "2026-11-02T19:40:57.923703+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/invoices/domain/entities.py",
+      "symbol_path": "Invoice",
+      "claimed_by": "02-software-architect",
+      "intent": "Create DDD domain models for invoices module",
+      "claimed_at": "2026-11-04T19:31:03.591730+00:00"
+    },
+    {
+      "file": "oppytec-frontend/src/features/invoices/types.ts",
+      "symbol_path": "InvoicesFeature",
+      "claimed_by": "05-frontend-senior-dev",
+      "intent": "Build invoices frontend feature",
+      "claimed_at": "2026-11-04T20:12:45.921955+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/core/observability.py",
+      "symbol_path": "trace_span",
+      "claimed_by": "08-environments-and-observability-engineer",
+      "intent": "Instrumentar metricas FinOps, structlog y spans para facturas",
+      "claimed_at": "2026-11-04T21:19:59.499517+00:00"
+    },
+    {
+      "file": "oppytec-backend/src/modules/invoices/application/services.py",
+      "symbol_path": "InvoiceService",
+      "claimed_by": "08-environments-and-observability-engineer",
+      "intent": "Instrumentar spans distribuidos y telemetria FinOps",
+      "claimed_at": "2026-11-04T21:20:03.432027+00:00"
     }
   ]
 }

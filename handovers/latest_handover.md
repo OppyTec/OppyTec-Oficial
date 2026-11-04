@@ -1,57 +1,59 @@
-# Reporte de Traspaso (`Handover`) — Agente 09: QA Parity & Test Engineer
+# Reporte de Traspaso (`Handover`) — Agente 03: Especialista en Base de Datos, Alembic y Backups 4-Capas
 
-- **Fecha UTC:** 2026-11-02T01:05:00Z
-- **Agente:** Agente 09 (`09-qa-parity-and-test-engineer`)
-- **Fase / Módulo:** FASE 8 del Módulo de Eventos — Certificación de Calidad 5D, Paridad Matemática con Legacy, Ejecución de Suites Integrales y Control de Cero Regresiones
-- **Suites Auditadas:**
-  * Backend: `tests/unit/modules/test_events_domain_and_models.py`, `tests/unit/modules/test_events_services.py`, `tests/unit/modules/test_events_observability.py`, `tests/unit/modules/test_oppyfy_events_tools.py`
-  * Frontend: `oppytec-frontend/src/features/events/` (`hooks.test.ts`, `EventsPage.test.tsx`, `EventsI18nAndFx.test.tsx`)
-  * Suites Completas: `oppytec-backend/tests/unit/`, `oppytec-frontend/src/**/*.test.{ts,tsx}`
-- **Dictamen Final de QA:** **`QA_APPROVED`** ✅ (100% Conforme — Cero Regresiones)
+- **Fecha UTC:** 2026-11-04T22:20:00Z
+- **Agente:** Agente 03 (`03-database-alembic-and-backup-engineer`)
+- **Fase / Módulo:** Hotfix de Compatibilidad de Tipos en Foreign Key `fk_invoice_lines_target_bodega_id_bodegas` y Validación de Migración Alembic `0016_tenant_invoices_dte_and_supplier_aliases.py`.
+- **Estado de Certificación:** `APPLIED_AND_VERIFIED` (`alembic upgrade head` 100% exitoso en Docker, 8/8 tests de arquitectura Alembic/Modelos en verde, 97/97 tests de Invoices en verde, Graphify sincronizado).
 
 ---
 
-## 1. Completed (Qué se auditó, certificó y reparó)
+## 1. Completed (Qué se ejecutó, validó y sincronizó)
 
-1. **Ejecución y Certificación de la Suite Integral de Eventos (Backend)**:
-   - `tests/unit/modules/test_events_domain_and_models.py`: 12/12 PASSED (DDD, Agregado Evento, TimeSlots anti-overbooking, Aforos Salon, Decimal VAT 19%).
-   - `tests/unit/modules/test_events_services.py`: 15/15 PASSED (CRUD salones, agendamiento seguro, Kardex BOM recetas/combos, reversión compensatoria PPP, analítica predictiva de faltantes, stock comprometido y endpoints FastAPI RFC 7807).
-   - `tests/unit/modules/test_events_observability.py`: 8/8 PASSED (OpenTelemetry spans `events.*`, métricas de latencia SLA y enmascaramiento estricto de PII).
-   - `tests/unit/modules/test_oppyfy_events_tools.py`: 5/5 PASSED (Herramientas operativas de IA OppyFy para eventos y salones).
-   - **Resultado Backend Eventos: 40/40 PASSED (100%)** en 1.18s.
+### 1.1 Corrección del Error de Incompatibilidad de Tipos
+- **Causa raíz identificada:** La tabla existente `bodegas.id` está tipada como `INTEGER` (serial autoincremental en PostgreSQL), mientras que la definición inicial de `invoice_lines.target_bodega_id` fue declarada como `UUID`, provocando el error `asyncpg.exceptions.DatatypeMismatchError: Key columns "target_bodega_id" and "id" are of incompatible types: uuid and integer` al aplicar la restricción de clave foránea.
+- **Archivos corregidos:**
+  1. [`oppytec-backend/alembic/versions/0016_tenant_invoices_dte_and_supplier_aliases.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/alembic/versions/0016_tenant_invoices_dte_and_supplier_aliases.py):
+     - Cambiado `target_bodega_id` de `uuid_type` a `sa.Integer()`.
+  2. [`oppytec-backend/src/modules/invoices/infrastructure/models.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/invoices/infrastructure/models.py):
+     - Modificado `target_bodega_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("bodegas.id", ondelete="SET NULL"), nullable=True, default=None)`.
+  3. [`oppytec-backend/src/modules/invoices/domain/entities.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/invoices/domain/entities.py):
+     - En `InvoiceLineItem`: `target_bodega_id: int | None = None`.
+     - En `Invoice`: `confirmed_bodega_id: int | UUID | None = None` y `confirm_stock_ingestion(self, bodega_id: int | UUID, ...)`.
+  4. [`oppytec-backend/src/modules/invoices/application/schemas.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/invoices/application/schemas.py):
+     - En `InvoiceLineItemBaseDTO` y `InvoiceLineItemUpdateDTO`: `target_bodega_id: Optional[int] = None`.
+     - En `IngestToStockDTO`: `bodega_id: int | UUID = Field(...)`.
+  5. [`oppytec-backend/tests/unit/modules/test_invoices_models.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/tests/unit/modules/test_invoices_models.py):
+     - Actualizado fixture con `bodega_id = 1` y aserción explícita `assert line.target_bodega_id == 1`.
 
-2. **Ejecución y Certificación de la Suite Integral de Eventos (Frontend)**:
-   - `src/features/events/__tests__/hooks.test.ts`: 17/17 PASSED.
-   - `src/features/events/__tests__/EventsPage.test.tsx`: 8/8 PASSED.
-   - `src/features/events/__tests__/EventsI18nAndFx.test.tsx`: 5/5 PASSED.
-   - **Resultado Frontend Eventos: 30/30 PASSED (100%)** en 2.51s.
+### 1.2 Ejecución y Verificación de la Migración en Docker
+- Sincronizados los archivos actualizados hacia el contenedor Docker `oppytec-backend`.
+- Ejecutado exitosamente:
+  ```bash
+  docker compose exec backend alembic upgrade head
+  ```
+  Resultado: Upgrade `0015_tenant_actividades_triada_enriquecida -> 0016_tenant_invoices_dte_and_supplier_aliases` aplicado de forma limpia a todos los esquemas PostgreSQL (`tenant_test_procurement` y demás esquemas tenant dinámicos). Código de salida `0`.
 
-3. **Certificación de Cero Regresiones en Suites Completas del Monorepo**:
-   - **Backend Completo (`pytest tests/unit/`):** 447 PASSED, 0 FAILED en 36.06s.
-   - **Frontend Completo (`vitest run`):** 84 archivos de prueba, 1008 PASSED (100%), 0 FAILED en 28.27s.
+### 1.3 Validación de Tests de Arquitectura y Regresión
+- Ejecutado `./oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_alembic_integrity.py oppytec-backend/tests/unit/modules/test_invoices_models.py`:
+  - **8 passed in 0.26s (100% OK)**.
+- Ejecutado `./oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/`:
+  - **29 passed in 1.44s (100% OK)**.
+- Ejecutado `./oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/modules/test_invoices*.py oppytec-backend/tests/security_redteam/test_invoices*.py`:
+  - **97 passed in 4.04s (100% OK)**.
 
-4. **Paridad Matemática y de Negocio con OppyTec Legacy**:
-   - **Desglose BOM de Escandallo:** Algoritmo recursivo de explosión de recetas de evento verificado: deducción en Kardex equivalente a `porciones * factor_insumo`, idéntico a las fórmulas maestras de `OppyTec-Legacy/`.
-   - **Combos en Eventos:** Deducción recursiva de componentes de pack por cantidad contratada.
-   - **Reversión Compensatoria:** Reingreso exacto de inventario con costo PPP auditado, garantizando restauración matemática de existencias.
-   - **Anti-Overbooking:** Intervalos semi-abiertos de `EventTimeSlot` impiden solapamientos sin falsos positivos en eventos continuos consecutivos.
-   - **Cálculo de IVA (19%):** Precisión absoluta basada en `Decimal` sin desbordes de coma flotante.
-
-5. **Bucle de Autoreparación QA Aplicado**:
-   - **Fix en `ProjectionSnapshotService`:** Corregida lógica de fallback en `get_paginated_snapshots` para que respete los filtros de búsqueda y categoría cuando la base de datos contiene registros, resolviendo el test `test_paginated_snapshots_search_wildcards_are_literal`.
-   - **Aislamiento en Vitest Frontend:** Creado `src/setupTests.ts` con cleanup de `@testing-library/react` y configurado `pool: "forks"` en `vite.config.ts`, eliminando la contaminación del DOM de JSDOM y fugas de mocks.
-   - **Ajustes en Tests Legacy:** Agregado `QueryClientProvider` a `<Sidebar />` en `ConfiguracionPage.test.tsx` y adaptado el selector `getAllByText` para componentes con subtítulos animados de `SectionHeader` en `ConfiguracionPage.test.tsx` y `UsuariosPage.test.tsx`.
-
-6. **Integridad Anti-Reward-Hacking**:
-   - `python scripts/harness.py verify-evals` -> 100% íntegro (Cero trampas).
+### 1.4 Sincronización del Grafo AST Graphify
+- Ejecutado `python scripts/harness.py sync-graph`:
+  - Nodos totales: 118 (Routers: 14, Migraciones: 18, Suites: 23).
+  - Aristas: 142.
+  - Grafo sincronizado en `docs/architecture/graphify/graph.json`.
 
 ---
 
-## 2. Friction & Failures (Fricciones Encontradas y Resueltas)
-- En el frontend, el flag anterior `singleThread: true` generaba acumulación en memoria y contaminación cruzada de elementos renderizados en el DOM de pruebas consecutivas. La transición a `pool: "forks"` y `setupTests.ts` resolvió de raíz todos los falsos positivos reduciendo el tiempo de ejecución global a 28s.
-- En `snapshot_service.py`, un bloque de conteo alternativo sobreescribía `total_items` ignorando el patrón de búsqueda `_`; fue corregido aislando el fallback solo para bases de datos sin snapshots consolidados.
+## 2. Friction & Failures
+- **Fricción:** El servicio `backend` en `docker-compose.yml` opera sobre imagen construida sin montaje de volumen en vivo para el código fuente, por lo que las modificaciones locales en `oppytec-backend/` no se reflejaban de inmediato en el contenedor hasta copiarlas (`docker cp`) o reconstruir la imagen.
+- **Resolución:** Se propagó la copia sincronizada al contenedor y la migración `alembic upgrade head` aplicó DDL transaccional sin ningún error.
 
 ---
 
 ## 3. Next Exact Action
-- Despachar al Agente 11 (`11-git-worktree-merge-arbiter`) o Agente 12 (`12-tech-writer-openspec-archify`) para el cierre de fase, sincronización de OpenSpec/Graphify y merge final.
+- Proceder con las pruebas de integración o smoke test end-to-end con la base de datos completamente migrada a la versión `0016`.

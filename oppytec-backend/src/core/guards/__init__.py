@@ -35,6 +35,10 @@ from src.core.guards.rbac_dependencies import (
     restore_revoked_user_session,
     revoke_session_token,
 )
+from src.core.guards.ssrf_guard import (
+    is_private_or_restricted_ip,
+    validate_safe_webhook_url,
+)
 from src.core.guards.xss_sanitizer import (
     sanitize_text_input,
     validate_no_path_traversal,
@@ -68,4 +72,6 @@ __all__ = [
     "sanitize_text_input",
     "validate_file_magic_bytes",
     "validate_no_path_traversal",
+    "validate_safe_webhook_url",
+    "is_private_or_restricted_ip",
 ]

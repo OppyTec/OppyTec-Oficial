@@ -46,6 +46,7 @@ import { NotificationsPage } from "@/features/notifications";
 import { EventsPage } from "@/features/events";
 import { ProyeccionView } from "@/features/projection";
 import { NotasPage, TareasPage, HorariosPage } from "@/features/activities";
+import { InvoicesPage, InvoiceDetailPage } from "@/features/invoices";
 import { useAuth } from "@/shared/auth/usePermissions";
 import { HomeDashboard } from "@/features/home";
 import {
@@ -205,7 +206,10 @@ export function ClientAppShell() {
         <Route path="/proyeccion/*" element={<ProyeccionView />} />
         <Route path="/historial" element={<HistorialPage />} />
         <Route path="/historial/*" element={<HistorialPage />} />
-        <Route path="/contabilidad/*" element={<ModulePlaceholderView title="Contabilidad y Facturas DTE" moduleSlug="module:contabilidad" />} />
+        <Route path="/contabilidad/facturas" element={<InvoicesPage />} />
+        <Route path="/contabilidad/facturas/:id" element={<InvoiceDetailPage />} />
+        <Route path="/contabilidad" element={<Navigate to="/contabilidad/facturas" replace />} />
+        <Route path="/contabilidad/*" element={<Navigate to="/contabilidad/facturas" replace />} />
         <Route path="/reportes/*" element={<ModulePlaceholderView title="Panel Ejecutivo y Reportes Estratégicos" moduleSlug="module:panel_ejecutivo" />} />
         <Route path="/actividades/notas" element={<NotasPage />} />
         <Route path="/actividades/tareas" element={<TareasPage />} />

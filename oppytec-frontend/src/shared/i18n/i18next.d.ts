@@ -26,7 +26,8 @@ export type I18nNamespace =
   | "history"
   | "notifications"
   | "projection"
-  | "events";
+  | "events"
+  | "invoices";
 
 export type TranslationInterpolationVars = Readonly<
   Record<string, string | number>

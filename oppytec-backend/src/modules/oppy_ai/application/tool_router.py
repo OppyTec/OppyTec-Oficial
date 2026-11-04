@@ -28,6 +28,8 @@ from src.modules.oppy_ai.application.operational_tools import (
     get_sales_and_food_cost_variance,
     get_stock_health_and_reorder_alerts,
     get_stockout_projections_and_autonomy,
+    get_supplier_price_drift_alerts,
+    query_invoices_summary,
     query_upcoming_events,
     render_canvas_chart,
     render_canvas_table,
@@ -40,6 +42,8 @@ HardCodedToolCode = Literal[
     "query_upcoming_events",
     "query_supplier_delays",
     "query_recipe_costs",
+    "query_invoices_summary",
+    "get_supplier_price_drift_alerts",
     "get_stock_health_and_reorder_alerts",
     "get_expiring_batches_fefo",
     "evaluate_supplier_lead_times_and_price_drift",
@@ -61,6 +65,8 @@ HARD_CODED_TOOL_CATALOG: tuple[HardCodedToolCode, ...] = (
     "query_upcoming_events",
     "query_supplier_delays",
     "query_recipe_costs",
+    "query_invoices_summary",
+    "get_supplier_price_drift_alerts",
     "get_stock_health_and_reorder_alerts",
     "get_expiring_batches_fefo",
     "evaluate_supplier_lead_times_and_price_drift",
@@ -82,6 +88,8 @@ TOOL_DEFAULT_SUBDOMAIN_MAP: dict[HardCodedToolCode, str] = {
     "query_upcoming_events": "abastecimiento_y_eventos",
     "query_supplier_delays": "abastecimiento_y_eventos",
     "query_recipe_costs": "recetas_y_cocina",
+    "query_invoices_summary": "finanzas_y_rentabilidad",
+    "get_supplier_price_drift_alerts": "abastecimiento_y_eventos",
     "get_stock_health_and_reorder_alerts": "inventario_y_bodegas",
     "get_expiring_batches_fefo": "inventario_y_bodegas",
     "evaluate_supplier_lead_times_and_price_drift": "abastecimiento_y_eventos",
@@ -231,7 +239,19 @@ class OppyfyToolRouter:
         """Funciones deterministas en código duro con precisión `Decimal` (Capa 1 / Datos Vivos)."""
         kw = kwargs or {}
 
-        # 1. Herramientas Operativas de Fase 2
+        # 1. Herramientas Operativas de Fase 2 y Fase 3
+        if tool_code == "query_invoices_summary":
+            return query_invoices_summary(
+                tenant_schema,
+                period=kw.get("period", "current_month"),
+                status=kw.get("status"),
+            )
+        if tool_code == "get_supplier_price_drift_alerts":
+            return get_supplier_price_drift_alerts(
+                tenant_schema,
+                supplier_id=kw.get("supplier_id"),
+                threshold_pct=kw.get("threshold_pct", Decimal("10.0")),
+            )
         if tool_code == "get_stock_health_and_reorder_alerts":
             return get_stock_health_and_reorder_alerts(
                 tenant_schema,

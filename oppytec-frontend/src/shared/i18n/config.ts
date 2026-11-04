@@ -32,6 +32,7 @@ import historyEn from "./locales/en/history.json";
 import notificationsEn from "./locales/en/notifications.json";
 import projectionEn from "./locales/en/projection.json";
 import eventsEn from "./locales/en/events.json";
+import invoicesEn from "./locales/en/invoices.json";
 
 import analyticsEs from "./locales/es/analytics.json";
 import authEs from "./locales/es/auth.json";
@@ -57,6 +58,7 @@ import historyEs from "./locales/es/history.json";
 import notificationsEs from "./locales/es/notifications.json";
 import projectionEs from "./locales/es/projection.json";
 import eventsEs from "./locales/es/events.json";
+import invoicesEs from "./locales/es/invoices.json";
 
 export const LANGUAGE_STORAGE_KEY = "oppytec_lang";
 
@@ -97,6 +99,7 @@ export const I18N_NAMESPACES: readonly I18nNamespace[] = [
   "notifications",
   "projection",
   "events",
+  "invoices",
 ] as const;
 
 /**
@@ -151,6 +154,7 @@ export const I18N_RESOURCES: Resource = {
     notifications: notificationsEs,
     projection: projectionEs,
     events: eventsEs,
+    invoices: invoicesEs,
   },
   en: {
     common: commonEn,
@@ -177,6 +181,7 @@ export const I18N_RESOURCES: Resource = {
     notifications: notificationsEn,
     projection: projectionEn,
     events: eventsEn,
+    invoices: invoicesEn,
   },
 };
 

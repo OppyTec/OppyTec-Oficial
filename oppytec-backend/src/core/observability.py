@@ -21,9 +21,11 @@ from datetime import UTC, datetime
 from decimal import Decimal
 import re
 
+from opentelemetry import metrics as otel_metrics
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 from pydantic import SecretStr
+import structlog
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -56,6 +58,14 @@ SENSITIVE_KEY_TOKENS: tuple[str, ...] = (
     "phone",
     "direccion",
     "address",
+    "bank_account",
+    "account_number",
+    "numero_cuenta",
+    "cuenta_bancaria",
+    "cta_cte",
+    "cbu",
+    "clabe",
+    "iban",
 )
 
 AUDIT_USER_PII_TOKENS: tuple[str, ...] = (
@@ -87,12 +97,15 @@ _BEARER_PATTERN: re.Pattern[str] = re.compile(
 _INLINE_SECRET_PATTERN: re.Pattern[str] = re.compile(
     r"(?i)\b(password|passwd|secret|token|api_key|apikey|cvv)\s*[:=]\s*[^\s,;]+"
 )
+_BANK_ACCOUNT_PATTERN: re.Pattern[str] = re.compile(
+    r"(?i)\b(?:cta(?:\.|\s+cte)?|cuenta(?:\s+corriente|\s+vista|\s+rut)?)\s*[:#]?\s*[\d\-]{6,20}\b"
+)
 
 
 def scrub_pii_text(text: str | None) -> str | None:
     """
     Enmascara de forma determinista patrones PII (correos electrónicos, RUT chileno,
-    teléfonos, tarjetas de crédito, tokens Bearer y secretos inline) en textos libres, notas o metadatos.
+    teléfonos, tarjetas de crédito, cuentas bancarias, tokens Bearer y secretos inline) en textos libres, notas o metadatos.
     """
     if text is None or not text:
         return text
@@ -100,6 +113,7 @@ def scrub_pii_text(text: str | None) -> str | None:
     result = _RUT_PATTERN.sub(REDACTED_MARKER, result)
     result = _PHONE_PATTERN.sub(REDACTED_MARKER, result)
     result = _CREDIT_CARD_PATTERN.sub(REDACTED_MARKER, result)
+    result = _BANK_ACCOUNT_PATTERN.sub(REDACTED_MARKER, result)
     result = _BEARER_PATTERN.sub(REDACTED_MARKER, result)
     result = _INLINE_SECRET_PATTERN.sub(rf"\1={REDACTED_MARKER}", result)
     return result
@@ -417,6 +431,128 @@ def record_alert_operational_metric(
     )
     _in_memory_alerts_metrics.append(metric)
     return metric
+
+
+@dataclass(frozen=True)
+class InvoiceOperationMetric:
+    """Métrica determinista de operaciones de facturas y telemetría FinOps."""
+
+    operation: str
+    status: str
+    duration_ms: float
+    tenant_id: str | None = None
+    invoice_id: str | None = None
+    dte_type: str | int | None = None
+    vendor_tax_id: str | None = None
+    gemini_tokens_used: int = 0
+    gemini_cost_usd: str = "0.000000"
+    lines_count: int = 0
+    timestamp: str = ""
+
+
+_in_memory_invoice_metrics: list[InvoiceOperationMetric] = []
+
+
+def get_in_memory_invoice_metrics() -> list[InvoiceOperationMetric]:
+    """Devuelve las métricas de operaciones de facturación registradas en memoria."""
+    return list(_in_memory_invoice_metrics)
+
+
+def clear_in_memory_invoice_metrics() -> None:
+    """Limpia las métricas de facturación en memoria."""
+    _in_memory_invoice_metrics.clear()
+
+
+# Métricas FinOps OpenTelemetry / Prometheus
+_invoice_meter = otel_metrics.get_meter("oppytec.invoices")
+invoices_processed_counter = _invoice_meter.create_counter(
+    name="invoices_processed_total",
+    description="Total de facturas procesadas clasificadas por tenant y tipo DTE",
+    unit="1",
+)
+invoice_ocr_duration_histogram = _invoice_meter.create_histogram(
+    name="invoice_ocr_duration_seconds",
+    description="Histograma de latencia de extracción OCR Gemini en segundos",
+    unit="s",
+)
+invoice_ai_tokens_counter = _invoice_meter.create_counter(
+    name="invoice_ai_tokens_consumed_total",
+    description="Contador acumulado de tokens de IA consumidos por el OCR",
+    unit="tokens",
+)
+invoice_ai_cost_usd_counter = _invoice_meter.create_counter(
+    name="invoice_ai_cost_usd_total",
+    description="Costo FinOps acumulado en USD por extracción de facturas",
+    unit="USD",
+)
+
+
+def record_invoice_finops_metric(
+    *,
+    tenant_id: str,
+    dte_type: str | int,
+    status: str,
+    duration_seconds: float = 0.0,
+    tokens_consumed: int = 0,
+    cost_usd: Decimal | float | str = 0.0,
+    invoice_id: str | None = None,
+) -> None:
+    """Registra contadores e histogramas FinOps en OpenTelemetry/Prometheus."""
+    _ = invoice_id
+    labels = {
+        "tenant_id": str(tenant_id),
+        "dte_type": str(dte_type),
+        "status": status.upper(),
+    }
+    with suppress(Exception):
+        invoices_processed_counter.add(1, labels)
+        if duration_seconds > 0:
+            invoice_ocr_duration_histogram.record(duration_seconds, labels)
+        if tokens_consumed > 0:
+            invoice_ai_tokens_counter.add(tokens_consumed, labels)
+        numeric_cost = float(Decimal(str(cost_usd))) if cost_usd else 0.0
+        if numeric_cost > 0:
+            invoice_ai_cost_usd_counter.add(numeric_cost, labels)
+
+
+# Configuración de Structlog con Censura PII
+def _structlog_pii_filter(_logger: object, _method_name: str, event_dict: dict[str, object]) -> dict[str, object]:
+    """Procesador structlog que censura deterministamente campos PII y secretos."""
+    return scrub_telemetry_payload(event_dict)
+
+
+def configure_structlog() -> None:
+    """Configura structlog con procesadores seguros y censura estricta de PII."""
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.TimeStamper(fmt="iso", utc=True),
+            _structlog_pii_filter,
+            structlog.processors.JSONRenderer(ensure_ascii=False),
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        context_class=dict,
+        logger_factory=structlog.PrintLoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+
+
+configure_structlog()
+
+
+def get_invoice_logger(
+    tenant_id: str | None = None,
+    invoice_id: str | None = None,
+) -> structlog.BoundLogger:
+    """Retorna un logger structlog enlazado a tenant_id e invoice_id con censura PII."""
+    log = structlog.get_logger("oppytec.invoices")
+    bindings: dict[str, object] = {}
+    if tenant_id:
+        bindings["tenant_id"] = str(tenant_id)
+    if invoice_id:
+        bindings["invoice_id"] = str(invoice_id)
+    return log.bind(**bindings)
 
 
 _current_trace_id_var: ContextVar[str] = ContextVar("oppytec_trace_id", default="")
@@ -739,6 +875,49 @@ def trace_span(
                 merged_attrs["oppytec.user_id"] = metric_user
                 merged_attrs["user_id"] = metric_user
 
+            if name.startswith("invoices.") or tracer_name.startswith("oppytec.invoices"):
+                raw_inv_id = dynamic_attrs.get("invoice.id") or dynamic_attrs.get("invoice_id")
+                if raw_inv_id:
+                    merged_attrs["invoice.id"] = str(raw_inv_id)
+                    with suppress(Exception):
+                        otel_span.set_attribute("invoice.id", str(raw_inv_id))
+
+                raw_dte = dynamic_attrs.get("invoice.dte_type") or dynamic_attrs.get("dte_type")
+                if raw_dte:
+                    merged_attrs["invoice.dte_type"] = str(raw_dte)
+                    with suppress(Exception):
+                        otel_span.set_attribute("invoice.dte_type", str(raw_dte))
+
+                raw_tax_id = dynamic_attrs.get("invoice.vendor_tax_id") or dynamic_attrs.get("vendor_tax_id")
+                if raw_tax_id:
+                    scrubbed_tax = scrub_pii_text(str(raw_tax_id)) or str(raw_tax_id)
+                    merged_attrs["invoice.vendor_tax_id"] = scrubbed_tax
+                    with suppress(Exception):
+                        otel_span.set_attribute("invoice.vendor_tax_id", scrubbed_tax)
+
+                raw_tokens = dynamic_attrs.get("invoice.gemini_tokens_used") or dynamic_attrs.get("gemini_tokens_used", 0)
+                try:
+                    tok_val = int(str(raw_tokens))
+                except (ValueError, TypeError):
+                    tok_val = 0
+                merged_attrs["invoice.gemini_tokens_used"] = tok_val
+                with suppress(Exception):
+                    otel_span.set_attribute("invoice.gemini_tokens_used", tok_val)
+
+                raw_cost = dynamic_attrs.get("invoice.gemini_cost_usd") or dynamic_attrs.get("gemini_cost_usd", "0.000000")
+                merged_attrs["invoice.gemini_cost_usd"] = str(raw_cost)
+                with suppress(Exception):
+                    otel_span.set_attribute("invoice.gemini_cost_usd", str(raw_cost))
+
+                raw_lines = dynamic_attrs.get("invoice.lines_count") or dynamic_attrs.get("lines_count", 0)
+                try:
+                    lines_val = int(str(raw_lines))
+                except (ValueError, TypeError):
+                    lines_val = 0
+                merged_attrs["invoice.lines_count"] = lines_val
+                with suppress(Exception):
+                    otel_span.set_attribute("invoice.lines_count", lines_val)
+
             record = SpanRecord(
                 name=name,
                 trace_id=resolved_trace,
@@ -903,6 +1082,58 @@ def trace_span(
                 if len(_in_memory_events_metrics) >= MAX_IN_MEMORY_METRICS_CAPACITY:
                     del _in_memory_events_metrics[0]
                 _in_memory_events_metrics.append(event_metric)
+
+            if name.startswith("invoices.") or tracer_name.startswith("oppytec.invoices"):
+                raw_inv_id = dynamic_attrs.get("invoice.id") or dynamic_attrs.get("invoice_id")
+                metric_inv_id = str(raw_inv_id) if raw_inv_id else None
+
+                raw_dte = dynamic_attrs.get("invoice.dte_type") or dynamic_attrs.get("dte_type")
+                metric_dte = str(raw_dte) if raw_dte else "33"
+
+                raw_tax_id = dynamic_attrs.get("invoice.vendor_tax_id") or dynamic_attrs.get("vendor_tax_id")
+                metric_tax_id = str(raw_tax_id) if raw_tax_id else None
+
+                raw_tokens = dynamic_attrs.get("invoice.gemini_tokens_used") or dynamic_attrs.get("gemini_tokens_used", 0)
+                try:
+                    metric_tokens = int(str(raw_tokens))
+                except (ValueError, TypeError):
+                    metric_tokens = 0
+
+                raw_cost = dynamic_attrs.get("invoice.gemini_cost_usd") or dynamic_attrs.get("gemini_cost_usd", "0.000000")
+                metric_cost = str(raw_cost)
+
+                raw_lines = dynamic_attrs.get("invoice.lines_count") or dynamic_attrs.get("lines_count", 0)
+                try:
+                    metric_lines = int(str(raw_lines))
+                except (ValueError, TypeError):
+                    metric_lines = 0
+
+                inv_metric = InvoiceOperationMetric(
+                    operation=name,
+                    status=status_str,
+                    duration_ms=round(duration_ms, 3),
+                    tenant_id=metric_tenant,
+                    invoice_id=metric_inv_id,
+                    dte_type=metric_dte,
+                    vendor_tax_id=metric_tax_id,
+                    gemini_tokens_used=metric_tokens,
+                    gemini_cost_usd=metric_cost,
+                    lines_count=metric_lines,
+                    timestamp=datetime.now(UTC).isoformat(),
+                )
+                if len(_in_memory_invoice_metrics) >= MAX_IN_MEMORY_METRICS_CAPACITY:
+                    del _in_memory_invoice_metrics[0]
+                _in_memory_invoice_metrics.append(inv_metric)
+
+                record_invoice_finops_metric(
+                    tenant_id=metric_tenant or "unknown",
+                    dte_type=metric_dte,
+                    status=status_str,
+                    duration_seconds=round(duration_ms / 1000.0, 4),
+                    tokens_consumed=metric_tokens,
+                    cost_usd=Decimal(metric_cost) if metric_cost else Decimal("0"),
+                    invoice_id=metric_inv_id,
+                )
 
 
 def record_quota_semaphore_metric(

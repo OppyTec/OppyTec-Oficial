@@ -1426,6 +1426,12 @@
       "path": "oppytec-backend/alembic/versions/0015_tenant_actividades_triada_enriquecida.py"
     },
     {
+      "id": "migration:0016_tenant_invoices_dte",
+      "label": "Alembic 0016 Migration: Tenant invoices dte and supplier aliases",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0016_tenant_invoices_dte_and_supplier_aliases.py"
+    },
+    {
       "id": "module:analytics",
       "label": "Analytics Module (Executive Margins, Kasavana Menu Engineering, Loss Control & Projections)",
       "type": "backend_module",
@@ -1538,6 +1544,12 @@
       "label": "Backend Presentation Router (inventory) /api/v1/inventory",
       "type": "backend_router",
       "path": "oppytec-backend/src/modules/inventory/presentation/router.py"
+    },
+    {
+      "id": "router:invoices",
+      "label": "Backend Presentation Router (invoices) /api/v1/invoices",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/invoices/presentation/router.py"
     },
     {
       "id": "router:operations",
@@ -1815,6 +1827,11 @@
     {
       "source": "app:backend_main",
       "target": "router:inventory",
+      "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:invoices",
       "relation": "mounts_api_router"
     },
     {
@@ -2448,12 +2465,12 @@
     "load_test_target_rps": 500,
     "load_test_p95_budget_ms": 120,
     "rubric_score": "10/10",
-    "nodes_count": 116,
-    "edges_count": 141,
+    "nodes_count": 118,
+    "edges_count": 142,
     "frontend_admin_views": 4,
-    "backend_routers": 13,
-    "alembic_migrations": 17,
-    "updated_at": "2026-11-02T20:45:06.308936+00:00"
+    "backend_routers": 14,
+    "alembic_migrations": 18,
+    "updated_at": "2026-11-04T23:04:23.111747+00:00"
   }
 }
   </script>

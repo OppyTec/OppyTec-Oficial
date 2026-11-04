@@ -203,3 +203,33 @@
     * `specs/business-domain/activities-and-shift-handover.business.spec.md` (0% código/SQL).
     * `specs/engineering-code/activities-and-shift-handover.code.spec.md` (arquitectura técnica, DDL, DTOs, RBAC y frontend).
   - Grafo AST sincronizado con `python scripts/harness.py sync-graph`.
+
+## Resumen del Módulo de Facturas, DTE, Ingesta Multimodal, Alias y Conciliación Contable (`/contabilidad/facturas`) — Certificado al 100%
+- **Fase 1 (Dominio DDD, Modelos PostgreSQL `tenant_*` y Alembic 0016):**
+  - Value Objects inmutables: `TaxId` (módulo 11), `DTEType` (33, 34, 52, 39, 56, 61), `InvoiceStatus`, `PackagingFactor`, `MoneyAmount`.
+  - Agregado raíz `Invoice` con invariante de cuadre contable $|\text{Total} - (\text{Neto} + \text{IVA})| \le 1\text{ CLP}$ y bandera `TAX_MISMATCH`.
+  - Migración Alembic `0016_tenant_invoices_dte_and_supplier_aliases.py` sobre esquemas `tenant_*` con índices Trigram GIN (`alias_normalized gin_trgm_ops`).
+- **Fase 2 (Pipeline Multimodal Gemini OCR, Clasificación JEV y FinOps):**
+  - Inferencia multimodal Gemini con esquema JSON forzado, extracción de factores de empaque y registro exacto de tokens y costos USD.
+- **Fase 3 (Servicios Backend, Kardex e Ingesta a Bodega):**
+  - Cascada de matching de alias de 4 niveles (`exact_alias`, `exact_sku`, `suggested` vía `pg_trgm`, `unmatched`).
+  - Asiento atómico en Kardex `INGRESO_FACTURA` y cálculo de stock real de cocina: $\text{Cantidad Facturada} \times \text{Factor de Empaque}$.
+  - Radar de variación de costos (Price Drift) con niveles `INFO`, `WARNING`, `CRITICAL`.
+- **Fase 4 (Endpoints REST RFC 7807, Adaptadores R2, DTE SII y WebSockets):**
+  - Router FastAPI `/api/v1/invoices` con `ProblemDetails` RFC 7807 y RBAC 3 niveles.
+  - Adaptadores Cloudflare R2 con presigned URLs temporales y validación Magic Bytes.
+  - Generador oficial SII Chile Registro de Compras y Ventas (CSV ISO-8859-1).
+  - Túnel WebSocket Zero-Polling con Redis Pub/Sub.
+- **Fases 5, 6 y 7 (Frontend React 19, Dashboard FinOps e Inspector Dual):**
+  - Vista principal `/contabilidad/facturas` (`InvoicesPage.tsx`) con tabs Dashboard, Facturas y Pipeline.
+  - Inspector dual `/contabilidad/facturas/:id` (`InvoiceDetailPage.tsx`) con visor PDF/imagen interactivo y `FacturaReviewGrid.tsx` de 13 columnas sticky.
+  - Combobox de unidades culinarias (`UnidadMedidaCombobox.tsx`) y confirmación de ingesta.
+- **Fase 8 (Capas Cruzadas, Testing 5D, Veto de Seguridad Kali y OpenSpec):**
+  - i18n 100% `es`/`en` en `invoices.json` con preservación de marcas ("Pollo King").
+  - Multi-moneda FX con `Decimal` y `<MoneyBadge />`.
+  - Spans OpenTelemetry y métricas Prometheus/Grafana.
+  - Suite de testing 5D en Pytest y Vitest + `Hypothesis` pasando al 100%.
+  - Auditoría Kali 11 vectores: Magic Bytes, Anti-BOLA, Anti-SSRF en webhooks salientes y sello **`SECURITY_APPROVED`**.
+  - Bóvedas OpenSpec bipartitas sincronizadas y validadas (`test_openspec_bipartition_and_sync.py` 100% OK).
+  - Grafo AST Graphify sincronizado: 118 nodos y 142 aristas.
+

@@ -1,80 +1,75 @@
 # Reporte de Traspaso (`Handover`) — Agente 10: Auditor Estricto de Ciberseguridad Red Team
 
-- **Fecha UTC:** 2026-11-02T20:40:00Z
+- **Fecha UTC:** 2026-11-04T19:06:00Z
 - **Agente:** Agente 10 (`10-cybersecurity-redteam-auditor`)
-- **Fase / Módulo:** Auditoría Ofensiva de Ciberseguridad y Veto Final para el Panel de Actividades de OppyTec v2.0 (Notas de Equipo, Notas Personales, Tareas Operativas, Horarios, Clonación y Minuta Ejecutiva OppyFy)
-- **Archivos Auditados y Autoparchados:**
-  - `oppytec-backend/src/modules/operations/presentation/router_actividades.py`
-  - `oppytec-backend/src/modules/operations/presentation/schemas_actividades.py`
-  - `oppytec-backend/src/modules/operations/application/actividades_service.py`
+- **Fase / Módulo:** Etapa 4 — Auditoría Ofensiva de Ciberseguridad, Autoparcheo y Veto para el Módulo de Facturas y Contabilidad (DTE, Alias Asociativos, Ingesta a Inventario y Exportaciones SII / ERPs).
+- **Archivos Auditados y Blindados:**
+  - `oppytec-backend/src/core/guards/ssrf_guard.py` (Nuevo guardia estricto anti-SSRF CWE-918)
+  - `oppytec-backend/src/core/guards/__init__.py` (Exportación de `validate_safe_webhook_url`)
+  - `oppytec-backend/src/modules/invoices/presentation/router.py` (Validación física de Magic Bytes, Anti-BOLA/IDOR, Redacción Física de Costos, Descarga Segura y Webhooks)
+  - `oppytec-backend/src/modules/invoices/application/schemas.py` (Sanitización XSS en DTOs y validación anti-SSRF)
+  - `oppytec-backend/src/modules/invoices/application/services.py` (Aislamiento de Tenant en repositorios y sanitización contra CSV Formula Injection CWE-1236 en DTEExportService)
 - **Suites Ejecutadas:**
-  - `oppytec-backend/tests/security_redteam/test_18_actividades_security_and_idor.py` (6 / 6 PASSED)
-  - `oppytec-backend/tests/unit/modules/test_actividades_services.py` (12 / 12 PASSED)
+  - `oppytec-backend/tests/security_redteam/test_invoices_security.py` (34 / 34 PASSED - 100%)
+  - `oppytec-backend/tests/architecture/` (29 / 29 PASSED - 100%)
+  - `oppytec-backend/tests/unit/ -k "invoice"` (64 / 64 PASSED - 100%)
 - **Dictamen Final de Seguridad:** `SIGN-OFF` (SECURITY_APPROVED — CERO VETOS — 100% Conforme)
 
 ---
 
 ## 1. Executive Summary & Dictamen de Seguridad
 
-El Agente 10 (Auditor de Ciberseguridad Ofensiva Red Team) ha ejecutado la auditoría integral y autoparcheo proactivo de seguridad sobre todos los endpoints y servicios del Panel de Actividades de OppyTec v2.0:
-- Notas de Equipo y Bitácora Compartida
-- Notas Personales Privadas por Colaborador
-- Tareas Operativas, Checklists de Apertura/Cierre y Plantillas de Rutinas
-- Grilla Semanal de Horarios, Turnos, Clonación Semanal y Auditoría Laboral (12h Descanso y Ley 40 Horas)
-- Síntesis Ejecutiva de Cierre de Turno OppyFy AI (`/api/v1/actividades/minuta-traspaso`)
+El Agente 10 ha completado la auditoría ofensiva y el blindaje preventivo sobre los 6 vectores de ataque Kali en el Módulo de Facturas y Contabilidad de OppyTec v2.0:
 
 ### Dictamen de Ciberseguridad:
 > [!IMPORTANT]
 > **Veredicto Definitivo:** `SIGN-OFF (SECURITY_APPROVED)`.  
 > No se ejerce el poder de veto. Las vulnerabilidades identificadas durante la fase ofensiva fueron neutralizadas y autoparchadas exitosamente:
-> 1. **Aislamiento Multi-Tenant Estricto (Anti-IDOR Cross-Tenant):**
->    - Se vinculó `tenant_id` obligatorio a todos los modelos de dominio (`NotaEquipo`, `NotaPersonal`, `Tarea`, `PlantillaRutina`, `TurnoHorario`).
->    - Se blindaron los métodos de consulta y listado (`get_notas_equipo`, `get_notas_personales`, `get_tareas`, `get_plantillas_rutinas`, `get_turnos_horarios`, `generar_minuta_traspaso`) con filtro fail-closed por `tenant_id`.
->    - Se blindaron los métodos de mutación y lectura (`mark_nota_as_read`, `update_nota_equipo`, `delete_nota_equipo`, `update_nota_personal`, `delete_nota_personal`, `update_tarea`, `update_tarea_estado`, `delete_tarea`, `aplicar_plantilla_rutina`, `update_turno_horario`, `delete_turno_horario`, `clonar_semana`) levantando `ResourceNotFoundError` (HTTP 404) ante cualquier intento de acceso cruzado entre inquilinos, impidiendo la enumeración o fuga de existencia de registros de otros tenants.
-> 2. **Privacidad Estricta de Notas Personales entre Colaboradores:**
->    - Un colaborador no puede listar ni visualizar notas personales de otro usuario (filtradas por `nota.user_id == current_user_id`).
->    - Intentos de mutación o eliminación de notas personales ajenas dentro del mismo tenant son bloqueados deterministamente con HTTP 400 (`DomainValidationError`).
-> 3. **Regla Inviolable de Justificación en Tareas Incompletas:**
->    - Validación estricta que exige `nota_incompleta` no vacía y no nula al crear o transicionar una tarea a estado `'incompleta'`.
->    - Rechazo inmediato ante cadenas vacías o espacios en blanco (`DomainValidationError`).
->    - Bloqueo de blanqueo o vaciado de justificación mientras la tarea permanezca incompleta.
-> 4. **Sanitización y Neutralización de Inyecciones Políglotas (XSS/SSTI):**
->    - Implementación de `@field_validator` en todos los DTOs de `schemas_actividades.py` utilizando `sanitize_text_input(..., block_polyglots=True)`.
->    - Bloqueo activo de vectores `<script>`, `<img onerror=...>`, `<svg onload=...>`, `javascript:...`, `{{...}}` y `${...}` arrojando HTTP 422 (`SecurityValidationError`).
->    - Defensa en profundidad replicada en los métodos del servicio `ActividadesService`.
-> 5. **Matriz RBAC de 3 Niveles:**
->    - Verificación exhaustiva de guardias `RequireTenantPermission` en todos los endpoints:
->      * `actividades.notas.view`, `actividades.notas.create`, `actividades.notas.delete`
->      * `actividades.tareas.view`, `actividades.tareas.create`, `actividades.tareas.update`
->      * `actividades.horarios.view`, `actividades.horarios.manage`
->    - Solicitudes no autorizadas son bloqueadas con HTTP 403 Forbidden RFC 7807.
-> 6. **Aislamiento en Auditoría Laboral y Clonación Semanal:**
->    - La verificación de descanso mínimo de 12h y tope de 40 horas semanales opera exclusivamente dentro del ámbito del tenant autenticado.
->    - La clonación de semanas (`/api/v1/actividades/horarios/clonar-semana`) clona única y exclusivamente turnos del tenant solicitante.
+> 
+> 1. **Vector 1: Aislamiento Multi-Tenant Estricto (Anti-BOLA/IDOR):**
+>    - Se verificó que todas las operaciones de consulta (`GET /{id}`), mutación (`PUT /{id}`), eliminación (`DELETE /{id}`), descarga física (`GET /{id}/download`), confirmación de stock (`POST /{id}/confirm-stock`), procesamiento Gemini (`POST /{id}/process`) y operaciones bulk (`/bulk-process`, `/bulk-delete`) verifiquen obligatoriamente que `invoice.tenant_id == principal.tenant_id`.
+>    - Si un tenant intenta acceder a un registro de otro tenant, el sistema responde de forma fail-closed con `HTTP 404 Not Found` (o `HTTP 403 Forbidden` en acceso a archivos directos), imposibilitando la enumeración de identificadores de terceros.
+>
+> 2. **Vector 2: Validación Física de Magic Bytes y Bloqueo de Políglotas/Ejecutables:**
+>    - Se autoparchó el endpoint `POST /upload` integrando la llamada estricta a `validate_file_magic_bytes(...)`.
+>    - Se bloquea la subida de ejecutables Windows (`MZ`), binarios ELF Linux (`\x7fELF`), scripts bash (`#!/bin/sh`), webshells PHP (`<?php`), scripts HTML/JS (`<script>`) y archivos con doble extensión (`.pdf.exe`).
+>
+> 3. **Vector 3: Prevención de CSV / Spreadsheet Formula Injection (CWE-1236):**
+>    - Se blindó `DTEExportService` aplicando `sanitize_spreadsheet_export_value` sobre todos los campos exportables (proveedor, número de documento, RUT, tipo DTE, estado) en formatos SII Chile (F29 CSV), QuickBooks, Xero y Odoo.
+>    - Todo campo que comience con `=`, `+`, `-`, `@`, `\t` o `\r` es neutralizado automáticamente anteponiendo comilla simple `'`.
+>
+> 4. **Vector 4: Sanitización XSS en Campos Crudos:**
+>    - Se incorporaron `@field_validator` con `sanitize_text_input` en los esquemas Pydantic `InvoiceCreateDTO`, `InvoiceUpdateDTO`, `InvoiceLineItemCreateDTO`, `InvoiceLineItemUpdateDTO`, `SupplierAliasCreateDTO` y `SupplierAliasDTO`.
+>    - Cualquier inyección de `<script>`, `onerror=`, `javascript:` o `<iframe>` es bloqueada de inmediato en la frontera HTTP arrojando `HTTP 422` (`XSS_PAYLOAD_BLOCKED`).
+>
+> 5. **Vector 5: Prevención de SSRF en Webhooks Salientes (CWE-918):**
+>    - Se implementó el módulo de defensa `oppytec-backend/src/core/guards/ssrf_guard.py` con la función `validate_safe_webhook_url`.
+>    - Se bloquean IPs privadas RFC 1918 (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16), loopback (127.0.0.1, ::1), link-local (169.254.169.254 AWS metadata), servicios de metadatos de GCP y esquemas peligrosos (`file://`, `gopher://`).
+>
+> 6. **Vector 6: Cumplimiento RBAC de 3 Niveles y Redacción Física de Costos:**
+>    - Guardias `RequireTenantPermission` verificados en todos los endpoints:
+>      * `contabilidad.facturas.read`
+>      * `contabilidad.facturas.create`
+>      * `contabilidad.facturas.manage`
+>    - Se implementó redacción física estricta en `_entity_to_response_dto` cuando `can_view_costs=False` o ante denegaciones explícitas (`contabilidad.costos.ver`, `finanzas.costos.ver`), enmascarando a `Decimal('0.0000')` todos los montos netos, impuestos, totales y costos de inventario.
 
 ---
 
 ## 2. Matriz de Cobertura y Ejecución de Pruebas
 
-Total de pruebas ejecutadas: **18 / 18 PASSED** (100% de éxito).
+Total de pruebas ejecutadas: **127 / 127 PASSED** (100% de éxito).
 
 | Suite de Pruebas | Archivo | Tests | Estado |
 | :--- | :--- | :---: | :---: |
-| **Red Team Offensive Security** | `oppytec-backend/tests/security_redteam/test_18_actividades_security_and_idor.py` | 6 / 6 | **PASSED (100%)** |
-| **Unit & Integration Tests** | `oppytec-backend/tests/unit/modules/test_actividades_services.py` | 12 / 12 | **PASSED (100%)** |
-
-### Desglose de Vectores Red Team (`test_18_actividades_security_and_idor.py`):
-1. `test_vector_01_cross_tenant_idor_isolation`: **PASSED** (Aislamiento cross-tenant total en notas, tareas, lectura y minuta OppyFy).
-2. `test_vector_02_personal_notes_strict_privacy_between_collaborators`: **PASSED** (Privacidad hermética de notas personales entre colaboradores).
-3. `test_vector_03_task_incompleta_mandatory_justification_enforcement`: **PASSED** (Rechazo de tareas incompletas sin justificación válida).
-4. `test_vector_04_rbac_3_level_permission_enforcement`: **PASSED** (403 Forbidden RFC 7807 en ausencia de permisos).
-5. `test_vector_05_polyglot_xss_and_malicious_injection_neutralization`: **PASSED** (Bloqueo de payloads maliciosos XSS/SSTI con 422).
-6. `test_vector_06_horarios_cross_tenant_isolation_and_labor_audit_integrity`: **PASSED** (Aislamiento de grilla de turnos, clonación y auditoría laboral).
+| **Invoices Security Red Team** | `oppytec-backend/tests/security_redteam/test_invoices_security.py` | 34 / 34 | **PASSED (100%)** |
+| **Architecture Invariants** | `oppytec-backend/tests/architecture/` | 29 / 29 | **PASSED (100%)** |
+| **Invoices Unit & Services** | `oppytec-backend/tests/unit/ -k "invoice"` | 64 / 64 | **PASSED (100%)** |
 
 ---
 
-## 3. Dictamen Final y Cierre
+## 3. Dictamen Final y Sincronización Graphify
 
-- **Sello:** `SECURITY_APPROVED`
-- **Poder de Veto:** **NO EJERCIDO** (Aprobación definitiva sin objeciones).
-- **Próximo Paso:** Entrega al Agente Orquestador para consolidación del reporte final de la fase.
+- **Dictamen:** `SECURITY_APPROVED`
+- **Poder de Veto:** **NO EJERCIDO** (Aprobación completa y definitiva).
+- **Graphify:** Sincronizado exitosamente (`python scripts/harness.py sync-graph`).
+- **Estado General:** Listo para revisión de cierre por el Agente Orquestador.
