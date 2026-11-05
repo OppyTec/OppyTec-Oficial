@@ -335,3 +335,37 @@ Concluida y certificada al 100% la **Etapa 3** del DAG (IA Evals OppyFy, i18n & 
 ### 11.4 Next Exact Action:
 - Concluido el DAG Canónico de 4 Etapas (12 Agentes) con la doble certificación de Ciberseguridad (Agente 10) y QA Paridad (Agente 09), el Agente Orquestador (`01-orchestrator-pm`) consolida el informe final de entrega para el usuario humano, confirmando que la suite de Evals y la observabilidad especializada de LLM con Langfuse quedan 100% operativas, protegidas y certificadas en OppyTec v2.0.
 
+---
+
+## 12. Certificación de Navegación Real E2E con Playwright (Agente 13 - Especialista en Simulación de Usuario Humano en Navegador Real)
+
+- **Fecha UTC:** 2026-11-05T14:10:00Z
+- **Fase / Módulo:** Certificación de Navegabilidad E2E con Playwright sobre navegadores reales en entorno vivo (Headless & Visual).
+- **Estado de Certificación:** `E2E_PLAYWRIGHT_SUITE_100_PERCENT_CERTIFIED` ✅
+- **Dictamen de Navegabilidad Humana:** **`USER_SIMULATION_APPROVED`**
+
+### 12.1 Completed:
+1. **Comprobación de Servicios Vivos:**
+   - Backend FastAPI verificado y en estado saludable en `http://localhost:8000/api/v1/health` (HTTP 200, status "ok", v2.0.0).
+   - Frontend Vite/Nginx verificado y sirviendo en `http://localhost:5173` (HTTP 200 OK).
+2. **Ejecución y Certificación de Flujos de Navegación del Panel Administrativo (`tests/panel-admin-oppytec/`):**
+   - **Flujo 1 (`test_001_superadmin_auth_flow.py`)**: Autenticación Superadmin Génesis, validación de topbar, roles y navegación inicial. **PASSED** (2.61s).
+   - **Flujo 2 (`test_002_admin_operators_flow.py`)**: Creación y listado de operadores administradores con roles y permisos. **PASSED** (3.17s).
+   - **Flujo 3 (`test_003_holdings_management_flow.py`)**: Gestión de grupos corporativos (Holdings), configuración de cuotas comerciales. **PASSED** (3.23s).
+   - **Flujo 4 (`test_004_legal_entities_flow.py`)**: CRUD de entidades legales y razones sociales multi-holding. **PASSED** (3.00s).
+   - **Flujo 5 (`test_005_commercial_plans_flow.py`)**: Parametrización y creación de planes comerciales SaaS (`enterprise-gastro`) con cuotas y módulos en la vista moderna `PlansPage`. **PASSED** (3.03s).
+   - **Flujo 6 (`test_006_tenants_onboarding_flow.py`)**: Aprovisionamiento completo de tenants, asignación de planes y activación modular. **PASSED** (3.02s).
+   - **Suite Correlativa Completa (`oppytec-backend/.venv/bin/python tests/panel-admin-oppytec/run_e2e.py --headless`)**: **6/6 tests PASSED en 12.86s**.
+3. **Ejecución de Flujo Perfil de Usuario (`tests/test_profile_e2e.py`)**:
+   - Navegación autenticada a `/admin/tenants` -> "Entrar" -> "Ir al Local" -> Selección de perfil de usuario.
+   - Verificación de componentes accesibles: Avatar, comando de voz manos libres Oppy, resumen operativo, plantillas personalizadas y modal interactivo `ResponsiveDialog`.
+   - **PASSED** (0 errores, captura full page generada exitosamente).
+4. **Ciclo de Vida de Base de Datos Determinista (`db_lifecycle`):**
+   - Respaldo de salvaguarda `pg_dump` antes de cada suite.
+   - Reseteo atómico a estado Génesis idempotente completado en ~0.15s - 0.25s en PostgreSQL.
+
+### 12.2 Friction & Failures:
+- **Discrepancia de Localizadores en Flujo 005 (Resuelto):** El test `test_005_commercial_plans_flow.py` utilizaba selectores `[data-testid="admin-plans-view"]` del prototipo legacy. Fue actualizado mediante estrategia resiliente de selectores accesibles para acoplarse tanto a `PlansPage` (`[data-testid="plans-page"]`, `[data-testid="plan-form-modal"]`, `plan-form-name-input`, etc.) como al componente previo, garantizando compatibilidad y cero fragilidad.
+
+### 12.3 Next Exact Action:
+- Notificar al Agente Orquestador / Parent Agent y al usuario humano que la suite de simulación con Playwright ha sido ejecutada, diagnosticada y certificada con 100% de éxito en todos los flujos.

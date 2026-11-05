@@ -7,6 +7,16 @@ conversión de tokens a créditos IA y finanzas SaaS (`saas_policy_math`).
 """
 from __future__ import annotations
 
+from src.modules.tenancy.domain.holding_hub import (
+    CreditDistributionMode,
+    DailyUsagePointVO,
+    HoldingMetricsVO,
+    HoldingSummaryVO,
+    TenantCardVO,
+    calculate_holding_ai_usage_pct,
+    compute_safety_cap_status,
+    validate_credit_distribution_sum,
+)
 from src.modules.tenancy.domain.quotas import (
     ClientUserSeatState,
     SeatQuotaEvaluation,
@@ -37,6 +47,8 @@ from src.modules.tenancy.domain.saas_policy_math import (
 
 __all__ = [
     "ClientUserSeatState",
+    "CreditDistributionMode",
+    "DailyUsagePointVO",
     "DEFAULT_CREDIT_PRICE_CLP",
     "DEFAULT_CREDIT_PRICE_USD",
     "DEFAULT_MONTHLY_CREDITS",
@@ -46,17 +58,23 @@ __all__ = [
     "GEMINI_FLASH_INPUT_COST_PER_M",
     "GEMINI_FLASH_OUTPUT_COST_PER_M",
     "GEMINI_PRO_BLENDED_COST_PER_M",
+    "HoldingMetricsVO",
+    "HoldingSummaryVO",
     "PlanTier",
     "SeatQuotaEvaluation",
     "SimulatedProfitMargin",
     "StorageQuotaEvaluation",
+    "TenantCardVO",
     "TenantHierarchyAssignment",
     "TokenCreditConversionRate",
+    "calculate_holding_ai_usage_pct",
     "calculate_real_api_cost_usd",
     "calculate_simulated_profit_margin",
+    "compute_safety_cap_status",
     "evaluate_seat_quota_for_new_or_restored_user",
     "evaluate_storage_quota_bytes",
     "resolve_effective_max_storage_mb",
     "resolve_effective_max_users",
+    "validate_credit_distribution_sum",
     "validate_holding_legal_entity_tenant_cardinality",
 ]

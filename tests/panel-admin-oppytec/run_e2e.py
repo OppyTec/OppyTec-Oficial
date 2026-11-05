@@ -78,7 +78,7 @@ def main() -> int:
         print(f"[RUNNER] Ejecutando exclusivamente Flujo #{args.flow}: {target_file.name}")
     else:
         test_targets = [str(CURRENT_DIR)]
-        print("[RUNNER] Ejecutando suite completa correlativa (Flujos 1 a 3).")
+        print("[RUNNER] Ejecutando suite completa correlativa (Flujos 1 a 6).")
 
     # Comando pytest aislado
     cmd = [

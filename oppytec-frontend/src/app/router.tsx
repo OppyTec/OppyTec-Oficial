@@ -47,6 +47,7 @@ import { EventsPage } from "@/features/events";
 import { ProyeccionView } from "@/features/projection";
 import { NotasPage, TareasPage, HorariosPage } from "@/features/activities";
 import { InvoicesPage, InvoiceDetailPage } from "@/features/invoices";
+import { HoldingHubPage } from "@/features/holding-hub";
 import { useAuth } from "@/shared/auth/usePermissions";
 import { HomeDashboard } from "@/features/home";
 import {
@@ -55,6 +56,7 @@ import {
   ModulePlaceholderView,
   OFFICIAL_TENANT_OPTIONS,
   OFFICIAL_WAREHOUSES,
+  ScrollToTop,
   type TenantOption,
 } from "@/shared/components/layout";
 import { getRuntimeEnv } from "@/shared/config/env";
@@ -221,7 +223,7 @@ export function ClientAppShell() {
         <Route path="/oppyfy" element={<OppyfyWorkspacePage />} />
         <Route path="/oppybot" element={<Navigate to="/oppyfy" replace />} />
         <Route path="/perfil" element={<ProfilePage />} />
-        <Route path="/holding-hub" element={<ModulePlaceholderView title="Holding Hub — Visión Consolidada" moduleSlug="module:holding_hub" />} />
+        <Route path="/holding-hub" element={<HoldingHubPage />} />
         <Route path="/configuracion" element={<ConfiguracionPage />} />
         <Route path="*" element={<ModulePlaceholderView title="Módulo en preparación" />} />
       </Routes>
@@ -261,6 +263,7 @@ export function ClientFeatureRouter({ activeFeature }: ClientFeatureRouterProps)
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -316,6 +319,14 @@ export function AppRouter() {
         <Route
           path="/oppybot"
           element={<Navigate to="/oppyfy" replace />}
+        />
+        <Route
+          path="/holding-hub"
+          element={
+            <PrivateRoute>
+              <HoldingHubPage />
+            </PrivateRoute>
+          }
         />
         <Route
           path="/*"

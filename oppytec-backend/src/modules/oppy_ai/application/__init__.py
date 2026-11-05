@@ -22,6 +22,9 @@ from src.modules.oppy_ai.application.code_mode_service import (
     OppyfyCodeModeExecutionResult,
     OppyfyCodeModeService,
 )
+from src.modules.oppy_ai.application.holding_briefing_service import (
+    HoldingBriefingService,
+)
 from src.modules.oppy_ai.application.metered_ai_service import (
     DEFAULT_MODEL_TARIFFS,
     MeteredAIService,
@@ -66,6 +69,7 @@ __all__ = [
     "CreditPackPurchaseQuoteDTO",
     "FinOpsAnalyticsDTO",
     "HardCodedToolCode",
+    "HoldingBriefingService",
     "HoldingGroupDTO",
     "InMemoryRedisSemanticCache",
     "MeteredAIService",

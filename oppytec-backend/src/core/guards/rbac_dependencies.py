@@ -320,3 +320,121 @@ class RequireTenantPermission:
         )
         request.state.principal = principal
         return principal
+
+
+class RequireHoldingPermission:
+    """
+    Dependencia FastAPI que exige un permiso de 3 niveles (`<modulo>.<submodulo>.<funcion>`)
+    en el Plano Holding (`holding.*`), validando aislamiento estricto de `X-Holding-ID` / `holding_id`.
+    """
+
+    def __init__(self, permission_code: str, fallback_permission: str | None = None) -> None:
+        cleaned = permission_code.strip()
+        if not THREE_LEVEL_PERMISSION_REGEX.match(cleaned):
+            raise ValueError(
+                f"Invalid 3-level RBAC permission '{permission_code}'. "
+                "Expected '<modulo>.<submodulo>.<funcion>'."
+            )
+        self.permission_code: str = cleaned
+        if fallback_permission is not None:
+            cleaned_fb = fallback_permission.strip()
+            if not THREE_LEVEL_PERMISSION_REGEX.match(cleaned_fb):
+                raise ValueError(
+                    f"Invalid 3-level fallback RBAC permission '{fallback_permission}'. "
+                    "Expected '<modulo>.<submodulo>.<funcion>'."
+                )
+            self.fallback_permission: str | None = cleaned_fb
+        else:
+            self.fallback_permission = None
+
+    async def __call__(self, request: Request) -> AuthenticatedPrincipal:
+        if not is_valid_three_level_permission(self.permission_code):
+            raise PermissionDeniedError(
+                f"Invalid 3-level permission format '{self.permission_code}'.",
+                i18n_key="auth:errors.invalid_permission_format",
+            )
+
+        claims = _extract_bearer_claims(request)
+        header_holding_id = request.headers.get("X-Holding-ID", "").strip()
+        effective_holding_id = header_holding_id or (claims.holding_id or "")
+
+        if not claims.is_superuser_god:
+            if not claims.holding_id and not effective_holding_id:
+                raise PermissionDeniedError(
+                    "Missing holding context (neither X-Holding-ID header nor token holding_id provided).",
+                    i18n_key="tenancy:errors.missing_holding_context",
+                    status_code=403,
+                )
+            if not claims.holding_id and header_holding_id:
+                raise CrossTenantAccessError(
+                    f"Cross-holding access denied: user {claims.user_id} does not have an assigned holding context.",
+                    i18n_key="tenancy:errors.cross_holding_forbidden",
+                    status_code=403,
+                )
+            if (
+                header_holding_id
+                and claims.holding_id is not None
+                and header_holding_id != claims.holding_id
+            ):
+                raise CrossTenantAccessError(
+                    f"Cross-holding access denied: user {claims.user_id} is not authorized for holding '{header_holding_id}'.",
+                    i18n_key="tenancy:errors.cross_holding_forbidden",
+                    status_code=403,
+                )
+
+        contracted = (
+            claims.contracted_modules | {"holding", "tenancy"}
+            if claims.contracted_modules_explicit
+            else {"holding", "tenancy", "*"} if claims.is_holding_owner else {"holding", "tenancy"}
+        )
+
+        decision = evaluate_effective_permission(
+            required_permission=self.permission_code,
+            contracted_modules=contracted,
+            role_grants=claims.role_grants,
+            temp_grants=claims.temp_grants,
+            explicit_denies=claims.explicit_denies,
+            actor_user_id=claims.user_id,
+            is_holding_owner=claims.is_holding_owner,
+            is_superuser_god=claims.is_superuser_god,
+        )
+        if not decision.allowed and self.fallback_permission:
+            fallback_decision = evaluate_effective_permission(
+                required_permission=self.fallback_permission,
+                contracted_modules=contracted,
+                role_grants=claims.role_grants,
+                temp_grants=claims.temp_grants,
+                explicit_denies=claims.explicit_denies,
+                actor_user_id=claims.user_id,
+                is_holding_owner=claims.is_holding_owner,
+                is_superuser_god=claims.is_superuser_god,
+            )
+            if fallback_decision.allowed:
+                decision = fallback_decision
+        if not decision.allowed:
+            raise PermissionDeniedError(
+                f"Holding permission '{self.permission_code}' denied ({decision.reason_code}).",
+                i18n_key="auth:errors.permission_denied",
+                error_code=decision.reason_code,
+                status_code=403,
+            )
+
+        principal = AuthenticatedPrincipal(
+            user_id=claims.user_id,
+            tenant_id=claims.tenant_id,
+            holding_id=effective_holding_id or claims.holding_id,
+            is_global_staff=claims.is_global_staff,
+            hierarchy_rank=claims.hierarchy_rank,
+            contracted_modules=claims.contracted_modules,
+            role_grants=claims.role_grants,
+            temp_grants=claims.temp_grants,
+            explicit_denies=claims.explicit_denies,
+            accessible_tenants=claims.accessible_tenants,
+            is_superuser_god=claims.is_superuser_god,
+            is_holding_owner=claims.is_holding_owner,
+            jti=claims.jti,
+            authorization_lineage=decision.lineage.to_dict(),
+        )
+        request.state.principal = principal
+        request.state.holding_id = effective_holding_id
+        return principal

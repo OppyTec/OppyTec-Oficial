@@ -301,7 +301,16 @@ def evaluate_permission_access(
             )
 
     # Paso 4: Permiso permanente del Rol
-    if cleaned_perm in role_permissions:
+    perm_mod = extract_permission_module(cleaned_perm)
+    perm_submod = extract_permission_submodule_prefix(cleaned_perm)
+    has_role_permission = (
+        cleaned_perm in role_permissions
+        or "*.*.*" in role_permissions
+        or "*" in role_permissions
+        or f"{perm_mod}.*.*" in role_permissions
+        or f"{perm_submod}.*" in role_permissions
+    )
+    if has_role_permission:
         return AuthorizationDecision(
             allowed=True,
             reason_code="ALLOWED_ROLE_PERMISSION",
@@ -450,6 +459,15 @@ def evaluate_effective_permission(
             for g in normalized_grants
             if is_valid_three_level_permission(g.permission_code)
         }
+        for p in resolved_roles:
+            if p in {"*.*.*", "*"}:
+                inferred_modules.add("*")
+            elif p.endswith(".*.*"):
+                inferred_modules.add(p.split(".*.*")[0])
+            elif p.endswith(".*"):
+                inferred_modules.add(p.split(".*")[0])
+        if is_holding_owner:
+            inferred_modules.add("*")
         resolved_modules: frozenset[str] | set[str] = inferred_modules
     else:
         resolved_modules = contracted_modules

@@ -89,7 +89,7 @@ _PHONE_PATTERN: re.Pattern[str] = re.compile(
     r"(?:\+56\s*9?\s*\d{4}\s*\d{4})\b"
 )
 _CREDIT_CARD_PATTERN: re.Pattern[str] = re.compile(
-    r"\b(?:\d{4}[-\s]?\d{6}[-\s]?\d{5}|(?:\d{4}[-\s]?){3}\d{4})\b"
+    r"(?<![0-9a-fA-F-])(?:\d{4}[-\s]?\d{6}[-\s]?\d{5}|(?:\d{4}[-\s]?){3}\d{4})(?![0-9a-fA-F-])"
 )
 _BEARER_PATTERN: re.Pattern[str] = re.compile(
     r"(?i)\bBearer\s+[A-Za-z0-9\-._~+/]+=*"
@@ -135,6 +135,7 @@ class TenantTelemetryContext:
     tenant_schema: str | None = None
     user_id: str | None = None
     role_rank: int | None = None
+    user_role: str | None = None
     ui_language: str = "es"
     display_currency: str = "CLP"
 
@@ -157,6 +158,8 @@ class TenantTelemetryContext:
             attrs["oppytec.user_id"] = self.user_id
         if self.role_rank is not None:
             attrs["oppytec.role_rank"] = self.role_rank
+        if self.user_role is not None:
+            attrs["oppytec.user_role"] = self.user_role
         return attrs
 
 
@@ -467,6 +470,38 @@ def clear_in_memory_invoice_metrics() -> None:
     _in_memory_invoice_metrics.clear()
 
 
+@dataclass(frozen=True)
+class HoldingHubOperationMetric:
+    """Métrica determinista de operaciones consolidadas del Holding Hub Enterprise."""
+
+    operation: str
+    status: str
+    duration_ms: float
+    holding_id: str | None = None
+    tenant_id: str | None = None
+    user_id: str | None = None
+    user_role: str | None = None
+    tenants_count: int = 0
+    credits_total: int = 0
+    credits_used: int = 0
+    plan_tier: str | None = None
+    timestamp: str = ""
+
+
+_in_memory_holding_hub_metrics: list[HoldingHubOperationMetric] = []
+
+
+def get_in_memory_holding_hub_metrics() -> list[HoldingHubOperationMetric]:
+    """Devuelve las métricas operativas de Holding Hub registradas en memoria."""
+    return list(_in_memory_holding_hub_metrics)
+
+
+def clear_in_memory_holding_hub_metrics() -> None:
+    """Limpia las métricas operativas de Holding Hub en memoria."""
+    _in_memory_holding_hub_metrics.clear()
+
+
+
 # Métricas FinOps OpenTelemetry / Prometheus
 _invoice_meter = otel_metrics.get_meter("oppytec.invoices")
 invoices_processed_counter = _invoice_meter.create_counter(
@@ -598,6 +633,7 @@ def bind_tenant_telemetry_context(
     tenant_schema: str | None = None,
     user_id: str | None = None,
     role_rank: int | None = None,
+    user_role: str | None = None,
     ui_language: str = "es",
     display_currency: str = "CLP",
 ) -> tuple[Token[str], Token[TenantTelemetryContext | None]]:
@@ -613,6 +649,7 @@ def bind_tenant_telemetry_context(
         tenant_schema=tenant_schema,
         user_id=user_id,
         role_rank=role_rank,
+        user_role=user_role,
         ui_language=ui_language,
         display_currency=display_currency,
     )
@@ -698,6 +735,39 @@ def scrub_telemetry_payload(payload: dict[str, object]) -> dict[str, object]:
     return scrubbed
 
 
+def enrich_sentry_telemetry_context(
+    *,
+    holding_id: str | None = None,
+    tenant_id: str | None = None,
+    user_role: str | None = None,
+    user_id: str | None = None,
+) -> dict[str, str]:
+    """
+    Enriquece el contexto y tags de Sentry / GlitchTip con tags obligatorios:
+    `holding_id`, `tenant_id` y `user_role`.
+    Garantiza tolerancia a fallos cuando sentry_sdk no está instalado o deshabilitado en local/CI.
+    """
+    tags: dict[str, str] = {}
+    if holding_id:
+        tags["holding_id"] = str(holding_id)
+    if tenant_id:
+        tags["tenant_id"] = str(tenant_id)
+    if user_role:
+        tags["user_role"] = str(user_role)
+    if user_id:
+        tags["user_id"] = str(user_id)
+
+    with suppress(Exception):
+        import sentry_sdk
+
+        for k, v in tags.items():
+            sentry_sdk.set_tag(k, v)
+        if user_id or user_role:
+            sentry_sdk.set_user({"id": str(user_id or ""), "role": str(user_role or "")})
+
+    return tags
+
+
 def scrub_sentry_event(
     event: dict[str, object],
     hint: dict[str, object] | None = None,
@@ -705,10 +775,24 @@ def scrub_sentry_event(
     """
     Hook determinista `before_send` para Sentry / GlitchTip que garantiza
     sanitización recursiva de PII (RUT, email_contacto, telefono, direccion,
-    credenciales y SecretStr) sin alterar la razón social inmutable ('Pollo King').
+    credenciales y SecretStr) sin alterar la razón social inmutable ('Pollo King')
+    e inyecta o preserva las etiquetas obligatorias de multi-tenancy (holding_id, tenant_id, user_role).
     """
     _ = hint
-    return scrub_telemetry_payload(event)
+    scrubbed = scrub_telemetry_payload(event)
+    ctx = get_tenant_telemetry_context()
+    raw_tags = scrubbed.get("tags")
+    tags: dict[str, object] = dict(raw_tags) if isinstance(raw_tags, Mapping) else {}
+
+    if ctx.holding_id and "holding_id" not in tags:
+        tags["holding_id"] = ctx.holding_id
+    if ctx.tenant_id and "tenant_id" not in tags:
+        tags["tenant_id"] = ctx.tenant_id
+    if ctx.user_role and "user_role" not in tags:
+        tags["user_role"] = ctx.user_role
+
+    scrubbed["tags"] = tags
+    return scrubbed
 
 
 def format_structured_log(
@@ -825,6 +909,23 @@ def trace_span(
             with suppress(Exception):
                 otel_span.record_exception(exc)
                 otel_span.set_status(Status(StatusCode.ERROR, str(exc)))
+
+            # Captura de contexto enriquecido en Sentry
+            with suppress(Exception):
+                import sentry_sdk
+
+                h_id = str(dynamic_attrs.get("holding.id") or dynamic_attrs.get("holding_id") or ctx.holding_id or "")
+                t_id = str(dynamic_attrs.get("tenant_id") or ctx.tenant_id or "")
+                u_role = str(dynamic_attrs.get("user_role") or ctx.user_role or "")
+                with sentry_sdk.push_scope() as scope:
+                    if h_id:
+                        scope.set_tag("holding_id", h_id)
+                    if t_id:
+                        scope.set_tag("tenant_id", t_id)
+                    if u_role:
+                        scope.set_tag("user_role", u_role)
+                    sentry_sdk.capture_exception(exc)
+
             err_payload = scrub_telemetry_payload(
                 {
                     **dynamic_attrs,
@@ -1138,6 +1239,89 @@ def trace_span(
                     cost_usd=Decimal(metric_cost) if metric_cost else Decimal("0"),
                     invoice_id=metric_inv_id,
                 )
+
+            if name.startswith(("holding_hub.", "holding.hub.")) or tracer_name.startswith("oppytec.tenancy.holding_hub"):
+                raw_holding = dynamic_attrs.get("holding.id") or dynamic_attrs.get("holding_id") or ctx.holding_id
+                metric_holding = str(raw_holding) if raw_holding else None
+                if metric_holding:
+                    merged_attrs["holding.id"] = metric_holding
+                    merged_attrs["holding_id"] = metric_holding
+                    with suppress(Exception):
+                        otel_span.set_attribute("holding.id", metric_holding)
+                        otel_span.set_attribute("holding_id", metric_holding)
+
+                raw_tenants = dynamic_attrs.get("tenants.count") or dynamic_attrs.get("tenants_count", 0)
+                try:
+                    metric_tenants = int(str(raw_tenants))
+                except (ValueError, TypeError):
+                    metric_tenants = 0
+                if metric_tenants > 0 or "tenants.count" in dynamic_attrs:
+                    merged_attrs["tenants.count"] = metric_tenants
+                    with suppress(Exception):
+                        otel_span.set_attribute("tenants.count", metric_tenants)
+
+                raw_c_total = dynamic_attrs.get("credits.total") or dynamic_attrs.get("credits_total", 0)
+                try:
+                    metric_c_total = int(str(raw_c_total))
+                except (ValueError, TypeError):
+                    metric_c_total = 0
+                if metric_c_total > 0 or "credits.total" in dynamic_attrs:
+                    merged_attrs["credits.total"] = metric_c_total
+                    with suppress(Exception):
+                        otel_span.set_attribute("credits.total", metric_c_total)
+
+                raw_c_used = dynamic_attrs.get("credits.used") or dynamic_attrs.get("credits_used", 0)
+                try:
+                    metric_c_used = int(str(raw_c_used))
+                except (ValueError, TypeError):
+                    metric_c_used = 0
+                if metric_c_used > 0 or "credits.used" in dynamic_attrs:
+                    merged_attrs["credits.used"] = metric_c_used
+                    with suppress(Exception):
+                        otel_span.set_attribute("credits.used", metric_c_used)
+
+                raw_plan_tier = dynamic_attrs.get("plan.tier") or dynamic_attrs.get("plan_tier")
+                metric_plan_tier = str(raw_plan_tier) if raw_plan_tier else None
+                if metric_plan_tier:
+                    merged_attrs["plan.tier"] = metric_plan_tier
+                    with suppress(Exception):
+                        otel_span.set_attribute("plan.tier", metric_plan_tier)
+
+                raw_role = dynamic_attrs.get("user_role") or ctx.user_role
+                metric_role = str(raw_role) if raw_role else None
+                if metric_role:
+                    merged_attrs["user_role"] = metric_role
+                    with suppress(Exception):
+                        otel_span.set_attribute("user_role", metric_role)
+
+                with suppress(Exception):
+                    import sentry_sdk
+
+                    if metric_holding:
+                        sentry_sdk.set_tag("holding_id", metric_holding)
+                    if metric_tenant:
+                        sentry_sdk.set_tag("tenant_id", metric_tenant)
+                    if metric_role:
+                        sentry_sdk.set_tag("user_role", metric_role)
+
+                hub_metric = HoldingHubOperationMetric(
+                    operation=name,
+                    status=status_str,
+                    duration_ms=round(duration_ms, 3),
+                    holding_id=metric_holding,
+                    tenant_id=metric_tenant,
+                    user_id=metric_user,
+                    user_role=metric_role,
+                    tenants_count=metric_tenants,
+                    credits_total=metric_c_total,
+                    credits_used=metric_c_used,
+                    plan_tier=metric_plan_tier,
+                    timestamp=datetime.now(UTC).isoformat(),
+                )
+                if len(_in_memory_holding_hub_metrics) >= MAX_IN_MEMORY_METRICS_CAPACITY:
+                    del _in_memory_holding_hub_metrics[0]
+                _in_memory_holding_hub_metrics.append(hub_metric)
+
 
 
 def record_quota_semaphore_metric(

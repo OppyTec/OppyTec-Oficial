@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { BrowserRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { BrowserRouter, MemoryRouter, Route, Routes } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
 import { AppProviders } from "@/app/providers";
 import {
   apiRequest,
@@ -257,6 +257,48 @@ describe("OppyTec v2.0 — Phase 5 Frontend Architecture & Paso 1 Auth Routing",
     expect(screen.getByText("Ingresa al panel de control de inventario.")).toBeTruthy();
     expect(screen.getByText("Gestión inteligente para la industria hotelera y restaurantes.")).toBeTruthy();
     expect(screen.getByRole("button", { name: /Ingresar al Sistema/i })).toBeTruthy();
+  });
+
+  it("redirects client user to /holding-hub upon successful login", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          access_token: "mock-client-jwt",
+          user: { id: 10, email: "user@oppytec.cl", username: "holding_boss" },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+
+    render(
+      <AppProviders>
+        <MemoryRouter initialEntries={["/login"]}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/holding-hub"
+              element={<div data-testid="holding-hub-dest">Holding Hub Landing</div>}
+            />
+          </Routes>
+        </MemoryRouter>
+      </AppProviders>
+    );
+
+    fireEvent.change(screen.getByLabelText(/Usuario o Email/i), {
+      target: { value: "user@oppytec.cl" },
+    });
+    fireEvent.change(screen.getByLabelText(/Contraseña/i), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Ingresar al Sistema/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("holding-hub-dest")).toBeTruthy();
+    });
+
+    fetchSpy.mockRestore();
+    localStorage.clear();
+    setHttpRequestContext({ accessToken: undefined, tenantId: undefined, holdingId: undefined });
   });
 
   it("renders AdminLoginPage with 1:1 Legacy dark background and Acceso Restringido", () => {

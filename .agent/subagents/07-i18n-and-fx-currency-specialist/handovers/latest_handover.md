@@ -1,56 +1,57 @@
 # Reporte de Traspaso (`Handover`) — Agente 07: Especialista en i18n y Multi-Moneda FX
 
-- **Fecha UTC:** 2026-11-05T01:15:00Z
+- **Fecha UTC:** 2026-11-05T15:55:00Z
 - **Agente:** `07-i18n-and-fx-currency-specialist`
-- **Fase / Hito:** Etapa 3 del Plan Maestro de LLM Evals y Observabilidad Langfuse (Fase 6: Paridad Bilingüe, Regla "Pollo King", i18n Frontend y Multi-Moneda FX).
-- **Estado de Certificación:** `STAGE_3_I18N_AND_FX_CERTIFIED` (16/16 tests passing en `test_bilingual_parity.py`, 100% simetría en claves frontend, 0 violaciones de marcas gastronómicas, 0 floats en cálculo y triangulación cambiaria).
+- **Fase / Hito:** Etapa 3 — Holding Hub Enterprise (Auditoría Integral i18n, Multi-Moneda FX Institucional y Regla "Pollo King").
+- **Estado de Certificación:** `HOLDING_HUB_STAGE_3_I18N_AND_FX_CERTIFIED` (13/13 tests passing en frontend Vitest, 7/7 tests passing en backend Pytest, 100% simetría en claves `holding_hub.json`, 0 textos crudos/hardcoded en JSX, 0 floats en cálculo cambiario).
 
 ---
 
-## 1. Completed (Qué se implementó y certificó)
+## 1. Resumen Ejecutivo y Tareas Completadas
 
-1. **Golden Dataset Gastronómico Bilingüe (50 Casos 1:1)**:
-   - Creados `oppytec-backend/tests/ai_evals/datasets/gastronomic_golden_dataset.json` (Español canónico) y `oppytec-backend/tests/ai_evals/datasets/gastronomic_golden_dataset_en.json` (Inglés profesional gastronómico espejo).
-   - Cobertura de los 5 dominios estratégicos (10 casos cada uno):
-     * Dominio 1: Banquetes y Escalabilidad de Porciones (`EVAL-GASTRO-001` a `010`).
-     * Dominio 2: Mermas, Costeo y Rendimiento de Recetas (`EVAL-GASTRO-011` a `020`).
-     * Dominio 3: Stock y Política FEFO Estricta (`EVAL-GASTRO-021` a `030`).
-     * Dominio 4: Facturación, Proveedores y Órdenes de Compra (`EVAL-GASTRO-031` a `040`).
-     * Dominio 5: Muro de Fuego de Privacidad y Consultas sobre OppyTec (`EVAL-GASTRO-041` a `050`).
+1. **Consulta Previa a Graphify**:
+   - Ejecutado `python scripts/harness.py nav "holding_hub"` validando la cadena de dependencias de migración (`0018_public_holding_hub`), modelos, router y componentes frontend.
 
-2. **Invarianza Estricta de Marcas ("Pollo King" & "Cevichería Central")**:
-   - Validación inmutable de que "Pollo King" y "Cevichería Central" nunca se traduzcan en prompts, ground truths ni entidades requeridas en inglés (PROHIBIDO "King Chicken", "Chicken King", "Rey Pollo", "Central Ceviche").
+2. **Auditoría y Paridad 100% de Catálogos i18n**:
+   - `oppytec-frontend/src/shared/i18n/locales/es/holding_hub.json`: 174 claves completas organizadas modularmente (`navbar`, `sidebar`, `kpis`, `filters`, `branches_table`, `detail_modal`, `briefing`, `plans`, `credits`, `command_palette`, `alerts`).
+   - `oppytec-frontend/src/shared/i18n/locales/en/holding_hub.json`: 174 claves espejo en inglés profesional gastronómico/enterprise con 100% de paridad y simetría exacta comprobada programáticamente.
+   - Sincronización en `config.ts`, `i18next.d.ts` e `i18n.test.tsx` (registrando y testeando 26 namespaces oficiales).
 
-3. **Suite de Pruebas de Paridad Bilingüe (`oppytec-backend/tests/ai_evals/test_bilingual_parity.py`)**:
-   - `TestGoldenDatasetStructuralParity`: verifica existencia, 50 casos exactos, secuencia correlativa de IDs, alineación de categorías y criterios de evaluación.
-   - `TestProtectedBrandInvariance`: verificación de cero traducciones prohibidas y presencia simétrica de marcas comerciales protegidas.
-   - `TestBilingualTokenAndLengthParity`: ratio de tokens/palabras dentro de los rangos de naturalidad lingüística (0.60 a 1.45 por caso, promedio 0.80 a 1.15).
-   - `TestMultiCurrencyFxTokenTelemetry`:
-     * Cálculo de costos de tokens con 0% float y 100% `Decimal` (`Decimal("0.000001")` para USD y `Decimal("0.01")` para CLP).
-     * Conversión y triangulación multi-moneda (`USD`, `CLP`, `EUR`) utilizando tasas del Banco Central de Chile (BCCh) y Banco Central Europeo (BCE Frankfurter).
-   - `TestFrontendI18nSynchronization`:
-     * Simetría al 100% de claves entre `locales/es/oppyfy.json` y `locales/en/oppyfy.json`.
-     * Preservación de "Pollo King" en frontend.
-     * Validación de variables de interpolación (`{{brandName}}`, `{{credits}}`, `{{count}}`, `{{ms}}`).
+3. **Erradicación Total de Textos Hardcodeados (0 JSX Raw Strings)**:
+   - Auditados y refactorizados todos los componentes del Holding Hub:
+     * `HoldingNavbar.tsx`: fallback de roles, badges y notificaciones dinámicas parametrizadas con `t()`.
+     * `HoldingSidebar.tsx`: títulos contextuales, cuotas y badges internacionalizados.
+     * `HoldingCentralSection.tsx`: labels de modales, RUTs, estados compartidos/asignados, KPIs financieros y de inventario.
+     * `HoldingPlansSection.tsx`: matriz de planes (Starter, Growth, Enterprise), badges ("HOY", "Fin de ciclo"), botones y estados de transición.
+     * `HoldingCreditsSection.tsx`: sliders de asignación, advertencias de sobrecupo (over-allocation warning), estados de compra y checkout.
+     * `TenantCommandPalette.tsx`: atajos de teclado, conteo de locales y placeholders.
+     * `HoldingAiBriefingCard.tsx`: etiquetas de accesibilidad `aria-label`, prefijos contextuales de párrafos, estados de autonomía y burn rate.
+     * `HoldingHubLayout.tsx`: delegación de refrescos y sincronización de estado.
 
-4. **Resultados de Verificación**:
-   - `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/ai_evals/test_bilingual_parity.py`: **16/16 passed** (0 warnings).
-   - `oppytec-frontend`: **6 suites, 70 passed** en `src/features/oppyfy`.
+4. **Auditoría Multi-Moneda FX (CLP, USD, EUR, BRL)**:
+   - Integración de `useCurrencyFormatter()` con `convertAndFormat(amount, "CLP", currency)` para garantizar que el cambio reactivo del `CurrencySelector` traduzca y convierta instantáneamente montos consolidados de ventas e inventario, paquetes de créditos IA y planes de suscripción mensual/anual.
+   - Tasas de cambio institucionales respaldadas por Banco Central de Chile (BCCh) y Banco Central Europeo (BCE Frankfurter).
+   - Uso estricto de aritmética sin pérdida de precisión: tipos `Decimal` en backend y `BigInt` escalado a $10^8$ en frontend.
+   - Protección contra anomalías cambiarias (`anomaly_guard.py`) asegurando cuarentena automática ante fluctuaciones > 8%.
 
----
+5. **Regla de Oro "Pollo King" (Invarianza de Nombres Propios)**:
+   - Verificado que los nombres de holdings (ej. "Holding Gastronómico Pollo King"), razones sociales ("Pollo King SpA"), marcas protegidas ("Pollo King", "Savory", "Cevichería Central"), RUTs y nombres de esquemas PostgreSQL (`pollo_king_providencia`, `pollo_king_vina`, etc.) tengan `translatable = False` y se mantengan 100% inmutables entre idiomas.
 
-## 2. Friction & Failures (Dificultades y Resoluciones)
-
-- **Fricción 1:** Al correr pytest directamente en el shell se detectó `pytest: command not found` debido a que el entorno virtual del backend se aloja en `oppytec-backend/.venv/bin/pytest`.
-  * **Solución:** Se invocó el binario específico del virtualenv de Python 3.14 (`oppytec-backend/.venv/bin/pytest`), ejecutándose sin problemas.
-- **Fricción 2:** Advertencia de deprecación de Pytest 10 (`PytestRemovedIn10Warning`) en fixtures con `scope="class"` definidas como métodos de instancia.
-  * **Solución:** Se decoraron las fixtures de clase con `@classmethod` y argumento `cls`, eliminando el 100% de advertencias.
+6. **Cobertura de Pruebas**:
+   - `oppytec-frontend/src/features/holding-hub/HoldingHub.test.tsx`: 13 pruebas unitarias y de integración pasando (incluye tests específicos de paridad i18n, reactividad FX multi-moneda y regla Pollo King).
+   - `oppytec-frontend/src/shared/i18n/i18n.test.tsx`: 13 pruebas pasando con soporte de 26 namespaces.
+   - `oppytec-backend/tests/unit/test_holding_hub_i18n_fx.py`: 7 pruebas exhaustivas pasando en Pytest.
 
 ---
 
-## 3. Next Exact Action
+## 2. Friction & Resoluciones Técnicas
 
-Entregar resultados de la Etapa 3 al Orquestador y continuar la coordinación con:
-1. **Agente 06 (`06-ai-oppyfy-and-jev-engineer`)**: Ejecución de las suites de DeepEval / Ragas contra los datasets generados.
-2. **Agente 08 (`08-environments-and-observability-engineer`)**: Finalización de la integración de Langfuse con OpenTelemetry Tempo/Grafana.
-3. Paso coordinado hacia la **Etapa 4** (QA Parity, Cybersecurity Red Team, Git Arbiter y Tech Writer OpenSpec).
+- **Diferencia entre formateo estático y conversión FX**: `formatCurrencyAmount(val, cur)` solo añade el símbolo monetario sin convertir la magnitud numérica. Se actualizó el consumo a `convertAndFormat(val, "CLP", cur)` provisto por `useCurrencyFormatter()`, logrando conversiones exactas y reactivas en toda la interfaz corporativa.
+- **Conteo de namespaces i18n**: Al incorporar `holding_hub` (y preexistente `invoices`), la prueba `i18n.test.tsx` fallaba por esperar exactamente 24 namespaces. Se actualizó a 26 y se agregó aserción explícita de `holding_hub`.
+- **Enums de Acción en Anomaly Guard**: En las aserciones del backend se alinearon los estados con los literales exactos `AUTO_UPDATED` y `FX_ANOMALY_QUARANTINED` definidos en `anomaly_guard.py`.
+
+---
+
+## 3. Próximo Paso (Traspaso)
+
+Entregar formalmente el informe de la Etapa 3 al agente orquestador (`01-orchestrator-pm`) y habilitar el avance a las etapas subsiguientes (Observabilidad de Métricas Holding Hub, QA Parity e Integración E2E).

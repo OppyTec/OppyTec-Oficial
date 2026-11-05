@@ -48,9 +48,10 @@ describe("Frontend i18n Suite (12 Namespaces, SVG Flags & Pollo King Proper Noun
     setActiveLanguage("es");
   });
 
-  it("initializes all 24 namespaces for both es and en with 1:1 parity", () => {
+  it("initializes all 26 namespaces for both es and en with 1:1 parity", () => {
     expect(SUPPORTED_LANGUAGES).toEqual(["es", "en"]);
-    expect(I18N_NAMESPACES).toHaveLength(24);
+    expect(I18N_NAMESPACES).toHaveLength(26);
+    expect(I18N_NAMESPACES).toContain("holding_hub");
     expect(I18N_NAMESPACES).toContain("configuracion");
     expect(I18N_NAMESPACES).toContain("profile");
     expect(I18N_NAMESPACES).toContain("users");

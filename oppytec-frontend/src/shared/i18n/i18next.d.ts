@@ -27,7 +27,8 @@ export type I18nNamespace =
   | "notifications"
   | "projection"
   | "events"
-  | "invoices";
+  | "invoices"
+  | "holding_hub";
 
 export type TranslationInterpolationVars = Readonly<
   Record<string, string | number>

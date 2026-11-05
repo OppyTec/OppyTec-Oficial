@@ -29,6 +29,7 @@ from src.core.guards.rate_limiter import (
 from src.core.guards.rbac_dependencies import (
     AuthenticatedPrincipal,
     RequireGlobalPermission,
+    RequireHoldingPermission,
     RequireTenantPermission,
     clear_revoked_sessions,
     is_session_revoked,
@@ -56,6 +57,7 @@ __all__ = [
     "RateLimitProfile",
     "RateLimitQuota",
     "RequireGlobalPermission",
+    "RequireHoldingPermission",
     "RequireRateLimit",
     "RequireSafeFileUpload",
     "RequireTenantPermission",

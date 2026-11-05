@@ -174,6 +174,12 @@
       "path": "oppytec-frontend/src/features/catalog/"
     },
     {
+      "id": "frontend:feature_holding_hub",
+      "label": "Frontend Holding Hub Enterprise Feature (Central, Plans, Credits & AI Briefing)",
+      "type": "frontend_feature",
+      "path": "oppytec-frontend/src/features/holding-hub/HoldingHubPage.tsx"
+    },
+    {
       "id": "frontend:feature_inventory",
       "label": "Frontend Feature Inventory (Kardex Ledger, Stock Semaphores, Physical Counts & 7x24 Waste Heatmap)",
       "type": "frontend_feature",
@@ -426,6 +432,12 @@
       "path": "oppytec-backend/alembic/versions/0017_public_ai_benchmarks_and_tenant_feedback.py"
     },
     {
+      "id": "migration:0018_public_holding_hub",
+      "label": "Alembic 0018 Migration: Public holding hub credit distribution and purchases",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0018_public_holding_hub_credit_distribution_and_purchases.py"
+    },
+    {
       "id": "module:analytics",
       "label": "Analytics Module (Executive Margins, Kasavana Menu Engineering, Loss Control & Projections)",
       "type": "backend_module",
@@ -528,6 +540,12 @@
       "path": "oppytec-backend/src/modules/events/presentation/router.py"
     },
     {
+      "id": "router:holding_hub",
+      "label": "Backend Holding Hub REST Router /api/v1/holding-hub",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/tenancy/presentation/holding_hub_router.py"
+    },
+    {
       "id": "router:identity",
       "label": "Backend Presentation Router (identity) /api/v1/identity",
       "type": "backend_router",
@@ -588,6 +606,18 @@
       "path": "oppytec-backend/src/modules/oppy_ai/application/ai_model_catalog_service.py"
     },
     {
+      "id": "service:holding_briefing",
+      "label": "Holding AI Executive Briefing Service (Oppy Daily Briefing)",
+      "type": "backend_service",
+      "path": "oppytec-backend/src/modules/oppy_ai/application/holding_briefing_service.py"
+    },
+    {
+      "id": "service:holding_hub",
+      "label": "Holding Hub Enterprise Application Service (Consolidation & Credits)",
+      "type": "backend_service",
+      "path": "oppytec-backend/src/modules/tenancy/application/holding_hub_service.py"
+    },
+    {
       "id": "service:oppyfy_code_mode",
       "label": "OppyFy Code Mode Application Service (Multi-Tenant & FinOps Telemetry)",
       "type": "backend_service",
@@ -636,6 +666,30 @@
       "path": "oppytec-backend/tests/architecture/"
     },
     {
+      "id": "suite:backend_holding_briefing",
+      "label": "Backend Holding AI Executive Briefing & Safety Cap Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/test_holding_briefing.py"
+    },
+    {
+      "id": "suite:backend_holding_hub_api",
+      "label": "Backend Holding Hub REST API & RBAC Multi-Level Integration Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/integration/test_holding_hub_api.py"
+    },
+    {
+      "id": "suite:backend_holding_hub_domain",
+      "label": "Backend Holding Hub Domain Logic & Credit Calculations Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/test_holding_hub_domain.py"
+    },
+    {
+      "id": "suite:backend_holding_observability",
+      "label": "Backend Holding Hub OpenTelemetry Spans & Sentry Context Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/test_holding_hub_observability.py"
+    },
+    {
       "id": "suite:code_mode_sandbox_security_test",
       "label": "Code Mode Sandbox Security & Red Team Offensive Suite (10 Vectors)",
       "type": "verification_suite",
@@ -676,6 +730,12 @@
       "label": "Frontend Environment & Runtime Configuration Vitest Suite",
       "type": "verification_suite",
       "path": "oppytec-frontend/src/shared/config/env.test.ts"
+    },
+    {
+      "id": "suite:frontend_holding_hub_vitest",
+      "label": "Frontend Holding Hub Enterprise Layout, Tabs, FX & AI Briefing Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/holding-hub/HoldingHub.test.tsx"
     },
     {
       "id": "suite:frontend_i18n_test",
@@ -833,6 +893,11 @@
     },
     {
       "source": "app:backend_main",
+      "target": "router:holding_hub",
+      "relation": "mounts_holding_hub_router"
+    },
+    {
+      "source": "app:backend_main",
       "target": "router:identity",
       "relation": "mounts_api_router"
     },
@@ -978,6 +1043,11 @@
     },
     {
       "source": "frontend:app_shell",
+      "target": "frontend:feature_holding_hub",
+      "relation": "mounts_holding_hub_route"
+    },
+    {
+      "source": "frontend:app_shell",
       "target": "frontend:feature_inventory",
       "relation": "routes_to_feature"
     },
@@ -1025,6 +1095,21 @@
       "source": "frontend:currency_selector",
       "target": "frontend:shared_fx_currency",
       "relation": "renders_currency_dropdown_and_badge"
+    },
+    {
+      "source": "frontend:feature_holding_hub",
+      "target": "frontend:currency_selector",
+      "relation": "formats_holding_currency"
+    },
+    {
+      "source": "frontend:feature_holding_hub",
+      "target": "frontend:shared_i18n",
+      "relation": "translates_holding_hub_namespace"
+    },
+    {
+      "source": "frontend:feature_holding_hub",
+      "target": "router:holding_hub",
+      "relation": "consumes_holding_hub_api"
     },
     {
       "source": "frontend:feature_inventory",
@@ -1202,6 +1287,11 @@
       "relation": "ingests_rag_layer1_business_specs_only"
     },
     {
+      "source": "module:oppy_ai",
+      "target": "service:holding_briefing",
+      "relation": "orchestrates_holding_briefing"
+    },
+    {
       "source": "module:procurement",
       "target": "core:jev_system1",
       "relation": "classifies_ocr_invoices"
@@ -1237,6 +1327,11 @@
       "relation": "provisions_isolated_tenant_schema"
     },
     {
+      "source": "module:tenancy",
+      "target": "service:holding_hub",
+      "relation": "orchestrates_holding_hub_service"
+    },
+    {
       "source": "openspec:business_domain_vault",
       "target": "openspec:engineering_code_vault",
       "relation": "pairs_1_to_1_bipartite_contracts"
@@ -1260,6 +1355,21 @@
       "source": "router:core_realtime",
       "target": "core:realtime_ws",
       "relation": "routes_to_realtime_ws"
+    },
+    {
+      "source": "router:holding_hub",
+      "target": "module:tenancy",
+      "relation": "routes_to_tenancy_holding_hub"
+    },
+    {
+      "source": "router:holding_hub",
+      "target": "service:holding_briefing",
+      "relation": "invokes_ai_briefing"
+    },
+    {
+      "source": "router:holding_hub",
+      "target": "service:holding_hub",
+      "relation": "invokes_holding_hub_service"
     },
     {
       "source": "router:identity",
@@ -1310,6 +1420,11 @@
       "source": "service:ai_model_catalog",
       "target": "module:oppy_ai",
       "relation": "manages_ai_models_and_tariffs"
+    },
+    {
+      "source": "service:holding_hub",
+      "target": "migration:0018_public_holding_hub",
+      "relation": "persists_credit_distributions_and_purchases"
     },
     {
       "source": "service:oppyfy_code_mode",
@@ -1372,6 +1487,26 @@
       "relation": "enforces_clean_architecture_and_10_criteria"
     },
     {
+      "source": "suite:backend_holding_briefing",
+      "target": "service:holding_briefing",
+      "relation": "verifies_two_paragraph_briefing"
+    },
+    {
+      "source": "suite:backend_holding_hub_api",
+      "target": "router:holding_hub",
+      "relation": "tests_holding_hub_endpoints_and_anti_idor"
+    },
+    {
+      "source": "suite:backend_holding_hub_domain",
+      "target": "service:holding_hub",
+      "relation": "verifies_credit_distribution_and_plans"
+    },
+    {
+      "source": "suite:backend_holding_observability",
+      "target": "service:holding_hub",
+      "relation": "verifies_otel_spans_and_latency_sla"
+    },
+    {
       "source": "suite:code_mode_sandbox_security_test",
       "target": "core:code_mode_sandbox",
       "relation": "audits_sandbox_escapes_and_watchdog"
@@ -1415,6 +1550,11 @@
       "source": "suite:frontend_env_test",
       "target": "frontend:app_shell",
       "relation": "verifies_runtime_env_and_invariants"
+    },
+    {
+      "source": "suite:frontend_holding_hub_vitest",
+      "target": "frontend:feature_holding_hub",
+      "relation": "verifies_holding_hub_ui_and_i18n"
     },
     {
       "source": "suite:frontend_i18n_test",
@@ -1480,10 +1620,10 @@
   "metrics": {
     "backend_modules": 10,
     "http_security_guards": 4,
-    "frontend_features": 10,
+    "frontend_features": 11,
     "frontend_shared_kernels": 5,
     "cross_feature_imports": 0,
-    "verification_suites": 26,
+    "verification_suites": 31,
     "redteam_vectors": 11,
     "e2e_flows": 5,
     "archify_atlas_maps": 5,
@@ -1492,11 +1632,11 @@
     "load_test_target_rps": 500,
     "load_test_p95_budget_ms": 120,
     "rubric_score": "10/10",
-    "nodes_count": 122,
-    "edges_count": 145,
+    "nodes_count": 132,
+    "edges_count": 161,
     "frontend_admin_views": 4,
-    "backend_routers": 14,
-    "alembic_migrations": 19,
-    "updated_at": "2026-11-05T01:26:30.968075+00:00"
+    "backend_routers": 15,
+    "alembic_migrations": 20,
+    "updated_at": "2026-11-05T17:40:44.089510+00:00"
   }
 }

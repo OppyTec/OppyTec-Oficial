@@ -227,10 +227,12 @@ describe("Módulo de Manos Libres - useManosLibres Hook & Audio Phonetics", () =
         speak: mockSpeak,
         cancel: mockCancel,
       };
-      (window as any).SpeechSynthesisUtterance = vi.fn().mockImplementation((text) => ({
-        text,
-        lang: "es-CL",
-      }));
+      (window as any).SpeechSynthesisUtterance = vi.fn().mockImplementation(function (this: any, text: string) {
+        this.text = text;
+        this.lang = "es-CL";
+        this.rate = 1.0;
+        this.pitch = 1.0;
+      });
 
       const { result } = renderHook(() => useManosLibres(), {
         wrapper: createWrapper(),

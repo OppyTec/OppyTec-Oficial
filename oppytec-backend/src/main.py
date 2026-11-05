@@ -35,6 +35,7 @@ from src.modules.oppy_ai.presentation.router import router as oppy_ai_router
 from src.modules.procurement.presentation.router import router as procurement_router
 from src.modules.projection.presentation.router import router as projection_router
 from src.modules.recipes.presentation.router import router as recipes_router
+from src.modules.tenancy.presentation.holding_hub_router import router as holding_hub_router
 from src.modules.tenancy.presentation.platform_admin_router import router as platform_admin_router
 from src.modules.tenancy.presentation.router import router as tenancy_router
 
@@ -247,6 +248,7 @@ def create_app() -> FastAPI:
     app.include_router(realtime_router)
     app.include_router(identity_router)
     app.include_router(tenancy_router)
+    app.include_router(holding_hub_router)
     app.include_router(platform_admin_router)
     app.include_router(audit_router)
     app.include_router(catalog_router)

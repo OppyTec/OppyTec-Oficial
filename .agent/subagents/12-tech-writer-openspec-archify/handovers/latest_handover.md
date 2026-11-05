@@ -1,56 +1,64 @@
 # Reporte de Traspaso (`Handover`) — Agente 12: Technical Writer, OpenSpec Bipartito, Graphify y Archify
 
-- **Fecha UTC:** 2026-11-05T01:30:00Z
+- **Fecha UTC:** 2026-11-05T16:05:00Z
 - **Agente:** Agente 12 (`12-tech-writer-openspec-archify`)
-- **Fase / Módulo:** Etapa 4 (Fases 8.2 y 8.3) del **Plan Maestro de LLM Evals y Observabilidad Especializada con Langfuse para OppyFy**.
-- **Estado de Certificación:** `STAGE_4_DOCUMENTATION_AND_GRAPHIFY_CERTIFIED` (Bóvedas OpenSpec Bipartitas 1:1 creadas, Plan Maestro completado en sus 8 fases al 100%, Bitácora 15 generada, Grafo AST sincronizado con 119 nodos y 142 aristas, y `verify-evals` 100% verde).
+- **Fase / Módulo:** Etapa 4 — **Holding Hub Enterprise de OppyTec v2.0** (OpenSpec Bipartito, Graphify AST Sync y Bitácora Humana del Escuadrón).
+- **Estado de Certificación:** `HOLDING_HUB_STAGE_4_DOCUMENTATION_AND_GRAPHIFY_CERTIFIED` (Especificaciones OpenSpec creadas en `openspec/specs/` y `specs/`, Grafo AST sincronizado con 132 nodos, 15 routers, 20 migraciones y 31 suites, bitácora humana completada, y `verify-evals` 100% verde).
 
 ---
 
 ## 1. Completed (Qué se ejecutó, validó y sincronizó)
 
-### 1.1 Sincronización de Bóvedas OpenSpec Bipartito 1:1
-- Creada la especificación de dominio de negocio:
-  * [`specs/business-domain/ai_evals.business.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/business-domain/ai_evals.business.spec.md):
-    - Redacción en lenguaje comprensible para gerentes gastronómicos y hoteleros.
-    - Principio de **Honestidad Epistémica Gastronómica** (cero suposiciones en inventario o alérgenos).
-    - SLAs de calidad: Fidelidad al contexto $\ge 0.85$, Pertinencia $\ge 0.85$, Precisión de herramientas $\ge 0.80$, Tasa de alucinación global $\le 0.05$ y crítica $0.00$.
-    - Invarianza inmutable de la regla "Pollo King".
-    - Categorización del feedback humano en 5 tipologías de falla (`hallucination`, `math_error`, `incomplete`, `bad_formatting`, `other`).
-- Creada la especificación técnica de ingeniería:
-  * [`specs/engineering-code/ai_evals.code.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/engineering-code/ai_evals.code.spec.md):
-    - Frontmatter obligatorio: `spec_id: ENG-AI-EVALS-AND-OBSERVABILITY`, `domain_module: oppy_ai`, `jev_system1_evaluation: "Sí (Jev.choice, umbral 0.85)"`, `last_verified_phase: "Fase 8.3"`.
-    - Contratos de dominio DDD: `EvalScore` (cero floats, solo `Decimal`), `EvalMetricThresholds`, `TraceContext`, `AIChatFeedback`, `AIEvalBenchmark`, y puertos abstractos `LLMTracerPort`, `LLMEvalSuitePort` y `AIChatFeedbackRepositoryPort`.
-    - Diagramas de secuencia en Mermaid de instrumentación no bloqueante y feedback con Score API.
-    - Arquitectura del servicio `langfuse-server` (v2) en Docker Compose y censura estricta de PII.
+### 1.1 Consulta Previa a Graphify (Regla de Oro)
+- Ejecutado `python scripts/harness.py nav "holding"` antes de iniciar cualquier modificación, analizando las dependencias y aristas previas.
 
-### 1.2 Actualización del Plan Maestro Oficial
-- Actualizado [`.agent/Planes-Maestros/PLAN_MAESTRO_LLM_EVALS_Y_OBSERVABILIDAD_LANGFUSE.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/.agent/Planes-Maestros/PLAN_MAESTRO_LLM_EVALS_Y_OBSERVABILIDAD_LANGFUSE.md):
-  * Marcadas como completadas (`[x]`) las Fases 1 a 8 en su totalidad.
-  * Estado actualizado a: `Completado y Certificado por el Escuadrón (Etapas 1 a 4 100% OK)`.
+### 1.2 Especificaciones OpenSpec Bipartitas 1:1
+- Creada especificación de negocio:
+  * [`openspec/specs/business/holding-hub-enterprise.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/openspec/specs/business/holding-hub-enterprise.md) y su espejo en [`specs/business-domain/holding-hub-enterprise.business.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/business-domain/holding-hub-enterprise.business.spec.md):
+    - Redacción en lenguaje ejecutivo para directores de holding, gerentes de operaciones y dueños gastronómicos (0% SQL, 0% código interno).
+    - Desglose exhaustivo de las 3 pestañas: Vista Central (torre de control y sucursales), Planes Corporativos (catálogo y escalabilidad SaaS), Créditos de IA (bolsa compartida vs asignada, sliders y compra prepagada).
+    - Explicación del **Oppy Daily Holding Briefing** en exactamente dos párrafos (Ventas/Merma y Saldo IA/Safety Cap predictivo).
+    - Conmutación rápida de sucursales con paleta de comandos `Cmd+K`.
+    - Regla de oro "Pollo King": invarianza inmutable de nombres de consorcios, razones sociales y esquemas físicos.
+- Creada especificación técnica de ingeniería:
+  * [`openspec/specs/engineering/holding-hub-architecture.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/openspec/specs/engineering/holding-hub-architecture.md) y su espejo en [`specs/engineering-code/holding-hub-architecture.code.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/engineering-code/holding-hub-architecture.code.spec.md):
+    - Frontmatter obligatorio: `spec_id: ENG-HOLDING-HUB-ENTERPRISE`, `domain_module: tenancy`, `jev_system1_evaluation: "No (Jev.choice, umbral 0.90)"`, `last_verified_phase: "Etapa 4 Holding Hub"`.
+    - Diagrama Mermaid de flujo y arquitectura integral (Frontend React 19, Router FastAPI, Servicios de Aplicación y Persistencia PostgreSQL).
+    - Modelos SQLAlchemy 2.0 Async: `Holding` (con `credit_distribution_mode`), `HoldingCreditDistribution` y `HoldingCreditPurchase` vinculados a la migración Alembic 0018 (`0018_public_holding_hub_credit_distribution_and_purchases.py`).
+    - Matriz de los 8 endpoints REST en `/api/v1/holding-hub` protegidos por la guardia `RequireHoldingPermission` con RBAC 3-niveles y blindaje anti-IDOR.
+    - Contratos Pydantic v2 con `extra="forbid"` y cero floats (100% `Decimal` e `int`).
+    - Instrumentación OpenTelemetry (`oppytec.tenancy.holding_hub`) y contexto Sentry (`holding_id`, `tenant_id`, `user_role`) con SLA $p95 < 200\text{ ms}$.
+    - Frontend React 19, componentes modulares, gráficos Recharts, paleta `Cmd+K`, temas y 174 claves bilingües con paridad 100%.
 
 ### 1.3 Registro en la Bitácora del Escuadrón
-- Creada la entrada de bitácora:
-  * [`docs/bitacora/diario-escuadron/15-Construccion-LLM-Evals-y-Observabilidad-Langfuse.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/docs/bitacora/diario-escuadron/15-Construccion-LLM-Evals-y-Observabilidad-Langfuse.md):
-    - Resumen ejecutivo del dolor de negocio (alucinaciones de IA vs seguridad alimentaria y costos).
-    - Diagrama del flujo agéntico y qué construyó cada uno de los 12 agentes del escuadrón.
-    - Cuadro consolidado de métricas de calidad obtenidas.
+- Creada la entrada de bitácora en lenguaje humano claro:
+  * [`docs/bitacora/diario-escuadron/2026-11-05-holding-hub-enterprise.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/docs/bitacora/diario-escuadron/2026-11-05-holding-hub-enterprise.md):
+    - Explicación del problema de negocio para cadenas gastronómicas y cómo el Holding Hub lo soluciona.
+    - Resumen detallado de qué construyó cada agente del escuadrón (Agentes 01 al 12).
+    - Diagrama Mermaid de la cadena de montaje agéntica.
+    - Recorrido práctico del usuario (Director de Operaciones de "Holding Gastronómico Pollo King").
+    - Estándares de excelencia alcanzados (cero floats, paridad bilingüe, regla Pollo King, SLA de latencia y anti-IDOR).
 
-### 1.4 Sincronización del Grafo AST Graphify y Atlas Archify
+### 1.4 Actualización del Harnés y Sincronización Graphify
+- Actualizado [`scripts/harness.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/scripts/harness.py) con indexación automática de:
+  * `router:holding_hub`
+  * `service:holding_hub`
+  * `service:holding_briefing`
+  * `frontend:feature_holding_hub`
+  * 5 nuevas suites de verificación backend y frontend.
 - Ejecutado `python scripts/harness.py sync-graph`:
-  * Grafo AST actualizado en `docs/architecture/graphify/graph.json` y `visualizer.html`.
-  * Nodos totales: **119** (Routers: 14, Migraciones: 19, Suites: 23).
-  * Aristas totales: **142**.
-
-### 1.5 Liberación de Claims AST
-- Liberada la reserva atómica del símbolo `ai_evals` en `claims_registry.json`.
+  * **Nodos totales:** 132 (Routers: 15, Migraciones: 20, Suites: 31).
+  * **Aristas totales:** 161.
+  * Sincronizado `docs/architecture/graphify/graph.json` y `visualizer.html`.
+- Verificado con `python scripts/harness.py nav "holding"`: 15 coincidencias indexadas y contextualizadas.
+- Verificado con `python scripts/harness.py verify-evals`: 100% integridad anti-trampa.
 
 ---
 
 ## 2. Friction & Failures
-- Cero fricciones. Todas las validaciones de arquitectura y paridad pasaron al primer intento.
+- Cero fricciones. La arquitectura modular permitió una integración limpia y armónica en todas las capas.
 
 ---
 
 ## 3. Next Exact Action
-- El Agente Orquestador (`01-orchestrator-pm`) consolida el informe final y da por concluido el ciclo de trabajo con éxito.
+- Remitir el informe de cierre al Agente Orquestador (`01-orchestrator-pm`) certificando la finalización exitosa de la Etapa 4 del Holding Hub Enterprise.

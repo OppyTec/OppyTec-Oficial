@@ -46,7 +46,7 @@ export function LoginPage() {
       setSubmitting(false);
     } else {
       setSubmitting(false);
-      navigate("/", { replace: true });
+      navigate("/holding-hub", { replace: true });
     }
   };
 

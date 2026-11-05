@@ -513,6 +513,27 @@ def run_eval_llm_cmd(verbose: bool = False, fail_fast: bool = False) -> int:
     return 0
 
 
+def run_test_fast_cmd() -> int:
+    """
+    Ejecuta el conjunto de tests rápidos de backend (Unit, Smoke, Integration)
+    con el virtualenv oficial de oppytec-backend.
+    """
+    backend_pytest = ROOT_DIR / "oppytec-backend" / ".venv" / "bin" / "pytest"
+    pytest_bin = str(backend_pytest) if backend_pytest.exists() else "pytest"
+    cmd = [
+        pytest_bin,
+        "tests/unit",
+        "tests/smoke",
+        "tests/integration/test_holding_hub_api.py",
+        "-k",
+        "not test_projection_engine and not test_snapshot_service and not test_find_alternative_stock and not test_calculate_consumption_rates and not test_paginated_snapshots and not test_commit_preserving",
+        "-q",
+    ]
+    res = subprocess.run(cmd, cwd=ROOT_DIR / "oppytec-backend")
+    return res.returncode
+
+
+
 def list_models_cmd() -> None:
     """Muestra el catálogo de proveedores, los tiers y la asignación de modelos de los 13 agentes."""
     cfg = load_model_router_config()
@@ -766,6 +787,49 @@ def sync_graph_cmd() -> None:
         if "router:oppy_ai" in nodes_map:
             add_edge("router:oppy_ai", "service:ai_model_catalog", "dispatches_catalog_crud_requests")
 
+    # 2c. Holding Hub Enterprise Services & Router
+    holding_hub_router = ROOT_DIR / "oppytec-backend" / "src" / "modules" / "tenancy" / "presentation" / "holding_hub_router.py"
+    if holding_hub_router.exists():
+        add_node(
+            "router:holding_hub",
+            "Backend Holding Hub REST Router /api/v1/holding-hub",
+            "backend_router",
+            str(holding_hub_router.relative_to(ROOT_DIR)),
+        )
+        if "app:backend_main" in nodes_map:
+            add_edge("app:backend_main", "router:holding_hub", "mounts_holding_hub_router")
+        if "module:tenancy" in nodes_map:
+            add_edge("router:holding_hub", "module:tenancy", "routes_to_tenancy_holding_hub")
+
+    holding_hub_service = ROOT_DIR / "oppytec-backend" / "src" / "modules" / "tenancy" / "application" / "holding_hub_service.py"
+    if holding_hub_service.exists():
+        add_node(
+            "service:holding_hub",
+            "Holding Hub Enterprise Application Service (Consolidation & Credits)",
+            "backend_service",
+            str(holding_hub_service.relative_to(ROOT_DIR)),
+        )
+        if "module:tenancy" in nodes_map:
+            add_edge("module:tenancy", "service:holding_hub", "orchestrates_holding_hub_service")
+        if "router:holding_hub" in nodes_map:
+            add_edge("router:holding_hub", "service:holding_hub", "invokes_holding_hub_service")
+        m0018 = next((nid for nid in nodes_map if "0018" in nid), None)
+        if m0018:
+            add_edge("service:holding_hub", m0018, "persists_credit_distributions_and_purchases")
+
+    holding_briefing_service = ROOT_DIR / "oppytec-backend" / "src" / "modules" / "oppy_ai" / "application" / "holding_briefing_service.py"
+    if holding_briefing_service.exists():
+        add_node(
+            "service:holding_briefing",
+            "Holding AI Executive Briefing Service (Oppy Daily Briefing)",
+            "backend_service",
+            str(holding_briefing_service.relative_to(ROOT_DIR)),
+        )
+        if "module:oppy_ai" in nodes_map:
+            add_edge("module:oppy_ai", "service:holding_briefing", "orchestrates_holding_briefing")
+        if "router:holding_hub" in nodes_map:
+            add_edge("router:holding_hub", "service:holding_briefing", "invokes_ai_briefing")
+
     # 3. Componentes Clave de Frontend
     fe_i18n_selector = ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "i18n" / "LanguageFlagSelector.tsx"
     if fe_i18n_selector.exists():
@@ -890,6 +954,24 @@ def sync_graph_cmd() -> None:
         if m0012:
             add_edge("frontend:ai_models_page", m0012, "displays_ai_model_configs_schema")
 
+    fe_holding_hub = ROOT_DIR / "oppytec-frontend" / "src" / "features" / "holding-hub" / "HoldingHubPage.tsx"
+    if fe_holding_hub.exists():
+        rel_path = str(fe_holding_hub.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:feature_holding_hub",
+            "Frontend Holding Hub Enterprise Feature (Central, Plans, Credits & AI Briefing)",
+            "frontend_feature",
+            rel_path,
+        )
+        if "frontend:app_shell" in nodes_map:
+            add_edge("frontend:app_shell", "frontend:feature_holding_hub", "mounts_holding_hub_route")
+        if "router:holding_hub" in nodes_map:
+            add_edge("frontend:feature_holding_hub", "router:holding_hub", "consumes_holding_hub_api")
+        if "frontend:currency_selector" in nodes_map:
+            add_edge("frontend:feature_holding_hub", "frontend:currency_selector", "formats_holding_currency")
+        if "frontend:shared_i18n" in nodes_map:
+            add_edge("frontend:feature_holding_hub", "frontend:shared_i18n", "translates_holding_hub_namespace")
+
     # 4. Suites de Test
     fe_test_map = {
         "suite:frontend_admin_views_test": (
@@ -994,6 +1076,41 @@ def sync_graph_cmd() -> None:
                 ("suite:ai_evals_bilingual_parity", "module:oppy_ai", "evaluates_bilingual_translation_parity"),
             ],
         ),
+        "suite:backend_holding_hub_api": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "integration" / "test_holding_hub_api.py",
+            "Backend Holding Hub REST API & RBAC Multi-Level Integration Suite",
+            [
+                ("suite:backend_holding_hub_api", "router:holding_hub", "tests_holding_hub_endpoints_and_anti_idor"),
+            ],
+        ),
+        "suite:backend_holding_hub_domain": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "unit" / "test_holding_hub_domain.py",
+            "Backend Holding Hub Domain Logic & Credit Calculations Suite",
+            [
+                ("suite:backend_holding_hub_domain", "service:holding_hub", "verifies_credit_distribution_and_plans"),
+            ],
+        ),
+        "suite:backend_holding_briefing": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "unit" / "test_holding_briefing.py",
+            "Backend Holding AI Executive Briefing & Safety Cap Suite",
+            [
+                ("suite:backend_holding_briefing", "service:holding_briefing", "verifies_two_paragraph_briefing"),
+            ],
+        ),
+        "suite:backend_holding_observability": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "unit" / "test_holding_hub_observability.py",
+            "Backend Holding Hub OpenTelemetry Spans & Sentry Context Suite",
+            [
+                ("suite:backend_holding_observability", "service:holding_hub", "verifies_otel_spans_and_latency_sla"),
+            ],
+        ),
+        "suite:frontend_holding_hub_vitest": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "features" / "holding-hub" / "HoldingHub.test.tsx",
+            "Frontend Holding Hub Enterprise Layout, Tabs, FX & AI Briefing Vitest Suite",
+            [
+                ("suite:frontend_holding_hub_vitest", "frontend:feature_holding_hub", "verifies_holding_hub_ui_and_i18n"),
+            ],
+        ),
     }
     for s_id, (s_path, s_label, s_edges) in fe_test_map.items():
         if s_path.exists():
@@ -1069,6 +1186,7 @@ def main() -> int:
 
     sub.add_parser("status", help="Muestra el estado del arnés y verifica integridad anti-trampa")
     sub.add_parser("verify-evals", help="Verifica los hashes SHA-256 de reglas y evaluaciones inmutables")
+    sub.add_parser("test-fast", help="Ejecuta los tests rápidos (Fast Gate / Unit / Smoke / Integration) con pytest")
 
     eval_llm_p = sub.add_parser("eval-llm", help="Ejecuta la suite de DeepEval/Evals de OppyFy y valida Quality Gates (Fail-Closed)")
     eval_llm_p.add_argument("-v", "--verbose", action="store_true", help="Salida detallada de pytest")
@@ -1125,6 +1243,8 @@ def main() -> int:
         return 0
     if args.command == "verify-evals":
         return 0 if verify_anti_cheating_hashes() else 1
+    if args.command == "test-fast":
+        return run_test_fast_cmd()
     if args.command == "eval-llm":
         return run_eval_llm_cmd(verbose=args.verbose, fail_fast=args.exitfirst)
     if args.command == "route-task":

@@ -24,3 +24,4 @@ export {
 export { AreaSelector, type AreaSelectorProps, type AreaOperativa, OFFICIAL_AREAS } from "./AreaSelector";
 export { BodegaBadge, type BodegaBadgeProps } from "./BodegaBadge";
 export { ModulePlaceholderView, type ModulePlaceholderViewProps } from "./ModulePlaceholderView";
+export { ScrollToTop, scrollToTopInstant } from "./ScrollToTop";

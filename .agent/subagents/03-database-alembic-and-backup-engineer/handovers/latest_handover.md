@@ -1,49 +1,50 @@
 # Reporte de Traspaso (`Handover`) — Agente 03: Especialista en Base de Datos, Alembic y Backups 4-Capas
 
-- **Fecha UTC:** 2026-11-04T22:20:00Z
-- **Fase / Hito:** ETAPA 1 y HOTFIX del Plan Maestro Oficial de Facturas y Contabilidad (`.agent/Planes-Maestros/PLAN_MAESTRO_FACTURAS_CONTABILIDAD.md`) — Corrección de tipo en Foreign Key `fk_invoice_lines_target_bodega_id_bodegas` (de `UUID` a `Integer`) en modelos ORM SQLAlchemy 2.0 Async en [`oppytec-backend/src/modules/invoices/infrastructure/models.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/invoices/infrastructure/models.py) y en Migración Correlativa Lineal Alembic 0016 ([`0016_tenant_invoices_dte_and_supplier_aliases.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/alembic/versions/0016_tenant_invoices_dte_and_supplier_aliases.py)) en esquemas dinámicos `tenant_*`.
-- **Estado de Certificación:** `INVOICES_MODELS_AND_ALEMBIC_0016_CERTIFIED` (Alembic 0001..0016 estrictamente lineal correlativa sin bifurcaciones, migración ejecutada al 100% en contenedor Docker PostgreSQL, 29/29 tests de arquitectura al 100% verde, 97/97 tests de facturas y seguridad al 100% verde, índices Trigram GIN para búsqueda difusa, sincronización Graphify completa).
+- **Fecha UTC:** 2026-11-05T14:55:00Z
+- **Fase / Hito:** ETAPA 1 del Holding Hub Enterprise de OppyTec V2.0 — Migración correlativa lineal Alembic 0018 ([`0018_public_holding_hub_credit_distribution_and_purchases.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/alembic/versions/0018_public_holding_hub_credit_distribution_and_purchases.py)) y Modelos SQLAlchemy 2.0 en [`oppytec-backend/src/modules/tenancy/infrastructure/models.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/tenancy/infrastructure/models.py) en esquema `public`.
+- **Estado de Certificación:** `HOLDING_HUB_DATABASE_0018_CERTIFIED` (Alembic 0001..0018 estrictamente lineal correlativa sin bifurcaciones ni gaps, reversibilidad LIFO idempotente, 5/5 tests de migración y modelos 100% verde, 43/43 tests de tenancy/holding hub 100% verde, regla Pollo King `translatable = False`, tipos `Numeric`/`Decimal` sin floats, sincronización Graphify completa).
 
 ---
 
 ## 1. Completed (Qué se ejecutó y validó)
 
-1. **Corrección de Tipo en FK a `bodegas.id`:**
-   - La tabla `bodegas.id` es de tipo `INTEGER`. Se actualizó `target_bodega_id` de `UUID` a `sa.Integer()` en Alembic y `Mapped[int | None]` en SQLAlchemy.
-   - Actualizadas entidades y esquemas DTO para admitir `int | None`.
+1. **Consulta Previa a Graphify:**
+   - Ejecutado `python scripts/harness.py nav "Holding"` validando las aristas activas de tenancy y dependencias del Holding Hub.
 
-2. **Modelos SQLAlchemy 2.0 Async (`oppytec-backend/src/modules/invoices/infrastructure/models.py`):**
-   - **`InvoiceModel` (tabla `invoices`):**
-     * Clave primaria `id` (UUID v4) con default `uuid.uuid4`.
-     * `tenant_id` (UUID no nulo, indexado).
-     * Metadatos de archivo: `file_path`, `file_name`, `file_type`.
-     * Identificación de emisor: `vendor_name` (con índice Trigram GIN `gin_trgm_ops`), `vendor_tax_id`, `vendor_address`.
-     * Datos DTE: `invoice_number`, `invoice_date`, `due_date`, `currency`, `dte_type`.
-     * Montos exactos: `exchange_rate`, `net_amount`, `tax_amount`, `total_amount` con `Numeric(14, 4)`. Cero float.
-     * FinOps IA: `status`, `confidence_score`, `gemini_tokens_used`, `gemini_cost_usd` con `Numeric(10, 6)`, `is_stock_ingested`.
-   - **`InvoiceLineItemModel` (tabla `invoice_lines`):**
-     * Clave primaria `id` (UUID v4).
-     * `invoice_id` (UUID FK a `invoices.id` ON DELETE CASCADE, indexado).
-     * `line_number`, `raw_description` (con índice Trigram GIN `gin_trgm_ops`).
-     * `quantity`, `unit`, `unit_price`, `line_total`, `vat_rate`.
-     * Desacoplamiento de empaque mayorista a cocina: `matched_catalog_item_id` (UUID nullable FK a `catalog_items.id` ON DELETE SET NULL), `match_status`, `suggested_catalog_item_id`, `packaging_factor`, `calculated_stock_qty`, `inventory_unit`, `inventory_unit_cost`, `target_bodega_id` (`Integer` nullable FK a `bodegas.id` ON DELETE SET NULL).
-   - **`SupplierProductAliasModel` (tabla `supplier_product_aliases`):**
-     * `raw_vendor_product_name` con índice Trigram GIN `gin_trgm_ops`, `catalog_item_id` FK a `catalog_items.id`, `default_packaging_factor`.
-   - **`InvoiceAuditFlagModel` (tabla `invoice_audit_flags`):**
-     * Registro estructurado de discrepancias tributarias y descalces de IVA.
+2. **Migración Correlativa Lineal Alembic 0018:**
+   - Archivo: [`oppytec-backend/alembic/versions/0018_public_holding_hub_credit_distribution_and_purchases.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/alembic/versions/0018_public_holding_hub_credit_distribution_and_purchases.py)
+   - `revision = "0018_public_holding_hub_credit_distribution_and_purchases"`
+   - `down_revision = "0017_public_ai_benchmarks_and_tenant_feedback"`
+   - `migration_scope = "public"`
+   - **`upgrade()`:**
+     * `public.holdings`: Agregada columna `credit_distribution_mode` (String(20), server_default="shared", nullable=False).
+     * `public.holding_credit_distributions`: Tabla para distribución de cuotas mensuales de IA por tenant con `holding_id` (FK a `public.holdings.id` ON DELETE CASCADE), `tenant_id` (FK a `public.tenants.id` ON DELETE CASCADE), `monthly_ai_credits` (Integer default 2000), `created_at`, `updated_at`, y `UniqueConstraint("holding_id", "tenant_id", name="uq_holding_tenant_credit_distribution")`.
+     * `public.holding_credit_purchases`: Tabla para compras de bolsas de créditos de IA con `holding_id` (FK a `public.holdings.id` ON DELETE CASCADE), `credits_amount` (Integer), `price_clp` (Numeric(14, 2)), `price_usd` (Numeric(14, 4)), `status` (String(32), default="COMPLETED"), `purchased_by_user_id` (FK a `public.global_users.id` ON DELETE SET NULL), y `created_at`.
+   - **`downgrade()`:**
+     * Reversibilidad simétrica LIFO e idempotente:
+       1. `op.drop_table("holding_credit_purchases", schema="public")`
+       2. `op.drop_table("holding_credit_distributions", schema="public")`
+       3. `op.drop_column("holdings", "credit_distribution_mode", schema="public")`
 
-3. **Ejecución de Migración en Docker:**
-   - `docker compose exec backend alembic upgrade head` ejecutado con éxito total (código 0). Aplicado a todos los esquemas `tenant_*`.
+3. **Modelos ORM SQLAlchemy 2.0:**
+   - Actualizado [`oppytec-backend/src/modules/tenancy/infrastructure/models.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/src/modules/tenancy/infrastructure/models.py):
+     * `Holding`: incorporada `credit_distribution_mode: Mapped[str] = mapped_column(String(20), default="shared", nullable=False)`.
+     * `HoldingCreditDistribution`: hereda de `(PublicBase, AuditTimestampsMixin)`, regla Pollo King (`translatable: ClassVar[bool] = False`), mapeado a `public.holding_credit_distributions`.
+     * `HoldingCreditPurchase`: hereda de `(PublicBase)`, regla Pollo King (`translatable: ClassVar[bool] = False`), montos `Decimal` (`Numeric(14, 2)` CLP y `Numeric(14, 4)` USD), mapeado a `public.holding_credit_purchases`.
 
-4. **Verificación de Tests:**
-   - `./oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_alembic_integrity.py oppytec-backend/tests/unit/modules/test_invoices_models.py`: 8/8 pasados (100%).
-   - `./oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/`: 29/29 pasados (100%).
-   - Suite completa de facturas: 97/97 pasados (100%).
+4. **Tests Unitarios de Calidad y Reversibilidad:**
+   - Archivo: [`oppytec-backend/tests/unit/test_migration_0018_holding_hub.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/oppytec-backend/tests/unit/test_migration_0018_holding_hub.py)
+   - Valida:
+     * Integridad declarativa de modelos `Holding`, `HoldingCreditDistribution` y `HoldingCreditPurchase`.
+     * Metadatos de migración 0018, secuencia lineal y `migration_scope = "public"`.
+     * Ejecución idempotente de `upgrade()` y reversibilidad simétrica LIFO de `downgrade()`.
+   - 5/5 tests pasados en 0.26s. Cero advertencias ni regresiones.
 
-5. **Sincronización Graphify:**
-   - Ejecutado `python scripts/harness.py sync-graph`. 118 nodos y 142 aristas.
+5. **Verificación de Cadena de Migraciones y Graphify:**
+   - Ejecutado `uv --directory oppytec-backend run python scripts/db_migration.py verify`: cadena correlativa 0001..0018 OK.
+   - Ejecutado `python scripts/harness.py sync-graph`: grafo sincronizado (123 nodos, 20 migraciones).
 
 ---
 
 ## 2. Friction & Failures
-- `DatatypeMismatchError` al intentar enlazar `UUID` con `INTEGER` en la FK a `bodegas.id`. Resuelto inmediatamente ajustando a `sa.Integer()` en la migración y el modelo.
+- Ninguna falla crítica. Tipado estricto `mypy --strict` validado en todos los archivos con supresión de `explicit-any` en metadatos de SQLAlchemy.

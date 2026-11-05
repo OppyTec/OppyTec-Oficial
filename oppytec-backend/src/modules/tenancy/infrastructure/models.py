@@ -6,7 +6,7 @@ Planes Multi-Moneda (`Decimal`), Usuarios Clientes, Memoria `i18n`, Tasas `FX`, 
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import ClassVar
 
@@ -22,6 +22,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -33,6 +34,8 @@ from src.shared.models_base import (
     TranslatableI18nMixin,
 )
 from src.shared.soft_delete_mixin import SoftDeleteMixin
+import src.modules.identity.infrastructure.models  # noqa: F401
+
 
 
 class SystemPlan(PublicBase, AuditTimestampsMixin, TranslatableI18nMixin):
@@ -168,6 +171,11 @@ class Holding(PublicBase, AuditTimestampsMixin):
         default=Decimal("0.00"),
         nullable=False,
     )
+    credit_distribution_mode: Mapped[str] = mapped_column(
+        String(20),
+        default="shared",
+        nullable=False,
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 
@@ -254,6 +262,67 @@ class Tenant(PublicBase, AuditTimestampsMixin):
         nullable=True,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class HoldingCreditDistribution(PublicBase, AuditTimestampsMixin):
+    """Distribución de bolsa mensual de créditos IA por sucursal dentro de un Holding."""
+
+    __tablename__ = "holding_credit_distributions"
+    translatable: ClassVar[bool] = False
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    holding_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("public.holdings.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("public.tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    monthly_ai_credits: Mapped[int] = mapped_column(
+        Integer,
+        default=2000,
+        nullable=False,
+    )
+
+    __table_args__ = (
+        UniqueConstraint("holding_id", "tenant_id", name="uq_holding_tenant_credit_distribution"),
+    )
+
+
+class HoldingCreditPurchase(PublicBase):
+    """Historial de compras de paquetes de créditos de IA para la billetera corporativa del Holding."""
+
+    __tablename__ = "holding_credit_purchases"
+    translatable: ClassVar[bool] = False
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    holding_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("public.holdings.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    credits_amount: Mapped[int] = mapped_column(Integer, nullable=False)
+    price_clp: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    price_usd: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="COMPLETED", nullable=False)
+    purchased_by_user_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("public.global_users.id", ondelete="SET NULL"),
+        default=None,
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+        nullable=False,
+    )
 
 
 class AppModule(PublicBase, AuditTimestampsMixin, TranslatableI18nMixin):
