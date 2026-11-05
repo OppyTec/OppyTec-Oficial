@@ -1,75 +1,55 @@
 # Reporte de Traspaso (`Handover`) — Agente 10: Auditor Estricto de Ciberseguridad Red Team
 
-- **Fecha UTC:** 2026-11-04T19:06:00Z
+- **Fecha UTC:** 2026-11-05T01:35:00Z
 - **Agente:** Agente 10 (`10-cybersecurity-redteam-auditor`)
-- **Fase / Módulo:** Etapa 4 — Auditoría Ofensiva de Ciberseguridad, Autoparcheo y Veto para el Módulo de Facturas y Contabilidad (DTE, Alias Asociativos, Ingesta a Inventario y Exportaciones SII / ERPs).
+- **Fase / Módulo:** Etapa 4 — Plan Maestro de Evals y Observabilidad LLM con Langfuse (Fase 7: Auditoría Red Team Kali, Enmascaramiento PII, Multi-Tenancy y Anti-Jailbreak).
 - **Archivos Auditados y Blindados:**
-  - `oppytec-backend/src/core/guards/ssrf_guard.py` (Nuevo guardia estricto anti-SSRF CWE-918)
-  - `oppytec-backend/src/core/guards/__init__.py` (Exportación de `validate_safe_webhook_url`)
-  - `oppytec-backend/src/modules/invoices/presentation/router.py` (Validación física de Magic Bytes, Anti-BOLA/IDOR, Redacción Física de Costos, Descarga Segura y Webhooks)
-  - `oppytec-backend/src/modules/invoices/application/schemas.py` (Sanitización XSS en DTOs y validación anti-SSRF)
-  - `oppytec-backend/src/modules/invoices/application/services.py` (Aislamiento de Tenant en repositorios y sanitización contra CSV Formula Injection CWE-1236 en DTEExportService)
+  - `oppytec-backend/src/core/observability.py` (Incorporación de `_PAYMENT_TOKEN_PATTERN` para enmascarar tokens de pago en texto libre).
+  - `oppytec-backend/src/infrastructure/ai/langfuse_tracer.py` (Sanitización exhaustiva de `tags` con `scrub_telemetry_payload`).
+  - `oppytec-backend/src/modules/oppy_ai/presentation/router.py` (Neutralización de IDOR/BOLA en `list_chat_feedback_endpoint`).
+  - `oppytec-backend/tests/security/test_pii_sanitization_in_langfuse_traces.py` (Nueva suite ofensiva con 6 pruebas).
 - **Suites Ejecutadas:**
-  - `oppytec-backend/tests/security_redteam/test_invoices_security.py` (34 / 34 PASSED - 100%)
-  - `oppytec-backend/tests/architecture/` (29 / 29 PASSED - 100%)
-  - `oppytec-backend/tests/unit/ -k "invoice"` (64 / 64 PASSED - 100%)
-- **Dictamen Final de Seguridad:** `SIGN-OFF` (SECURITY_APPROVED — CERO VETOS — 100% Conforme)
+  - `oppytec-backend/tests/security/test_pii_sanitization_in_langfuse_traces.py`: 6/6 PASSED (100% OK).
+  - `oppytec-backend/tests/security_redteam/test_16_oppyfy_offensive_security_and_firewall.py`: 31/31 PASSED (100% OK).
+  - `oppytec-backend/tests/unit/test_langfuse_otel_correlation.py`: 5/5 PASSED (100% OK).
+  - `oppytec-backend/tests/architecture/`: 29/29 PASSED (100% OK).
+- **Dictamen Final de Seguridad:** `SECURITY_APPROVED` (CERO VETOS — 100% Conforme con estándares Kali Red Team).
 
 ---
 
 ## 1. Executive Summary & Dictamen de Seguridad
 
-El Agente 10 ha completado la auditoría ofensiva y el blindaje preventivo sobre los 6 vectores de ataque Kali en el Módulo de Facturas y Contabilidad de OppyTec v2.0:
+El Agente 10 ha completado la auditoría ofensiva y el blindaje preventivo sobre los 3 vectores clave de la Fase 7 del Plan Maestro de Evals y Observabilidad LLM:
 
 ### Dictamen de Ciberseguridad:
 > [!IMPORTANT]
 > **Veredicto Definitivo:** `SIGN-OFF (SECURITY_APPROVED)`.  
 > No se ejerce el poder de veto. Las vulnerabilidades identificadas durante la fase ofensiva fueron neutralizadas y autoparchadas exitosamente:
 > 
-> 1. **Vector 1: Aislamiento Multi-Tenant Estricto (Anti-BOLA/IDOR):**
->    - Se verificó que todas las operaciones de consulta (`GET /{id}`), mutación (`PUT /{id}`), eliminación (`DELETE /{id}`), descarga física (`GET /{id}/download`), confirmación de stock (`POST /{id}/confirm-stock`), procesamiento Gemini (`POST /{id}/process`) y operaciones bulk (`/bulk-process`, `/bulk-delete`) verifiquen obligatoriamente que `invoice.tenant_id == principal.tenant_id`.
->    - Si un tenant intenta acceder a un registro de otro tenant, el sistema responde de forma fail-closed con `HTTP 404 Not Found` (o `HTTP 403 Forbidden` en acceso a archivos directos), imposibilitando la enumeración de identificadores de terceros.
+> 1. **Vector 1: Enmascaramiento Estricto de PII en Trazas Langfuse:**
+>    - Se verificó que `oppytec-backend/src/infrastructure/ai/langfuse_tracer.py` aplique `scrub_pii_text` y `scrub_telemetry_payload` a prompts, completions, metadata y tags.
+>    - Se incorporó `_PAYMENT_TOKEN_PATTERN` en `oppytec-backend/src/core/observability.py` para enmascarar tokens de pasarelas de pago (`tok_live_...`, `tok_test_...`, `pay_...`, `sk_live_...`) en texto libre.
+>    - Se confirmó la invarianza estricta de nombres comerciales ("Pollo King").
+>    - Se creó la suite `oppytec-backend/tests/security/test_pii_sanitization_in_langfuse_traces.py` verificando el 100% de los casos.
 >
-> 2. **Vector 2: Validación Física de Magic Bytes y Bloqueo de Políglotas/Ejecutables:**
->    - Se autoparchó el endpoint `POST /upload` integrando la llamada estricta a `validate_file_magic_bytes(...)`.
->    - Se bloquea la subida de ejecutables Windows (`MZ`), binarios ELF Linux (`\x7fELF`), scripts bash (`#!/bin/sh`), webshells PHP (`<?php`), scripts HTML/JS (`<script>`) y archivos con doble extensión (`.pdf.exe`).
+> 2. **Vector 2: Aislamiento Multi-Tenant Estricto y Prevención de BOLA/IDOR:**
+>    - Se verificó que `TraceContext` requiera un `tenant_id` obligatorio tipo `UUID`, lanzando `TracerConfigurationError` si está ausente.
+>    - Se auditó y blindó el endpoint `GET /api/v1/oppy_ai/chat/feedback` ante manipulación IDOR del parámetro query `tenant_id`, respondiendo con `HTTP 403 Forbidden` (`CROSS_TENANT_ACCESS_FORBIDDEN`).
+>    - Se verificó el endpoint `POST /api/v1/oppy_ai/chat/feedback` ante envíos de feedback cruzados entre organizaciones.
 >
-> 3. **Vector 3: Prevención de CSV / Spreadsheet Formula Injection (CWE-1236):**
->    - Se blindó `DTEExportService` aplicando `sanitize_spreadsheet_export_value` sobre todos los campos exportables (proveedor, número de documento, RUT, tipo DTE, estado) en formatos SII Chile (F29 CSV), QuickBooks, Xero y Odoo.
->    - Todo campo que comience con `=`, `+`, `-`, `@`, `\t` o `\r` es neutralizado automáticamente anteponiendo comilla simple `'`.
->
-> 4. **Vector 4: Sanitización XSS en Campos Crudos:**
->    - Se incorporaron `@field_validator` con `sanitize_text_input` en los esquemas Pydantic `InvoiceCreateDTO`, `InvoiceUpdateDTO`, `InvoiceLineItemCreateDTO`, `InvoiceLineItemUpdateDTO`, `SupplierAliasCreateDTO` y `SupplierAliasDTO`.
->    - Cualquier inyección de `<script>`, `onerror=`, `javascript:` o `<iframe>` es bloqueada de inmediato en la frontera HTTP arrojando `HTTP 422` (`XSS_PAYLOAD_BLOCKED`).
->
-> 5. **Vector 5: Prevención de SSRF en Webhooks Salientes (CWE-918):**
->    - Se implementó el módulo de defensa `oppytec-backend/src/core/guards/ssrf_guard.py` con la función `validate_safe_webhook_url`.
->    - Se bloquean IPs privadas RFC 1918 (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16), loopback (127.0.0.1, ::1), link-local (169.254.169.254 AWS metadata), servicios de metadatos de GCP y esquemas peligrosos (`file://`, `gopher://`).
->
-> 6. **Vector 6: Cumplimiento RBAC de 3 Niveles y Redacción Física de Costos:**
->    - Guardias `RequireTenantPermission` verificados en todos los endpoints:
->      * `contabilidad.facturas.read`
->      * `contabilidad.facturas.create`
->      * `contabilidad.facturas.manage`
->    - Se implementó redacción física estricta en `_entity_to_response_dto` cuando `can_view_costs=False` o ante denegaciones explícitas (`contabilidad.costos.ver`, `finanzas.costos.ver`), enmascarando a `Decimal('0.0000')` todos los montos netos, impuestos, totales y costos de inventario.
+> 3. **Vector 3: Resistencia a Prompt Injection y Anti-Jailbreak:**
+>    - Se auditaron los 10 vectores adversariales en el Golden Dataset (`EVAL-GASTRO-041` a `050`).
+>    - Se validó que ningún prompt logre extraer código fuente (`calcular_costo_receta`), secretos de infraestructura (`LANGFUSE_SECRET_KEY`, `DB_PASSWORD`), ni datos de otros inquilinos.
 
 ---
 
 ## 2. Matriz de Cobertura y Ejecución de Pruebas
 
-Total de pruebas ejecutadas: **127 / 127 PASSED** (100% de éxito).
+- `test_pii_sanitization_in_langfuse_traces`: **PASSED**
+- `test_pii_sanitization_in_tool_calls_and_feedback`: **PASSED**
+- `test_trace_context_requires_mandatory_tenant_id`: **PASSED**
+- `test_feedback_cross_tenant_submission_idor_prevention`: **PASSED**
+- `test_feedback_cross_tenant_inspection_idor_prevention`: **PASSED**
+- `test_golden_dataset_security_vectors_contract`: **PASSED**
 
-| Suite de Pruebas | Archivo | Tests | Estado |
-| :--- | :--- | :---: | :---: |
-| **Invoices Security Red Team** | `oppytec-backend/tests/security_redteam/test_invoices_security.py` | 34 / 34 | **PASSED (100%)** |
-| **Architecture Invariants** | `oppytec-backend/tests/architecture/` | 29 / 29 | **PASSED (100%)** |
-| **Invoices Unit & Services** | `oppytec-backend/tests/unit/ -k "invoice"` | 64 / 64 | **PASSED (100%)** |
-
----
-
-## 3. Dictamen Final y Sincronización Graphify
-
-- **Dictamen:** `SECURITY_APPROVED`
-- **Poder de Veto:** **NO EJERCIDO** (Aprobación completa y definitiva).
-- **Graphify:** Sincronizado exitosamente (`python scripts/harness.py sync-graph`).
-- **Estado General:** Listo para revisión de cierre por el Agente Orquestador.
+Total de pruebas ejecutadas: **71 / 71 PASSED** (100% de éxito).

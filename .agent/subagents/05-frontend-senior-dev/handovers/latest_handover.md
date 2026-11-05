@@ -1,108 +1,71 @@
 # Reporte de Traspaso (`Handover`) — Agente 05: Frontend Senior React 19, Tailwind CSS & TanStack Query v5
 
-- **Fecha UTC:** 2026-11-02T19:40:00Z
+- **Fecha UTC:** 2026-11-05T00:55:00Z
 - **Agente:** Agente 05 (`05-frontend-senior-dev`)
-- **Fase / Hito:** Fases 4, 5 y 6 del Plan Maestro del Panel de Actividades (`oppytec-frontend/src/features/activities/`) — Notas de Turno, Tareas Operativas y Horarios/Turnos Semanales.
-- **Estado de Certificación:** `ACTIVITIES_MODULE_PHASES_4_5_6_CERTIFIED` (13/13 vitest tests passing al 100%, 0 errores de TypeScript con `pnpm --dir oppytec-frontend run typecheck`, 0 hardcoded strings con i18n al 100% en español e inglés).
+- **Fase / Hito:** Etapa 2 del Plan Maestro Oficial de Evals y Observabilidad LLM con Langfuse (`.agent/Planes-Maestros/PLAN_MAESTRO_LLM_EVALS_Y_OBSERVABILIDAD_LANGFUSE.md`) — Componentes Interactivos de Feedback Humano (RLHF) y Reporte de Alucinaciones en el Chat de OppyFy.
+- **Estado de Certificación:** `OPPYFY_CHAT_FEEDBACK_RLHF_CERTIFIED` (70/70 vitest tests passing al 100%, 0 errores de compilación TypeScript estricto con `pnpm --prefix oppytec-frontend run typecheck`, 100% de paridad i18n español/inglés, touch targets >= 44px Mobile-First cumplidos).
 
 ---
 
-## 1. Completed (Qué se ejecutó y validó)
+## 1. Completed (Qué se ejecutó, validó y certificó)
 
-1. **Consulta Pre-ejecución Graphify AST**:
-   - `python scripts/harness.py nav "AreaSelector"`: resolución de vecindad de componentes reutilizables de layout.
-   - Símbolo AST reservado con `claim-ast`: `AppRouter` en `oppytec-frontend/src/app/router.tsx`.
+1. **Pre-ejecución Graphify AST (Regla 6):**
+   - Ejecutado `python scripts/harness.py nav "OppyfyChat"` y mapeado del árbol de componentes en `oppytec-frontend/src/features/oppyfy/`.
 
-2. **Submódulo 1: Notas de Turno (`/actividades/notas`)**:
-   - `NotasPage.tsx`:
-     * Muro / Feed interactivo de notas de turno con renderizado dinámico.
-     * Toolbar unificada con `AreaSelector` oficial (`OFFICIAL_AREAS`).
-     * Pestañas animadas con ADN Legacy: 'Notas de Equipo' (azul `#3b82f6`) vs 'Personales' (púrpura `#8b5cf6`).
-     * Selector de categorías operativas horizontales: Incidente, Stock, Producción, Servicio, General.
-     * Buscador con luz perimetral azul (`#3b82f6`, `focus:shadow-[0_0_15px_rgba(59,130,246,0.3)]`).
-     * FAB flotante en móvil (`fixed bottom-6 right-6 md:hidden`).
-   - `NotaCard.tsx`:
-     * Tarjeta de nota con avatar, badge de cargo gastronómico (Cocinero, Garzón, Cajero, Bodeguero, Steward, Barman, Chef) con íconos dinámicos.
-     * Fecha relativa i18n (`Hace un momento`, `Hace X min`, `Hace X h`, `Hace X d`).
-     * Formateador interactivo de menciones `@usuario` y tags `#insumo` con click handlers directos hacia el buscador.
-     * Confirmación de lectura / vistos (`Visto por X`, botón `Marcar como leído` / badge `Leído`).
-     * Menú flotante de acciones: editar y eliminar.
-   - `NotaDialog.tsx`:
-     * Diálogo modal accesible (`ResponsiveDialog` - drawer en móvil, modal centrado en desktop, CLS = 0).
-     * Autocompletado reactivo de menciones `@` con dropdown flotante de colaboradores gastronómicos.
-     * Selector de categoría y área operativa.
-     * Adjunto de imagen R2 con preview.
-   - `hooks/useNotas.ts`:
-     * Consultas TanStack Query v5 para `/api/v1/actividades/notas/equipo` y `/personales`.
-     * Mutaciones para crear, editar, eliminar y marcar como leído.
-     * Sincronización WebSocket zero-polling con `useRealtimeSync`.
+2. **Tipos y Contratos TypeScript (`oppytec-frontend/src/features/oppyfy/types.ts`):**
+   - Incorporación de interfaces de contrato estricto:
+     * `FeedbackType`: `"positive" | "negative"`
+     * `FailureCategory`: `"hallucination" | "incomplete" | "math_error" | "bad_formatting" | "other"`
+     * `ChatFeedbackPayload`: `message_id`, `trace_id`, `feedback_type`, `failure_category`, `user_correction`, `rating`.
+     * `FeedbackResponse`: `id`, `status`, `message`, `feedback_type`, `failure_category`, `trace_id`, `created_at`.
+     * Extensión de `ChatMessage` con `traceId?: string | null`, `feedbackRating?: FeedbackType | null`, `failureCategory?: FailureCategory | null`.
 
-3. **Submódulo 2: Tareas Operativas (`/actividades/tareas`)**:
-   - `TareasPage.tsx`:
-     * Doble modo de vista reactivo:
-       1) Tablero Kanban de 4 columnas (Pendiente, En Progreso, Completada, Incompleta)
-       2) Modo Checklist compacto optimizado para smartphones de operarios (Mobile-First Rule 21).
-     * Filtro rápido por área operativa, búsqueda y switch "Solo mis tareas".
-     * Menú de aplicación de plantillas de rutinas (Apertura, Cierre, etc.).
-     * FAB flotante en móvil.
-   - `TareaCard.tsx`:
-     * Semáforo de urgencia con borde lateral de 6px (alta: rojo `#EF4444`, media: ámbar `#F59E0B`, baja: esmeralda `#10B981`).
-     * Responsable con avatar y cargo.
-     * Fecha límite y badge de compra (`compra_id`).
-     * Menú de transición rápida de estado. Si se intenta marcar como incompleta, detona el diálogo obligatorio.
-   - `IncompleteTaskDialog.tsx`:
-     * Diálogo modal obligatorio inviolable que exige registrar y justificar el motivo por el cual la tarea no pudo ser finalizada.
-     * Validación obligatoria de longitud mínima (>= 5 caracteres) para habilitar el guardado con trazabilidad inmutable.
-   - `TareaDialog.tsx`:
-     * Formulario completo para dar de alta y editar tareas.
-   - `hooks/useTareas.ts`:
-     * Consultas TanStack Query v5 y mutaciones reactivas (`useRealtimeSync`).
+3. **Cliente API y Hook Reactivo (`oppytec-frontend/src/features/oppyfy/hooks/useOppyfyFeedback.ts`):**
+   - Mutación con TanStack Query v5 (`useMutation`) contra `POST /api/v1/oppy_ai/chat/feedback`.
+   - Persistencia local de votos por `messageId` para retener estado de votación en refrescos.
+   - Resiliencia y degradación elegante con `fallbackData`.
+   - Toasts automáticos de Sonner con mensajes bilingües.
+   - Exportación centralizada en `oppytec-frontend/src/features/oppyfy/hooks/index.ts`.
 
-4. **Submódulo 3: Horarios y Cuadrante de Turnos (`/actividades/horarios`)**:
-   - `HorariosPage.tsx`:
-     * Matriz cuadrante semanal (Lunes a Domingo) con colaboradores gastronómicos en las filas.
-     * Vista 3 días deslizable para smartphones con gestos swipe (`useSwipeNavigation`).
-     * Alertas visuales de Legal Guard (aviso de descanso < 12h y jornada > 40h semanales).
-     * Botón de productividad 'Clonar Semana Anterior' conectado a endpoint `/api/v1/actividades/horarios/clonar-semana`.
-     * Navegación semanal: semana anterior, siguiente y botón 'Hoy'.
-   - `TurnoDialog.tsx`:
-     * Diálogo para asignar y editar turnos.
-     * Simulación reactiva en vivo de validación laboral con `validarAlertas` (Legal Guard).
-   - `hooks/useHorarios.ts`:
-     * Consultas y mutaciones para turnos, clonación semanal y validación de alertas laborales.
+4. **Componentes Visuales (ADN Visual Legacy & Mobile-First):**
+   - `FeedbackReportModal.tsx`:
+     * Diálogo modal accesible implementado con `@radix-ui/react-dialog` (`Dialog.Root`, `Dialog.Portal`, `Dialog.Overlay`, `Dialog.Content`, `Dialog.Title`, `Dialog.Description`).
+     * Selector visual accesible (radio group con touch targets de 44px) para las 5 categorías estandarizadas:
+       - 🚨 *"Alucinación / Datos inventados"* (`hallucination`)
+       - 📉 *"Error en cálculos o costos"* (`math_error`)
+       - ⏳ *"Respuesta incompleta"* (`incomplete`)
+       - 📝 *"Mala redacción o formato"* (`bad_formatting`)
+       - ❓ *"Otro motivo"* (`other`)
+     * Textarea opcional: *"¿Cuál era la respuesta correcta esperada según tu negocio?"* para enriquecer el Golden Dataset con lenguaje real del restaurante.
+     * Botones de acción ("Enviar Retroalimentación" y "Cancelar").
+   - `ChatFeedbackButtons.tsx`:
+     * Botones pulgar arriba (👍) y pulgar abajo (👎) con touch targets >= 44px (`min-h-[44px] min-w-[44px]`).
+     * Micro-animaciones fluidas con `framer-motion` (`whileHover={{ scale: 1.05 }}`, `whileTap={{ scale: 0.95 }}`).
+     * Resplandor esmeralda (`#10b981`) para feedback positivo y resplandor destructivo (`#ef4444`) para feedback negativo.
+     * Integración directa en respuestas del asistente dentro de `OppyfyChatPane.tsx`.
 
-5. **Actualización de Rutas en `AppRouter` (`oppytec-frontend/src/app/router.tsx`)**:
-   - Reemplazado el wildcard de placeholder por las 3 rutas activas:
-     * `/actividades/notas` -> `<NotasPage />`
-     * `/actividades/tareas` -> `<TareasPage />`
-     * `/actividades/horarios` -> `<HorariosPage />`
-     * `/actividades` -> `<Navigate to="/actividades/notas" replace />`
+5. **Internacionalización i18n & Invariante Pollo King:**
+   - Textos localizados en `src/shared/i18n/locales/es/oppyfy.json` y `src/shared/i18n/locales/en/oppyfy.json`.
+   - Preservación inviolable de la marca gastronómica "Pollo King" en ambos idiomas.
 
-6. **i18n al 100% (Español e Inglés)**:
-   - `oppytec-frontend/src/shared/i18n/locales/es/operations.json` y `locales/en/operations.json` enriquecidos con todas las claves bajo `"activities"` (notas, tareas, horarios, diálogos, alertas legales, etc.).
-
-7. **Graphify AST Graph Sync**:
-   - Grafo sincronizado exitosamente mediante `python scripts/harness.py sync-graph` (116 nodos, 141 aristas).
-
-8. **Pruebas y Verificación**:
-   - `pnpm --dir oppytec-frontend run typecheck`: **EXIT 0 (0 errores de TypeScript)**.
-   - `pnpm --dir oppytec-frontend test run src/features/activities/`: **13/13 tests pasando al 100%**.
-     * `src/features/activities/__tests__/NotasPage.test.tsx` (5/5 tests)
-     * `src/features/activities/__tests__/TareasPage.test.tsx` (5/5 tests)
-     * `src/features/activities/__tests__/HorariosPage.test.tsx` (3/3 tests)
+6. **Pruebas Unitarias Vitest y Verificación de Tipos (Cumplimiento de Regla PNPM):**
+   - Creado `oppytec-frontend/src/features/oppyfy/__tests__/ChatFeedbackButtons.test.tsx` (8 pruebas unitarias exhaustivas).
+   - Ejecutado `pnpm --prefix oppytec-frontend test src/features/oppyfy`:
+     * **6 suites passed, 70 tests passed (100% OK)**.
+   - Ejecutado `pnpm --prefix oppytec-frontend run typecheck`:
+     * **0 errores de compilación TypeScript (`tsc --noEmit` exitoso)**.
+   - Sincronizado Graphify con `python scripts/harness.py sync-graph`:
+     * 119 nodos, 142 aristas indexadas.
 
 ---
 
-## 2. Friction & Failures (Puntos de Fricción Resueltos)
+## 2. Friction & Failures (Fricciones, problemas y soluciones aplicadas)
 
-- **Fricción**: Error de tipado estricto en `SectionHeader` que requería obligatoriamente las props `icon` y `color`.
-  * **Solución**: Se inyectaron los íconos temáticos canónicos (`MessageSquare` azul `#3B82F6` para Notas, `ListTodo` esmeralda `#10B981` para Tareas, `Calendar` púrpura `#8B5CF6` para Horarios).
-- **Fricción**: Advertencias de `noUncheckedIndexedAccess` al dividir fechas ISO con `.split("T")[0]`.
-  * **Solución**: Se reemplazó de forma determinista por `.slice(0, 10)`, garantizando tipos `string` seguros.
+- *Ninguno*: Integración limpia utilizando los estándares arquitectónicos del proyecto y primitives de Radix UI y Framer Motion preexistentes.
 
 ---
 
 ## 3. Next Exact Action
 
-- **Para QA (Agente 09)**: Ejecutar suite de pruebas de integración completa y validar contratos con el backend en `/api/v1/actividades/`.
-- **Para Tech Writer (Agente 12)**: Documentar en OpenSpec los contratos del Panel de Actividades y actualizar el atlas Archify.
+- **Para Agente 04 (`04-backend-senior-dev`):** Concluir endpoints de backend y adaptador de Langfuse Tracer.
+- **Para Etapa 3 DAG:** Agente 06 (`06-ai-oppyfy-and-jev-engineer`), Agente 07 (`07-i18n-and-fx-currency-specialist`) y Agente 08 (`08-environments-and-observability-engineer`) para DeepEval/Ragas y docker-compose de Langfuse.

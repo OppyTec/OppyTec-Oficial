@@ -189,5 +189,28 @@
       "th_credits": "Créditos / Tokens",
       "empty": "No se encontraron eventos de auditoría para los filtros seleccionados."
     }
+  },
+  "feedback": {
+    "thumbs_up": "Respuesta útil",
+    "thumbs_down": "Reportar problema",
+    "already_voted_positive": "Calificaste esta respuesta como positiva",
+    "already_voted_negative": "Reportaste un problema en esta respuesta",
+    "modal_title": "Retroalimentación de Respuesta OppyFy",
+    "modal_subtitle": "Ayúdanos a mejorar el modelo reportando fallos o discrepancias con los datos de tu negocio gastronómico.",
+    "category_label": "Motivo del fallo:",
+    "categories": {
+      "hallucination": "🚨 Alucinación / Datos inventados",
+      "math_error": "📉 Error en cálculos o costos",
+      "incomplete": "⏳ Respuesta incompleta",
+      "bad_formatting": "📝 Mala redacción o formato",
+      "other": "❓ Otro motivo"
+    },
+    "user_correction_label": "¿Cuál era la respuesta correcta esperada según tu negocio?",
+    "user_correction_placeholder": "Ejemplo: Para Pollo King el costo teórico de la pechuga es $3.500 y no $4.200...",
+    "cancel": "Cancelar",
+    "submit": "Enviar Retroalimentación",
+    "submitting": "Enviando...",
+    "submit_success": "¡Muchas gracias! Tu retroalimentación fue registrada.",
+    "submit_error": "No se pudo registrar la retroalimentación. Intenta nuevamente."
   }
 }

@@ -1,82 +1,72 @@
 # Reporte de Traspaso (`Handover`) — Agente 04: Backend Senior FastAPI, Clean Architecture & RBAC 3-Niveles
 
-- **Fecha UTC:** 2026-11-02T19:05:00Z
+- **Fecha UTC:** 2026-11-04T22:05:00Z
 - **Agente:** Agente 04 (`04-backend-senior-dev`)
-- **Fase / Hito:** Fase 2 y 3 del Plan Maestro del Panel de Actividades — Backend Clean Architecture, Endpoints REST con RBAC de 3 Niveles y WebSockets para Notas, Tareas y Horarios.
-- **Estado de Certificación:** `ACTIVIDADES_PANEL_PHASE_2_3_CERTIFIED` (10/10 tests unitarios y de integración passing al 100%, 0 errores `mypy --strict`, sincronizado con Graphify).
+- **Fase / Hito:** Etapa 2 del Plan Maestro Oficial de Evals y Observabilidad LLM (`PLAN_MAESTRO_LLM_EVALS_Y_OBSERVABILIDAD_LANGFUSE.md`)
+- **Estado de Certificación:** `STAGE_2_BACKEND_CERTIFIED` (100% tests unitarios/integración passing, 0 violaciones de arquitectura, sincronizado con Graphify).
 
 ---
 
 ## 1. Completed (Qué se ejecutó y validó)
 
-1. **Gestión de Dominio y Lógica de Aplicación (`ActividadesService`)**:
-   - Implementado en `oppytec-backend/src/modules/operations/application/actividades_service.py`:
-     * **Notas de Equipo (Bitácora Compartida)**:
-       - `create_nota_equipo`: creación con autor, contenido, área, categoría, insumo, receta, foto R2 y menciones múltiples de colaboradores (`NotaEquipoMencion`).
-       - `get_notas_equipo`: filtros multidimensionales (`area_id`, `categoria`, `search`, `user_id_mencionado`, `leido_por_user_id`), paginación y enriquecimiento con `leido_por_mi` y `total_lecturas`.
-       - `mark_nota_as_read`: confirmación de lectura **100% idempotente** (`NotaEquipoLectura`). Si el usuario ya confirmó lectura, no genera error ni duplicados.
-       - `update_nota_equipo` y `delete_nota_equipo` (soft-delete con `deleted_at`).
-     * **Notas Personales (Apuntes Privados)**:
-       - `create_nota_personal`, `get_notas_personales`, `update_nota_personal`, `delete_nota_personal`.
-       - Privacidad estricta: un colaborador solo puede consultar, modificar o eliminar sus propias notas personales (los intentos ajenos lanzan `DomainValidationError`).
-     * **Tareas Operativas y Checklists**:
-       - `create_tarea`, `get_tareas` (filtros por estado, área, asignado, urgencia, búsqueda, completitud), `update_tarea`, `delete_tarea`.
-       - **Validación Obligatoria Inviolable**: Si una tarea transiciona a `'incompleta'`, el campo `'nota_incompleta'` no puede ser vacío (arroja `DomainValidationError` RFC 7807).
-       - Sincronización automática del flag booleano `completada` al transicionar a `'completada'`.
-     * **Plantillas de Rutinas de Apertura/Cierre**:
-       - `create_plantilla_rutina` y `get_plantillas_rutinas`.
-       - `aplicar_plantilla_rutina`: genera e instancia automáticamente en lote todas las tareas del turno basadas en los items del checklist (`items_json`).
-     * **Horarios, Turnos, Clonación y Auditoría Laboral**:
-       - `create_turno_horario`, `get_turnos_horarios`, `update_turno_horario`, `delete_turno_horario`.
-       - `clonar_semana(fecha_lunes_origen, fecha_lunes_destino)`: traslada atómicamente la grilla completa de turnos de una semana a otra desplazando días con delta exacto (valida que ambas fechas sean lunes).
-       - `validar_alertas_laborales(usuario_id, nuevo_turno)`:
-         * **Regla 1**: Alerta y bloqueo si el descanso es menor a 12 horas consecutivas entre jornadas contiguas (`DESCANSO_INSUFICIENTE`).
-         * **Regla 2**: Alerta si la jornada proyectada excede las 40 horas semanales legales (`EXCESO_40_HORAS` - Ley 40 Horas / Código del Trabajo).
-     * **Eventos en Tiempo Real (WebSocket)**:
-       - Despacho reactivo mediante `get_realtime_publisher().publish_event(...)` para notas, tareas y turnos invalidando query keys de TanStack Query (`["actividades", ...]`).
+1. **Adaptador Resiliente de Langfuse (`LangfuseTracer`)**:
+   - Implementado en `oppytec-backend/src/infrastructure/ai/langfuse_tracer.py` implementando `LLMTracerPort`:
+     * Soporte de `trace_generation`, `trace_tool_call`, `record_feedback` y `flush`.
+     * Conexión asíncrona no bloqueante mediante `httpx.AsyncClient` con API de Langfuse v2 (`/api/public/ingestion`).
+     * **Circuit Breaker & Graceful Degradation**: si Langfuse está offline, inaccesible o responde con timeout/error HTTP, se activa el circuit breaker sin propagar jamás excepciones a la interacción del usuario final.
+     * **Censura Estricta de PII**: filtra deterministamente mediante `scrub_pii_text` y `scrub_telemetry_payload` correos, RUTs, teléfonos, tarjetas y credenciales antes de la exportación de trazas, preservando intactas las razones sociales y nombres comerciales inmutables ('Pollo King').
+     * Soporte de búfer en memoria RAM para inspección determinista en CI y suites de pruebas sin requerir servidor Langfuse activo.
 
-2. **Contratos y Schemas Pydantic V2 (`schemas_actividades.py`)**:
-   - Implementado en `oppytec-backend/src/modules/operations/presentation/schemas_actividades.py`:
-     * `ConfigDict(extra="forbid")` en el 100% de request payloads.
-     * `ConfigDict(from_attributes=True)` en modelos de respuesta.
-     * Strict Decimal (0 floats) para cálculo de horas y auditoría laboral.
-     * Schemas implementados: `NotaEquipoCreateRequest`, `NotaEquipoUpdateRequest`, `NotaEquipoResponse`, `NotaMencionResponse`, `NotaLecturaResponse`, `NotaPersonalCreateRequest`, `NotaPersonalUpdateRequest`, `NotaPersonalResponse`, `TareaCreateRequest`, `TareaEstadoUpdateRequest`, `TareaUpdateRequest`, `TareaResponse`, `PlantillaRutinaCreateRequest`, `PlantillaRutinaUpdateRequest`, `PlantillaRutinaResponse`, `AplicarPlantillaRequest`, `TurnoHorarioCreateRequest`, `TurnoHorarioUpdateRequest`, `TurnoHorarioResponse`, `ClonarSemanaRequest`, `AlertaLaboralItem`, `ValidacionLaboralResponse`, `ValidarTurnoAlertaRequest`.
+2. **Repositorios de Feedback Humano (`AIChatFeedbackRepositoryPort`)**:
+   - Implementados en `oppytec-backend/src/modules/oppy_ai/infrastructure/repositories.py`:
+     * `SqlAlchemyAIChatFeedbackRepository`: persistencia y consulta con SQLAlchemy 2.0 Async sobre `ai_chat_feedbacks`.
+     * `InMemoryAIChatFeedbackRepository`: repositorio en memoria ultrarrápido (< 1ms) para testing unitario y fallback de runtime.
+     * Métodos: `save_feedback`, `list_feedback` (paginado y filtrado por tenant/mensaje) y `get_by_trace_id`.
 
-3. **Enrutador REST FastAPI (`router_actividades.py`)**:
-   - Implementado en `oppytec-backend/src/modules/operations/presentation/router_actividades.py` con prefijo `/api/v1/actividades`:
-     * Guardias RBAC de 3 niveles con `RequireTenantPermission` y fallback:
-       - `actividades.notas.view`, `actividades.notas.create`, `actividades.notas.delete`
-       - `actividades.tareas.view`, `actividades.tareas.create`, `actividades.tareas.update`
-       - `actividades.horarios.view`, `actividades.horarios.manage`
-     * Montado en `src/main.py` y exportado en `src/modules/operations/presentation/__init__.py`.
+3. **Integración en `MeteredAIService`**:
+   - Actualizado en `oppytec-backend/src/modules/oppy_ai/application/metered_ai_service.py`:
+     * Inyección opcional de `LLMTracerPort` (`tracer=_langfuse_tracer`).
+     * Despacho asíncrono seguro de `trace_tool_call` y `trace_generation`.
+     * Generación y retorno obligatorio de `trace_id` correlacionable y `message_id` en `OppyfyQueryResponse`.
 
-4. **Suite de Pruebas Unitarias y de Integración**:
-   - Implementado en `oppytec-backend/tests/unit/modules/test_actividades_services.py`:
-     * `test_notas_equipo_lifecycle_and_idempotent_read`
-     * `test_notas_personales_privacy`
-     * `test_tarea_lifecycle_and_incompleta_validation`
-     * `test_plantillas_rutinas_and_aplicar`
-     * `test_turnos_horarios_and_clonar_semana`
-     * `test_validar_alertas_laborales_descanso_12h`
-     * `test_validar_alertas_laborales_exceso_40_horas`
-     * `test_rest_api_notas_equipo_rbac`
-     * `test_rest_api_tareas_rbac_and_incompleta_rule`
-     * `test_rest_api_horarios_and_validar_alertas`
-   - Resultados: **10/10 tests passing al 100%**.
-   - Verificación global de operaciones: **17/17 tests passing**.
-   - Tipado estricto: **0 errores con `mypy --strict`**.
+4. **Contratos y Schemas Pydantic V2 (`schemas.py`)**:
+   - Actualizado en `oppytec-backend/src/modules/oppy_ai/presentation/schemas.py`:
+     * `OppyfyChatResponse`: incorpora `trace_id` y `message_id`.
+     * `AIChatFeedbackCreateRequest`: validación estricta (`feedback_type`, `failure_category`, sanitización de `user_correction`, `rating` 1..5).
+     * `AIChatFeedbackResponse` y `AIChatFeedbackListResponse` con cálculo exacto de satisfacción en `Decimal` (`satisfaction_rate_percent`).
 
-5. **Gobernanza y Sincronización Graphify**:
-   - Sincronizado AST con `python scripts/harness.py sync-graph` (116 nodos, 141 aristas).
+5. **Endpoints REST FastAPI (`router.py`)**:
+   - Implementados en `oppytec-backend/src/modules/oppy_ai/presentation/router.py`:
+     * `POST /api/v1/oppy_ai/chat/feedback` (y alias `/api/v1/oppyfy/chat/feedback`):
+       - Rate Limiting deslizante (`RequireRateLimit("ai")`).
+       - RBAC 3-niveles con `RequireTenantPermission("oppy_ai.chat.feedback", fallback_permission="oppyfy.assistant.chat")`.
+       - Validación anti-IDOR de tenant, persistencia en repositorio y despacho de score normalizado a Langfuse.
+     * `GET /api/v1/oppy_ai/chat/feedback` (y alias `/api/v1/oppyfy/chat/feedback`):
+       - Consulta paginada de feedback por tenant con consolidado de métricas (% de satisfacción).
+     * `POST /api/v1/oppyfy/chat`:
+       - Retorna `trace_id` y `message_id` para permitir la correlación del botón 👍/👎 en frontend.
+
+6. **Verificación y Pruebas**:
+   - Creada suite unitaria `oppytec-backend/tests/unit/modules/test_oppy_ai_feedback_and_tracer.py` (9/9 passed).
+   - Verificada suite de evals y modelos `test_oppy_ai_eval_models.py` y `test_oppy_ai_evals_domain.py` (32/32 passed).
+   - Verificada suite general de OppyFy `test_oppy_ai_api.py` (10/10 passed).
+   - Verificada suite completa de arquitectura `tests/architecture/` (29/29 passed).
+   - Sincronizado Graphify con `python scripts/harness.py sync-graph` (119 nodos, 142 aristas).
 
 ---
 
-## 2. Friction & Failures (Fricciones o Aprendizajes)
+## 2. Friction & Failures (Dificultades encontradas y soluciones)
 
-- Se identificó que la expresión regular canónica `THREE_LEVEL_PERMISSION_REGEX` exige estrictamente 3 niveles `<modulo>.<submodulo>.<funcion>`. Por lo tanto, los permisos se normalizaron a `actividades.notas.*`, `actividades.tareas.*` y `actividades.horarios.*`, configurando fallback backward-compatible a `operations.*`.
+- **Fricción**: `RequireRateLimit` esperaba un argumento posicional de perfil (`"ai"`) en lugar de kwargs `limit`/`window_seconds`.
+  - **Solución**: Se utilizó `RequireRateLimit("ai")` conforme a la especificación de `src.core.guards.rate_limiter`.
+- **Fricción**: La entidad `OppyfyPermissionGrantSpec` requería `grant_id` y `subdomain_id` en las fixtures de pruebas mockeadas.
+  - **Solución**: Se instanció la especificación con `uuid.uuid4()` y `subdomain_id=1`, garantizando coherencia con el dominio DDD.
 
 ---
 
-## 3. Next Exact Action (Siguiente Acción Exacta)
+## 3. Next Exact Action (Siguiente acción recomendada)
 
-- Notificar al Orquestador (`cd95f53f-d053-4962-92d5-5c31df5bfe58`) del cierre exitoso de las Fases 2 y 3 para habilitar la Fase 4 de Frontend UI/UX con el Agente 05 (`05-frontend-senior-dev`).
+- Ceder el turno a la **Etapa 3** del DAG:
+  - **Agente 06 (`06-ai-oppyfy-and-jev-engineer`)**: Implementación del framework de Evals con DeepEval/Ragas y curaduría del *Golden Dataset* Gastronómico (50+ casos).
+  - **Agente 07 (`07-i18n-and-fx-currency-specialist`)**: Validación bilingüe del Golden Dataset (`gastronomic_golden_dataset_en.json`) y auditoría "Pollo King".
+  - **Agente 08 (`08-environments-and-observability-engineer`)**: Despliegue de Langfuse v2 en `docker-compose.yml`, conexión OTel/Tempo y dashboards en Grafana.

@@ -27,7 +27,7 @@ from sqlalchemy import (
     Uuid,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.shared.models_base import (
     AuditTimestampsMixin,
@@ -687,7 +687,140 @@ class AiChatMessage(TenantBase, AuditTimestampsMixin):
     content: Mapped[str] = mapped_column(Text, nullable=False)
 
 
+class AIEvalBenchmarkModel(PublicBase):
+    """
+    Registro y resumen agregado de corridas de evaluación sistemática (Evals) de OppyFy.
+    Tabla en `public.ai_eval_benchmarks`.
+    """
+
+    __tablename__ = "ai_eval_benchmarks"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    suite_name: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    model_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    total_cases: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    passed_cases: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    avg_faithfulness: Mapped[Decimal] = mapped_column(Numeric(5, 4), default=Decimal("0.0000"), nullable=False)
+    avg_relevance: Mapped[Decimal] = mapped_column(Numeric(5, 4), default=Decimal("0.0000"), nullable=False)
+    avg_context_precision: Mapped[Decimal] = mapped_column(Numeric(5, 4), default=Decimal("0.0000"), nullable=False)
+    avg_hallucination_rate: Mapped[Decimal] = mapped_column(Numeric(5, 4), default=Decimal("0.0000"), nullable=False)
+    passed_thresholds: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+
+    case_results: Mapped[list[AIEvalCaseResultModel]] = relationship(
+        "AIEvalCaseResultModel",
+        back_populates="benchmark",
+        cascade="all, delete-orphan",
+    )
+
+    def __init__(self, **kwargs: Any) -> None:
+        kwargs.setdefault("id", uuid.uuid4())
+        kwargs.setdefault("total_cases", 0)
+        kwargs.setdefault("passed_cases", 0)
+        kwargs.setdefault("avg_faithfulness", Decimal("0.0000"))
+        kwargs.setdefault("avg_relevance", Decimal("0.0000"))
+        kwargs.setdefault("avg_context_precision", Decimal("0.0000"))
+        kwargs.setdefault("avg_hallucination_rate", Decimal("0.0000"))
+        kwargs.setdefault("passed_thresholds", False)
+        kwargs.setdefault("created_at", datetime.now(UTC))
+        super().__init__(**kwargs)
+
+
+class AIEvalCaseResultModel(PublicBase):
+    """
+    Resultados individuales de evaluación por caso de prueba del dataset de OppyFy.
+    Tabla en `public.ai_eval_case_results`.
+    """
+
+    __tablename__ = "ai_eval_case_results"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    benchmark_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("public.ai_eval_benchmarks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    case_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    expected_output: Mapped[str] = mapped_column(Text, nullable=False)
+    actual_output: Mapped[str] = mapped_column(Text, nullable=False)
+    retrieved_context: Mapped[str | None] = mapped_column(Text, default=None, nullable=True)
+    faithfulness: Mapped[Decimal] = mapped_column(Numeric(5, 4), default=Decimal("0.0000"), nullable=False)
+    relevance: Mapped[Decimal] = mapped_column(Numeric(5, 4), default=Decimal("0.0000"), nullable=False)
+    hallucination_detected: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    passed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    benchmark: Mapped[AIEvalBenchmarkModel] = relationship(
+        "AIEvalBenchmarkModel",
+        back_populates="case_results",
+    )
+
+    def __init__(self, **kwargs: Any) -> None:
+        kwargs.setdefault("id", uuid.uuid4())
+        kwargs.setdefault("faithfulness", Decimal("0.0000"))
+        kwargs.setdefault("relevance", Decimal("0.0000"))
+        kwargs.setdefault("hallucination_detected", False)
+        kwargs.setdefault("latency_ms", 0)
+        kwargs.setdefault("passed", False)
+        kwargs.setdefault("created_at", datetime.now(UTC))
+        super().__init__(**kwargs)
+
+
+class AIChatFeedbackModel(TenantBase):
+    """
+    Feedback humano y curaduría continua para RLHF y observabilidad en `tenant_*`.
+    Tabla en `ai_chat_feedbacks`.
+    """
+
+    __tablename__ = "ai_chat_feedbacks"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False, index=True)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), default=None, nullable=True, index=True)
+    message_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("ai_chat_messages.id", ondelete="SET NULL"),
+        default=None,
+        nullable=True,
+        index=True,
+    )
+    trace_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    feedback_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    failure_category: Mapped[str | None] = mapped_column(String(50), default=None, nullable=True)
+    user_correction: Mapped[str | None] = mapped_column(Text, default=None, nullable=True)
+    rating: Mapped[int | None] = mapped_column(Integer, default=None, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    def __init__(self, **kwargs: Any) -> None:
+        kwargs.setdefault("id", uuid.uuid4())
+        kwargs.setdefault("created_at", datetime.now(UTC))
+        super().__init__(**kwargs)
+
+
 __all__ = [
+    "AIChatFeedbackModel",
+    "AIEvalBenchmarkModel",
+    "AIEvalCaseResultModel",
     "AiChatMessage",
     "AiChatThread",
     "AiCreditPackage",

@@ -14,6 +14,8 @@ Ejecuta el flujo completo de una consulta a `OppyFy`:
 """
 from __future__ import annotations
 
+import asyncio
+import logging
 import time
 import uuid
 from collections.abc import Mapping, Sequence
@@ -52,6 +54,7 @@ from src.modules.oppy_ai.domain.credit_wallet import (
     WorkerCreditWalletState,
     deduct_worker_credits,
 )
+from src.modules.oppy_ai.domain.evals import TraceContext
 from src.modules.oppy_ai.domain.oppyfy_rbac import (
     ALLOWED_PROMPT_STATUS,
     BLOCKED_UNAUTHORIZED_PROMPT,
@@ -59,6 +62,9 @@ from src.modules.oppy_ai.domain.oppyfy_rbac import (
     OppyfyPermissionGrantSpec,
     evaluate_oppyfy_subdomain_access,
 )
+from src.modules.oppy_ai.domain.ports import LLMTracerPort
+
+logger = logging.getLogger("oppytec.ai.metered_ai")
 
 _SIX_DECIMALS = Decimal("0.000001")
 _TWO_DECIMALS = Decimal("0.01")
@@ -403,6 +409,7 @@ class OppyfyQueryRequest:
     brand_name: str = "OppyFy"
     estimated_credit_cost: Decimal = Decimal("1.00")
     usd_to_clp_rate: Decimal | None = None
+    trace_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -422,6 +429,8 @@ class OppyfyQueryResponse:
     context_health: ContextHealthEvaluation
     prompt_audit_entry: OppyfyAuditEntry
     llm_usage_records: tuple[LlmUsageRecord, ...]
+    trace_id: str | None = None
+    message_id: str | None = None
 
 
 class MeteredAIService:
@@ -442,6 +451,7 @@ class MeteredAIService:
         telemetry_sink: LlmTelemetrySinkPort | None = None,
         fx_service: FXService | None = None,
         code_mode_service: OppyfyCodeModeService | None = None,
+        tracer: LLMTracerPort | None = None,
     ) -> None:
         self._jev = jev_port
         self._llm = llm_port
@@ -450,6 +460,7 @@ class MeteredAIService:
         self._models = model_registry or ModelConfigRegistry()
         self._sink = telemetry_sink
         self._fx = fx_service or FXService()
+        self._tracer = tracer
         self._prompt_audit_logs: list[OppyfyAuditEntry] = []
         self._emitted_usage_records: list[LlmUsageRecord] = []
         self._code_mode = code_mode_service
@@ -510,6 +521,11 @@ class MeteredAIService:
     def model_registry(self) -> ModelConfigRegistry:
         """Registro de configuración de tarifas de modelos IA."""
         return self._models
+
+    @property
+    def tracer(self) -> LLMTracerPort | None:
+        """Adaptador de trazabilidad y observabilidad LLM (Langfuse)."""
+        return self._tracer
 
     @property
     def fx_service(self) -> FXService:
@@ -573,6 +589,13 @@ class MeteredAIService:
         """
         timestamp = now or datetime.now(UTC)
         collected_usage: list[LlmUsageRecord] = []
+        resolved_trace_id = request.trace_id or uuid.uuid4().hex
+        resolved_message_id = uuid.uuid4().hex
+        trace_context = TraceContext.create(
+            tenant_id=request.tenant_id,
+            user_id=uuid.UUID(int=request.user_id) if request.user_id else None,
+            trace_id=resolved_trace_id,
+        )
 
         with trace_span(
             "oppyfy.query",
@@ -618,6 +641,8 @@ class MeteredAIService:
                     context_health=evaluate_context_usage(request.prior_thread_tokens),
                     prompt_audit_entry=audit_entry,
                     llm_usage_records=(),
+                    trace_id=resolved_trace_id,
+                    message_id=resolved_message_id,
                 )
 
             # Paso 2: Guardrail de seguridad con JEV (Sistema 1) + Clasificación de intención/herramienta
@@ -661,6 +686,8 @@ class MeteredAIService:
                     context_health=evaluate_context_usage(request.prior_thread_tokens),
                     prompt_audit_entry=audit_entry,
                     llm_usage_records=tuple(collected_usage),
+                    trace_id=resolved_trace_id,
+                    message_id=resolved_message_id,
                 )
 
             tool_code, subdomain_slug, jev_choice = self._router.classify_tool_and_subdomain(
@@ -713,6 +740,8 @@ class MeteredAIService:
                     context_health=evaluate_context_usage(request.prior_thread_tokens),
                     prompt_audit_entry=audit_entry,
                     llm_usage_records=tuple(collected_usage),
+                    trace_id=resolved_trace_id,
+                    message_id=resolved_message_id,
                 )
 
             # Paso 4: Ejecutar herramienta en código duro (con redacción de costos si can_view_costs=False) + RAG 3 Capas
@@ -722,6 +751,23 @@ class MeteredAIService:
                 can_view_costs=rbac_decision.can_view_costs,
                 jev_choice=jev_choice,
             )
+            if self._tracer and tool_result is not None:
+                try:
+                    tool_coro = self._tracer.trace_tool_call(
+                        context=trace_context,
+                        tool_name=str(tool_code),
+                        tool_input={"prompt": request.prompt_text},
+                        tool_output=tool_result.sanitized_payload or {},
+                        latency_ms=10,
+                    )
+                    try:
+                        loop = asyncio.get_running_loop()
+                        loop.create_task(tool_coro)
+                    except RuntimeError:
+                        asyncio.run(tool_coro)
+                except Exception as trace_exc:
+                    logger.warning("Tracer trace_tool_call failed gracefully: %s", trace_exc)
+
             subdomain_id = request.subdomain_id_by_slug.get(subdomain_slug, 1)
             rag_bundle = self._rag.build_three_layer_context(
                 user_prompt=request.prompt_text,
@@ -787,6 +833,28 @@ class MeteredAIService:
             self._record_usage(calibrated_usage)
             collected_usage.append(calibrated_usage)
 
+            # Exportar generación de LLM con LangfuseTracer
+            if self._tracer:
+                try:
+                    gen_coro = self._tracer.trace_generation(
+                        context=trace_context,
+                        model=llm_usage.model_name,
+                        prompt=request.prompt_text,
+                        completion=answer_text,
+                        prompt_tokens=llm_usage.input_tokens,
+                        completion_tokens=llm_usage.output_tokens,
+                        cost_usd=final_cost_usd,
+                        latency_ms=llm_usage.request_duration_ms,
+                        tags={"subdomain": subdomain_slug},
+                    )
+                    try:
+                        loop = asyncio.get_running_loop()
+                        loop.create_task(gen_coro)
+                    except RuntimeError:
+                        asyncio.run(gen_coro)
+                except Exception as trace_exc:
+                    logger.warning("Tracer trace_generation failed gracefully: %s", trace_exc)
+
             total_credits_to_deduct = sum(
                 (rec.credits_deducted for rec in collected_usage),
                 start=Decimal("0.00"),
@@ -829,4 +897,6 @@ class MeteredAIService:
                 context_health=context_health,
                 prompt_audit_entry=audit_entry,
                 llm_usage_records=tuple(collected_usage),
+                trace_id=resolved_trace_id,
+                message_id=resolved_message_id,
             )

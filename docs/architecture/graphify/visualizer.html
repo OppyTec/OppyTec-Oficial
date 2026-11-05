@@ -1432,6 +1432,12 @@
       "path": "oppytec-backend/alembic/versions/0016_tenant_invoices_dte_and_supplier_aliases.py"
     },
     {
+      "id": "migration:0017_public_ai_benchmarks",
+      "label": "Alembic 0017 Migration: Public ai benchmarks and tenant feedback",
+      "type": "backend_migration",
+      "path": "oppytec-backend/alembic/versions/0017_public_ai_benchmarks_and_tenant_feedback.py"
+    },
+    {
       "id": "module:analytics",
       "label": "Analytics Module (Executive Margins, Kasavana Menu Engineering, Loss Control & Projections)",
       "type": "backend_module",
@@ -1598,6 +1604,24 @@
       "label": "OppyFy Code Mode Application Service (Multi-Tenant & FinOps Telemetry)",
       "type": "backend_service",
       "path": "oppytec-backend/src/modules/oppy_ai/application/code_mode_service.py"
+    },
+    {
+      "id": "suite:ai_evals_bilingual_parity",
+      "label": "OppyFy AI Evals Bilingual (es/en) & Pollo King Invariant Parity Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/ai_evals/test_bilingual_parity.py"
+    },
+    {
+      "id": "suite:ai_evals_golden_dataset",
+      "label": "OppyFy AI Evals Golden Dataset & Metric Gates Suite (50 Cases)",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/ai_evals/test_golden_dataset.py"
+    },
+    {
+      "id": "suite:ai_evals_hallucination_resilience",
+      "label": "OppyFy AI Evals Hallucination Resilience & Epistemic Honesty Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/ai_evals/test_hallucination_resilience.py"
     },
     {
       "id": "suite:ai_model_catalog_observability_test",
@@ -2315,6 +2339,21 @@
       "relation": "orchestrates_code_mode"
     },
     {
+      "source": "suite:ai_evals_bilingual_parity",
+      "target": "module:oppy_ai",
+      "relation": "evaluates_bilingual_translation_parity"
+    },
+    {
+      "source": "suite:ai_evals_golden_dataset",
+      "target": "module:oppy_ai",
+      "relation": "evaluates_faithfulness_and_hallucination"
+    },
+    {
+      "source": "suite:ai_evals_hallucination_resilience",
+      "target": "module:oppy_ai",
+      "relation": "evaluates_zero_critical_hallucination"
+    },
+    {
       "source": "suite:ai_model_catalog_observability_test",
       "target": "service:ai_model_catalog",
       "relation": "verifies_otel_spans_and_latency_sla"
@@ -2456,7 +2495,7 @@
     "frontend_features": 10,
     "frontend_shared_kernels": 5,
     "cross_feature_imports": 0,
-    "verification_suites": 23,
+    "verification_suites": 26,
     "redteam_vectors": 11,
     "e2e_flows": 5,
     "archify_atlas_maps": 5,
@@ -2465,12 +2504,12 @@
     "load_test_target_rps": 500,
     "load_test_p95_budget_ms": 120,
     "rubric_score": "10/10",
-    "nodes_count": 118,
-    "edges_count": 142,
+    "nodes_count": 122,
+    "edges_count": 145,
     "frontend_admin_views": 4,
     "backend_routers": 14,
-    "alembic_migrations": 18,
-    "updated_at": "2026-11-04T23:04:23.111747+00:00"
+    "alembic_migrations": 19,
+    "updated_at": "2026-11-05T01:26:30.968075+00:00"
   }
 }
   </script>

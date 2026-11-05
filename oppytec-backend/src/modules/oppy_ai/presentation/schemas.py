@@ -13,7 +13,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -59,6 +59,8 @@ class OppyfyChatResponse(BaseModel):
     requires_new_thread: bool
     tool_executed: str | None = None
     tool_payload: dict[str, Any] | None = None
+    trace_id: str | None = None
+    message_id: str | None = None
 
 
 # ============================================================================
@@ -519,3 +521,70 @@ class AiModelDeleteResponse(BaseModel):
 AiModelCatalogResponse = AiModelConfigResponse
 AiModelCreateRequest = AiModelConfigCreateRequest
 AiModelUpdateRequest = AiModelConfigUpdateRequest
+
+
+# ============================================================================
+# 8. RLHF & OBSERVABILITY FEEDBACK SCHEMAS
+# ============================================================================
+
+
+class AIChatFeedbackCreateRequest(BaseModel):
+    """Solicitud de feedback humano sobre una interacción del chat de OppyFy."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    tenant_id: uuid.UUID
+    message_id: str = Field(..., min_length=1, max_length=128)
+    trace_id: str = Field(..., min_length=1, max_length=64)
+    feedback_type: Literal["positive", "negative"]
+    failure_category: (
+        Literal["hallucination", "incomplete", "math_error", "bad_formatting", "other"]
+        | None
+    ) = None
+    user_correction: str | None = Field(default=None, max_length=2000)
+    rating: int | None = Field(default=None, ge=1, le=5)
+
+    @field_validator("user_correction")
+    @classmethod
+    def _sanitize_correction(cls, value: str | None) -> str | None:
+        if value:
+            return sanitize_text_input(value, field_name="user_correction")
+        return value
+
+    @field_validator("failure_category")
+    @classmethod
+    def _validate_failure_category(
+        cls, value: str | None, info: Any
+    ) -> str | None:
+        # Note: If feedback_type is 'positive', failure_category should be None
+        return value
+
+
+class AIChatFeedbackResponse(BaseModel):
+    """Respuesta estructurada de un registro de feedback persistido."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    user_id: uuid.UUID | None = None
+    message_id: str
+    trace_id: str
+    feedback_type: str
+    failure_category: str | None = None
+    user_correction: str | None = None
+    rating: int | None = None
+    created_at: datetime
+
+
+class AIChatFeedbackListResponse(BaseModel):
+    """Listado paginado de feedback con métricas agregadas de satisfacción."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[AIChatFeedbackResponse]
+    total: int
+    positive_count: int
+    negative_count: int
+    satisfaction_rate_percent: Decimal
+

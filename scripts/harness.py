@@ -134,6 +134,58 @@ def claim_ast_symbol(worker_id: str, file_path: str, symbol_path: str, intent: s
     print(f"✅ Símbolo AST '{symbol_path}' reservado atómicamente para '{worker_id}'.")
 
 
+def release_ast_symbol(
+    worker_id: str | None = None,
+    file_path: str | None = None,
+    symbol_path: str | None = None,
+    release_all: bool = False,
+) -> int:
+    """Libera reservas de símbolos AST en claims_registry.json de forma atómica usando fcntl.flock."""
+    MEMORY_DIR.mkdir(parents=True, exist_ok=True)
+    with open(CLAIMS_LOCK, "w", encoding="utf-8") as lock_fd:
+        if _HAS_FCNTL and fcntl is not None:
+            fcntl.flock(lock_fd.fileno(), fcntl.LOCK_EX)
+        try:
+            data: dict[str, Any] = {"version": "2.0.0", "active_claims": []}
+            if CLAIMS_FILE.exists():
+                data = json.loads(CLAIMS_FILE.read_text(encoding="utf-8"))
+
+            active = data.get("active_claims", [])
+            remaining = []
+            released = []
+
+            for claim in active:
+                match = True
+                if release_all or (not worker_id and not file_path and not symbol_path):
+                    match = True
+                else:
+                    if worker_id and worker_id not in claim.get("claimed_by", ""):
+                        match = False
+                    if file_path and claim.get("file") != file_path:
+                        match = False
+                    if symbol_path and claim.get("symbol_path") != symbol_path:
+                        match = False
+
+                if match:
+                    released.append(claim)
+                else:
+                    remaining.append(claim)
+
+            data["active_claims"] = remaining
+
+            fd, tmp_path = tempfile.mkstemp(dir=MEMORY_DIR, suffix=".json")
+            with os.fdopen(fd, "w", encoding="utf-8") as tmp_file:
+                json.dump(data, tmp_file, indent=2, ensure_ascii=False)
+            os.replace(tmp_path, CLAIMS_FILE)
+        finally:
+            if _HAS_FCNTL and fcntl is not None:
+                fcntl.flock(lock_fd.fileno(), fcntl.LOCK_UN)
+
+    log_event("AST_SYMBOLS_RELEASED", {"released_count": len(released), "remaining_count": len(remaining), "worker": worker_id})
+    print(f"✅ Símbolos AST liberados: {len(released)} liberados, {len(remaining)} activos restantes.")
+    return len(released)
+
+
 def verify_anti_cheating_hashes() -> bool:
     """Verifica que ningún agente haya modificado .agent/rules/ ni .agent/evals/rubric_10_criteria.yaml."""
     if not EVAL_HASHES_FILE.exists():
@@ -391,6 +443,74 @@ async def main():
 asyncio.run(main())
 """
     subprocess.run([str(backend_py), "-c", script], cwd=ROOT_DIR / "oppytec-backend", check=True)
+
+
+def run_eval_llm_cmd(verbose: bool = False, fail_fast: bool = False) -> int:
+    """
+    Quality Gate Automatizado de Evals y Observabilidad LLM (Fail-Closed).
+    Ejecuta la suite de DeepEval/Evals en oppytec-backend/tests/ai_evals/
+    y valida que:
+    - Faithfulness >= 0.85
+    - Answer Relevance >= 0.85
+    - Context Precision >= 0.80
+    - Hallucination Rate <= 0.05
+    - Critical Hallucination Rate == 0.00 (Tolerancia Cero en alérgenos, costos y stock FEFO)
+    - Invariante de marca comercial 'Pollo King' 100% preservado.
+    Si cualquier métrica o test falla, retorna código de salida 1 y bloquea el merge/pipeline.
+    """
+    backend_pytest = ROOT_DIR / "oppytec-backend" / ".venv" / "bin" / "pytest"
+    if not backend_pytest.exists():
+        backend_pytest = Path("pytest")
+
+    print("======================================================================")
+    print("🧠 QUALITY GATE: EVALUACIÓN SISTEMÁTICA LLM (OPPYFY DEEPEVAL / RAGAS)")
+    print("======================================================================")
+    print("   • Umbrales Mínimos Inviolables (Fail-Closed):")
+    print("     - Fidelidad (Faithfulness):          >= 0.85")
+    print("     - Relevancia (Answer Relevance):     >= 0.85")
+    print("     - Precisión Contexto (Precision):    >= 0.80")
+    print("     - Tasa de Alucinación:               <= 0.05")
+    print("     - Alucinación Crítica:               == 0.00 (Alérgenos, Costos y Stock FEFO)")
+    print("     - Preservación Marca 'Pollo King':   100% Inmutable")
+    print("   • Ejecutando suite: tests/ai_evals/ ...\n")
+
+    cmd = [
+        str(backend_pytest),
+        str(ROOT_DIR / "oppytec-backend" / "tests" / "ai_evals"),
+    ]
+    if verbose:
+        cmd.append("-v")
+    else:
+        cmd.append("-q")
+    if fail_fast:
+        cmd.append("-x")
+
+    result = subprocess.run(
+        cmd,
+        cwd=ROOT_DIR / "oppytec-backend",
+        check=False,
+    )
+
+    if result.returncode != 0:
+        print("\n======================================================================")
+        print("🚨 FAIL-CLOSED ACTIVADO: Quality Gate de AI Evals NO Superado")
+        print("   Uno o más umbrales de fidelidad (< 0.85), alucinación (> 0.05) o alucinación crítica")
+        print("   fueron violados. Bloqueo inmediato de CI/CD y Merge Train.")
+        print("======================================================================\n")
+        log_event("AI_EVAL_GATE_FAILED", {"exit_code": result.returncode})
+        return 1
+
+    print("\n======================================================================")
+    print("🎯 QUALITY GATE AI EVALS SUPERADO AL 100% (CERO ALUCINACIÓN CRÍTICA)")
+    print("   • Fidelidad (Faithfulness):           >= 0.85 [APROBADO]")
+    print("   • Relevancia (Answer Relevance):       >= 0.85 [APROBADO]")
+    print("   • Precisión Contexto (Precision):     >= 0.80 [APROBADO]")
+    print("   • Tasa Alucinación (Hallucination):   <= 0.05 [APROBADO]")
+    print("   • Alucinación Crítica:                == 0.00 [APROBADO]")
+    print("   • Veredicto Final:                    CERTIFICADO (Fail-Closed Respetado)")
+    print("======================================================================\n")
+    log_event("AI_EVAL_GATE_PASSED", {"suite": "tests/ai_evals", "status": "APPROVED"})
+    return 0
 
 
 def list_models_cmd() -> None:
@@ -853,6 +973,27 @@ def sync_graph_cmd() -> None:
                 ("suite:ai_model_catalog_security_test", "router:oppy_ai", "audits_rbac_privilege_escalation_and_idor"),
             ],
         ),
+        "suite:ai_evals_golden_dataset": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "ai_evals" / "test_golden_dataset.py",
+            "OppyFy AI Evals Golden Dataset & Metric Gates Suite (50 Cases)",
+            [
+                ("suite:ai_evals_golden_dataset", "module:oppy_ai", "evaluates_faithfulness_and_hallucination"),
+            ],
+        ),
+        "suite:ai_evals_hallucination_resilience": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "ai_evals" / "test_hallucination_resilience.py",
+            "OppyFy AI Evals Hallucination Resilience & Epistemic Honesty Suite",
+            [
+                ("suite:ai_evals_hallucination_resilience", "module:oppy_ai", "evaluates_zero_critical_hallucination"),
+            ],
+        ),
+        "suite:ai_evals_bilingual_parity": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "ai_evals" / "test_bilingual_parity.py",
+            "OppyFy AI Evals Bilingual (es/en) & Pollo King Invariant Parity Suite",
+            [
+                ("suite:ai_evals_bilingual_parity", "module:oppy_ai", "evaluates_bilingual_translation_parity"),
+            ],
+        ),
     }
     for s_id, (s_path, s_label, s_edges) in fe_test_map.items():
         if s_path.exists():
@@ -929,6 +1070,10 @@ def main() -> int:
     sub.add_parser("status", help="Muestra el estado del arnés y verifica integridad anti-trampa")
     sub.add_parser("verify-evals", help="Verifica los hashes SHA-256 de reglas y evaluaciones inmutables")
 
+    eval_llm_p = sub.add_parser("eval-llm", help="Ejecuta la suite de DeepEval/Evals de OppyFy y valida Quality Gates (Fail-Closed)")
+    eval_llm_p.add_argument("-v", "--verbose", action="store_true", help="Salida detallada de pytest")
+    eval_llm_p.add_argument("-x", "--exitfirst", action="store_true", help="Detener en el primer fallo (Fail-Fast)")
+
     route_p = sub.add_parser("route-task", help="Clasifica y enruta una tarea hacia los 13 agentes con JEV")
     route_p.add_argument("prompt", help="Texto del requerimiento del usuario a clasificar")
     route_p.add_argument("--json", action="store_true", help="Salida en formato JSON estructurado")
@@ -942,6 +1087,12 @@ def main() -> int:
     claim_p.add_argument("--file", required=True)
     claim_p.add_argument("--symbol", required=True)
     claim_p.add_argument("--intent", required=True)
+
+    release_p = sub.add_parser("release-ast", help="Libera reservas de símbolos AST tras completar la tarea")
+    release_p.add_argument("--worker", default=None, help="Worker ID o prefijo a liberar (opcional)")
+    release_p.add_argument("--file", default=None, help="Ruta de archivo específico (opcional)")
+    release_p.add_argument("--symbol", default=None, help="Símbolo AST específico (opcional)")
+    release_p.add_argument("--all", action="store_true", help="Liberar todos los símbolos activos")
 
     nav_p = sub.add_parser("nav", help="Navega la vecindad AST de un símbolo con Graphify (< 150 tokens)")
     nav_p.add_argument("symbol", help="Símbolo AST o componente a consultar")
@@ -974,6 +1125,8 @@ def main() -> int:
         return 0
     if args.command == "verify-evals":
         return 0 if verify_anti_cheating_hashes() else 1
+    if args.command == "eval-llm":
+        return run_eval_llm_cmd(verbose=args.verbose, fail_fast=args.exitfirst)
     if args.command == "route-task":
         route_task_cmd(args.prompt, args.json, getattr(args, "explain_complexity", False))
         return 0
@@ -1005,6 +1158,9 @@ def main() -> int:
         return 0
     if args.command == "claim-ast":
         claim_ast_symbol(args.worker, args.file, args.symbol, args.intent)
+        return 0
+    if args.command == "release-ast":
+        release_ast_symbol(args.worker, args.file, args.symbol, getattr(args, "all", False))
         return 0
     if args.command == "nav":
         nav_ast_cmd(args.symbol, args.legacy, args.limit)

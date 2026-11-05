@@ -97,6 +97,9 @@ _BEARER_PATTERN: re.Pattern[str] = re.compile(
 _INLINE_SECRET_PATTERN: re.Pattern[str] = re.compile(
     r"(?i)\b(password|passwd|secret|token|api_key|apikey|cvv)\s*[:=]\s*[^\s,;]+"
 )
+_PAYMENT_TOKEN_PATTERN: re.Pattern[str] = re.compile(
+    r"\b(?:tok|pay|card|cus|tbk|mp)_[a-zA-Z0-9_-]{12,}\b|\b(?:sk|pk)_(?:live|test)_[a-zA-Z0-9]{12,}\b"
+)
 _BANK_ACCOUNT_PATTERN: re.Pattern[str] = re.compile(
     r"(?i)\b(?:cta(?:\.|\s+cte)?|cuenta(?:\s+corriente|\s+vista|\s+rut)?)\s*[:#]?\s*[\d\-]{6,20}\b"
 )
@@ -105,7 +108,7 @@ _BANK_ACCOUNT_PATTERN: re.Pattern[str] = re.compile(
 def scrub_pii_text(text: str | None) -> str | None:
     """
     Enmascara de forma determinista patrones PII (correos electrónicos, RUT chileno,
-    teléfonos, tarjetas de crédito, cuentas bancarias, tokens Bearer y secretos inline) en textos libres, notas o metadatos.
+    teléfonos, tarjetas de crédito, cuentas bancarias, tokens Bearer, tokens de pago y secretos inline) en textos libres, notas o metadatos.
     """
     if text is None or not text:
         return text
@@ -113,6 +116,7 @@ def scrub_pii_text(text: str | None) -> str | None:
     result = _RUT_PATTERN.sub(REDACTED_MARKER, result)
     result = _PHONE_PATTERN.sub(REDACTED_MARKER, result)
     result = _CREDIT_CARD_PATTERN.sub(REDACTED_MARKER, result)
+    result = _PAYMENT_TOKEN_PATTERN.sub(REDACTED_MARKER, result)
     result = _BANK_ACCOUNT_PATTERN.sub(REDACTED_MARKER, result)
     result = _BEARER_PATTERN.sub(REDACTED_MARKER, result)
     result = _INLINE_SECRET_PATTERN.sub(rf"\1={REDACTED_MARKER}", result)
@@ -1323,17 +1327,20 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
         except Exception:
             pass
         start_ns = time.perf_counter_ns()
+        span_id = uuid.uuid4().hex[:16]
         try:
             response = await call_next(request)
             duration_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
             response.headers["X-Trace-ID"] = trace_id
+            clean_trace_hex = trace_id.replace("-", "").ljust(32, "0")[:32]
+            response.headers["traceparent"] = f"00-{clean_trace_hex}-{span_id}-01"
 
             if self._otel_exporter in ("memory", "otlp"):
                 ctx = get_tenant_telemetry_context()
                 span = SpanRecord(
                     name=f"{request.method} {request.url.path}",
                     trace_id=trace_id,
-                    span_id=uuid.uuid4().hex[:16],
+                    span_id=span_id,
                     duration_ms=round(duration_ms, 3),
                     status_code=response.status_code,
                     attributes={
@@ -1352,5 +1359,21 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
 
 def setup_observability(app: ASGIApp) -> None:
     """Configura la observabilidad 4-pilares registrando ObservabilityMiddleware."""
-    app.add_middleware(ObservabilityMiddleware)
+    env = "local"
+    env_namespace = "default"
+    otel_exporter = "none"
+    with suppress(Exception):
+        from src.core.config import get_settings
+
+        settings = get_settings()
+        env = settings.ENVIRONMENT
+        env_namespace = settings.ENV_NAMESPACE
+        otel_exporter = settings.OTEL_EXPORTER
+
+    app.add_middleware(
+        ObservabilityMiddleware,
+        environment=env,
+        env_namespace=env_namespace,
+        otel_exporter=otel_exporter,
+    )
 

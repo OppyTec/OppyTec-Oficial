@@ -75,7 +75,15 @@ from src.modules.oppy_ai.domain.oppyfy_rbac import (
     evaluate_oppyfy_subdomain_access,
     validate_hierarchical_delegation,
 )
+from src.infrastructure.ai.langfuse_tracer import LangfuseTracer
+from src.modules.oppy_ai.domain.evals import AIChatFeedback, InvalidFeedbackPayloadError
+from src.modules.oppy_ai.infrastructure.repositories import (
+    InMemoryAIChatFeedbackRepository,
+)
 from src.modules.oppy_ai.presentation.schemas import (
+    AIChatFeedbackCreateRequest,
+    AIChatFeedbackListResponse,
+    AIChatFeedbackResponse,
     AiCreditPackCreateRequest,
     AiCreditPackQuoteResponse,
     AiCreditPackResponse,
@@ -128,6 +136,8 @@ _rag_service = ThreeLayerRagService(
     ]
 )
 _model_registry = ModelConfigRegistry()
+_langfuse_tracer = LangfuseTracer()
+_feedback_repository = InMemoryAIChatFeedbackRepository()
 _metered_ai_service = MeteredAIService(
     jev_port=_jev_adapter,
     llm_port=_gemini_adapter,
@@ -135,6 +145,7 @@ _metered_ai_service = MeteredAIService(
     tool_router=_tool_router,
     model_registry=_model_registry,
     telemetry_sink=_telemetry_sink,
+    tracer=_langfuse_tracer,
 )
 _token_consumption_service = TokenConsumptionAggregatorService()
 _ai_credit_packs_service = AiCreditPacksService()
@@ -370,6 +381,8 @@ async def oppyfy_chat_endpoint(
         requires_new_thread=query_res.context_health.requires_auto_compaction,
         tool_executed=tool_name,
         tool_payload=tool_payload,
+        trace_id=query_res.trace_id,
+        message_id=query_res.message_id,
     )
 
 
@@ -1009,3 +1022,221 @@ async def delete_ai_model_endpoint(
         _ai_model_catalog_service.delete_model(model_slug, hard_delete=True)
         span_attrs["resolution"] = "hard_deleted"
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ============================================================================
+# 8. RLHF & OBSERVABILITY FEEDBACK ENDPOINTS
+# ============================================================================
+
+
+@router.post(
+    "/api/v1/oppy_ai/chat/feedback",
+    response_model=AIChatFeedbackResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[
+        Depends(RequireRateLimit("ai")),
+    ],
+)
+@router.post(
+    "/api/v1/oppyfy/chat/feedback",
+    response_model=AIChatFeedbackResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
+)
+async def submit_chat_feedback_endpoint(
+    payload: AIChatFeedbackCreateRequest,
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(
+            RequireTenantPermission(
+                "oppy_ai.chat.feedback",
+                fallback_permission="oppyfy.assistant.chat",
+            )
+        ),
+    ],
+) -> AIChatFeedbackResponse:
+    """
+    Ingesta de feedback humano (RLHF) y evaluación cualitativa de respuestas de OppyFy:
+    - Persiste en repositorio de feedback.
+    - Envía score normalizado a Langfuse si el trace_id existe.
+    - Control de permisos RBAC de 3 niveles y validación de payload según reglas de dominio.
+    """
+    with trace_span(
+        "oppy_ai.feedback.submit",
+        attributes={
+            "trace.id": payload.trace_id,
+            "feedback.type": payload.feedback_type,
+            "tenant.id": str(payload.tenant_id),
+        },
+        tracer_name="oppytec.oppyfy",
+    ):
+        # Aislamiento multi-tenant: validar que usuarios de tenant no envíen feedback para otro tenant
+        if principal.tenant_id:
+            try:
+                expected_tenant = uuid.UUID(principal.tenant_id)
+                if (
+                    payload.tenant_id != expected_tenant
+                    and not principal.is_superuser_god
+                    and not principal.is_global_staff
+                ):
+                    raise OppyTecError(
+                        "Cross-tenant feedback submission is forbidden.",
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        error_code="CROSS_TENANT_ACCESS_FORBIDDEN",
+                    )
+            except ValueError:
+                pass
+
+        user_uuid = None
+        if principal.user_id:
+            try:
+                user_uuid = uuid.UUID(int=principal.user_id)
+            except Exception:
+                user_uuid = None
+
+        try:
+            feedback = AIChatFeedback(
+                tenant_id=payload.tenant_id,
+                user_id=user_uuid,
+                message_id=payload.message_id,
+                trace_id=payload.trace_id,
+                feedback_type=payload.feedback_type,
+                failure_category=payload.failure_category,
+                user_correction=payload.user_correction,
+                rating=payload.rating,
+            )
+        except InvalidFeedbackPayloadError as exc:
+            raise OppyTecError(
+                str(exc),
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                error_code="INVALID_FEEDBACK_PAYLOAD",
+            ) from exc
+
+        saved = await _feedback_repository.save_feedback(feedback)
+        await _langfuse_tracer.record_feedback(saved)
+
+        return AIChatFeedbackResponse(
+            id=saved.id,
+            tenant_id=saved.tenant_id,
+            user_id=saved.user_id,
+            message_id=saved.message_id,
+            trace_id=saved.trace_id,
+            feedback_type=saved.feedback_type,
+            failure_category=saved.failure_category,
+            user_correction=saved.user_correction,
+            rating=saved.rating,
+            created_at=saved.created_at,
+        )
+
+
+@router.get(
+    "/api/v1/oppy_ai/chat/feedback",
+    response_model=AIChatFeedbackListResponse,
+    status_code=status.HTTP_200_OK,
+)
+@router.get(
+    "/api/v1/oppyfy/chat/feedback",
+    response_model=AIChatFeedbackListResponse,
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
+async def list_chat_feedback_endpoint(
+    principal: Annotated[
+        AuthenticatedPrincipal,
+        Depends(
+            RequireTenantPermission(
+                "oppy_ai.chat.feedback",
+                fallback_permission="oppyfy.assistant.chat",
+            )
+        ),
+    ],
+    tenant_id: uuid.UUID | None = None,
+    message_id: str | None = None,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+) -> AIChatFeedbackListResponse:
+    """
+    Listado paginado de feedback con métricas agregadas de satisfacción (% positivo vs negativo).
+    """
+    with trace_span(
+        "oppy_ai.feedback.list",
+        attributes={"tenant.id": str(tenant_id) if tenant_id else ""},
+        tracer_name="oppytec.oppyfy",
+    ):
+        if tenant_id is not None:
+            # Aislamiento multi-tenant: prevenir IDOR / BOLA si el usuario no es superuser ni holding owner
+            if principal.tenant_id:
+                try:
+                    user_tenant = uuid.UUID(principal.tenant_id)
+                    if (
+                        tenant_id != user_tenant
+                        and not principal.is_superuser_god
+                        and not principal.is_global_staff
+                        and (
+                            not principal.accessible_tenants
+                            or str(tenant_id) not in principal.accessible_tenants
+                        )
+                    ):
+                        raise OppyTecError(
+                            "Cross-tenant feedback inspection is forbidden.",
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            error_code="CROSS_TENANT_ACCESS_FORBIDDEN",
+                        )
+                except ValueError:
+                    pass
+            target_tenant = tenant_id
+        elif principal.tenant_id:
+            try:
+                target_tenant = uuid.UUID(principal.tenant_id)
+            except ValueError:
+                target_tenant = uuid.UUID("22222222-2222-2222-2222-222222222222")
+        else:
+            target_tenant = uuid.UUID("22222222-2222-2222-2222-222222222222")
+
+        items = await _feedback_repository.list_feedback(
+            tenant_id=target_tenant,
+            message_id=message_id,
+            limit=limit,
+            offset=offset,
+        )
+
+        all_for_tenant = await _feedback_repository.list_feedback(
+            tenant_id=target_tenant,
+            message_id=message_id,
+            limit=10000,
+            offset=0,
+        )
+
+        pos_count = sum(1 for f in all_for_tenant if f.feedback_type == "positive")
+        neg_count = sum(1 for f in all_for_tenant if f.feedback_type == "negative")
+        total_count = len(all_for_tenant)
+
+        if total_count > 0:
+            satisfaction_rate = (
+                Decimal(pos_count) / Decimal(total_count) * Decimal("100.00")
+            ).quantize(Decimal("0.01"))
+        else:
+            satisfaction_rate = Decimal("0.00")
+
+        return AIChatFeedbackListResponse(
+            items=[
+                AIChatFeedbackResponse(
+                    id=item.id,
+                    tenant_id=item.tenant_id,
+                    user_id=item.user_id,
+                    message_id=item.message_id,
+                    trace_id=item.trace_id,
+                    feedback_type=item.feedback_type,
+                    failure_category=item.failure_category,
+                    user_correction=item.user_correction,
+                    rating=item.rating,
+                    created_at=item.created_at,
+                )
+                for item in items
+            ],
+            total=total_count,
+            positive_count=pos_count,
+            negative_count=neg_count,
+            satisfaction_rate_percent=satisfaction_rate,
+        )
+

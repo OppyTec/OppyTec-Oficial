@@ -25,6 +25,7 @@ import {
 import { Can } from "@/shared/auth/Can";
 import { translateKey } from "@/shared/i18n";
 import type { ChatMessage, ContextHealthState } from "../types";
+import { ChatFeedbackButtons } from "./ChatFeedbackButtons";
 
 export interface OppyfyChatPaneProps {
   readonly messages: readonly ChatMessage[];
@@ -239,6 +240,15 @@ export const OppyfyChatPane: React.FC<OppyfyChatPaneProps> = ({
                         </ul>
                       )}
                     </div>
+                  )}
+
+                  {/* Barra de Feedback RLHF para respuestas del asistente */}
+                  {!isUser && !msg.isBlocked && (
+                    <ChatFeedbackButtons
+                      messageId={msg.id}
+                      traceId={msg.traceId ?? undefined}
+                      initialFeedback={msg.feedbackRating}
+                    />
                   )}
                 </div>
               </div>

@@ -189,5 +189,28 @@
       "th_credits": "Credits / Tokens",
       "empty": "No audit events match the selected filters."
     }
+  },
+  "feedback": {
+    "thumbs_up": "Helpful response",
+    "thumbs_down": "Report issue",
+    "already_voted_positive": "You marked this response as helpful",
+    "already_voted_negative": "You reported an issue with this response",
+    "modal_title": "OppyFy Response Feedback",
+    "modal_subtitle": "Help us improve the model by reporting errors or discrepancies with your restaurant business data.",
+    "category_label": "Reason for issue:",
+    "categories": {
+      "hallucination": "🚨 Hallucination / Fabricated data",
+      "math_error": "📉 Error in calculations or costs",
+      "incomplete": "⏳ Incomplete response",
+      "bad_formatting": "📝 Poor phrasing or format",
+      "other": "❓ Other reason"
+    },
+    "user_correction_label": "What was the expected answer according to your business?",
+    "user_correction_placeholder": "Example: For Pollo King the theoretical breast cost is $3,500 and not $4,200...",
+    "cancel": "Cancel",
+    "submit": "Submit Feedback",
+    "submitting": "Submitting...",
+    "submit_success": "Thank you! Your feedback has been registered.",
+    "submit_error": "Could not record feedback. Please try again."
   }
 }

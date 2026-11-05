@@ -13,6 +13,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-langfuse.sql:/docker-entrypoint-initdb.d/01-init-langfuse.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-db_user} -d ${POSTGRES_DB:-oppytec_dev}"]
       interval: 5s
@@ -70,6 +71,9 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-mailpit}
       OTEL_EXPORTER: ${OTEL_EXPORTER:-none}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse-server:3000}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -112,6 +116,47 @@ services:
       - "${GRAFANA_PORT:-3001}:3000"
       - "${OTLP_GRPC_PORT:-4317}:4317"
       - "${OTLP_HTTP_PORT:-4318}:4318"
+    volumes:
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - oppytec_net
+
+  langfuse-server:
+    image: ghcr.io/langfuse/langfuse:2
+    container_name: oppytec-langfuse-server
+    profiles:
+      - observability
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-db_user}:${POSTGRES_PASSWORD:-db_pass}@postgres:5432/${LANGFUSE_DB:-oppytec_dev}?schema=langfuse
+      REDIS_URL: redis://redis:6379/2
+      NEXTAUTH_URL: ${LANGFUSE_HOST:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-oppytec_langfuse_nextauth_secret_high_entropy_32}
+      SALT: ${SALT:-oppytec_langfuse_salt_key_min_16_chars}
+      TELEMETRY_ENABLED: ${TELEMETRY_ENABLED:-false}
+      LANGFUSE_INIT_ORG_ID: ${LANGFUSE_INIT_ORG_ID:-oppytec-org}
+      LANGFUSE_INIT_ORG_NAME: ${LANGFUSE_INIT_ORG_NAME:-OppyTec}
+      LANGFUSE_INIT_PROJECT_ID: ${LANGFUSE_INIT_PROJECT_ID:-oppytec-ai}
+      LANGFUSE_INIT_PROJECT_NAME: ${LANGFUSE_INIT_PROJECT_NAME:-OppyFy}
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-oppytec-dev-public-key}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-oppytec-dev-secret-key-32}
+      LANGFUSE_INIT_USER_EMAIL: ${SUPERUSER_GENESIS_EMAIL:-oppytec.admin@gmail.com}
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_ADMIN_PASSWORD:-Admin123456789!}
+      PORT: "3000"
+    ports:
+      - "${LANGFUSE_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/public/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - oppytec_net
 

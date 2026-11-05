@@ -6,4 +6,6 @@ export * from "./useOppyfyChat";
 export * from "./useOppyfyRbac";
 export * from "./useOppyfyCredits";
 export * from "./useOppyfyGovernance";
+export * from "./useOppyfyFeedback";
+
 

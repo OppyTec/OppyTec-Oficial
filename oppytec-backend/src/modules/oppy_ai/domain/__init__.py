@@ -1,9 +1,12 @@
 """
 Dominio Puro de `OppyFy` (`oppytec-backend/src/modules/oppy_ai/domain/`):
 - `ai_credit_packs.py`: Primitiva de dominio para paquetes de créditos IA independientes con bonos y descuentos por plan base.
+- `ai_model_catalog.py`: Catálogo de modelos de IA, tarifas y protecciones de fallback.
 - `context_meter.py`: Medidor anti-alucinación de contexto (semáforo Verde/Ámbar/Rojo, bloqueo al >85% y rollover al 5%).
 - `credit_wallet.py`: Billetera de créditos acumulables sin caducidad, comprobación de cupos por trabajador y políticas de cuota.
+- `evals.py`: Evaluación sistemática (Evals), métricas normalizadas Decimal, umbrales SLA y feedback RLHF.
 - `oppyfy_rbac.py`: RBAC propio y 100% editable de `OppyFy` con triple caducidad temporal y redacción de costos en código duro.
+- `ports.py`: Puertos de arquitectura limpia (Protocols) para observabilidad, evals y feedback.
 """
 from __future__ import annotations
 
@@ -48,6 +51,22 @@ from src.modules.oppy_ai.domain.credit_wallet import (
     deduct_worker_credits,
     stack_credit_packages,
 )
+from src.modules.oppy_ai.domain.evals import (
+    VALID_FAILURE_CATEGORIES,
+    VALID_FEEDBACK_TYPES,
+    AIChatFeedback,
+    AIEvalBenchmark,
+    AIEvalCaseResult,
+    AIEvalDomainError,
+    EvalMetricThresholds,
+    EvalScore,
+    EvalThresholdNotMetError,
+    FailureCategory,
+    FeedbackType,
+    InvalidFeedbackPayloadError,
+    TraceContext,
+    TracerConfigurationError,
+)
 from src.modules.oppy_ai.domain.oppyfy_rbac import (
     ALLOWED_PROMPT_STATUS,
     BLOCKED_UNAUTHORIZED_PROMPT,
@@ -65,6 +84,11 @@ from src.modules.oppy_ai.domain.oppyfy_rbac import (
     redact_cost_fields,
     validate_hierarchical_delegation,
 )
+from src.modules.oppy_ai.domain.ports import (
+    AIChatFeedbackRepositoryPort,
+    LLMEvalSuitePort,
+    LLMTracerPort,
+)
 
 __all__ = [
     "ALLOWED_PROMPT_STATUS",
@@ -79,6 +103,13 @@ __all__ = [
     "PREVENTIVE_ALERT_THRESHOLD_PERCENT",
     "REDACTED_COST_MARKER",
     "SENSITIVE_COST_KEYS",
+    "VALID_FAILURE_CATEGORIES",
+    "VALID_FEEDBACK_TYPES",
+    "AIChatFeedback",
+    "AIChatFeedbackRepositoryPort",
+    "AIEvalBenchmark",
+    "AIEvalCaseResult",
+    "AIEvalDomainError",
     "AiCreditPack",
     "AiEngineTier",
     "AiModelConfigEntity",
@@ -89,11 +120,21 @@ __all__ = [
     "CreditPackageSpec",
     "EditableOppyfyDomainSpec",
     "EditableOppyfySubdomainSpec",
+    "EvalMetricThresholds",
+    "EvalScore",
+    "EvalThresholdNotMetError",
+    "FailureCategory",
+    "FeedbackType",
     "HoldingCreditPool",
+    "InvalidFeedbackPayloadError",
+    "LLMEvalSuitePort",
+    "LLMTracerPort",
     "OppyfyAccessDecision",
     "OppyfyCapability",
     "OppyfyPermissionGrantSpec",
     "ThreadCompactionSummary",
+    "TraceContext",
+    "TracerConfigurationError",
     "WorkerCreditWalletState",
     "WorkerQuotaPolicy",
     "allocate_credits_to_worker",
@@ -111,5 +152,8 @@ __all__ = [
     "redact_cost_fields",
     "stack_ai_credit_packs",
     "stack_credit_packages",
+    "validate_default_model_protection",
+    "validate_fallback_invariants",
     "validate_hierarchical_delegation",
+    "validate_single_default_per_tier",
 ]

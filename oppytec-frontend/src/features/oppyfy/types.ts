@@ -98,6 +98,9 @@ export interface ChatMessage {
   readonly threadId?: string;
   readonly subdomainSlug?: string;
   readonly toolExecuted?: string | null;
+  readonly traceId?: string | null;
+  readonly feedbackRating?: FeedbackType | null;
+  readonly failureCategory?: FailureCategory | null;
 }
 
 // ============================================================================
@@ -328,4 +331,37 @@ export interface OppyfyTemporaryGrantItem {
   readonly temp_credit_ceiling: string | number | null;
   readonly is_active: boolean;
 }
+
+// ============================================================================
+// 6. RETROALIMENTACIÓN HUMANA (RLHF) & REPORTE DE ALUCINACIONES
+// ============================================================================
+
+export type FeedbackType = "positive" | "negative";
+
+export type FailureCategory =
+  | "hallucination"
+  | "incomplete"
+  | "math_error"
+  | "bad_formatting"
+  | "other";
+
+export interface ChatFeedbackPayload {
+  readonly message_id: string;
+  readonly trace_id?: string;
+  readonly feedback_type: FeedbackType;
+  readonly failure_category?: FailureCategory | null;
+  readonly user_correction?: string | null;
+  readonly rating?: number | null;
+}
+
+export interface FeedbackResponse {
+  readonly id: string;
+  readonly status: "success" | "received";
+  readonly message: string;
+  readonly feedback_type: FeedbackType;
+  readonly failure_category?: FailureCategory | null;
+  readonly trace_id?: string;
+  readonly created_at?: string;
+}
+
 

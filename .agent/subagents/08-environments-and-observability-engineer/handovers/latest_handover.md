@@ -1,59 +1,67 @@
 # Reporte de Traspaso (`Handover`) — Agente 08: Environments and Observability Engineer
 
-- **Fecha UTC:** 2026-11-04T18:30:00Z
-- **Fase / Tarea:** Etapa 3 — Módulo de Facturas y Contabilidad (`/contabilidad/facturas`): Instrumentación OpenTelemetry 4-Pilares, Métricas FinOps, Censura Estricta PII y Structlog
-- **Estado de Certificación:** `OBSERVABILITY_FINOPS_AND_PII_REDACTION_APPROVED`
+- **Fecha UTC:** 2026-11-05T01:15:00Z
+- **Fase / Tarea:** Etapa 3 — Plan Maestro de Evals y Observabilidad LLM con Langfuse Self-Hosted (`.agent/Planes-Maestros/PLAN_MAESTRO_LLM_EVALS_Y_OBSERVABILIDAD_LANGFUSE.md` - Fase 2)
+- **Estado de Certificación:** `LANGFUSE_SELF_HOSTED_AND_OTEL_OBSERVABILITY_CERTIFIED`
 
 ---
 
-## 1. Completed (Acciones de Observabilidad, Spans OTel y Métricas FinOps Realizadas)
+## 1. Completed (Acciones de Infraestructura, Correlación OTel y Dashboards Realizadas)
 
-1. **Pre-ejecución Graphify (Regla 6):**
-   - Ejecutado `python scripts/harness.py nav "trace_span"` y `python scripts/harness.py nav "structlog"`.
-   - Reclamados atómicamente los símbolos AST `trace_span` e `InvoiceService` vía `python scripts/harness.py claim-ast`.
+1. **Pre-ejecución Graphify y Claim AST (Reglas 4, 5 y 6):**
+   - Ejecutado `python scripts/harness.py nav "observability"` para mapeo de vecindad AST.
+   - Reclamado atómicamente el símbolo `observability_langfuse` en `docker-compose.yml` con `python scripts/harness.py claim-ast`.
 
-2. **Instrumentación OpenTelemetry Spans Distribuidos (5 Spans Críticos):**
-   - `invoices.upload`: Tiempo de subida y creación de DTE en `InvoiceService.create_invoice`, inyectando atributos semánticos.
-   - `invoices.extract_gemini_ocr`: Latencia de inferencia y extracción de tokens en `GeminiInvoiceExtractor.extract_invoice_data`.
-   - `invoices.resolve_aliases`: Resolución exacta y difusa de descripciones contra el catálogo en `SupplierAliasService.resolve_line_match`.
-   - `invoices.auto_ingest_stock`: Traspaso transaccional al inventario físico en `InvoiceIngestionService.auto_ingest_to_inventory`.
-   - `invoices.export_dte`: Generación de libros contables SII Chile F29 CSV, QuickBooks, Xero y Odoo en `DTEExportService.export_dte`.
-   - Inyección de atributos semánticos estandarizados:
-     * `invoice.id`: UUID correlacionado.
-     * `invoice.dte_type`: Código oficial SII (33, 34, 39, 52, 56, 61).
-     * `invoice.vendor_tax_id`: RUT emisor.
-     * `invoice.gemini_tokens_used`: Conteo real de tokens consumidos.
-     * `invoice.gemini_cost_usd`: Costo FinOps acumulado en USD con precisión `Decimal`.
-     * `invoice.lines_count`: Cantidad de líneas de detalle del documento.
+2. **Despliegue Self-Hosted de Langfuse v2 en `docker-compose.yml`:**
+   - Servicio `langfuse-server` con imagen oficial `ghcr.io/langfuse/langfuse:2`.
+   - Perfil opcional `profiles: [observability]` para arranque coordinado con `otel-lgtm`, `umami` y `glitchtip`.
+   - Reutilización de PostgreSQL primario con esquema aislado `?schema=langfuse`.
+   - Script de inicialización montado en Postgres: `docker/postgres/init-langfuse.sql` (`CREATE SCHEMA IF NOT EXISTS langfuse;`).
+   - Reutilización de Redis en DB 2 (`redis://redis:6379/2`) para colas asíncronas de ingesta sin interferir con la app principal (DB 0) ni GlitchTip (DB 1).
+   - Inyección de variables en `backend` (`LANGFUSE_HOST`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`).
+   - Verificada la sintaxis de Docker Compose con `docker compose config` y `docker compose --profile observability config` (100% OK sin advertencias ni errores).
 
-3. **Métricas Estructuradas FinOps y Monitoreo (OpenTelemetry / Prometheus / Grafana):**
-   - `invoices_processed_total`: Counter clasificado por `tenant_id`, `dte_type` y `status`.
-   - `invoice_ocr_duration_seconds`: Histogram de latencia de extracción OCR.
-   - `invoice_ai_tokens_consumed_total`: Counter FinOps acumulativo de tokens consumidos.
-   - `invoice_ai_cost_usd_total`: Counter FinOps acumulativo de costo monetario en USD.
-   - Recopilador en memoria `_in_memory_invoice_metrics`, `get_in_memory_invoice_metrics()` y `clear_in_memory_invoice_metrics()`.
+3. **Variables de Entorno en `.env.example` y `oppytec-backend/.env.example`:**
+   - Creado `.env.example` en la raíz con variables de infraestructura y observabilidad.
+   - Actualizado `oppytec-backend/.env.example` con la sección oficial:
+     * `LANGFUSE_HOST=http://localhost:3000`
+     * `LANGFUSE_PORT=3000`
+     * `LANGFUSE_PUBLIC_KEY=pk-lf-oppytec-dev-public-key`
+     * `LANGFUSE_SECRET_KEY=sk-lf-oppytec-dev-secret-key-32`
+     * `NEXTAUTH_SECRET=oppytec_langfuse_nextauth_secret_high_entropy_32`
+     * `SALT=oppytec_langfuse_salt_key_min_16_chars`
+     * `TELEMETRY_ENABLED=false`
 
-4. **Logs Estructurados JSON con Structlog y Censura Estricta de PII:**
-   - Configuración de `structlog` con processor determinista `_structlog_pii_filter` que delega en `scrub_telemetry_payload`.
-   - Función `get_invoice_logger(tenant_id, invoice_id)` para logs contextualizados de auditoría.
-   - Censura reforzada de PII:
-     * Cuentas bancarias (`bank_account`, `account_number`, `numero_cuenta`, `cuenta_bancaria`, `cta_cte`, regex `_BANK_ACCOUNT_PATTERN`).
-     * RUTs de personas naturales y tarjetas de crédito.
-     * Preservación de la regla de oro "Pollo King": nombres de proveedores y razones sociales inmutables.
+4. **Correlación OpenTelemetry y W3C TraceContext:**
+   - Soporte bidireccional en `ObservabilityMiddleware` y `extract_trace_id_from_headers`:
+     * Ingesta de `traceparent` estándar W3C (`00-{trace_id}-{span_id}-01`).
+     * Inyección en cabeceras de respuesta HTTP de `X-Trace-ID` y `traceparent`.
+     * El `trace_id` de 32 caracteres hexadecimales es propagado a `TraceContext.create()` en `MeteredAIService`.
+     * `LangfuseTracer` crea el evento `trace-create` con `id: context.trace_id`, garantizando coincidencia 1:1 entre las trazas de OpenTelemetry (Tempo) y Langfuse.
 
-5. **Suite de Pruebas Automatizadas y Verificación:**
-   - Creada suite unitaria `oppytec-backend/tests/unit/modules/test_invoices_observability.py` (8 tests passing al 100%).
-   - Verificados tests de arquitectura en `oppytec-backend/tests/architecture/test_observability_pii_redaction_and_spans.py` (100% verde).
-   - Verificada la suite completa de facturas: 56 pruebas unitarias y de arquitectura pasando en verde (1.75s).
-   - Sincronizado Grafo de Arquitectura Graphify: 118 nodos, 142 aristas (`python scripts/harness.py sync-graph`).
+5. **Dashboard Grafana FinOps & Observabilidad AI:**
+   - Creado aprovisionamiento automatizado: `docker/grafana/provisioning/dashboards/dashboards.yaml`.
+   - Montaje de volúmenes en `otel-lgtm` para auto-descubrimiento en `/var/lib/grafana/dashboards`.
+   - Dashboard completo JSON `docker/grafana/dashboards/oppyfy_llm_finops_observability.json`:
+     * KPIs de FinOps: Total invocaciones, costo acumulado USD en tiempo real, total de tokens procesados y tasa de error global (< 5%).
+     * Latencia P50, P95, P99 con línea de SLA de 2.5s (2500ms).
+     * Consumo de tokens por modelo (Prompt vs Completion).
+     * Satisfacción de usuarios (% pulgar arriba) y desglose de fallas gastronómicas reportadas (alucinaciones, datos incompletos).
+     * Ranking de Top 10 tenants por consumo FinOps en USD.
+     * Tabla exploradora forense de trazas con Deep-Link directo a Langfuse UI (`http://localhost:3000/project/oppytec-ai/traces/${__data.fields.trace_id}`) y Tempo APM.
+
+6. **Verificación Determinista y Tests:**
+   - Creada suite de correlación `oppytec-backend/tests/unit/test_langfuse_otel_correlation.py` (5/5 tests passing en 0.21s).
+   - Verificados tests de arquitectura en `test_observability_pii_redaction_and_spans.py` (4/4 tests passing).
+   - Verificada suite completa de feedback y telemetría de OppyFy (22 tests passing en 1.25s).
+   - Sincronizado Grafo de Arquitectura Graphify: 119 nodos, 142 aristas.
 
 ---
 
 ## 2. Friction & Failures
-- `DTEType` enum en `value_objects.py` usa `DTEType.FACTURA_ELECTRONICA` (código numérico 33). Las aserciones fueron ajustadas correspondientemente.
-- `TaxId` exige validación Módulo 11 estricta; se corrigieron los RUTs sintéticos de prueba para cumplir exactamente el dígito verificador.
+- `ghcr.io/langfuse/langfuse:2` requiere Prisma sobre PostgreSQL; para prevenir colisiones con las tablas de Alembic de OppyTec, se aisló el servicio bajo el esquema `?schema=langfuse` y se proveyó el script `docker/postgres/init-langfuse.sql` en el punto de montaje `/docker-entrypoint-initdb.d/`.
 
 ---
 
 ## 3. Next Exact Action
-- Dar paso al cierre de la Etapa 3 y dar inicio a la Etapa 4 (QA Parity, Red Team Security Audit, Merge Arbiter y Tech Writer OpenSpec).
+- Despacho y entrega al Orquestador (Prime Agent) para coordinar el avance de la Etapa 3 con los agentes 06 (`06-ai-oppyfy-and-jev-engineer`) y 07 (`07-i18n-and-fx-currency-specialist`).

@@ -98,11 +98,13 @@ class MeteredGeminiAdapter(LLMProviderPort, EmbeddingPort):
     ) -> str:
         """
         Construye un micro-prompt quirúrgico estilo `Pi` (ahorro de 60-80% en tokens de entrada):
-        incluye únicamente identidad configurable (`brand_name`), idioma activo y datos filtrados.
+        incluye únicamente identidad configurable (`brand_name`), idioma activo, salvaguardas de
+        arquitectura interna y calibración obligatoria de honestidad epistémica (nunca asumir datos).
         """
         compact_kv = "; ".join(f"{k}={v}" for k, v in sorted(compact_context_payload.items()))
         return (
-            f"[assistant={brand_name}|lang={language_code}|guard=no_internal_arch] "
+            f"[assistant={brand_name}|lang={language_code}|guard=no_internal_arch|"
+            f"epistemic_honesty=strict_if_missing_declare_not_registered_never_assume] "
             f"ctx:{{{compact_kv}}} | q:{user_prompt.strip()}"
         )
 
@@ -130,7 +132,14 @@ class MeteredGeminiAdapter(LLMProviderPort, EmbeddingPort):
         )
 
         summary_fragments = [f"{k}: {v}" for k, v in sorted(compact_context_payload.items())]
-        joined_summary = ", ".join(summary_fragments) if summary_fragments else "sin datos adicionales"
+        if not summary_fragments:
+            if language_code.startswith("en"):
+                joined_summary = "the requested item or ingredient is not registered in the tenant inventory; under strict epistemic honesty policy no quantities or stock are assumed"
+            else:
+                joined_summary = "el ingrediente o ítem consultado no se encuentra registrado en el stock del tenant; bajo honestidad epistémica estricta no se asumen existencias ni cantidades inventadas"
+        else:
+            joined_summary = ", ".join(summary_fragments)
+
         if language_code.startswith("en"):
             response_text = f"[{brand_name}] Executive analysis for '{user_prompt.strip()}': {joined_summary}."
         else:

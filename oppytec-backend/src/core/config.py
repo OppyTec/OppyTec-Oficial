@@ -112,6 +112,11 @@ class Settings(BaseSettings):  # type: ignore[explicit-any]
     UMAMI_ENABLED: bool = False
     UMAMI_WEBSITE_ID: str | None = None
 
+    # 8. Observabilidad Especializada LLM (Langfuse Self-Hosted)
+    LANGFUSE_HOST: str = "http://localhost:3000"
+    LANGFUSE_PUBLIC_KEY: SecretStr | None = None
+    LANGFUSE_SECRET_KEY: SecretStr | None = None
+
     @property
     def is_openapi_enabled(self) -> bool:
         """Desactiva Swagger/Redoc/OpenAPI público en producción (OWASP API8)."""

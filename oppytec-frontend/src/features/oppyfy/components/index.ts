@@ -40,5 +40,16 @@ export {
   type ShoppingProduct,
 } from "./ShoppingCardsView";
 
+export {
+  ChatFeedbackButtons,
+  type ChatFeedbackButtonsProps,
+} from "./ChatFeedbackButtons";
+
+export {
+  FeedbackReportModal,
+  type FeedbackReportModalProps,
+} from "./FeedbackReportModal";
+
 export * from "./governance";
+
 
