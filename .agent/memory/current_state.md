@@ -1,12 +1,13 @@
 # Estado Actual de la Refactorización — OppyTec v2.0
 
-- **Fase Activa:** `Fase 6 Completada y Certificada 10/10 (Refactorización Integral Paso 0 + Fases 1..6 Finalizada con Sello SECURITY_APPROVED)`
-- **Estado del Escuadrón de 12 Agentes:** Operativo y Certificado (`.agent/subagents/01..12-*/` con handovers actualizados tras el cierre de la Fase 6)
+- **Fase Activa:** `Hito Cerrado: Clean Slate 100%, Desacoplamiento Total de Mock Data en Todas las Vistas y Bóveda de Respaldo JSON Maestro (ADR-022) — 100% Certificado con Dictámenes CLEAN_SLATE_GENESIS_CERTIFIED, APPROVED_CLEAN_SLATE_HERMETIC, ADR_022_I18N_AND_FX_CERTIFIED, DOCKER_OBSERVABILITY_CERTIFIED y SYNC_APPROVED`
+- **Estado del Escuadrón de 12 Agentes:** Operativo y Certificado (`.agent/subagents/01..12-*/` con handovers actualizados tras el cierre de ADR-022)
 - **Estado de Reglas Inmutables:** `.agent/rules/00..22-*.md` activas (23 reglas inmutables)
 - **Estado de Evaluaciones Anti-Trampa:** `.agent/evals/rubric_10_criteria.yaml` sellado con `SHA-256` (`verify-evals` 100% OK, calificación `10/10`)
 - **Estado de Quality Gate (Backend + Frontend + Deep Gate):**
-  - **Backend:** `68 passed` en suite unitaria (`< 3s`), `173 passed` en suite total consolidada, `ruff check` 0 errores, `mypy --strict` 0 errores en 234 archivos, Alembic correlativo `0001..0003` OK (`test_alembic_integrity.py`), `test_openspec_bipartition_and_sync.py` OK.
-  - **Frontend (`oppytec-frontend`):** `tsc --noEmit` 0 errores, `vitest` **`31 passed`** (5 suites), router SPA y vistas administrativas de planes, holdings, entidades legales, sucursales y usuarios clientes operativas con `<QuotaProgressIndicator />`.
+  - **Backend:** `29 passed` en suite de arquitectura (`test_openspec_bipartition_and_sync.py` OK), `98 passed` en tests unitarios de mock data y Génesis (`test_mock_data_manager.py`, `test_clean_and_seed_genesis_db.py`, `test_sandbox_observability_and_environments.py`), `ruff check` 0 errores, `mypy --strict` 0 errores.
+  - **Frontend (`oppytec-frontend`):** `pnpm run typecheck` (`tsc --noEmit`) 0 errores, `pnpm test` **`1,171 passed`** (98 suites), 100% paridad i18n es/en en los 11 namespaces y 26 archivos JSON.
+  - **Base de Datos en Vivo (`oppytec-postgres`):** Estado Génesis estricto (`holdings=0`, `legal_entities=0`, `tenants=0`, `client_users=0`, `global_users=1` con SuperUser `OppyTec.Admin@gmail.com`).
 
 ## Checklist Paso 0 (Gobernanza Base y Arnés RLM)
 - [x] `AGENTS.md` y `.graphifyignore` en la raíz del proyecto
@@ -232,4 +233,31 @@
   - Auditoría Kali 11 vectores: Magic Bytes, Anti-BOLA, Anti-SSRF en webhooks salientes y sello **`SECURITY_APPROVED`**.
   - Bóvedas OpenSpec bipartitas sincronizadas y validadas (`test_openspec_bipartition_and_sync.py` 100% OK).
   - Grafo AST Graphify sincronizado: 118 nodos y 142 aristas.
+
+## Hito Cerrado: Clean Slate 100%, Desacoplamiento Total de Mock Data en Todas las Vistas y Bóveda de Respaldo JSON Maestro (ADR-022)
+- **Estado de Certificación:** `10/10` con Dictámenes `CLEAN_SLATE_GENESIS_CERTIFIED` (Agente 03), `APPROVED_CLEAN_SLATE_HERMETIC_AND_GENESIS_INTACT` (Agente 06), `ADR_022_STAGE_3_I18N_AND_FX_CERTIFIED` (Agente 07), `ADR022_CLEAN_SLATE_DOCKER_AND_OBSERVABILITY_CERTIFIED` (Agente 08) y `SYNC_APPROVED` (Agente 12).
+- **Etapa 1 (Arquitectura Canónica y Persistencia en PostgreSQL):**
+  - Publicado el contrato arquitectónico canónico `docs/adr/ADR-022-clean-slate-and-mock-data-backup-architecture.md` (Agente 02) con dictamen JEV (No en runtime de datos, determinismo transaccional absoluto).
+  - Extracción y creación de la Bóveda Canónica de Respaldo Maestro JSON (`mock_data_backup.json`, 353 KB) en `oppytec-backend/fixtures/mock_data_backup.json` y `oppytec-frontend/src/shared/mock/mock_data_backup.json` preservando 22 dominios operativos y los 4 presets gastronómicos canónicos (Agente 03).
+  - Script idempotente `clean_and_seed_genesis_db.py` ejecutado en vivo sobre `oppytec-postgres`: purga total de 21 tablas de `public`, eliminación de todos los esquemas `tenant_*`, y siembra exclusiva del SuperUser Génesis (`OppyTec.Admin@gmail.com` / `oppytec.admin` / hash Argon2id `oppytec2026`, `is_superuser_god=True`), 7 módulos base, 4 roles globales, 1 permiso comodín `*.*.*`, 3 planes SaaS y los 6 modelos IA fundacionales.
+  - Verificación SQL directa: `holdings=0`, `legal_entities=0`, `tenants=0`, `client_users=0`, `global_users=1`.
+- **Etapa 2 (Construcción Full-Stack y Desacoplamiento de Mock Data):**
+  - Implementado `oppytec-backend/src/core/mock_data_manager.py` (Agente 04) con `load_mock_data_backup()`, `purge_all_runtime_mock_stores()`, `restore_runtime_mock_stores()` y `reset_default_demo_stores()`.
+  - Integrado ciclo de vida en `src/main.py` (`_app_lifespan`) para arranque en frío en estado Clean Slate fuera de `pytest`.
+  - Soporte de cabecera HTTP `X-OppyTec-Mock-Mode: clean` en routers de administración y nuevo endpoint `GET /api/v1/platform-admin/sandbox/mock-data/backup`.
+  - Implementado `oppytec-frontend/src/shared/mock/mockModeStorage.ts` (Agente 05) con `ensureBrowserDefaultCleanMode()` (inicia en `"clean"` en navegador real y preserva `"demo"` en Vitest) y selectores funcionales `selectByMockMode<T>()` y `useMockAwareData<T>()`.
+  - Actualizado `src/shared/api/httpClient.ts` para retornar arreglos vacíos `[]` o estructuras paginadas con `items: []` y `total: 0` ante fallbacks en modo clean.
+  - Diseñada la tarjeta de control `mock-data-backup-vault-card` en `/admin/sandbox/mock-data` con 3 botones: descarga directa del JSON, purga total a Clean Slate y restauración del respaldo demostrativo.
+  - Desacoplado sistemáticamente el 100% de datos mock hardcodeados en todas las vistas, hooks y componentes de `src/features/*`.
+- **Etapa 3 (Especialistas de Dominio, Observabilidad y Despliegue en Vivo):**
+  - Certificación FinOps e IA (Agente 06): 0 phantom credits ni logs sintéticos en modo clean; catálogo de 6 modelos LLM y política SaaS preservados intactos como configuración Génesis del sistema.
+  - Certificación i18n y FX (Agente 07): Paridad 1:1 estricta en los 11 namespaces y 26 archivos JSON (1.183 claves en `platform_admin.json`), blindaje inmutable `"Pollo King"` y precisión `Decimal` en balances monetarios ($0 en Clean Slate).
+  - Certificación Docker y Observabilidad (Agente 08): Actualizado `Dockerfile` con `fixtures/` y `scripts/`, contenedores reconstruidos en vivo, telemetría OTel con spans distribuidos y TraceContext W3C, y validación HTTP en vivo 100% OK contra `http://localhost:8000` y `http://localhost:5173`.
+- **Etapa 4 (Gobernanza OpenSpec, Graphify y Bitácora):**
+  - Especificación funcional de negocio en `specs/business-domain/clean-slate-and-mock-data-sandbox.business.spec.md` (0% código/SQL, 100% valor de negocio gastronómico).
+  - Especificación técnica en `specs/engineering-code/clean-slate-and-mock-data-sandbox.code.spec.md` (ADR-022, arquitectura técnica, DTOs, diagramas Mermaid, guardrails y telemetría).
+  - Test de arquitectura OpenSpec `test_openspec_bipartition_and_sync.py` 100% verde (1 passed en 0.27s).
+  - Grafo AST Graphify sincronizado con `python3 scripts/harness.py sync-graph` (151 nodos, 196 aristas en `docs/architecture/graphify/graph.json`).
+  - Bitácora publicada en `docs/bitacora/diario-escuadron/11-Fase-Clean-Slate-Desacoplamiento-Mock-Data-y-Respaldo-JSON.md`.
+
 

@@ -6,6 +6,7 @@
  */
 
 import { apiRequest, resolveApiEndpointUrl, buildApiHeaders } from "@/shared/api/httpClient";
+import { isMockDataEnabled } from "@/shared/mock/mockModeStorage";
 import {
   MOCK_INVOICES,
   MOCK_INVOICE_STATS,
@@ -21,6 +22,18 @@ import type {
   LearnAliasPayload,
   PriceDriftItem,
 } from "./types";
+
+const CLEAN_INVOICE_STATS: InvoiceStats = {
+  total_invoices: 0,
+  pending_review: 0,
+  confirmed_stock: 0,
+  total_net_clp: 0,
+  total_tax_clp: 0,
+  total_amount_clp: 0,
+  total_tokens_used: 0,
+  total_cost_usd: 0,
+  avg_confidence_score: 0,
+};
 
 export interface PaginatedInvoicesResponse {
   items: Invoice[];
@@ -45,10 +58,12 @@ export const invoicesApi = {
 
     const path = `/api/v1/invoices${query.toString() ? `?${query.toString()}` : ""}`;
 
-    const fallback: PaginatedInvoicesResponse = {
-      items: MOCK_INVOICES,
-      total: MOCK_INVOICES.length,
-    };
+    const fallback: PaginatedInvoicesResponse = isMockDataEnabled()
+      ? {
+          items: MOCK_INVOICES,
+          total: MOCK_INVOICES.length,
+        }
+      : { items: [], total: 0 };
 
     const res = await apiRequest<PaginatedInvoicesResponse>(path, {
       method: "GET",
@@ -270,7 +285,7 @@ export const invoicesApi = {
   async getStats(): Promise<InvoiceStats> {
     const res = await apiRequest<InvoiceStats>("/api/v1/invoices/stats", {
       method: "GET",
-      fallbackData: MOCK_INVOICE_STATS,
+      fallbackData: isMockDataEnabled() ? MOCK_INVOICE_STATS : CLEAN_INVOICE_STATS,
     });
     return res.data;
   },
@@ -281,7 +296,7 @@ export const invoicesApi = {
   async getPriceDrift(): Promise<PriceDriftItem[]> {
     const res = await apiRequest<PriceDriftItem[]>("/api/v1/invoices/price-drift", {
       method: "GET",
-      fallbackData: MOCK_PRICE_DRIFT_ITEMS,
+      fallbackData: isMockDataEnabled() ? MOCK_PRICE_DRIFT_ITEMS : [],
     });
     return res.data;
   },
@@ -310,9 +325,10 @@ export const invoicesApi = {
       return await response.blob();
     } catch {
       // Fallback CSV en memoria
+      const rows = isMockDataEnabled() ? MOCK_INVOICES : [];
       const csvContent =
         "Folio;Tipo Doc;RUT Proveedor;Razon Social;Fecha;Monto Neto;Monto IVA;Monto Total\n" +
-        MOCK_INVOICES.map(
+        rows.map(
           (i) =>
             `${i.invoice_number || ""};${i.dte_type};${i.vendor_tax_id || ""};${
               i.vendor_name || ""
@@ -326,19 +342,21 @@ export const invoicesApi = {
    * Lista los webhooks salientes registrados.
    */
   async listWebhooks(): Promise<InvoiceWebhook[]> {
-    const fallback: InvoiceWebhook[] = [
-      {
-        id: "hook-1",
-        url: "https://erp.restaurantesur.cl/webhooks/facturas",
-        description: "ERP Central Contable",
-        events: ["invoice.stock_confirmed", "invoice.analyzed"],
-        is_active: true,
-        last_sent_at: "2026-11-03T18:30:00Z",
-        last_status_code: 200,
-        last_response_time_ms: 184,
-        created_at: "2026-10-15T12:00:00Z",
-      },
-    ];
+    const fallback: InvoiceWebhook[] = isMockDataEnabled()
+      ? [
+          {
+            id: "hook-1",
+            url: "https://erp.restaurantesur.cl/webhooks/facturas",
+            description: "ERP Central Contable",
+            events: ["invoice.stock_confirmed", "invoice.analyzed"],
+            is_active: true,
+            last_sent_at: "2026-11-03T18:30:00Z",
+            last_status_code: 200,
+            last_response_time_ms: 184,
+            created_at: "2026-10-15T12:00:00Z",
+          },
+        ]
+      : [];
     const res = await apiRequest<InvoiceWebhook[]>("/api/v1/invoices/webhooks", {
       method: "GET",
       fallbackData: fallback,

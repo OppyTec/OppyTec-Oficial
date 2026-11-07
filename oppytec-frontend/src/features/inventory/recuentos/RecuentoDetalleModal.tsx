@@ -15,6 +15,7 @@ import {
 import { ResponsiveDialog } from "@/shared/components/ui/ResponsiveDialog";
 import { CategoryIcon } from "@/shared/components/ui/CategoryIcon";
 import { useCurrencyFormatter } from "@/shared/currency";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { toast } from "sonner";
 import type { PhysicalCountSession } from "../types";
 import { MOCK_STOCK_ITEMS } from "../mockData";
@@ -60,6 +61,8 @@ export function RecuentoDetalleModal({
 }: RecuentoDetalleModalProps) {
   const { t } = useTranslation("inventory");
   const { convertAndFormat } = useCurrencyFormatter();
+  const { isDemo } = useMockDataMode();
+  const catalogStockItems = useMemo(() => (isDemo ? MOCK_STOCK_ITEMS : []), [isDemo]);
   const [items, setItems] = useState<EditableConteoLine[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedAddProductId, setSelectedAddProductId] = useState<string>("");
@@ -103,7 +106,7 @@ export function RecuentoDetalleModal({
   const handleAddProduct = (prodIdStr: string) => {
     if (!prodIdStr) return;
     const prodId = Number(prodIdStr);
-    const catalogItem = MOCK_STOCK_ITEMS.find((s) => s.producto_id === prodId);
+    const catalogItem = catalogStockItems.find((s) => s.producto_id === prodId);
     if (!catalogItem) return;
 
     // Verificar si ya existe
@@ -408,7 +411,7 @@ export function RecuentoDetalleModal({
               className="flex-1 min-w-[200px] h-8 rounded-lg border border-input bg-card px-2 text-xs font-medium text-foreground focus:outline-none"
             >
               <option value="">{t("recuentos.modal.select_item_placeholder", "Seleccione insumo del catálogo...")}</option>
-              {MOCK_STOCK_ITEMS.map((st) => (
+              {catalogStockItems.map((st) => (
                 <option key={st.producto_id} value={st.producto_id}>
                   {st.nombre} ({st.unidad_medida})
                 </option>

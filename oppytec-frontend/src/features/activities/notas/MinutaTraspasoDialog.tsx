@@ -16,11 +16,37 @@ import {
 import { ResponsiveDialog } from "@/shared/components/ui/ResponsiveDialog";
 import { useIsMobile } from "@/shared/hooks/useIsMobile";
 import { apiRequest } from "@/shared/api/httpClient";
+import { isMockDataEnabled } from "@/shared/mock/mockModeStorage";
 import { toast } from "sonner";
 import { cn } from "@/shared/lib";
 import { OFFICIAL_AREAS } from "@/shared/components/layout/AreaSelector";
 import type { MinutaTraspasoResponse } from "../types";
 import { MOCK_MINUTA_TRASPASO } from "../mockData";
+
+const CLEAN_MINUTA_TRASPASO: MinutaTraspasoResponse = {
+  fecha: new Date().toISOString().split("T")[0] ?? "",
+  area_id: null,
+  resumen_ejecutivo: "Sin datos registrados en este turno.",
+  puntos_clave: {
+    incidentes: ["Sin incidentes registrados."],
+    produccion: [],
+    tareas_pendientes: [],
+    dotacion: {
+      total_colaboradores: 0,
+      colaboradores_ids: [],
+      total_turnos: 0,
+      turnos: [],
+    },
+  },
+  estadisticas: {
+    total_notas: 0,
+    total_tareas: 0,
+    tareas_completadas: 0,
+    tareas_incompletas: 0,
+    total_turnos: 0,
+  },
+  generado_en: new Date().toISOString(),
+};
 
 export interface MinutaTraspasoDialogProps {
   readonly open: boolean;
@@ -67,6 +93,7 @@ export function MinutaTraspasoDialog({
 
   const handleGenerarMinuta = async () => {
     setIsLoading(true);
+    const fallbackMinuta = isMockDataEnabled() ? MOCK_MINUTA_TRASPASO : CLEAN_MINUTA_TRASPASO;
     try {
       const payload = {
         fecha: fecha || undefined,
@@ -77,7 +104,7 @@ export function MinutaTraspasoDialog({
         {
           method: "POST",
           body: payload,
-          fallbackData: MOCK_MINUTA_TRASPASO,
+          fallbackData: fallbackMinuta,
         }
       );
       setMinuta(res.data);
@@ -87,7 +114,7 @@ export function MinutaTraspasoDialog({
           defaultValue: "Error al generar la minuta con OppyFy",
         })
       );
-      setMinuta(MOCK_MINUTA_TRASPASO);
+      setMinuta(fallbackMinuta);
     } finally {
       setIsLoading(false);
     }

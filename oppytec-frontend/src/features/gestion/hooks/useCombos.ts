@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type {
   Combo,
   CategoriaCombo,
@@ -110,6 +111,7 @@ export function useCombos(options?: UseCombosOptions) {
   const queryClient = useQueryClient();
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
 
   const [filter, setFilter] = useState<ComboFilterParams>({
     categoria_id: options?.initialFilter?.categoria_id ?? null,
@@ -150,7 +152,7 @@ export function useCombos(options?: UseCombosOptions) {
       const path = `/api/v1/combos${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
       const response = await apiRequest<Combo[]>(path, {
         method: "GET",
-        fallbackData: INITIAL_COMBOS_MOCK,
+        fallbackData: isMockDataEnabled() ? INITIAL_COMBOS_MOCK : [],
       });
 
       return response.data;
@@ -173,7 +175,7 @@ export function useCombos(options?: UseCombosOptions) {
     queryFn: async () => {
       const response = await apiRequest<CategoriaCombo[]>("/api/v1/combos/categories", {
         method: "GET",
-        fallbackData: INITIAL_CATEGORIAS_COMBOS_MOCK,
+        fallbackData: isMockDataEnabled() ? INITIAL_CATEGORIAS_COMBOS_MOCK : [],
       });
       return response.data;
     },
@@ -181,8 +183,13 @@ export function useCombos(options?: UseCombosOptions) {
   });
 
   const categorias = useMemo(
-    () => (Array.isArray(rawCategorias) ? rawCategorias : INITIAL_CATEGORIAS_COMBOS_MOCK),
-    [rawCategorias]
+    () =>
+      Array.isArray(rawCategorias)
+        ? rawCategorias
+        : isDemo
+        ? INITIAL_CATEGORIAS_COMBOS_MOCK
+        : [],
+    [rawCategorias, isDemo]
   );
 
   // Invalidador quirúrgico de cache ante eventos WebSocket (recipes.combo.updated / recipes.recipe.updated)
@@ -208,15 +215,22 @@ export function useCombos(options?: UseCombosOptions) {
       });
     };
     window.addEventListener("recipes_combo_updated", handleLocalSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     return () => {
       window.removeEventListener("recipes_combo_updated", handleLocalSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     };
   }, [queryClient, tenantId]);
 
   // Lista base
   const combos = useMemo(
-    () => (Array.isArray(rawCombos) ? rawCombos : INITIAL_COMBOS_MOCK),
-    [rawCombos]
+    () =>
+      Array.isArray(rawCombos)
+        ? rawCombos
+        : isDemo
+        ? INITIAL_COMBOS_MOCK
+        : [],
+    [rawCombos, isDemo]
   );
 
   // Filtrado reactivo en memoria

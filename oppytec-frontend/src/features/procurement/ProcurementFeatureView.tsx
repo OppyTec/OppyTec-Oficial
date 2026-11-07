@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Can } from "@/shared/auth/Can";
 import { MoneyBadge } from "@/shared/currency";
 import { translateKey } from "@/shared/i18n";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 const PROCUREMENT_SECTIONS = ["Compras", "Proveedores", "Facturas"] as const;
 export type ProcurementSection = (typeof PROCUREMENT_SECTIONS)[number];
 
 export function ProcurementFeatureView() {
+  const { isDemo } = useMockDataMode();
   const [section, setSection] = useState<ProcurementSection>("Facturas");
   const [ocrVerified, setOcrVerified] = useState<boolean>(false);
 
@@ -22,7 +24,7 @@ export function ProcurementFeatureView() {
           </h2>
           <p className="text-xs text-muted-foreground">
             {translateKey("procurement", "purchase_order.number", {
-              poNumber: "OC-2026-0842",
+              poNumber: isDemo ? "OC-2026-0842" : "—",
             })}
           </p>
         </div>
@@ -52,21 +54,21 @@ export function ProcurementFeatureView() {
         >
           <h3 className="text-xs font-bold uppercase text-muted-foreground">
             {`${section} · ${translateKey("procurement", "purchase_order.supplier", {
-              supplierName: "Distribuidora Austral Food SpA (76.321.400-8)",
+              supplierName: isDemo ? "Distribuidora Austral Food SpA (76.321.400-8)" : "Sin proveedor",
             })}`}
           </h3>
           <p className="text-xs text-foreground">
             {translateKey("procurement", "purchase_order.status_approved", {
-              approver: "gerencia.compras@oppytec.cl",
+              approver: isDemo ? "gerencia.compras@oppytec.cl" : "—",
             })}
           </p>
           <div className="flex items-center justify-between border-t border-border pt-2 text-xs">
             <span>
               {translateKey("procurement", "purchase_order.total_amount", {
-                amount: "1.450.000 CLP",
+                amount: isDemo ? "1.450.000 CLP" : "0 CLP",
               })}
             </span>
-            <MoneyBadge amount="1450000" baseCurrency="CLP" />
+            <MoneyBadge amount={isDemo ? "1450000" : "0"} baseCurrency="CLP" />
           </div>
         </div>
 
@@ -89,12 +91,18 @@ export function ProcurementFeatureView() {
               </button>
             </Can>
           </div>
-          <p className="rounded-lg border border-warning/40 bg-warning/10 p-2 text-xs text-foreground">
-            {translateKey("procurement", "dte.price_variance_alert", {
-              variancePct: "4.2",
-              item: "Pollo King",
-            })}
-          </p>
+          {isDemo ? (
+            <p className="rounded-lg border border-warning/40 bg-warning/10 p-2 text-xs text-foreground">
+              {translateKey("procurement", "dte.price_variance_alert", {
+                variancePct: "4.2",
+                item: "Pollo King",
+              })}
+            </p>
+          ) : (
+            <p className="rounded-lg border border-border bg-card/40 p-2 text-xs text-muted-foreground">
+              0 alertas de variación de precio DTE registradas.
+            </p>
+          )}
         </div>
       </div>
     </section>

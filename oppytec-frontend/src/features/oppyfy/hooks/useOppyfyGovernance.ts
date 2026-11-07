@@ -7,10 +7,11 @@
  * - Visor y filtrado de eventos de Bitácora de Auditoría (ALLOWED vs BLOCKED_UNAUTHORIZED_PROMPT)
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import type {
   OppyfyDomainTreeResponse,
   OppyfyDomainCreateRequest,
@@ -310,18 +311,32 @@ export function useOppyfyGovernance(options?: UseOppyfyGovernanceOptions) {
   const tenantId = options?.tenantId ?? context.tenantId;
 
   // Estado local para mutaciones en UI que actualizan de forma inmediata
-  const [localDomains, setLocalDomains] = useState<OppyfyDomainTreeResponse[]>([
-    ...DEFAULT_GOVERNANCE_DOMAINS,
-  ]);
-  const [localGrants, setLocalGrants] = useState<OppyfyTemporaryGrantItem[]>([
-    ...DEFAULT_TEMPORARY_GRANTS,
-  ]);
-  const [localWorkers, setLocalWorkers] = useState<OppyfyWorkerWalletItem[]>([
-    ...DEFAULT_WORKER_WALLETS,
-  ]);
-  const [localAuditLogs] = useState<OppyfyPromptAuditLogItem[]>([
-    ...DEFAULT_AUDIT_LOGS,
-  ]);
+  const [localDomains, setLocalDomains] = useState<OppyfyDomainTreeResponse[]>(() =>
+    isMockDataEnabled() ? [...DEFAULT_GOVERNANCE_DOMAINS] : []
+  );
+  const [localGrants, setLocalGrants] = useState<OppyfyTemporaryGrantItem[]>(() =>
+    isMockDataEnabled() ? [...DEFAULT_TEMPORARY_GRANTS] : []
+  );
+  const [localWorkers, setLocalWorkers] = useState<OppyfyWorkerWalletItem[]>(() =>
+    isMockDataEnabled() ? [...DEFAULT_WORKER_WALLETS] : []
+  );
+  const [localAuditLogs, setLocalAuditLogs] = useState<OppyfyPromptAuditLogItem[]>(() =>
+    isMockDataEnabled() ? [...DEFAULT_AUDIT_LOGS] : []
+  );
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      const enabled = isMockDataEnabled();
+      setLocalDomains(enabled ? [...DEFAULT_GOVERNANCE_DOMAINS] : []);
+      setLocalGrants(enabled ? [...DEFAULT_TEMPORARY_GRANTS] : []);
+      setLocalWorkers(enabled ? [...DEFAULT_WORKER_WALLETS] : []);
+      setLocalAuditLogs(enabled ? [...DEFAULT_AUDIT_LOGS] : []);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.oppyfy.rbacDomains(tenantId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.oppyfy.aiPacks(true) });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, [queryClient, tenantId]);
 
   // 1. Árbol de Dominios
   const domainsQuery = useQuery({
@@ -535,7 +550,7 @@ export function useOppyfyGovernance(options?: UseOppyfyGovernanceOptions) {
       (sum, w) => sum + Number(w.consumed_credits_total),
       0
     );
-    const totalPurchased = 1000.0; // Bolsa adquirida sin caducidad
+    const totalPurchased = isMockDataEnabled() ? 1000.0 : 0.0; // Bolsa adquirida sin caducidad
     const remainingPool = Math.max(0, totalPurchased - totalAllocated);
 
     return {
@@ -550,47 +565,9 @@ export function useOppyfyGovernance(options?: UseOppyfyGovernanceOptions) {
   const aiPacksQuery = useQuery({
     queryKey: queryKeys.oppyfy.aiPacks(true),
     queryFn: async (): Promise<AiCreditPackResponse[]> => {
-      const fallbackPacks: AiCreditPackResponse[] = [
-        {
-          id: 1,
-          pack_name: "Pack PyME Gastronómico",
-          credits_amount: "250.00",
-          bonus_credits: "25.00",
-          total_credits: "275.00",
-          price_clp: "19990.00",
-          price_usd: "22.00",
-          is_popular: false,
-          is_active: true,
-          sort_order: 1,
-          plan_tier_discounts: { pro: "10", enterprise: "20" },
-        },
-        {
-          id: 2,
-          pack_name: "Pack Enterprise Pollo King",
-          credits_amount: "1000.00",
-          bonus_credits: "200.00",
-          total_credits: "1200.00",
-          price_clp: "69990.00",
-          price_usd: "75.00",
-          is_popular: true,
-          is_active: true,
-          sort_order: 2,
-          plan_tier_discounts: { pro: "15", enterprise: "25" },
-        },
-        {
-          id: 3,
-          pack_name: "Pack Booster Emergencia",
-          credits_amount: "100.00",
-          bonus_credits: "0.00",
-          total_credits: "100.00",
-          price_clp: "9990.00",
-          price_usd: "11.00",
-          is_popular: false,
-          is_active: true,
-          sort_order: 3,
-          plan_tier_discounts: {},
-        },
-      ];
+      const fallbackPacks: AiCreditPackResponse[] = isMockDataEnabled()
+        ? [...DEFAULT_AI_PACKS]
+        : [];
       const resp = await apiRequest<AiCreditPackResponse[]>(
         "/api/v1/platform-admin/ai-packs?is_active_only=true",
         { fallbackData: fallbackPacks }
@@ -648,7 +625,7 @@ export function useOppyfyGovernance(options?: UseOppyfyGovernanceOptions) {
     updateWorkerWallet,
 
     // Paquetes Add-On
-    aiPacks: aiPacksQuery.data ?? DEFAULT_AI_PACKS,
+    aiPacks: aiPacksQuery.data ?? (isMockDataEnabled() ? DEFAULT_AI_PACKS : []),
     quotePack,
 
     // Bitácora de Auditoría

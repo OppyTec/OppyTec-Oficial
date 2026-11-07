@@ -12,15 +12,17 @@ Endpoints REST de Administración de Plataforma SaaS, Planes Comerciales y FinOp
 # mypy: disable-error-code="explicit-any"
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Header, Query, status
 
-from src.core.observability import trace_span
 from src.core.guards.rbac_dependencies import (
     AuthenticatedPrincipal,
     RequireGlobalPermission,
 )
+from src.core.mock_data_manager import DEMO_HOLDING_IDS
+from src.core.observability import trace_span
 from src.modules.oppy_ai.application.token_consumption_service import (
     HoldingGroupDTO,
     TenantGroupDTO,
@@ -238,7 +240,7 @@ def _map_jev_tenant_group_dto(dto: JevTenantGroupDTO) -> JevTenantGroup:
         auto_accepted_count=dto.auto_accepted_count,
         flagged_warning_count=dto.flagged_warning_count,
         fallback_llm_count=dto.fallback_llm_count,
-        logs=[_map_jev_log_dto(l) for l in dto.logs],
+        logs=[_map_jev_log_dto(log_item) for log_item in dto.logs],
     )
 
 
@@ -269,7 +271,7 @@ def _map_jev_summary_dto(dto: JevConsumptionSummaryDTO) -> JevConsumptionSummary
         estimated_savings_clp_all=dto.estimated_savings_clp_all,
         holdings=[_map_jev_holding_group_dto(h) for h in dto.holdings],
         tenants=[_map_jev_tenant_group_dto(t) for t in dto.tenants],
-        all_logs=[_map_jev_log_dto(l) for l in dto.all_logs],
+        all_logs=[_map_jev_log_dto(log_item) for log_item in dto.all_logs],
         page=dto.page,
         page_size=dto.page_size,
         total_logs_count=dto.total_logs_count,
@@ -426,9 +428,36 @@ async def get_token_consumption_endpoint(
     tenant_id: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> TokenConsumptionSummaryResponse:
     """Consulta agregada jerárquica de consumo de tokens y costos FinOps con filtros."""
     policy = _saas_policy_service.get_policy_config()
+    is_clean_mode = (
+        x_oppytec_mock_mode is not None
+        and x_oppytec_mock_mode.strip().lower() == "clean"
+    )
+    if is_clean_mode:
+        real_logs = [
+            log
+            for log in _token_consumption_service._logs
+            if log.id >= 100 and log.holding_id not in DEMO_HOLDING_IDS
+        ]
+        if not real_logs:
+            return TokenConsumptionSummaryResponse(
+                holdings=[],
+                logs=[],
+                total_records=0,
+                total_tokens_all=0,
+                total_cost_usd_all=Decimal("0.000000"),
+                total_cost_clp_all=Decimal("0.00"),
+                total_credits_used_all=0,
+                tokens_per_credit=policy.tokens_per_credit,
+                page=page,
+                page_size=page_size,
+            )
+
     summary = _token_consumption_service.get_token_consumption_summary(
         search=search,
         model_name=model_name,
@@ -467,11 +496,18 @@ async def get_jev_consumption_endpoint(
     tenant_id: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> JevConsumptionSummaryResponse:
     """
     Consulta agregada jerárquica de consumo de decisiones JEV,
     evaluaciones de confianza calibrada y cálculo de ahorro FinOps con filtros server-side.
     """
+    is_clean_mode = (
+        x_oppytec_mock_mode is not None
+        and x_oppytec_mock_mode.strip().lower() == "clean"
+    )
     with trace_span(
         "platform_admin.jev_consumption.query",
         attributes={
@@ -487,6 +523,37 @@ async def get_jev_consumption_endpoint(
         },
         tracer_name="oppytec.tenancy.jev_consumption",
     ) as span_attrs:
+        if is_clean_mode:
+            real_jev_logs = [
+                log
+                for log in _jev_consumption_service._logs
+                if not log.id.startswith("jev-log-00")
+                and log.holding_id not in DEMO_HOLDING_IDS
+            ]
+            if not real_jev_logs:
+                span_attrs["total_decisions_all"] = 0
+                span_attrs["total_cost_usd_all"] = "0.000000"
+                span_attrs["avg_latency_ms_all"] = "0.00"
+                span_attrs["estimated_savings_usd_all"] = "0.000000"
+                return JevConsumptionSummaryResponse(
+                    total_decisions_all=0,
+                    total_cost_usd_all=Decimal("0.000000"),
+                    total_cost_clp_all=Decimal("0.00"),
+                    total_credits_deducted_all=Decimal("0.00"),
+                    avg_latency_ms_all=Decimal("0.00"),
+                    total_auto_accepted_all=0,
+                    total_flagged_warning_all=0,
+                    total_fallback_llm_all=0,
+                    estimated_savings_usd_all=Decimal("0.000000"),
+                    estimated_savings_clp_all=Decimal("0.00"),
+                    holdings=[],
+                    tenants=[],
+                    all_logs=[],
+                    page=page,
+                    page_size=page_size,
+                    total_logs_count=0,
+                )
+
         summary = _jev_consumption_service.get_jev_consumption_summary(
             search=search,
             caller_feature=caller_feature,

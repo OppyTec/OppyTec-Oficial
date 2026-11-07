@@ -1,5 +1,6 @@
 import { getRuntimeEnv } from "@/shared/config/env";
 import { getActiveLanguage } from "@/shared/i18n";
+import { getMockDataMode } from "@/shared/mock/mockModeStorage";
 import { createTraceHeaders } from "@/shared/telemetry/otel";
 
 export interface HttpRequestContext {
@@ -46,6 +47,7 @@ export function buildApiHeaders(
     ...(overrideContext ?? {}),
   };
   const trace = createTraceHeaders();
+  const mockMode = getMockDataMode();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "Accept-Language": getActiveLanguage(),
@@ -53,6 +55,7 @@ export function buildApiHeaders(
     "X-Tenant-ID": ctx.tenantId,
     "X-Trace-ID": trace["X-Trace-ID"],
     traceparent: trace.traceparent,
+    "X-OppyTec-Mock-Mode": mockMode,
   };
   if (ctx.warehouseId) {
     headers["X-Warehouse-ID"] = ctx.warehouseId;
@@ -93,11 +96,17 @@ export async function apiRequest<TResponse>(
     readonly body?: unknown;
     readonly context?: Partial<HttpRequestContext>;
     readonly fallbackData?: TResponse;
+    readonly forceFallback?: boolean;
+    readonly headers?: Record<string, string>;
   }
 ): Promise<ApiEnvelope<TResponse>> {
-  const headers = buildApiHeaders(options?.context);
+  const headers = {
+    ...buildApiHeaders(options?.context),
+    ...(options?.headers ?? {}),
+  };
   const traceId = headers["X-Trace-ID"] ?? "00000000000000000000000000000000";
   const tenantId = headers["X-Tenant-ID"] ?? activeContext.tenantId;
+  const isMockClean = headers["X-OppyTec-Mock-Mode"] === "clean";
 
   try {
     const response = await fetch(resolveApiEndpointUrl(path), {
@@ -107,7 +116,7 @@ export async function apiRequest<TResponse>(
     });
 
     if (!response.ok) {
-      if (options?.fallbackData !== undefined) {
+      if (options?.fallbackData !== undefined && (!isMockClean || options.forceFallback)) {
         return {
           data: options.fallbackData,
           traceId,
@@ -115,6 +124,36 @@ export async function apiRequest<TResponse>(
           tenantId,
         };
       }
+
+      if (isMockClean && Array.isArray(options?.fallbackData)) {
+        return {
+          data: [] as unknown as TResponse,
+          traceId,
+          timestampIso: new Date().toISOString(),
+          tenantId,
+        };
+      }
+
+      if (
+        isMockClean &&
+        (options?.method ?? "GET") === "GET" &&
+        typeof options?.fallbackData === "object" &&
+        options?.fallbackData !== null &&
+        "items" in options.fallbackData &&
+        Array.isArray((options.fallbackData as Record<string, unknown>).items)
+      ) {
+        return {
+          data: {
+            ...(options.fallbackData as Record<string, unknown>),
+            items: [],
+            total: 0,
+          } as unknown as TResponse,
+          traceId,
+          timestampIso: new Date().toISOString(),
+          tenantId,
+        };
+      }
+
       throw new Error(`HTTP ${String(response.status)} on ${path}`);
     }
 
@@ -126,7 +165,7 @@ export async function apiRequest<TResponse>(
       tenantId,
     };
   } catch (err) {
-    if (options?.fallbackData !== undefined) {
+    if (options?.fallbackData !== undefined && (!isMockClean || options.forceFallback)) {
       return {
         data: options.fallbackData,
         traceId,
@@ -134,6 +173,36 @@ export async function apiRequest<TResponse>(
         tenantId,
       };
     }
+
+    if (isMockClean && Array.isArray(options?.fallbackData)) {
+      return {
+        data: [] as unknown as TResponse,
+        traceId,
+        timestampIso: new Date().toISOString(),
+        tenantId,
+      };
+    }
+
+    if (
+      isMockClean &&
+      (options?.method ?? "GET") === "GET" &&
+      typeof options?.fallbackData === "object" &&
+      options?.fallbackData !== null &&
+      "items" in options.fallbackData &&
+      Array.isArray((options.fallbackData as Record<string, unknown>).items)
+    ) {
+      return {
+        data: {
+          ...(options.fallbackData as Record<string, unknown>),
+          items: [],
+          total: 0,
+        } as unknown as TResponse,
+        traceId,
+        timestampIso: new Date().toISOString(),
+        tenantId,
+      };
+    }
+
     throw err;
   }
 }

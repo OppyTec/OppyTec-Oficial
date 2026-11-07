@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type {
   AlertsSummary,
   AlertFilterType,
@@ -14,6 +15,7 @@ import type {
 } from "../types";
 import {
   MOCK_ALERTS_SUMMARY,
+  MOCK_ALERTS_EMPTY,
   mapSummaryToProductItems,
 } from "../mockData";
 
@@ -91,6 +93,7 @@ export function useAlertas(options?: UseAlertasOptions): UseAlertasReturn {
   const context = getHttpRequestContext();
   const holdingId = context.holdingId || "holding-gastro-sur";
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
 
   // Filter type state (defaults to options or "all")
   const [internalFilterType, setInternalFilterType] = useState<AlertFilterType>(
@@ -158,13 +161,15 @@ export function useAlertas(options?: UseAlertasOptions): UseAlertasReturn {
   // Local fallback dataset matching the current filters
   const fallbackSummary = useMemo(
     () =>
-      filterMockSummary(
-        MOCK_ALERTS_SUMMARY,
-        effectiveBodegaIds,
-        effectiveAreaId,
-        effectiveFilterType
-      ),
-    [effectiveBodegaIds, effectiveAreaId, effectiveFilterType]
+      isDemo
+        ? filterMockSummary(
+            MOCK_ALERTS_SUMMARY,
+            effectiveBodegaIds,
+            effectiveAreaId,
+            effectiveFilterType
+          )
+        : MOCK_ALERTS_EMPTY,
+    [isDemo, effectiveBodegaIds, effectiveAreaId, effectiveFilterType]
   );
 
   // TanStack Query v5 consuming GET /api/v1/inventory/alerts
@@ -197,7 +202,7 @@ export function useAlertas(options?: UseAlertasOptions): UseAlertasReturn {
 
       const res = await apiRequest<AlertsSummary>(endpoint, {
         method: "GET",
-        fallbackData: fallbackSummary,
+        fallbackData: isMockDataEnabled() ? fallbackSummary : MOCK_ALERTS_EMPTY,
       });
 
       return res.data;
@@ -228,15 +233,18 @@ export function useAlertas(options?: UseAlertasOptions): UseAlertasReturn {
       });
     };
     window.addEventListener("inventory_alerts_changed", handleLocalSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     return () => {
       window.removeEventListener("inventory_alerts_changed", handleLocalSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     };
   }, [queryClient]);
 
   // Consolidated summary
   const summary: AlertsSummary = useMemo(() => {
+    if (!isDemo && rawData === fallbackSummary) return MOCK_ALERTS_EMPTY;
     return rawData ?? fallbackSummary;
-  }, [rawData, fallbackSummary]);
+  }, [rawData, fallbackSummary, isDemo]);
 
   // Synchronize badge in localStorage and dispatch `notif-updated`
   useEffect(() => {

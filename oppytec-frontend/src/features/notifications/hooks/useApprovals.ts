@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import {
   type CategoryType,
@@ -129,6 +130,7 @@ export function useApprovals(
   const queryClient = useQueryClient();
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "default";
+  const { isDemo } = useMockDataMode();
 
   const {
     mainView = "bandeja",
@@ -245,23 +247,28 @@ export function useApprovals(
       });
     };
     window.addEventListener("approvals_changed", handleSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     return () => {
       window.removeEventListener("approvals_changed", handleSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     };
   }, [queryClient]);
 
   const fallbackData = useMemo(
     () =>
-      filterMockData(MOCK_SOLICITUDES, {
-        mainView,
-        activeCategory,
-        selectedAreaId,
-        selectedBodegaId,
-        searchTerm,
-        page,
-        pageSize,
-      }),
+      isDemo
+        ? filterMockData(MOCK_SOLICITUDES, {
+            mainView,
+            activeCategory,
+            selectedAreaId,
+            selectedBodegaId,
+            searchTerm,
+            page,
+            pageSize,
+          })
+        : { items: [], total: 0 },
     [
+      isDemo,
       mainView,
       activeCategory,
       selectedAreaId,
@@ -346,11 +353,15 @@ export function useApprovals(
       const qs = params.toString();
       const endpoint = `/api/v1/operations/solicitudes${qs ? `?${qs}` : ""}`;
 
+      const currentFallback = isMockDataEnabled()
+        ? fallbackData
+        : { items: [], total: 0 };
+
       const res = await apiRequest<SolicitudesListResponse>(endpoint, {
         method: "GET",
         fallbackData: {
-          items: fallbackData.items,
-          total: fallbackData.total,
+          items: currentFallback.items,
+          total: currentFallback.total,
           page,
           page_size: pageSize,
         },

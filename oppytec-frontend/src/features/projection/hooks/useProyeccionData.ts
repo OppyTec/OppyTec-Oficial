@@ -14,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import { projectionApi } from "../api/projectionApi";
 import type {
@@ -126,6 +127,16 @@ export function useProyeccionData(options: UseProyeccionDataOptions) {
       }
     }
   }, [realtimeEvents, queryClient, tenantId]);
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.projection.all(tenantId),
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, [queryClient, tenantId]);
 
   // Consulta paginada server-side con keepPreviousData
   const snapshotsQuery = useQuery<PaginatedProjectionResponse, Error>({

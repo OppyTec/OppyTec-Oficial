@@ -1,57 +1,43 @@
 # Reporte de Traspaso (`Handover`) — Agente 07: Especialista en i18n y Multi-Moneda FX
 
-- **Fecha UTC:** 2026-11-05T15:55:00Z
+- **Fecha UTC:** 2026-11-07T01:13:00Z
 - **Agente:** `07-i18n-and-fx-currency-specialist`
-- **Fase / Hito:** Etapa 3 — Holding Hub Enterprise (Auditoría Integral i18n, Multi-Moneda FX Institucional y Regla "Pollo King").
-- **Estado de Certificación:** `HOLDING_HUB_STAGE_3_I18N_AND_FX_CERTIFIED` (13/13 tests passing en frontend Vitest, 7/7 tests passing en backend Pytest, 100% simetría en claves `holding_hub.json`, 0 textos crudos/hardcoded en JSX, 0 floats en cálculo cambiario).
+- **Fase / Hito:** ADR-022 / Etapa 3 — Certificación de Paridad 1:1 `i18n` (`es`/`en`), Bóveda de Respaldo JSON (`mock_data_backup.json`), Clean Slate (`$0`), Invariante `"Pollo King"` y Multi-Moneda FX (`Decimal`).
+- **Estado de Certificación:** `ADR_022_STAGE_3_I18N_AND_FX_CERTIFIED` (45/45 tests passing en suites `SandboxI18nAndFx.test.tsx`, `i18n.test.tsx` y `currency.test.tsx`; 29/29 tests passing en `oppytec-backend/tests/architecture/`; 17/17 tests passing en backend i18n/FX; 100% paridad 1:1 en los 11 namespaces core y 26 archivos JSON totales).
 
 ---
 
-## 1. Resumen Ejecutivo y Tareas Completadas
+## 1. Resumen Ejecutivo y Tareas Completadas (`Completed`)
 
-1. **Consulta Previa a Graphify**:
-   - Ejecutado `python scripts/harness.py nav "holding_hub"` validando la cadena de dependencias de migración (`0018_public_holding_hub`), modelos, router y componentes frontend.
+1. **Gobernanza Pre-ejecución Obligatoria (`Graphify`)**:
+   - Ejecutado `python3 scripts/harness.py nav "i18n"` (11 nodos y aristas mapeadas: `core:i18n_engine`, `frontend:shared_i18n`, `frontend:language_flag_selector`, `suite:frontend_sandbox_i18n_vitest`).
+   - Ejecutado `python3 scripts/harness.py nav "fx"` (8 nodos y aristas mapeadas: `core:fx_currency`, `frontend:shared_fx_currency`, `frontend:currency_selector`, `suite:frontend_currency_test`).
+   - Reservados atómicamente los nodos AST en `claims_registry.json` mediante `python3 scripts/harness.py claim-ast`.
 
-2. **Auditoría y Paridad 100% de Catálogos i18n**:
-   - `oppytec-frontend/src/shared/i18n/locales/es/holding_hub.json`: 174 claves completas organizadas modularmente (`navbar`, `sidebar`, `kpis`, `filters`, `branches_table`, `detail_modal`, `briefing`, `plans`, `credits`, `command_palette`, `alerts`).
-   - `oppytec-frontend/src/shared/i18n/locales/en/holding_hub.json`: 174 claves espejo en inglés profesional gastronómico/enterprise con 100% de paridad y simetría exacta comprobada programáticamente.
-   - Sincronización en `config.ts`, `i18next.d.ts` e `i18n.test.tsx` (registrando y testeando 26 namespaces oficiales).
+2. **Auditoría y Paridad 1:1 Estricta de los 11 Namespaces `i18n` (`es`/`en`) y Bóveda JSON (`ADR-022`)**:
+   - Verificada programáticamente la paridad 1:1 exacta (`diff_es = set()`, `diff_en = set()`) en los 11 namespaces núcleo (`common`, `auth`, `navigation`, `catalog`, `inventory`, `recipes`, `operations`, `analytics`, `oppyfy`, `platform_admin`, `holding_hub`) y en la totalidad de los 26 archivos JSON en `oppytec-frontend/src/shared/i18n/locales/es/*.json` y `en/*.json` (1.183 claves hoja en `platform_admin.json`).
+   - Certificadas las claves de la Bóveda de Respaldo Maestro JSON (`mock_data_backup.json`) y Clean Slate en `platform_admin.json` (`backup_vault_title`, `backup_vault_desc`, `btn_download_backup`, `btn_purge_clean_slate`, `btn_restore_backup`, `purge_clean_slate_success`, `restore_backup_success`).
+   - Añadidas las claves faltantes de traducción dinámica para el preset `preset-finops-isolation` (`finops_isolation_title`, `finops_isolation_subtitle`, `finops_isolation_desc`, `finops_isolation_badge`) en `es/platform_admin.json`, `en/platform_admin.json` y `MockDataSandboxView.tsx`, garantizando `0` strings duros al conmutar `es <-> en`.
 
-3. **Erradicación Total de Textos Hardcodeados (0 JSX Raw Strings)**:
-   - Auditados y refactorizados todos los componentes del Holding Hub:
-     * `HoldingNavbar.tsx`: fallback de roles, badges y notificaciones dinámicas parametrizadas con `t()`.
-     * `HoldingSidebar.tsx`: títulos contextuales, cuotas y badges internacionalizados.
-     * `HoldingCentralSection.tsx`: labels de modales, RUTs, estados compartidos/asignados, KPIs financieros y de inventario.
-     * `HoldingPlansSection.tsx`: matriz de planes (Starter, Growth, Enterprise), badges ("HOY", "Fin de ciclo"), botones y estados de transición.
-     * `HoldingCreditsSection.tsx`: sliders de asignación, advertencias de sobrecupo (over-allocation warning), estados de compra y checkout.
-     * `TenantCommandPalette.tsx`: atajos de teclado, conteo de locales y placeholders.
-     * `HoldingAiBriefingCard.tsx`: etiquetas de accesibilidad `aria-label`, prefijos contextuales de párrafos, estados de autonomía y burn rate.
-     * `HoldingHubLayout.tsx`: delegación de refrescos y sincronización de estado.
+3. **Invariante Inmutable `"Pollo King"` (`is_proper_noun_protected`)**:
+   - Verificado que `"Pollo King"`, `"OppyTec"` y `"JEV"` permanecen blindados en `IMMUTABLE_PROPER_NOUNS` (frontend) y `is_proper_noun_protected` (backend `i18n_engine.py`), impidiendo traducciones espurias como `"Chicken King"`.
 
-4. **Auditoría Multi-Moneda FX (CLP, USD, EUR, BRL)**:
-   - Integración de `useCurrencyFormatter()` con `convertAndFormat(amount, "CLP", currency)` para garantizar que el cambio reactivo del `CurrencySelector` traduzca y convierta instantáneamente montos consolidados de ventas e inventario, paquetes de créditos IA y planes de suscripción mensual/anual.
-   - Tasas de cambio institucionales respaldadas por Banco Central de Chile (BCCh) y Banco Central Europeo (BCE Frankfurter).
-   - Uso estricto de aritmética sin pérdida de precisión: tipos `Decimal` en backend y `BigInt` escalado a $10^8$ en frontend.
-   - Protección contra anomalías cambiarias (`anomaly_guard.py`) asegurando cuarentena automática ante fluctuaciones > 8%.
+4. **Precisión `Decimal` y Formateo Multi-Moneda FX en Clean Slate (`$0`)**:
+   - Certificado el formateo monetario exacto sin coma flotante IEEE-754 mediante `formatMoney` en modo Clean Slate (`$0` en CLP, `US$0.00` en USD, `€0,00` en EUR) y en los presets gastronómicos (`$3.850.000`, `$8.940.000`, `$4.120.000`).
 
-5. **Regla de Oro "Pollo King" (Invarianza de Nombres Propios)**:
-   - Verificado que los nombres de holdings (ej. "Holding Gastronómico Pollo King"), razones sociales ("Pollo King SpA"), marcas protegidas ("Pollo King", "Savory", "Cevichería Central"), RUTs y nombres de esquemas PostgreSQL (`pollo_king_providencia`, `pollo_king_vina`, etc.) tengan `translatable = False` y se mantengan 100% inmutables entre idiomas.
-
-6. **Cobertura de Pruebas**:
-   - `oppytec-frontend/src/features/holding-hub/HoldingHub.test.tsx`: 13 pruebas unitarias y de integración pasando (incluye tests específicos de paridad i18n, reactividad FX multi-moneda y regla Pollo King).
-   - `oppytec-frontend/src/shared/i18n/i18n.test.tsx`: 13 pruebas pasando con soporte de 26 namespaces.
-   - `oppytec-backend/tests/unit/test_holding_hub_i18n_fx.py`: 7 pruebas exhaustivas pasando en Pytest.
+5. **Suite de Pruebas Ejecutada**:
+   - Frontend: `pnpm --dir oppytec-frontend test src/features/platform-admin/sandbox/__tests__/SandboxI18nAndFx.test.tsx src/shared/i18n src/shared/currency` -> **3 suites, 45/45 tests passing** (incluyendo 3 nuevos tests dedicados a ADR-022 en `SandboxI18nAndFx.test.tsx`).
+   - Backend Arquitectura: `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/` -> **29/29 tests passing**.
+   - Backend Unit i18n/FX: `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/unit/test_i18n_fx_and_realtime.py oppytec-backend/tests/unit/test_holding_hub_i18n_fx.py` -> **17/17 tests passing**.
 
 ---
 
-## 2. Friction & Resoluciones Técnicas
+## 2. Fricciones y Fallos (`Friction & Failures`)
 
-- **Diferencia entre formateo estático y conversión FX**: `formatCurrencyAmount(val, cur)` solo añade el símbolo monetario sin convertir la magnitud numérica. Se actualizó el consumo a `convertAndFormat(val, "CLP", cur)` provisto por `useCurrencyFormatter()`, logrando conversiones exactas y reactivas en toda la interfaz corporativa.
-- **Conteo de namespaces i18n**: Al incorporar `holding_hub` (y preexistente `invoices`), la prueba `i18n.test.tsx` fallaba por esperar exactamente 24 namespaces. Se actualizó a 26 y se agregó aserción explícita de `holding_hub`.
-- **Enums de Acción en Anomaly Guard**: En las aserciones del backend se alinearon los estados con los literales exactos `AUTO_UPDATED` y `FX_ANOMALY_QUARANTINED` definidos en `anomaly_guard.py`.
+- Detectado que el preset `preset-finops-isolation` en `MockDataSandboxView.tsx` no resolvía dinámicamente sus textos vía `translateKey` al cambiar a inglés (`en`). Corregido inmediatamente añadiendo las 4 claves simétricas en `es/platform_admin.json` y `en/platform_admin.json` y enlazándolas en `dynamicPresets`.
 
 ---
 
-## 3. Próximo Paso (Traspaso)
+## 3. Próxima Acción Exacta (`Next Exact Action`)
 
-Entregar formalmente el informe de la Etapa 3 al agente orquestador (`01-orchestrator-pm`) y habilitar el avance a las etapas subsiguientes (Observabilidad de Métricas Holding Hub, QA Parity e Integración E2E).
+- Proceder con el cierre de la Etapa 3 y paso a la Etapa 4 del pipeline DAG (Agentes 09, 10, 11 y 12) para validación QA, auditoría Red Team y sincronización final del grafo AST (`sync-graph`).

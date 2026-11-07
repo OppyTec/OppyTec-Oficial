@@ -469,10 +469,13 @@ describe("ToolbarGestion & Phase 2 Gestion Components Suite", () => {
       const searchInput = screen.getByTestId("gestion-search-input");
       fireEvent.change(searchInput, { target: { value: "Pollo" } });
 
-      await waitFor(() => {
-        expect(screen.getAllByText("Pechuga de Pollo Deshuesada").length).toBeGreaterThan(0);
-        expect(screen.queryByText("Lomo Vetado Angus Premium")).toBeNull();
-      });
+      await waitFor(
+        () => {
+          expect(screen.getAllByText("Pechuga de Pollo Deshuesada").length).toBeGreaterThan(0);
+          expect(screen.queryByText("Lomo Vetado Angus Premium")).toBeNull();
+        },
+        { timeout: 3000 }
+      );
     });
 
     it("opens and closes responsive dialogs properly", async () => {

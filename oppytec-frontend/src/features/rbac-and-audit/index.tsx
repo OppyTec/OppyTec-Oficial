@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Can } from "@/shared/auth/Can";
 import { usePermissions } from "@/shared/auth/usePermissions";
 import { AdaptiveDataView } from "@/shared/components/ui/AdaptiveDataView";
 import { translateKey } from "@/shared/i18n";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 interface ForensicAuditRow {
   readonly id: string;
@@ -31,8 +32,17 @@ const INITIAL_AUDIT_LOGS: readonly ForensicAuditRow[] = [
 
 export function RbacAndAuditFeatureView() {
   const { policy } = usePermissions();
-  const [usedSeats, setUsedSeats] = useState<number>(18);
+  const { isDemo } = useMockDataMode();
+  const [usedSeats, setUsedSeats] = useState<number>(() => (isMockDataEnabled() ? 18 : 0));
   const limitSeats = 25;
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      setUsedSeats(isMockDataEnabled() ? 18 : 0);
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, []);
 
   const handleSoftDeleteReleaseSeat = (): void => {
     setUsedSeats((prev) => (prev > 1 ? prev - 1 : prev));
@@ -124,7 +134,7 @@ export function RbacAndAuditFeatureView() {
         </h3>
         <AdaptiveDataView
           testId="forensic-audit-table"
-          rows={INITIAL_AUDIT_LOGS}
+          rows={isDemo ? INITIAL_AUDIT_LOGS : []}
           getRowKey={(r) => r.id}
           columns={[
             {

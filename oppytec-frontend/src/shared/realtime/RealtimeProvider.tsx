@@ -5,11 +5,13 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { getRuntimeEnv } from "@/shared/config/env";
+import { isMockDataEnabled, useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 export const REALTIME_WS_PATH = "/api/v1/ws/realtime";
 
@@ -100,12 +102,23 @@ export function RealtimeProvider({
 }: RealtimeProviderProps) {
   const queryClient = useQueryClient();
   const env = useMemo(() => getRuntimeEnv(), []);
+  const { isDemo } = useMockDataMode();
   const [connected, setConnected] = useState<boolean>(true);
-  const [events, setEvents] =
-    useState<readonly RealtimePushEvent[]>(INITIAL_EVENTS);
-  const [lastEventId, setLastEventId] = useState<string>(
-    INITIAL_EVENTS[INITIAL_EVENTS.length - 1]?.eventId ?? "0-0"
+  const [events, setEvents] = useState<readonly RealtimePushEvent[]>(() =>
+    isMockDataEnabled() ? INITIAL_EVENTS : []
   );
+  const [lastEventId, setLastEventId] = useState<string>(() =>
+    isMockDataEnabled()
+      ? (INITIAL_EVENTS[INITIAL_EVENTS.length - 1]?.eventId ?? "0-0")
+      : "0-0"
+  );
+
+  useEffect(() => {
+    setEvents(isDemo ? INITIAL_EVENTS : []);
+    setLastEventId(
+      isDemo ? (INITIAL_EVENTS[INITIAL_EVENTS.length - 1]?.eventId ?? "0-0") : "0-0"
+    );
+  }, [isDemo]);
 
   const channelKey = `rt:${env.VITE_ENV_NAMESPACE}:${holdingId}:${tenantId}`;
   const baseWs = env.VITE_WS_BASE_URL.replace(/\/+$/, "");

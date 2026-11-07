@@ -7,6 +7,7 @@
 import { useState, useMemo } from "react";
 import { Search, Tag, CheckCircle2, Clock, Filter, Building2 } from "lucide-react";
 import { useCurrencyFormatter } from "@/shared/currency";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type { ProductoProveedor, Proveedor } from "../types";
 import { MOCK_PRODUCTOS_PROVEEDOR, MOCK_PROVEEDORES } from "../mockData";
 
@@ -17,23 +18,26 @@ export interface CatalogoPreciosProps {
 }
 
 export function CatalogoPrecios({
-  proveedores = MOCK_PROVEEDORES,
+  proveedores: propProveedores,
   items,
   onSelectProducto,
 }: CatalogoPreciosProps) {
   const { format } = useCurrencyFormatter();
+  const { isDemo } = useMockDataMode();
+  const proveedores = propProveedores ?? (isDemo ? MOCK_PROVEEDORES : []);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSupplierId, setSelectedSupplierId] = useState<number | "ALL">("ALL");
 
-  // Si no se pasaron items, agregamos los de todos los proveedores conocidos
+  // Si no se pasaron items, agregamos los de todos los proveedores conocidos en modo demo
   const allItems: ProductoProveedor[] = useMemo(() => {
-    if (items && items.length > 0) return items;
+    if (items !== undefined) return items;
+    if (!isDemo) return [];
     const aggregated: ProductoProveedor[] = [];
     Object.values(MOCK_PRODUCTOS_PROVEEDOR).forEach((arr) => {
       aggregated.push(...arr);
     });
     return aggregated;
-  }, [items]);
+  }, [items, isDemo]);
 
   // Mapa de nombres de proveedores
   const supplierNameMap = useMemo(() => {

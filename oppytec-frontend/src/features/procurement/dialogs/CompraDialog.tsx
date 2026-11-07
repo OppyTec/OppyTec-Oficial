@@ -10,6 +10,7 @@ import { Plus, Trash2, Building2, Warehouse, Calendar, Save, AlertCircle } from 
 import { ResponsiveDialog } from "@/shared/components/ui/ResponsiveDialog";
 import { useIsMobile } from "@/shared/hooks/useIsMobile";
 import { useCurrencyFormatter } from "@/shared/currency";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type {
   CompraDraft,
   CompraDraftItem,
@@ -51,11 +52,13 @@ export function CompraDialog({
   onSave,
   initialDraft,
   onSaveDraft,
-  proveedores = MOCK_PROVEEDORES,
+  proveedores: propProveedores,
   isSubmitting = false,
 }: CompraDialogProps) {
   const isMobile = useIsMobile();
   const { format } = useCurrencyFormatter();
+  const { isDemo } = useMockDataMode();
+  const proveedores = propProveedores ?? (isDemo ? MOCK_PROVEEDORES : []);
 
   const [proveedorId, setProveedorId] = useState<number>(proveedores[0]?.id ?? 1);
   const [bodegaId, setBodegaId] = useState<number>(1);

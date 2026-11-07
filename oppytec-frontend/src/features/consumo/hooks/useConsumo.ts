@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type {
   CategoriaConsumo,
   ProductoConsumo,
@@ -91,6 +92,25 @@ export function useConsumo(
   const context = getHttpRequestContext();
   const holdingId = context.holdingId || "holding-gastro-sur";
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
+
+  useEffect(() => {
+    const handleModeChange = () => {
+      if (!isMockDataEnabled() && typeof window !== "undefined" && window.localStorage) {
+        try {
+          window.localStorage.removeItem("consumo_cart");
+          setCart([]);
+        } catch {
+          // ignore
+        }
+      }
+      void queryClient.invalidateQueries({ queryKey: ["oppytec"] });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    return () => {
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    };
+  }, [queryClient]);
 
   // Suscripción al túnel WebSocket zero-polling
   let realtimeEvents: ReturnType<typeof useRealtimeSync>["authorizedEvents"] = [];
@@ -251,7 +271,7 @@ export function useConsumo(
   // ==========================================================================
 
   // 1. Categorías de catálogo
-  const { data: categorias = MOCK_CATEGORIAS_CONSUMO } = useQuery<
+  const { data: rawCategorias } = useQuery<
     CategoriaConsumo[]
   >({
     queryKey: queryKeys.catalog.categories(tenantId),
@@ -259,26 +279,28 @@ export function useConsumo(
       const res = await apiRequest<CategoriaConsumo[]>(
         "/api/v1/catalog/categories",
         {
-          fallbackData: MOCK_CATEGORIAS_CONSUMO,
+          fallbackData: isMockDataEnabled() ? MOCK_CATEGORIAS_CONSUMO : [],
         }
       );
       return res.data;
     },
   });
+  const categorias = rawCategorias ?? (isDemo ? MOCK_CATEGORIAS_CONSUMO : []);
 
   // 2. Productos
   const {
-    data: rawProductos = MOCK_PRODUCTOS_CONSUMO,
+    data: fetchedProductos,
     isLoading: isLoadingProductos,
   } = useQuery<ProductoConsumo[]>({
     queryKey: queryKeys.catalog.products(tenantId),
     queryFn: async () => {
       const res = await apiRequest<ProductoConsumo[]>("/api/v1/catalog/products", {
-        fallbackData: MOCK_PRODUCTOS_CONSUMO,
+        fallbackData: isMockDataEnabled() ? MOCK_PRODUCTOS_CONSUMO : [],
       });
       return res.data;
     },
   });
+  const rawProductos = fetchedProductos ?? (isDemo ? MOCK_PRODUCTOS_CONSUMO : []);
 
   // 3. Stock Snapshot por bodega
   const effectiveBodegaParam =
@@ -311,22 +333,23 @@ export function useConsumo(
   });
 
   // 4. Recetas (Escandallos)
-  const { data: allRecetas = MOCK_RECETAS_CONSUMO, isLoading: isLoadingRecetas } =
+  const { data: fetchedRecetas, isLoading: isLoadingRecetas } =
     useQuery<RecetaConsumo[]>({
       queryKey: queryKeys.recipes.escandallos(tenantId),
       queryFn: async () => {
         const res = await apiRequest<RecetaConsumo[]>(
           "/api/v1/recipes/escandallos",
           {
-            fallbackData: MOCK_RECETAS_CONSUMO,
+            fallbackData: isMockDataEnabled() ? MOCK_RECETAS_CONSUMO : [],
           }
         );
         return res.data;
       },
     });
+  const allRecetas = fetchedRecetas ?? (isDemo ? MOCK_RECETAS_CONSUMO : []);
 
   // 5. Combos
-  const { data: allCombos = MOCK_COMBOS_CONSUMO, isLoading: isLoadingCombos } =
+  const { data: fetchedCombos, isLoading: isLoadingCombos } =
     useQuery<ComboConsumo[]>({
       queryKey: queryKeys.recipes.combos(tenantId),
       queryFn: async () => {
@@ -334,11 +357,12 @@ export function useConsumo(
           ? `/api/v1/recipes/combos?area_id=${encodeURIComponent(areaId)}`
           : "/api/v1/recipes/combos";
         const res = await apiRequest<ComboConsumo[]>(url, {
-          fallbackData: MOCK_COMBOS_CONSUMO,
+          fallbackData: isMockDataEnabled() ? MOCK_COMBOS_CONSUMO : [],
         });
         return res.data;
       },
     });
+  const allCombos = fetchedCombos ?? (isDemo ? MOCK_COMBOS_CONSUMO : []);
 
   // 6. Historial de consumo
   const historyDateStart = getLocalDateString(logDate);
@@ -372,7 +396,9 @@ export function useConsumo(
       const res = await apiRequest<{ items: ConsumptionRecord[]; total: number }>(
         url,
         {
-          fallbackData: { items: MOCK_CONSUMPTION_RECORDS, total: 1 },
+          fallbackData: isMockDataEnabled()
+            ? { items: MOCK_CONSUMPTION_RECORDS, total: 1 }
+            : { items: [], total: 0 },
         }
       );
       return res.data;
@@ -380,12 +406,12 @@ export function useConsumo(
   });
 
   const consumptionLog = useMemo(
-    () => consumptionHistoryData?.items ?? MOCK_CONSUMPTION_RECORDS,
-    [consumptionHistoryData]
+    () => consumptionHistoryData?.items ?? (isDemo ? MOCK_CONSUMPTION_RECORDS : []),
+    [consumptionHistoryData, isDemo]
   );
 
   // 7. Plantillas de Consumo
-  const { data: templates = MOCK_TEMPLATES_CONSUMO } = useQuery<
+  const { data: fetchedTemplates } = useQuery<
     ConsumoTemplate[]
   >({
     queryKey: queryKeys.operations.consumption.templates(tenantId),
@@ -393,12 +419,13 @@ export function useConsumo(
       const res = await apiRequest<ConsumoTemplate[]>(
         "/api/v1/operations/consumption/templates",
         {
-          fallbackData: MOCK_TEMPLATES_CONSUMO,
+          fallbackData: isMockDataEnabled() ? MOCK_TEMPLATES_CONSUMO : [],
         }
       );
       return res.data;
     },
   });
+  const templates = fetchedTemplates ?? (isDemo ? MOCK_TEMPLATES_CONSUMO : []);
 
   // ==========================================================================
   // MAPAS DE STOCK Y LOTES EN MEMORIA PARA CÁLCULOS MATEMÁTICOS DE ALTA VELOCIDAD

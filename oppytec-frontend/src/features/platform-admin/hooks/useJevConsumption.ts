@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { apiRequest } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import {
   MOCK_JEV_CONSUMPTION,
@@ -67,10 +68,31 @@ export interface UseJevConsumptionReturn {
   readonly setTenantId: (id: string | null) => void;
 }
 
+const CLEAN_JEV_CONSUMPTION: JevConsumptionSummaryResponse = {
+  holdings: [],
+  tenants: [],
+  all_logs: [],
+  total_decisions_all: 0,
+  total_cost_usd_all: 0,
+  total_cost_clp_all: 0,
+  total_credits_deducted_all: 0,
+  avg_latency_ms_all: 0,
+  total_auto_accepted_all: 0,
+  total_flagged_warning_all: 0,
+  total_fallback_llm_all: 0,
+  estimated_savings_usd_all: 0,
+  estimated_savings_clp_all: 0,
+  total_logs_count: 0,
+  page: 1,
+  page_size: 50,
+};
+
 export function useJevConsumption(
   options: UseJevConsumptionOptions = {}
 ): UseJevConsumptionReturn {
   const queryClient = useQueryClient();
+  const { isDemo } = useMockDataMode();
+  const defaultJevData = isDemo ? MOCK_JEV_CONSUMPTION : CLEAN_JEV_CONSUMPTION;
 
   const [page, setPage] = useState<number>(options.initialPage ?? 1);
   const [pageSize, setPageSize] = useState<number>(options.initialPageSize ?? 50);
@@ -125,8 +147,10 @@ export function useJevConsumption(
       });
     };
     window.addEventListener("jev_consumption_changed", handleSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     return () => {
       window.removeEventListener("jev_consumption_changed", handleSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     };
   }, [queryClient]);
 
@@ -145,12 +169,12 @@ export function useJevConsumption(
   );
 
   const queryKey = useMemo(
-    () => queryKeys.platformAdmin.jevConsumption(queryFilters),
-    [queryFilters]
+    () => [...queryKeys.platformAdmin.jevConsumption(queryFilters), isDemo ? "demo" : "clean"],
+    [queryFilters, isDemo]
   );
 
   const {
-    data = MOCK_JEV_CONSUMPTION,
+    data = defaultJevData,
     isLoading,
     isError,
     error,
@@ -170,10 +194,12 @@ export function useJevConsumption(
 
       const qs = params.toString();
       const endpoint = `/api/v1/platform-admin/jev-consumption${qs ? `?${qs}` : ""}`;
+      const fallback = isMockDataEnabled() ? MOCK_JEV_CONSUMPTION : CLEAN_JEV_CONSUMPTION;
 
       const res = await apiRequest<JevConsumptionSummaryResponse>(endpoint, {
         method: "GET",
-        fallbackData: MOCK_JEV_CONSUMPTION,
+        fallbackData: fallback,
+        forceFallback: true,
       });
       return res.data;
     },

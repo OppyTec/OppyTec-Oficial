@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import {
   MOCK_PRODUCTOS_PROVEEDOR,
   MOCK_PROVEEDORES,
@@ -43,6 +44,19 @@ export function useProveedores(
   const queryClient = useQueryClient();
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
+
+  useEffect(() => {
+    const handleModeChange = () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["oppytec", "procurement"],
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    return () => {
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    };
+  }, [queryClient]);
 
   // Filtros y debounce de búsqueda
   const [filters, setFiltersState] = useState<ProveedoresFilterState>({
@@ -89,7 +103,7 @@ export function useProveedores(
   const suppliersQueryKey = queryKeys.procurement.suppliers(tenantId, queryParams);
 
   const {
-    data: rawSuppliers = MOCK_PROVEEDORES,
+    data: fetchedSuppliers,
     isLoading: isLoadingSuppliers,
     isError: isErrorSuppliers,
     refetch: refetchSuppliers,
@@ -102,12 +116,13 @@ export function useProveedores(
         : "/api/v1/procurement/suppliers";
       const response = await apiRequest<Proveedor[]>(endpoint, {
         method: "GET",
-        fallbackData: MOCK_PROVEEDORES,
+        fallbackData: isMockDataEnabled() ? MOCK_PROVEEDORES : [],
       });
       return response.data;
     },
     staleTime: 1000 * 60 * 5,
   });
+  const rawSuppliers = fetchedSuppliers ?? (isDemo ? MOCK_PROVEEDORES : []);
 
   // Filtrado resiliente en cliente adicional si el backend devuelve colección completa
   const filteredSuppliers = useMemo(() => {
@@ -139,16 +154,16 @@ export function useProveedores(
     ? queryKeys.procurement.supplierCatalog(tenantId, selectedSupplierId)
     : (["oppytec", "procurement", "catalog", "none"] as const);
 
-  const fallbackCatalog = useMemo(
-    () =>
-      selectedSupplierId
-        ? MOCK_PRODUCTOS_PROVEEDOR[selectedSupplierId] ?? EMPTY_CATALOG
-        : EMPTY_CATALOG,
-    [selectedSupplierId]
-  );
+  const fallbackCatalog = useMemo(() => {
+    if (!isDemo) return EMPTY_CATALOG;
+    if (selectedSupplierId) {
+      return MOCK_PRODUCTOS_PROVEEDOR[selectedSupplierId] ?? EMPTY_CATALOG;
+    }
+    return Object.values(MOCK_PRODUCTOS_PROVEEDOR).flat();
+  }, [isDemo, selectedSupplierId]);
 
   const {
-    data: catalog = fallbackCatalog,
+    data: fetchedCatalog,
     isLoading: isLoadingCatalog,
     isError: isErrorCatalog,
     refetch: refetchCatalog,
@@ -160,7 +175,7 @@ export function useProveedores(
         `/api/v1/procurement/suppliers/${selectedSupplierId}/products`,
         {
           method: "GET",
-          fallbackData: fallbackCatalog,
+          fallbackData: isMockDataEnabled() ? fallbackCatalog : EMPTY_CATALOG,
         }
       );
       return response.data;
@@ -168,6 +183,7 @@ export function useProveedores(
     enabled: selectedSupplierId !== null,
     staleTime: 1000 * 60 * 5,
   });
+  const catalog = fetchedCatalog ?? fallbackCatalog;
 
   // ==========================================================================
   // SUSCRIPCIÓN WEBSOCKET (procurement.supplier.updated -> Cero Polling)

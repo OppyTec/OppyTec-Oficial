@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "@/shared/api/httpClient";
+import { isMockDataEnabled } from "@/shared/mock/mockModeStorage";
 import { cn, formatMoney } from "@/shared/lib/utils";
 import type { Solicitud } from "../types";
 
@@ -133,10 +134,12 @@ export function ConteoRequestDetails({
       },
     ];
 
+    const effectiveFallbackItems = isMockDataEnabled() ? mockFallbackItems : [];
+
     try {
       const res = await apiRequest<any>(`/api/v1/inventory/counts/${actaId}`, {
         method: "GET",
-        fallbackData: { items: mockFallbackItems },
+        fallbackData: { items: effectiveFallbackItems },
       });
 
       const loadedItems = res.data?.items || res.data?.detalles?.items;
@@ -157,10 +160,10 @@ export function ConteoRequestDetails({
           }))
         );
       } else {
-        setItems(mockFallbackItems);
+        setItems(effectiveFallbackItems);
       }
     } catch {
-      setItems(mockFallbackItems);
+      setItems(effectiveFallbackItems);
     } finally {
       setLoading(false);
     }

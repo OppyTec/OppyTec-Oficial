@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Can } from "@/shared/auth/Can";
 import { useBarcodeScanner } from "@/shared/hooks/useBarcodeScanner";
 import { translateKey } from "@/shared/i18n";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 
 const OPERATIONS_VIEWS = [
@@ -21,6 +22,8 @@ export function OperationsFeatureView() {
   const [voiceHandsFree, setVoiceHandsFree] = useState<boolean>(false);
   const { lastScannedCode, simulateScan } = useBarcodeScanner();
   const { authorizedEvents } = useRealtimeSync();
+  const { isDemo } = useMockDataMode();
+  const displayedEvents = isDemo ? authorizedEvents : [];
 
   return (
     <section
@@ -117,7 +120,7 @@ export function OperationsFeatureView() {
             Alertas & Notificaciones Push (WS /api/v1/ws/realtime)
           </h3>
           <ul className="space-y-1.5 text-xs">
-            {authorizedEvents.map((evt) => (
+            {displayedEvents.map((evt) => (
               <li
                 key={evt.eventId}
                 className="flex items-center justify-between rounded-md border border-border bg-card px-2.5 py-1.5 font-mono text-[11px]"

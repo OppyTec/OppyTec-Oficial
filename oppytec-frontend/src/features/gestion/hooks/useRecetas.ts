@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type {
   Receta,
   CategoriaReceta,
@@ -192,6 +193,7 @@ export function useRecetas(options?: UseRecetasOptions) {
   const queryClient = useQueryClient();
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
 
   const [filter, setFilter] = useState<RecipeFilterParams>({
     tipo: options?.initialFilter?.tipo ?? "todas",
@@ -234,7 +236,7 @@ export function useRecetas(options?: UseRecetasOptions) {
       const path = `/api/v1/recipes${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
       const response = await apiRequest<Receta[]>(path, {
         method: "GET",
-        fallbackData: INITIAL_RECETAS_MOCK,
+        fallbackData: isMockDataEnabled() ? INITIAL_RECETAS_MOCK : [],
       });
 
       return response.data;
@@ -254,7 +256,7 @@ export function useRecetas(options?: UseRecetasOptions) {
     queryFn: async () => {
       const response = await apiRequest<CategoriaReceta[]>("/api/v1/recipes/categories", {
         method: "GET",
-        fallbackData: INITIAL_CATEGORIAS_RECETAS_MOCK,
+        fallbackData: isMockDataEnabled() ? INITIAL_CATEGORIAS_RECETAS_MOCK : [],
       });
       return response.data;
     },
@@ -262,8 +264,13 @@ export function useRecetas(options?: UseRecetasOptions) {
   });
 
   const categorias = useMemo(
-    () => (Array.isArray(rawCategorias) ? rawCategorias : INITIAL_CATEGORIAS_RECETAS_MOCK),
-    [rawCategorias]
+    () =>
+      Array.isArray(rawCategorias)
+        ? rawCategorias
+        : isDemo
+        ? INITIAL_CATEGORIAS_RECETAS_MOCK
+        : [],
+    [rawCategorias, isDemo]
   );
 
   // Invalidador quirúrgico de cache ante eventos WebSocket (recipes.recipe.updated / recipes.cost.recalculated)
@@ -289,15 +296,22 @@ export function useRecetas(options?: UseRecetasOptions) {
       });
     };
     window.addEventListener("recipes_recipe_updated", handleLocalSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     return () => {
       window.removeEventListener("recipes_recipe_updated", handleLocalSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     };
   }, [queryClient, tenantId]);
 
   // Lista base
   const recetas = useMemo(
-    () => (Array.isArray(rawRecetas) ? rawRecetas : INITIAL_RECETAS_MOCK),
-    [rawRecetas]
+    () =>
+      Array.isArray(rawRecetas)
+        ? rawRecetas
+        : isDemo
+        ? INITIAL_RECETAS_MOCK
+        : [],
+    [rawRecetas, isDemo]
   );
 
   // Filtrado reactivo en memoria (garantiza predictibilidad de UI)

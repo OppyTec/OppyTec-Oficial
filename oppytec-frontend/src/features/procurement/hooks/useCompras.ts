@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import {
   MOCK_COMPRAS,
   MOCK_PROCUREMENT_DASHBOARD,
@@ -27,6 +28,19 @@ import {
   type ReceiveGoodsPayload,
   type RegisterIncidencePayload,
 } from "../types";
+
+export const CLEAN_PROCUREMENT_DASHBOARD: ProcurementDashboardData = {
+  monto_total_mes: "0.00",
+  total_mes_monto: "0.00",
+  ordenes_pendientes: 0,
+  ordenes_pendientes_recepcion: 0,
+  proveedores_activos: 0,
+  proveedor_principal: null,
+  tiempo_promedio_entrega_dias: 0,
+  variacion_mes_anterior_pct: "0.0",
+  ordenes_recientes: [],
+  gastos_por_proveedor: [],
+};
 
 export interface ComprasFilterState {
   status?: CompraEstado | "TODOS" | null;
@@ -48,6 +62,19 @@ export function useCompras(initialFilters?: Partial<ComprasFilterState>) {
   const queryClient = useQueryClient();
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
+
+  useEffect(() => {
+    const handleModeChange = () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["oppytec", "procurement"],
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    return () => {
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    };
+  }, [queryClient]);
 
   // Estado de filtros
   const [filters, setFiltersState] = useState<ComprasFilterState>({
@@ -154,7 +181,7 @@ export function useCompras(initialFilters?: Partial<ComprasFilterState>) {
   const dashboardQueryKey = queryKeys.procurement.dashboard(tenantId);
 
   const {
-    data: rawOrders = MOCK_COMPRAS,
+    data: fetchedOrders,
     isLoading: isLoadingOrders,
     isError: isErrorOrders,
     refetch: refetchOrders,
@@ -167,15 +194,16 @@ export function useCompras(initialFilters?: Partial<ComprasFilterState>) {
         : "/api/v1/procurement/orders";
       const response = await apiRequest<CompraOrder[]>(endpoint, {
         method: "GET",
-        fallbackData: MOCK_COMPRAS,
+        fallbackData: isMockDataEnabled() ? MOCK_COMPRAS : [],
       });
       return response.data;
     },
     staleTime: 1000 * 60 * 5,
   });
+  const rawOrders = fetchedOrders ?? (isDemo ? MOCK_COMPRAS : []);
 
   const {
-    data: dashboard = MOCK_PROCUREMENT_DASHBOARD,
+    data: fetchedDashboard,
     isLoading: isLoadingDashboard,
     isError: isErrorDashboard,
     refetch: refetchDashboard,
@@ -186,13 +214,21 @@ export function useCompras(initialFilters?: Partial<ComprasFilterState>) {
         "/api/v1/procurement/dashboard",
         {
           method: "GET",
-          fallbackData: MOCK_PROCUREMENT_DASHBOARD,
+          fallbackData: isMockDataEnabled()
+            ? MOCK_PROCUREMENT_DASHBOARD
+            : CLEAN_PROCUREMENT_DASHBOARD,
         }
       );
       return response.data;
     },
     staleTime: 1000 * 60 * 5,
   });
+  const dashboard = useMemo(() => {
+    if (!isDemo && fetchedDashboard === MOCK_PROCUREMENT_DASHBOARD) {
+      return CLEAN_PROCUREMENT_DASHBOARD;
+    }
+    return fetchedDashboard ?? (isDemo ? MOCK_PROCUREMENT_DASHBOARD : CLEAN_PROCUREMENT_DASHBOARD);
+  }, [fetchedDashboard, isDemo]);
 
   // Filtrado de órdenes en cliente (búsqueda por número orden o nombre de proveedor)
   const filteredOrders = useMemo(() => {

@@ -16,6 +16,7 @@ import { useTheme } from "@/shared/hooks";
 import { cn, formatMoney } from "@/shared/lib";
 import { AreaSelector } from "@/shared/components/layout/AreaSelector";
 import { BodegaBadge } from "@/shared/components/layout/BodegaBadge";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 export interface ExecutiveData {
   valor_total_inventario: number;
@@ -40,81 +41,92 @@ export interface LowStockItem {
   stock_minimo: number;
 }
 
+const DEMO_EXEC_DATA: ExecutiveData = {
+  valor_total_inventario: 48500000,
+  porcentaje_merma: 2.4,
+  stock_total_unidades: 14280,
+  rotacion_promedio: 4.8,
+};
+
+const CLEAN_EXEC_DATA: ExecutiveData = {
+  valor_total_inventario: 0,
+  porcentaje_merma: 0,
+  stock_total_unidades: 0,
+  rotacion_promedio: 0,
+};
+
+const DEMO_INSIGHTS: IAInsight[] = [
+  {
+    tipo: "fuga_dinero",
+    mensaje: "Se detectó merma anormal de Salmón Premium en Bodega Cocina Central (+14% vs promedio semanal).",
+    impacto_estimado: 245000,
+  },
+  {
+    tipo: "sobrestock",
+    mensaje: "Sobrestock en Aceite de Oliva Extra Virgen (45 días de cobertura). Se recomienda congelar compras del ítem.",
+    impacto_estimado: 580000,
+  },
+  {
+    tipo: "oportunidad",
+    mensaje: "Mejora de margen del 8.2% al consolidar compras de carnes rojas con Proveedor Frigorífico Central.",
+    impacto_estimado: 920000,
+  },
+];
+
+const DEMO_LOW_STOCK: LowStockItem[] = [
+  {
+    producto_id: "prod-1",
+    nombre: "Filete de Res Premium (Lomo Liso)",
+    bodega_nombre: "Cámara Fría -18°C",
+    bodega_color: "#3b82f6",
+    bodega_icono: "Snowflake",
+    stock_actual: 4.2,
+    stock_minimo: 15.0,
+  },
+  {
+    producto_id: "prod-2",
+    nombre: "Crema de Leche Gastronómica 35% MG",
+    bodega_nombre: "Bodega Cocina Central",
+    bodega_color: "#10b981",
+    bodega_icono: "Warehouse",
+    stock_actual: 8,
+    stock_minimo: 24,
+  },
+  {
+    producto_id: "prod-3",
+    nombre: "Vino Cabernet Sauvignon Reserva",
+    bodega_nombre: "Barra & Cava",
+    bodega_color: "#ec4899",
+    bodega_icono: "Wine",
+    stock_actual: 3,
+    stock_minimo: 12,
+  },
+  {
+    producto_id: "prod-4",
+    nombre: "Queso Parmesano D.O.P. Rallado",
+    bodega_nombre: "Bodega Cocina Central",
+    bodega_color: "#10b981",
+    bodega_icono: "Warehouse",
+    stock_actual: 1.5,
+    stock_minimo: 6.0,
+  },
+];
+
 export function HomeDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme } = useTheme();
+  const { isDemo } = useMockDataMode();
   const isDark = theme === "dark" || theme === "ocean-blue";
 
   const [loading] = useState(false);
   const [selectedAreaId, setSelectedAreaId] = useState<string>("all");
 
-  const [execData] = useState<ExecutiveData>({
-    valor_total_inventario: 48500000,
-    porcentaje_merma: 2.4,
-    stock_total_unidades: 14280,
-    rotacion_promedio: 4.8,
-  });
-
-  const [insights] = useState<IAInsight[]>([
-    {
-      tipo: "fuga_dinero",
-      mensaje: "Se detectó merma anormal de Salmón Premium en Bodega Cocina Central (+14% vs promedio semanal).",
-      impacto_estimado: 245000,
-    },
-    {
-      tipo: "sobrestock",
-      mensaje: "Sobrestock en Aceite de Oliva Extra Virgen (45 días de cobertura). Se recomienda congelar compras del ítem.",
-      impacto_estimado: 580000,
-    },
-    {
-      tipo: "oportunidad",
-      mensaje: "Mejora de margen del 8.2% al consolidar compras de carnes rojas con Proveedor Frigorífico Central.",
-      impacto_estimado: 920000,
-    },
-  ]);
-
-  const [lowStock] = useState<LowStockItem[]>([
-    {
-      producto_id: "prod-1",
-      nombre: "Filete de Res Premium (Lomo Liso)",
-      bodega_nombre: "Cámara Fría -18°C",
-      bodega_color: "#3b82f6",
-      bodega_icono: "Snowflake",
-      stock_actual: 4.2,
-      stock_minimo: 15.0,
-    },
-    {
-      producto_id: "prod-2",
-      nombre: "Crema de Leche Gastronómica 35% MG",
-      bodega_nombre: "Bodega Cocina Central",
-      bodega_color: "#10b981",
-      bodega_icono: "Warehouse",
-      stock_actual: 8,
-      stock_minimo: 24,
-    },
-    {
-      producto_id: "prod-3",
-      nombre: "Vino Cabernet Sauvignon Reserva",
-      bodega_nombre: "Barra & Cava",
-      bodega_color: "#ec4899",
-      bodega_icono: "Wine",
-      stock_actual: 3,
-      stock_minimo: 12,
-    },
-    {
-      producto_id: "prod-4",
-      nombre: "Queso Parmesano D.O.P. Rallado",
-      bodega_nombre: "Bodega Cocina Central",
-      bodega_color: "#10b981",
-      bodega_icono: "Warehouse",
-      stock_actual: 1.5,
-      stock_minimo: 6.0,
-    },
-  ]);
-
-  const [pendingApprovals] = useState(2);
-  const [enRutaCount] = useState(4);
+  const execData = isDemo ? DEMO_EXEC_DATA : CLEAN_EXEC_DATA;
+  const insights = isDemo ? DEMO_INSIGHTS : [];
+  const lowStock = isDemo ? DEMO_LOW_STOCK : [];
+  const pendingApprovals = isDemo ? 2 : 0;
+  const enRutaCount = isDemo ? 4 : 0;
 
   const isAdminOrOwner = user?.role === "admin" || user?.role === "propietario" || true;
 

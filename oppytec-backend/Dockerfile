@@ -51,6 +51,8 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=oppytec:oppytec alembic ./alembic
 COPY --chown=oppytec:oppytec alembic.ini ./alembic.ini
+COPY --chown=oppytec:oppytec fixtures ./fixtures
+COPY --chown=oppytec:oppytec scripts ./scripts
 COPY --chown=oppytec:oppytec src ./src
 
 USER oppytec

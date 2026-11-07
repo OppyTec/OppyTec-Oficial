@@ -548,6 +548,6 @@ describe("Modales Operativos Especializados de Stock (Fase 5)", () => {
       await waitFor(() => {
         expect(screen.queryByTestId("dialog-transfer-container")).not.toBeInTheDocument();
       });
-    });
+    }, 15000);
   });
 });

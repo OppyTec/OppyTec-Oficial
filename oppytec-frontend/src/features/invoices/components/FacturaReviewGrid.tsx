@@ -18,6 +18,7 @@ import {
   Minus,
 } from "lucide-react";
 import { formatMoney, formatUnitCost, cn } from "@/shared/lib";
+import { isMockDataEnabled } from "@/shared/mock/mockModeStorage";
 import { UnidadMedidaCombobox } from "./UnidadMedidaCombobox";
 import {
   MOCK_CATEGORIES,
@@ -43,11 +44,15 @@ export interface FacturaReviewGridProps {
 export function FacturaReviewGrid({
   items,
   onChangeItems,
-  categories = MOCK_CATEGORIES,
-  warehouses = MOCK_WAREHOUSES,
-  catalogProducts = MOCK_CATALOG_PRODUCTS,
+  categories,
+  warehouses,
+  catalogProducts,
   className,
 }: FacturaReviewGridProps) {
+  const resolvedCategories = categories ?? (isMockDataEnabled() ? MOCK_CATEGORIES : []);
+  const resolvedWarehouses = warehouses ?? (isMockDataEnabled() ? MOCK_WAREHOUSES : []);
+  const resolvedCatalogProducts =
+    catalogProducts ?? (isMockDataEnabled() ? MOCK_CATALOG_PRODUCTS : []);
   const { t } = useTranslation(["invoices"]);
   const [filterText, setFilterText] = useState("");
 
@@ -90,7 +95,7 @@ export function FacturaReviewGrid({
 
     // Si cambió producto asignado desde el catálogo
     if ("matched_product_id" in updates && updates.matched_product_id) {
-      const prod = catalogProducts.find((p) => p.id === updates.matched_product_id);
+      const prod = resolvedCatalogProducts.find((p) => p.id === updates.matched_product_id);
       if (prod) {
         row.matched_product_name = prod.nombre;
         row.matched_product_sku = prod.sku;
@@ -297,7 +302,7 @@ export function FacturaReviewGrid({
                         className="w-full text-xs py-1 px-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="">{t("invoices:review_grid.select_from_catalog", "-- Seleccionar de Catálogo --")}</option>
-                        {catalogProducts.map((p) => (
+                        {resolvedCatalogProducts.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.nombre} ({p.sku})
                           </option>
@@ -327,7 +332,7 @@ export function FacturaReviewGrid({
                       }
                       className="w-full text-xs py-1 px-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary"
                     >
-                      {categories.map((c) => (
+                      {resolvedCategories.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.nombre}
                         </option>
@@ -344,7 +349,7 @@ export function FacturaReviewGrid({
                       }
                       className="w-full text-xs py-1 px-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary font-medium"
                     >
-                      {warehouses.map((w) => (
+                      {resolvedWarehouses.map((w) => (
                         <option key={w.id} value={w.id}>
                           {w.nombre}
                         </option>

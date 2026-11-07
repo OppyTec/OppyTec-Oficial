@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Layers,
   Plus,
@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ResponsiveDialog } from "@/shared/components/ui/ResponsiveDialog";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { cn } from "@/shared/lib";
 import { translateKey, useLanguage } from "@/shared/i18n";
 
@@ -188,8 +189,18 @@ const INITIAL_AREAS: AreaOperativaItem[] = [
 
 export function AreasOperativasConfig() {
   useLanguage();
-  const [areas, setAreas] = useState<AreaOperativaItem[]>(INITIAL_AREAS);
+  const [areas, setAreas] = useState<AreaOperativaItem[]>(() =>
+    isMockDataEnabled() ? INITIAL_AREAS : []
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      setAreas(isMockDataEnabled() ? INITIAL_AREAS : []);
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, []);
   const [editingArea, setEditingArea] = useState<AreaOperativaItem | null>(null);
   const [deleteAreaId, setDeleteAreaId] = useState<string | null>(null);
 

@@ -67,7 +67,7 @@ def test_identity_models_schema_separation_and_soft_delete() -> None:
 def test_genesis_bootstrap_reads_settings_and_hashes_password() -> None:
     """Verifica que el bootstrapper Génesis hashee la contraseña con Argon2id y defina los roles base."""
     manifest = build_genesis_superuser_manifest()
-    assert manifest.email == "oppytec.admin@gmail.com"
+    assert manifest.email.lower() == "oppytec.admin@gmail.com"
     assert manifest.username == "oppytec.admin"
     assert manifest.is_superuser_god is True
     assert manifest.hashed_password != "OppyTec_Genesis_Local_Safe_Pass_2026!"

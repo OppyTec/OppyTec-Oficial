@@ -4,14 +4,18 @@ import {
   Briefcase,
   Building,
   Building2,
+  CalendarClock,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Coins,
   Cpu,
+  Database,
+  FlaskConical,
   Layers,
   LayoutDashboard,
   type LucideIcon,
+  PlayCircle,
   Settings,
   Shield,
   Store,
@@ -160,6 +164,33 @@ export const PLATAFORMA_TELEMETRIA_ITEMS = [
   },
 ] as const;
 
+export const SANDBOX_ITEMS = [
+  {
+    path: "/admin/sandbox/mock-data",
+    label: "Mock Data & Presets",
+    icon: Database,
+    color: "#f59e0b",
+    rgb: "245,158,11",
+    badge: "DATA",
+  },
+  {
+    path: "/admin/sandbox/playwright-runner",
+    label: "Playwright Runner",
+    icon: PlayCircle,
+    color: "#10b981",
+    rgb: "16,185,129",
+    badge: "E2E",
+  },
+  {
+    path: "/admin/sandbox/fefo-dates",
+    label: "Simulador FEFO",
+    icon: CalendarClock,
+    color: "#8b5cf6",
+    rgb: "139,92,246",
+    badge: "WARP",
+  },
+] as const;
+
 export interface AdminSidebarProps {
   readonly isOpen?: boolean;
   readonly onClose?: () => void;
@@ -203,6 +234,7 @@ export function AdminSidebar({
   const [isGestionNegocioOpen, setIsGestionNegocioOpen] = useState<boolean>(true);
   const [isGestionClienteOpen, setIsGestionClienteOpen] = useState<boolean>(true);
   const [isPlataformaOpen, setIsPlataformaOpen] = useState<boolean>(false);
+  const [isSandboxOpen, setIsSandboxOpen] = useState<boolean>(false);
 
   const directMenuItems = [
     {
@@ -281,6 +313,27 @@ export function AdminSidebar({
     },
   ];
 
+  const sandboxItems = [
+    {
+      ...SANDBOX_ITEMS[0],
+      label:
+        translateKey("platform_admin", "sidebar.menu_mock_data") ||
+        "Mock Data & Presets",
+    },
+    {
+      ...SANDBOX_ITEMS[1],
+      label:
+        translateKey("platform_admin", "sidebar.menu_playwright_runner") ||
+        "Playwright Runner",
+    },
+    {
+      ...SANDBOX_ITEMS[2],
+      label:
+        translateKey("platform_admin", "sidebar.menu_fefo_dates") ||
+        "Simulador FEFO",
+    },
+  ];
+
   const isSubItemActive = (itemPath: string): boolean => {
     return location.pathname.startsWith(itemPath);
   };
@@ -294,6 +347,9 @@ export function AdminSidebar({
     }
     if (PLATAFORMA_TELEMETRIA_ITEMS.some((item) => location.pathname.startsWith(item.path))) {
       setIsPlataformaOpen(true);
+    }
+    if (SANDBOX_ITEMS.some((item) => location.pathname.startsWith(item.path))) {
+      setIsSandboxOpen(true);
     }
   }, [location.pathname]);
 
@@ -312,7 +368,8 @@ export function AdminSidebar({
     items: readonly MenuItem[],
     color: string,
     rgb: string,
-    fallbackPath: string
+    fallbackPath: string,
+    sectionBadge?: string
   ) => {
     const isAnySubActive = items.some((sub) => isSubItemActive(sub.path));
     const customStyle = {
@@ -373,6 +430,20 @@ export function AdminSidebar({
               {label}
             </span>
           </div>
+
+          {sectionBadge && (!isCollapsed || isOpen) && (
+            <span
+              data-testid={`section-badge-${sectionBadge.toLowerCase()}`}
+              className="mr-1 px-1.5 py-0.5 text-[10px] font-bold tracking-wider uppercase rounded border transition-colors shrink-0"
+              style={{
+                backgroundColor: isAnySubActive ? "rgba(255, 255, 255, 0.2)" : `rgba(${rgb}, 0.12)`,
+                color: isAnySubActive ? "#ffffff" : color,
+                borderColor: isAnySubActive ? "rgba(255, 255, 255, 0.3)" : `rgba(${rgb}, 0.3)`,
+              }}
+            >
+              {sectionBadge}
+            </span>
+          )}
 
           <button
             type="button"
@@ -436,7 +507,9 @@ export function AdminSidebar({
                           ? "admin-nav-item-jev-consumption"
                           : subItem.path === "/admin/ai-models"
                             ? "admin-nav-item-ai-models"
-                            : `admin-nav-item-${subItem.path.replace("/admin/", "")}`;
+                            : subItem.path.startsWith("/admin/sandbox/")
+                              ? `admin-nav-item-sandbox-${subItem.path.replace("/admin/sandbox/", "")}`
+                              : `admin-nav-item-${subItem.path.replace("/admin/", "")}`;
 
                   return (
                     <Link
@@ -664,6 +737,18 @@ export function AdminSidebar({
           "#06b6d4",
           "6,182,212",
           "/admin/observability"
+        )}
+
+        {renderDropdownSection(
+          translateKey("platform_admin", "sidebar.section_sandbox") || "Lab & QA Sandbox",
+          FlaskConical,
+          isSandboxOpen,
+          () => setIsSandboxOpen((prev) => !prev),
+          sandboxItems,
+          "#ec4899",
+          "236,72,153",
+          "/admin/sandbox/mock-data",
+          "QA"
         )}
       </nav>
 

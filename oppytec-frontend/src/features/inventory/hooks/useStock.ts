@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type {
   StockItem,
   StockMovement,
@@ -33,6 +34,7 @@ export function useStock(options?: UseStockOptions) {
   const context = getHttpRequestContext();
   const holdingId = context.holdingId || "holding-gastro-sur";
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
 
   // Intento de suscripción al túnel WebSocket en tiempo real
   let realtimeEvents: ReturnType<typeof useRealtimeSync>["authorizedEvents"] = [];
@@ -84,9 +86,10 @@ export function useStock(options?: UseStockOptions) {
     queryKey: stockQueryKey,
     queryFn: async () => {
       const endpoint = `/api/v1/inventory/stock/status?bodega_id=${effectiveBodegaParam}`;
+      const fallback = isMockDataEnabled() ? MOCK_STOCK_ITEMS : [];
       const res = await apiRequest<StockItem[]>(endpoint, {
         method: "GET",
-        fallbackData: MOCK_STOCK_ITEMS,
+        fallbackData: fallback,
       });
 
       // Si la API devuelve el DTO crudo de backend, aseguramos el contrato frontend
@@ -121,7 +124,7 @@ export function useStock(options?: UseStockOptions) {
         });
       }
 
-      return MOCK_STOCK_ITEMS;
+      return isMockDataEnabled() ? MOCK_STOCK_ITEMS : [];
     },
     staleTime: 60_000,
   });
@@ -143,7 +146,7 @@ export function useStock(options?: UseStockOptions) {
         "/api/v1/inventory/kardex/movements",
         {
           method: "GET",
-          fallbackData: MOCK_KARDEX_MOVEMENTS,
+          fallbackData: isMockDataEnabled() ? MOCK_KARDEX_MOVEMENTS : [],
         }
       );
       return res.data;
@@ -169,13 +172,21 @@ export function useStock(options?: UseStockOptions) {
       void queryClient.invalidateQueries({ queryKey: ["oppytec", "inventory"] });
     };
     window.addEventListener("inventory_stock_updated", handleLocalSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     return () => {
       window.removeEventListener("inventory_stock_updated", handleLocalSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     };
   }, [queryClient]);
 
-  const items = useMemo(() => stockData ?? MOCK_STOCK_ITEMS, [stockData]);
-  const movements = useMemo(() => kardexData ?? MOCK_KARDEX_MOVEMENTS, [kardexData]);
+  const items = useMemo(
+    () => stockData ?? (isDemo ? MOCK_STOCK_ITEMS : []),
+    [stockData, isDemo]
+  );
+  const movements = useMemo(
+    () => kardexData ?? (isDemo ? MOCK_KARDEX_MOVEMENTS : []),
+    [kardexData, isDemo]
+  );
 
   // Filtrado y ordenamiento de la tabla
   const filteredStockItems = useMemo(() => {
@@ -389,7 +400,7 @@ export function useStock(options?: UseStockOptions) {
     filteredStockItems,
     groupedStockItems,
     movements,
-    bodegas: MOCK_BODEGAS,
+    bodegas: isDemo ? MOCK_BODEGAS : [],
     isLoading: isStockLoading || isKardexLoading,
     isStockLoading,
     isKardexLoading,

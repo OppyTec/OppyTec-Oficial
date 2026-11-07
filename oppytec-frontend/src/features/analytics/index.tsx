@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MoneyBadge } from "@/shared/currency";
 import { translateKey } from "@/shared/i18n";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 const ANALYTICS_PANELS = [
   "HomeDashboard",
@@ -18,6 +19,7 @@ export type AnalyticsPanelId = (typeof ANALYTICS_PANELS)[number];
 export function AnalyticsFeatureView() {
   const [activePanel, setActivePanel] =
     useState<AnalyticsPanelId>("HomeDashboard");
+  const { isDemo } = useMockDataMode();
 
   return (
     <section
@@ -74,20 +76,24 @@ export function AnalyticsFeatureView() {
           <h3 className="text-xs font-bold uppercase text-muted-foreground">
             Matriz Kasavana & Smith (Ingeniería de Menú)
           </h3>
-          <ul className="space-y-1 text-xs">
-            <li className="rounded bg-card p-2">
-              {translateKey("analytics", "matrix.star")} — Pollo King Grill
-            </li>
-            <li className="rounded bg-card p-2">
-              {translateKey("analytics", "matrix.plowhorse")} — Menú Ejecutivo
-            </li>
-            <li className="rounded bg-card p-2">
-              {translateKey("analytics", "matrix.puzzle")} — Salmón Trufado
-            </li>
-            <li className="rounded bg-card p-2">
-              {translateKey("analytics", "matrix.dog")} — Ensalada Estacional
-            </li>
-          </ul>
+          {isDemo ? (
+            <ul className="space-y-1 text-xs">
+              <li className="rounded bg-card p-2">
+                {translateKey("analytics", "matrix.star")} — Pollo King Grill
+              </li>
+              <li className="rounded bg-card p-2">
+                {translateKey("analytics", "matrix.plowhorse")} — Menú Ejecutivo
+              </li>
+              <li className="rounded bg-card p-2">
+                {translateKey("analytics", "matrix.puzzle")} — Salmón Trufado
+              </li>
+              <li className="rounded bg-card p-2">
+                {translateKey("analytics", "matrix.dog")} — Ensalada Estacional
+              </li>
+            </ul>
+          ) : (
+            <p className="text-xs text-muted-foreground py-2">Sin platos analizados.</p>
+          )}
         </div>
 
         <div className="space-y-2 rounded-xl border border-border bg-secondary/20 p-3">
@@ -96,11 +102,11 @@ export function AnalyticsFeatureView() {
           </h3>
           <div className="flex items-center justify-between rounded-lg bg-card p-2.5 text-xs">
             <span>Ventas Netas Acumuladas</span>
-            <MoneyBadge amount="48500000" baseCurrency="CLP" />
+            <MoneyBadge amount={isDemo ? "48500000" : "0"} baseCurrency="CLP" />
           </div>
           <div className="flex items-center justify-between rounded-lg bg-card p-2.5 text-xs">
             <span>Costo Real de Ventas (Kardex)</span>
-            <MoneyBadge amount="14850000" baseCurrency="CLP" />
+            <MoneyBadge amount={isDemo ? "14850000" : "0"} baseCurrency="CLP" />
           </div>
         </div>
       </div>

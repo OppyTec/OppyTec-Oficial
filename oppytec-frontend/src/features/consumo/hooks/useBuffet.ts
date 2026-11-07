@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type {
   BuffetSession,
   BuffetTemplate,
@@ -65,6 +66,19 @@ export function useBuffet(options?: UseBuffetOptions) {
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "tenant_rest_central";
   const holdingId = context.holdingId || "holding-gastro-sur";
+  const { isDemo } = useMockDataMode();
+
+  useEffect(() => {
+    const handleModeChange = () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["oppytec", "operations", "buffet"],
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    return () => {
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    };
+  }, [queryClient]);
 
   const [activeSessionId, setActiveSessionId] = useState<string | null>(
     options?.initialSessionId ?? null
@@ -106,7 +120,7 @@ export function useBuffet(options?: UseBuffetOptions) {
   );
 
   const {
-    data: sessions = MOCK_BUFFET_SESSIONS,
+    data: rawSessions,
     isLoading: isLoadingSessions,
     refetch: refetchSessions,
   } = useQuery<BuffetSession[]>({
@@ -120,11 +134,12 @@ export function useBuffet(options?: UseBuffetOptions) {
       if (queryStr) url += `?${queryStr}`;
 
       const res = await apiRequest<BuffetSession[]>(url, {
-        fallbackData: MOCK_BUFFET_SESSIONS,
+        fallbackData: isMockDataEnabled() ? MOCK_BUFFET_SESSIONS : [],
       });
       return res.data;
     },
   });
+  const sessions = rawSessions ?? (isDemo ? MOCK_BUFFET_SESSIONS : []);
 
   // 2. Detalle de sesión seleccionada
   const activeSession = useMemo(() => {
@@ -137,7 +152,7 @@ export function useBuffet(options?: UseBuffetOptions) {
 
   // 3. Plantillas de buffet
   const {
-    data: templates = MOCK_BUFFET_TEMPLATES,
+    data: rawTemplates,
     isLoading: isLoadingTemplates,
   } = useQuery<BuffetTemplate[]>({
     queryKey: queryKeys.operations.buffetTemplates(tenantId),
@@ -145,12 +160,13 @@ export function useBuffet(options?: UseBuffetOptions) {
       const res = await apiRequest<BuffetTemplate[]>(
         "/api/v1/operations/buffet/templates",
         {
-          fallbackData: MOCK_BUFFET_TEMPLATES,
+          fallbackData: isMockDataEnabled() ? MOCK_BUFFET_TEMPLATES : [],
         }
       );
       return res.data;
     },
   });
+  const templates = rawTemplates ?? (isDemo ? MOCK_BUFFET_TEMPLATES : []);
 
   // ==========================================================================
   // FUNCIONES MATEMÁTICAS PURAS DE CUADRATURA Y COSTEO PAX

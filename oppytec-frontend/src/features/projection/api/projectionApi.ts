@@ -4,6 +4,7 @@
  * Integra apiRequest centralizado con fallback automático offline y tipado estricto.
  */
 import { apiRequest } from "@/shared/api/httpClient";
+import { isMockDataEnabled } from "@/shared/mock/mockModeStorage";
 import {
   MOCK_PAGINATED_PROJECTION_RESPONSE,
   MOCK_PRODUCT_CURVE_DETAIL,
@@ -211,39 +212,50 @@ export const projectionApi = {
     }
 
     const endpoint = `${BASE_PATH}/snapshots?${params.toString()}`;
+    const fallbackSnapshots: RawPaginatedResponse = isMockDataEnabled()
+      ? {
+          items: MOCK_PAGINATED_PROJECTION_RESPONSE.items.map((item) => ({
+            id: item.id,
+            producto_id: item.producto_id,
+            producto_nombre: item.nombre,
+            producto_sku: item.sku,
+            categoria_id: item.categoria_id ? Number(item.categoria_id) : null,
+            categoria_nombre: item.categoria_nombre,
+            bodega_id: item.bodega_id ? Number(item.bodega_id) : null,
+            bodega_nombre: item.bodega_nombre,
+            horizon_days: item.horizon_days,
+            current_stock: String(item.current_qty),
+            projected_stock: String(item.projected_qty),
+            stock_minimo: item.stock_minimo ? String(item.stock_minimo) : "10.0000",
+            costo_unitario: item.costo_unitario ? String(item.costo_unitario) : "0",
+            depletion_date: item.depletion_date,
+            worst_status: item.worst_status,
+            worst_status_label: item.worst_status_label,
+            worst_day: item.worst_day,
+            daily_consumption_rate: item.daily_consumption_rate ? String(item.daily_consumption_rate) : "0.0000",
+            is_stale: item.is_stale,
+            calculated_at: item.calculated_at,
+            unidad: item.unidad,
+          })),
+          total_items: MOCK_PAGINATED_PROJECTION_RESPONSE.total_items,
+          page: filters.page,
+          page_size: filters.pageSize,
+          total_pages: MOCK_PAGINATED_PROJECTION_RESPONSE.total_pages,
+          has_next: MOCK_PAGINATED_PROJECTION_RESPONSE.has_next,
+          has_prev: MOCK_PAGINATED_PROJECTION_RESPONSE.has_prev,
+        }
+      : {
+          items: [],
+          total_items: 0,
+          page: filters.page,
+          page_size: filters.pageSize,
+          total_pages: 0,
+          has_next: false,
+          has_prev: false,
+        };
     const response = await apiRequest<RawPaginatedResponse>(endpoint, {
       method: "GET",
-      fallbackData: {
-        items: MOCK_PAGINATED_PROJECTION_RESPONSE.items.map((item) => ({
-          id: item.id,
-          producto_id: item.producto_id,
-          producto_nombre: item.nombre,
-          producto_sku: item.sku,
-          categoria_id: item.categoria_id ? Number(item.categoria_id) : null,
-          categoria_nombre: item.categoria_nombre,
-          bodega_id: item.bodega_id ? Number(item.bodega_id) : null,
-          bodega_nombre: item.bodega_nombre,
-          horizon_days: item.horizon_days,
-          current_stock: String(item.current_qty),
-          projected_stock: String(item.projected_qty),
-          stock_minimo: item.stock_minimo ? String(item.stock_minimo) : "10.0000",
-          costo_unitario: item.costo_unitario ? String(item.costo_unitario) : "0",
-          depletion_date: item.depletion_date,
-          worst_status: item.worst_status,
-          worst_status_label: item.worst_status_label,
-          worst_day: item.worst_day,
-          daily_consumption_rate: item.daily_consumption_rate ? String(item.daily_consumption_rate) : "0.0000",
-          is_stale: item.is_stale,
-          calculated_at: item.calculated_at,
-          unidad: item.unidad,
-        })),
-        total_items: MOCK_PAGINATED_PROJECTION_RESPONSE.total_items,
-        page: filters.page,
-        page_size: filters.pageSize,
-        total_pages: MOCK_PAGINATED_PROJECTION_RESPONSE.total_pages,
-        has_next: MOCK_PAGINATED_PROJECTION_RESPONSE.has_next,
-        has_prev: MOCK_PAGINATED_PROJECTION_RESPONSE.has_prev,
-      },
+      fallbackData: fallbackSnapshots,
     });
 
     const raw = response.data;
@@ -334,33 +346,36 @@ export const projectionApi = {
     }
 
     const endpoint = `${BASE_PATH}/alerts?${params.toString()}`;
+    const fallbackAlerts: readonly RawProjectionAlert[] = isMockDataEnabled()
+      ? MOCK_PROJECTION_ALERTS.map((al) => ({
+          producto_id: al.producto_id,
+          producto_nombre: al.producto_nombre,
+          bodega_id: al.bodega_id ? Number(al.bodega_id) : null,
+          bodega_nombre: al.bodega_nombre,
+          status: al.status,
+          status_label: al.status_label,
+          depletion_date: al.depletion_date,
+          worst_day: al.worst_day,
+          current_stock: String(al.current_stock),
+          projected_stock: String(al.projected_stock),
+          event_name: al.event_name,
+          event_date: al.event_date,
+          required_qty: al.required_qty !== undefined ? String(al.required_qty) : undefined,
+          deficit_qty: al.deficit_qty !== undefined ? String(al.deficit_qty) : undefined,
+          transfer_suggestions: al.transfer_suggestions.map((ts) => ({
+            producto_id: ts.producto_id,
+            bodega_origen_id: ts.bodega_origen_id,
+            bodega_origen_nombre: ts.bodega_origen_nombre,
+            bodega_destino_id: ts.bodega_destino_id,
+            cantidad_sugerida: String(ts.cantidad_sugerida),
+            dias_cobertura_restante_origen: ts.dias_cobertura_restante_origen,
+            urgencia: ts.urgencia,
+          })),
+        }))
+      : [];
     const response = await apiRequest<readonly RawProjectionAlert[]>(endpoint, {
       method: "GET",
-      fallbackData: MOCK_PROJECTION_ALERTS.map((al) => ({
-        producto_id: al.producto_id,
-        producto_nombre: al.producto_nombre,
-        bodega_id: al.bodega_id ? Number(al.bodega_id) : null,
-        bodega_nombre: al.bodega_nombre,
-        status: al.status,
-        status_label: al.status_label,
-        depletion_date: al.depletion_date,
-        worst_day: al.worst_day,
-        current_stock: String(al.current_stock),
-        projected_stock: String(al.projected_stock),
-        event_name: al.event_name,
-        event_date: al.event_date,
-        required_qty: al.required_qty !== undefined ? String(al.required_qty) : undefined,
-        deficit_qty: al.deficit_qty !== undefined ? String(al.deficit_qty) : undefined,
-        transfer_suggestions: al.transfer_suggestions.map((ts) => ({
-          producto_id: ts.producto_id,
-          bodega_origen_id: ts.bodega_origen_id,
-          bodega_origen_nombre: ts.bodega_origen_nombre,
-          bodega_destino_id: ts.bodega_destino_id,
-          cantidad_sugerida: String(ts.cantidad_sugerida),
-          dias_cobertura_restante_origen: ts.dias_cobertura_restante_origen,
-          urgencia: ts.urgencia,
-        })),
-      })),
+      fallbackData: fallbackAlerts,
     });
 
     return response.data.map((raw) => ({
@@ -422,17 +437,20 @@ export const projectionApi = {
     }
 
     const endpoint = `${BASE_PATH}/products/${productId}/transfer-suggestions?${params.toString()}`;
+    const fallbackTransfers: readonly RawTransferRecommendation[] = isMockDataEnabled()
+      ? MOCK_TRANSFER_SUGGESTIONS.map((ts) => ({
+          producto_id: ts.producto_id,
+          bodega_origen_id: ts.bodega_origen_id,
+          bodega_origen_nombre: ts.bodega_origen_nombre,
+          bodega_destino_id: ts.bodega_destino_id,
+          cantidad_sugerida: String(ts.cantidad_sugerida),
+          dias_cobertura_restante_origen: ts.dias_cobertura_restante_origen,
+          urgencia: ts.urgencia,
+        }))
+      : [];
     const response = await apiRequest<readonly RawTransferRecommendation[]>(endpoint, {
       method: "GET",
-      fallbackData: MOCK_TRANSFER_SUGGESTIONS.map((ts) => ({
-        producto_id: ts.producto_id,
-        bodega_origen_id: ts.bodega_origen_id,
-        bodega_origen_nombre: ts.bodega_origen_nombre,
-        bodega_destino_id: ts.bodega_destino_id,
-        cantidad_sugerida: String(ts.cantidad_sugerida),
-        dias_cobertura_restante_origen: ts.dias_cobertura_restante_origen,
-        urgencia: ts.urgencia,
-      })),
+      fallbackData: fallbackTransfers,
     });
 
     return response.data.map(normalizeTransferSuggestion);

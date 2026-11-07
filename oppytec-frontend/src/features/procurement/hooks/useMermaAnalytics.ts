@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import {
   MOCK_MERMA_ANALYTICS,
   MOCK_MERMA_HISTORY,
@@ -20,6 +21,19 @@ import type {
   MermaAnalyticsData,
   MermaHistoryItem,
 } from "../types";
+
+export const CLEAN_MERMA_ANALYTICS: MermaAnalyticsData = {
+  total_perdida_ppp: "0.00",
+  unidades_mermadas: "0.0",
+  items_mermados_count: 0,
+  mermas_pendientes_aprobacion: 0,
+  ratio_merma_ventas: "0.00",
+  motivo_principal: "",
+  motivos_breakdown: [],
+  por_motivo: [],
+  por_categoria: [],
+  timeline: [],
+};
 
 export interface MermaFilterState {
   preset: DateRangePreset;
@@ -98,6 +112,19 @@ export function useMermaAnalytics(initialFilters?: Partial<MermaFilterState>) {
   const queryClient = useQueryClient();
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
+
+  useEffect(() => {
+    const handleModeChange = () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["oppytec", "inventory", "mermas"],
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    return () => {
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    };
+  }, [queryClient]);
 
   const [filters, setFiltersState] = useState<MermaFilterState>(() => {
     const preset = initialFilters?.preset ?? INITIAL_MERMA_FILTERS.preset;
@@ -184,7 +211,7 @@ export function useMermaAnalytics(initialFilters?: Partial<MermaFilterState>) {
   // QUERIES REACTIVAS (Analytics y History)
   // ==========================================================================
   const {
-    data: analytics = MOCK_MERMA_ANALYTICS,
+    data: fetchedAnalytics,
     isLoading: isLoadingAnalytics,
     isError: isErrorAnalytics,
     refetch: refetchAnalytics,
@@ -197,12 +224,19 @@ export function useMermaAnalytics(initialFilters?: Partial<MermaFilterState>) {
         : "/api/v1/inventory/mermas/analytics";
       const response = await apiRequest<MermaAnalyticsData>(endpoint, {
         method: "GET",
-        fallbackData: MOCK_MERMA_ANALYTICS,
+        fallbackData: isMockDataEnabled() ? MOCK_MERMA_ANALYTICS : CLEAN_MERMA_ANALYTICS,
       });
       return response.data;
     },
     staleTime: 1000 * 60 * 5,
   });
+
+  const analytics = useMemo(() => {
+    if (!isDemo && fetchedAnalytics === MOCK_MERMA_ANALYTICS) {
+      return CLEAN_MERMA_ANALYTICS;
+    }
+    return fetchedAnalytics ?? (isDemo ? MOCK_MERMA_ANALYTICS : CLEAN_MERMA_ANALYTICS);
+  }, [fetchedAnalytics, isDemo]);
 
   const {
     data: historyResponse,
@@ -220,7 +254,9 @@ export function useMermaAnalytics(initialFilters?: Partial<MermaFilterState>) {
         endpoint,
         {
           method: "GET",
-          fallbackData: { items: MOCK_MERMA_HISTORY, total: MOCK_MERMA_HISTORY.length },
+          fallbackData: isMockDataEnabled()
+            ? { items: MOCK_MERMA_HISTORY, total: MOCK_MERMA_HISTORY.length }
+            : { items: [], total: 0 },
         }
       );
       return response.data;
@@ -228,8 +264,11 @@ export function useMermaAnalytics(initialFilters?: Partial<MermaFilterState>) {
     staleTime: 1000 * 60 * 5,
   });
 
-  const historyItems: MermaHistoryItem[] = historyResponse?.items ?? MOCK_MERMA_HISTORY;
-  const historyTotal: number = historyResponse?.total ?? historyItems.length;
+  const historyItems: MermaHistoryItem[] = useMemo(() => {
+    if (!isDemo && historyResponse?.items === MOCK_MERMA_HISTORY) return [];
+    return historyResponse?.items ?? (isDemo ? MOCK_MERMA_HISTORY : []);
+  }, [historyResponse, isDemo]);
+  const historyTotal: number = isDemo ? (historyResponse?.total ?? historyItems.length) : historyItems.length;
 
   // ==========================================================================
   // SUSCRIPCIÓN WEBSOCKET (inventory.waste.registered -> Cero Polling)

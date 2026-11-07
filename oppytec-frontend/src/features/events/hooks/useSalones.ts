@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import { eventsApi } from "../api/eventsApi";
 import type { Salon, SalonCreatePayload, SalonUpdatePayload } from "../types";
@@ -44,6 +45,16 @@ export function useSalones(options?: UseSalonesOptions) {
       });
     }
   }, [realtimeEvents, queryClient, tenantId]);
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.events.salones(tenantId),
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, [queryClient, tenantId]);
 
   const salonesQuery = useQuery({
     queryKey: queryKeys.events.salones(

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { apiRequest } from "@/shared/api/httpClient";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import {
   Categoria,
   CategoriaReceta,
@@ -680,15 +681,29 @@ export const INITIAL_GRUPOS_OPCIONES_MOCK: GrupoOpciones[] = [
 // Hook useGestion con Resiliencia Total (0 pantallas en blanco)
 // ============================================================================
 export function useGestion(areaId?: string | null) {
-  const [categorias, setCategorias] = useState<Categoria[]>(INITIAL_CATEGORIAS_MOCK);
+  const [categorias, setCategorias] = useState<Categoria[]>(() =>
+    isMockDataEnabled() ? INITIAL_CATEGORIAS_MOCK : []
+  );
   const [categoriasRecetas, setCategoriasRecetas] = useState<CategoriaReceta[]>([]);
   const [categoriasCombos, setCategoriasCombos] = useState<CategoriaCombo[]>([]);
-  const [marcas, setMarcas] = useState<Marca[]>(INITIAL_MARCAS_MOCK);
-  const [tiposEnvase, setTiposEnvase] = useState<TipoEnvase[]>(INITIAL_TIPOS_ENVASE_MOCK);
-  const [productos, setProductos] = useState<Producto[]>(INITIAL_PRODUCTOS_MOCK);
-  const [recetas, setRecetas] = useState<Receta[]>(INITIAL_RECETAS_MOCK);
-  const [combos, setCombos] = useState<Combo[]>(INITIAL_COMBOS_MOCK);
-  const [gruposOpciones, setGruposOpciones] = useState<GrupoOpciones[]>(INITIAL_GRUPOS_OPCIONES_MOCK);
+  const [marcas, setMarcas] = useState<Marca[]>(() =>
+    isMockDataEnabled() ? INITIAL_MARCAS_MOCK : []
+  );
+  const [tiposEnvase, setTiposEnvase] = useState<TipoEnvase[]>(() =>
+    isMockDataEnabled() ? INITIAL_TIPOS_ENVASE_MOCK : []
+  );
+  const [productos, setProductos] = useState<Producto[]>(() =>
+    isMockDataEnabled() ? INITIAL_PRODUCTOS_MOCK : []
+  );
+  const [recetas, setRecetas] = useState<Receta[]>(() =>
+    isMockDataEnabled() ? INITIAL_RECETAS_MOCK : []
+  );
+  const [combos, setCombos] = useState<Combo[]>(() =>
+    isMockDataEnabled() ? INITIAL_COMBOS_MOCK : []
+  );
+  const [gruposOpciones, setGruposOpciones] = useState<GrupoOpciones[]>(() =>
+    isMockDataEnabled() ? INITIAL_GRUPOS_OPCIONES_MOCK : []
+  );
   const [mermas, setMermas] = useState<any[]>([]);
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -707,6 +722,7 @@ export function useGestion(areaId?: string | null) {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    const demo = isMockDataEnabled();
     try {
       const results = await Promise.allSettled([
         apiRequest<Producto[]>("/inventory/products"),
@@ -741,72 +757,82 @@ export function useGestion(areaId?: string | null) {
         setProductos(prodRes.value.data);
       } else {
         offlineDetected = true;
-        setProductos((prev) => (prev.length > 0 ? prev : INITIAL_PRODUCTOS_MOCK));
+        setProductos(demo ? INITIAL_PRODUCTOS_MOCK : []);
       }
 
       // Categorías
       if (catRes.status === "fulfilled" && Array.isArray(catRes.value?.data) && catRes.value.data.length > 0) {
         setCategorias(catRes.value.data);
       } else {
-        setCategorias((prev) => (prev.length > 0 ? prev : INITIAL_CATEGORIAS_MOCK));
+        setCategorias(demo ? INITIAL_CATEGORIAS_MOCK : []);
       }
 
       // Recetas
       if (recRes.status === "fulfilled" && Array.isArray(recRes.value?.data) && recRes.value.data.length > 0) {
         setRecetas(recRes.value.data);
       } else {
-        setRecetas((prev) => (prev.length > 0 ? prev : INITIAL_RECETAS_MOCK));
+        setRecetas(demo ? INITIAL_RECETAS_MOCK : []);
       }
 
       // Categorías de Recetas
       if (catRecRes.status === "fulfilled" && Array.isArray(catRecRes.value?.data)) {
         setCategoriasRecetas(catRecRes.value.data);
+      } else if (!demo) {
+        setCategoriasRecetas([]);
       }
 
       // Categorías de Combos
       if (catComboRes.status === "fulfilled" && Array.isArray(catComboRes.value?.data)) {
         setCategoriasCombos(catComboRes.value.data);
+      } else if (!demo) {
+        setCategoriasCombos([]);
       }
 
       // Combos
       if (combosRes.status === "fulfilled" && Array.isArray(combosRes.value?.data) && combosRes.value.data.length > 0) {
         setCombos(combosRes.value.data);
       } else {
-        setCombos((prev) => (prev.length > 0 ? prev : INITIAL_COMBOS_MOCK));
+        setCombos(demo ? INITIAL_COMBOS_MOCK : []);
       }
 
       // Grupos de Opciones
       if (gruposRes.status === "fulfilled" && Array.isArray(gruposRes.value?.data) && gruposRes.value.data.length > 0) {
         setGruposOpciones(gruposRes.value.data);
       } else {
-        setGruposOpciones((prev) => (prev.length > 0 ? prev : INITIAL_GRUPOS_OPCIONES_MOCK));
+        setGruposOpciones(demo ? INITIAL_GRUPOS_OPCIONES_MOCK : []);
       }
 
       // Mermas
       if (mermasRes.status === "fulfilled" && Array.isArray(mermasRes.value?.data)) {
         setMermas(mermasRes.value.data);
+      } else if (!demo) {
+        setMermas([]);
       }
 
       // Marcas
       if (marcasRes.status === "fulfilled" && Array.isArray(marcasRes.value?.data) && marcasRes.value.data.length > 0) {
         setMarcas(marcasRes.value.data);
       } else {
-        setMarcas((prev) => (prev.length > 0 ? prev : INITIAL_MARCAS_MOCK));
+        setMarcas(demo ? INITIAL_MARCAS_MOCK : []);
       }
 
       // Tipos de Envase
       if (envasesRes.status === "fulfilled" && Array.isArray(envasesRes.value?.data) && envasesRes.value.data.length > 0) {
         setTiposEnvase(envasesRes.value.data);
       } else {
-        setTiposEnvase((prev) => (prev.length > 0 ? prev : INITIAL_TIPOS_ENVASE_MOCK));
+        setTiposEnvase(demo ? INITIAL_TIPOS_ENVASE_MOCK : []);
       }
 
       setIsOffline(offlineDetected);
     } catch {
       setIsOffline(true);
-      // Garantizar que nunca quede en blanco
-      setProductos((prev) => (prev.length > 0 ? prev : INITIAL_PRODUCTOS_MOCK));
-      setCategorias((prev) => (prev.length > 0 ? prev : INITIAL_CATEGORIAS_MOCK));
+      setProductos(demo ? INITIAL_PRODUCTOS_MOCK : []);
+      setCategorias(demo ? INITIAL_CATEGORIAS_MOCK : []);
+      setRecetas(demo ? INITIAL_RECETAS_MOCK : []);
+      setCombos(demo ? INITIAL_COMBOS_MOCK : []);
+      setGruposOpciones(demo ? INITIAL_GRUPOS_OPCIONES_MOCK : []);
+      setMarcas(demo ? INITIAL_MARCAS_MOCK : []);
+      setTiposEnvase(demo ? INITIAL_TIPOS_ENVASE_MOCK : []);
     } finally {
       setLoading(false);
     }
@@ -816,7 +842,7 @@ export function useGestion(areaId?: string | null) {
     void loadData();
   }, [loadData]);
 
-  // Listener para evento 'product_updated'
+  // Listener para evento 'product_updated' y 'oppytec_mock_mode_changed'
   const isSelfDispatching = useRef(false);
 
   useEffect(() => {
@@ -825,8 +851,10 @@ export function useGestion(areaId?: string | null) {
       void loadData();
     };
     window.addEventListener("product_updated", handleProductUpdated);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleProductUpdated);
     return () => {
       window.removeEventListener("product_updated", handleProductUpdated);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleProductUpdated);
     };
   }, [loadData]);
 

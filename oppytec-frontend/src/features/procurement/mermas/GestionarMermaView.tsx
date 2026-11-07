@@ -11,6 +11,7 @@ import { TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import { SectionHeader } from "@/shared/components/ui/SectionHeader";
 import { apiRequest } from "@/shared/api/httpClient";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { MermaDialog } from "@/features/inventory/stock/dialogs/MermaDialog";
 import { MOCK_BODEGAS, MOCK_STOCK_ITEMS } from "@/features/inventory/mockData";
 import type { MermaPayload, StockItem } from "@/features/inventory/types";
@@ -26,6 +27,7 @@ export interface GestionarMermaViewProps {
 
 export function GestionarMermaView({ hideHeader = false }: GestionarMermaViewProps) {
   const queryClient = useQueryClient();
+  const { isDemo } = useMockDataMode();
 
   const {
     analytics,
@@ -43,6 +45,7 @@ export function GestionarMermaView({ hideHeader = false }: GestionarMermaViewPro
 
   // Catálogo operativo de stock para el diálogo de registro de merma
   const stockItemsForDialog: StockItem[] = useMemo(() => {
+    if (!isDemo) return [];
     const polloKingItem: StockItem = {
       id: 990,
       producto_id: 10,
@@ -79,7 +82,7 @@ export function GestionarMermaView({ hideHeader = false }: GestionarMermaViewPro
       no_perecible: false,
     };
     return [polloKingItem, ...MOCK_STOCK_ITEMS];
-  }, []);
+  }, [isDemo]);
 
   const handleReportMerma = useCallback(
     async (payload: MermaPayload) => {
@@ -168,7 +171,7 @@ export function GestionarMermaView({ hideHeader = false }: GestionarMermaViewPro
         open={isRegisterMermaOpen}
         onClose={() => setIsRegisterMermaOpen(false)}
         stockItems={stockItemsForDialog}
-        bodegas={MOCK_BODEGAS}
+        bodegas={isDemo ? MOCK_BODEGAS : []}
         onReportMerma={handleReportMerma}
       />
     </div>

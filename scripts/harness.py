@@ -830,6 +830,46 @@ def sync_graph_cmd() -> None:
         if "router:holding_hub" in nodes_map:
             add_edge("router:holding_hub", "service:holding_briefing", "invokes_ai_briefing")
 
+    # 2d. Lab & QA Sandbox Services & Router
+    sandbox_router = ROOT_DIR / "oppytec-backend" / "src" / "modules" / "tenancy" / "presentation" / "sandbox_router.py"
+    if sandbox_router.exists():
+        add_node(
+            "router:platform_admin_sandbox",
+            "Backend Platform Admin Lab & QA Sandbox REST Router /api/v1/platform-admin/sandbox",
+            "backend_router",
+            str(sandbox_router.relative_to(ROOT_DIR)),
+        )
+        if "app:backend_main" in nodes_map:
+            add_edge("app:backend_main", "router:platform_admin_sandbox", "mounts_sandbox_router")
+        if "module:tenancy" in nodes_map:
+            add_edge("router:platform_admin_sandbox", "module:tenancy", "routes_to_tenancy_sandbox")
+
+    sandbox_service = ROOT_DIR / "oppytec-backend" / "src" / "modules" / "tenancy" / "application" / "sandbox_service.py"
+    if sandbox_service.exists():
+        add_node(
+            "service:sandbox_manager",
+            "Platform Admin Lab & QA Sandbox Application Service (Mock Data, Playwright & FEFO)",
+            "backend_service",
+            str(sandbox_service.relative_to(ROOT_DIR)),
+        )
+        if "module:tenancy" in nodes_map:
+            add_edge("module:tenancy", "service:sandbox_manager", "orchestrates_sandbox_service")
+        if "router:platform_admin_sandbox" in nodes_map:
+            add_edge("router:platform_admin_sandbox", "service:sandbox_manager", "invokes_sandbox_service")
+
+    sandbox_schemas = ROOT_DIR / "oppytec-backend" / "src" / "modules" / "tenancy" / "presentation" / "schemas_sandbox.py"
+    if sandbox_schemas.exists():
+        add_node(
+            "schema:platform_admin_sandbox",
+            "Platform Admin Lab & QA Sandbox Pydantic v2 Schemas (Presets, Factory Reset & FEFO)",
+            "backend_schema",
+            str(sandbox_schemas.relative_to(ROOT_DIR)),
+        )
+        if "router:platform_admin_sandbox" in nodes_map:
+            add_edge("router:platform_admin_sandbox", "schema:platform_admin_sandbox", "validates_request_and_response_schemas")
+        if "service:sandbox_manager" in nodes_map:
+            add_edge("service:sandbox_manager", "schema:platform_admin_sandbox", "populates_pydantic_models")
+
     # 3. Componentes Clave de Frontend
     fe_i18n_selector = ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "i18n" / "LanguageFlagSelector.tsx"
     if fe_i18n_selector.exists():
@@ -972,6 +1012,99 @@ def sync_graph_cmd() -> None:
         if "frontend:shared_i18n" in nodes_map:
             add_edge("frontend:feature_holding_hub", "frontend:shared_i18n", "translates_holding_hub_namespace")
 
+    # 3b. Lab & QA Sandbox Frontend Views & Components
+    fe_sandbox_layout = ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "SandboxLayout.tsx"
+    if fe_sandbox_layout.exists():
+        rel_path = str(fe_sandbox_layout.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:sandbox_layout",
+            "Platform Admin Lab & QA Sandbox Layout Component (Navigation & Context)",
+            "frontend_feature_submodule",
+            rel_path,
+        )
+        if "frontend:feature_platform_admin" in nodes_map:
+            add_edge("frontend:feature_platform_admin", "frontend:sandbox_layout", "mounts_sandbox_layout")
+
+    fe_mock_data = ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "MockDataSandboxView.tsx"
+    if fe_mock_data.exists():
+        rel_path = str(fe_mock_data.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:sandbox_mock_data_view",
+            "Platform Admin Lab & QA Sandbox Mock Data Generator View (Synthetic Entities & Dry-Run)",
+            "frontend_feature_submodule",
+            rel_path,
+        )
+        if "frontend:sandbox_layout" in nodes_map:
+            add_edge("frontend:sandbox_layout", "frontend:sandbox_mock_data_view", "renders_mock_data_tab")
+        if "router:platform_admin_sandbox" in nodes_map:
+            add_edge("frontend:sandbox_mock_data_view", "router:platform_admin_sandbox", "consumes_mock_data_api")
+
+    fe_playwright_runner = ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "PlaywrightRunnerSandboxView.tsx"
+    if fe_playwright_runner.exists():
+        rel_path = str(fe_playwright_runner.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:sandbox_playwright_runner_view",
+            "Platform Admin Lab & QA Sandbox Playwright Runner View (E2E Suites & Streaming)",
+            "frontend_feature_submodule",
+            rel_path,
+        )
+        if "frontend:sandbox_layout" in nodes_map:
+            add_edge("frontend:sandbox_layout", "frontend:sandbox_playwright_runner_view", "renders_playwright_runner_tab")
+        if "router:platform_admin_sandbox" in nodes_map:
+            add_edge("frontend:sandbox_playwright_runner_view", "router:platform_admin_sandbox", "consumes_playwright_runner_api")
+
+    fe_fefo_dates = ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "FefoDatesSandboxView.tsx"
+    if fe_fefo_dates.exists():
+        rel_path = str(fe_fefo_dates.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:sandbox_fefo_dates_view",
+            "Platform Admin Lab & QA Sandbox FEFO Time-Warp Simulator View (Batch Expiry & Waste)",
+            "frontend_feature_submodule",
+            rel_path,
+        )
+        if "frontend:sandbox_layout" in nodes_map:
+            add_edge("frontend:sandbox_layout", "frontend:sandbox_fefo_dates_view", "renders_fefo_dates_tab")
+        if "router:platform_admin_sandbox" in nodes_map:
+            add_edge("frontend:sandbox_fefo_dates_view", "router:platform_admin_sandbox", "consumes_fefo_dates_api")
+        if "frontend:currency_selector" in nodes_map:
+            add_edge("frontend:sandbox_fefo_dates_view", "frontend:currency_selector", "formats_simulated_loss_currency")
+
+    fe_fefo_math = ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "fefoMath.ts"
+    if fe_fefo_math.exists():
+        rel_path = str(fe_fefo_math.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:sandbox_fefo_math",
+            "Platform Admin Lab & QA Sandbox FEFO Pure Math & Time-Travel Engine (Zero-Lag Projections)",
+            "frontend_shared_util",
+            rel_path,
+        )
+        if "frontend:sandbox_fefo_dates_view" in nodes_map:
+            add_edge("frontend:sandbox_fefo_dates_view", "frontend:sandbox_fefo_math", "evaluates_fefo_projections_pure_math")
+
+    fe_mock_mode_storage = ROOT_DIR / "oppytec-frontend" / "src" / "shared" / "mock" / "mockModeStorage.ts"
+    if fe_mock_mode_storage.exists():
+        rel_path = str(fe_mock_mode_storage.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:mock_mode_storage",
+            "Master Switch Reactive Storage & CustomEvent Broadcaster (demo vs clean)",
+            "frontend_shared_util",
+            rel_path,
+        )
+        if "frontend:sandbox_mock_data_view" in nodes_map:
+            add_edge("frontend:sandbox_mock_data_view", "frontend:mock_mode_storage", "controls_mock_data_mode")
+
+    fe_gastronomic_presets = ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "presets" / "index.ts"
+    if fe_gastronomic_presets.exists():
+        rel_path = str(fe_gastronomic_presets.relative_to(ROOT_DIR))
+        add_node(
+            "frontend:canonical_gastronomic_presets",
+            "Canonical Gastronomic Presets Multi-Tenant (Pollo King, Angus Cava, Buffet, Clean Slate)",
+            "frontend_feature_submodule",
+            rel_path,
+        )
+        if "frontend:sandbox_mock_data_view" in nodes_map:
+            add_edge("frontend:sandbox_mock_data_view", "frontend:canonical_gastronomic_presets", "loads_canonical_presets")
+
     # 4. Suites de Test
     fe_test_map = {
         "suite:frontend_admin_views_test": (
@@ -1109,6 +1242,78 @@ def sync_graph_cmd() -> None:
             "Frontend Holding Hub Enterprise Layout, Tabs, FX & AI Briefing Vitest Suite",
             [
                 ("suite:frontend_holding_hub_vitest", "frontend:feature_holding_hub", "verifies_holding_hub_ui_and_i18n"),
+            ],
+        ),
+        "suite:backend_sandbox_api": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "unit" / "test_platform_admin_sandbox.py",
+            "Backend Platform Admin Lab & QA Sandbox API & RBAC Unit Suite",
+            [
+                ("suite:backend_sandbox_api", "router:platform_admin_sandbox", "tests_sandbox_endpoints_and_rbac"),
+                ("suite:backend_sandbox_api", "service:sandbox_manager", "tests_mock_data_and_simulation_logic"),
+                ("suite:backend_sandbox_api", "schema:platform_admin_sandbox", "verifies_presets_and_reset_schemas"),
+            ],
+        ),
+        "suite:backend_sandbox_observability": (
+            ROOT_DIR / "oppytec-backend" / "tests" / "unit" / "test_sandbox_observability_and_environments.py",
+            "Backend Lab & QA Sandbox Environment Isolation & OTel Observability Suite",
+            [
+                ("suite:backend_sandbox_observability", "router:platform_admin_sandbox", "verifies_environment_isolation_and_otel"),
+            ],
+        ),
+        "suite:frontend_sandbox_master_switch_presets_vitest": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "__tests__" / "MockDataMasterSwitchAndPresets.test.tsx",
+            "Frontend Lab & QA Sandbox Master Switch & Presets Vitest Suite",
+            [
+                ("suite:frontend_sandbox_master_switch_presets_vitest", "frontend:sandbox_mock_data_view", "verifies_master_switch_and_presets"),
+                ("suite:frontend_sandbox_master_switch_presets_vitest", "frontend:mock_mode_storage", "verifies_mode_storage_reactivity"),
+                ("suite:frontend_sandbox_master_switch_presets_vitest", "frontend:canonical_gastronomic_presets", "verifies_presets_loading"),
+            ],
+        ),
+        "suite:frontend_sandbox_views_vitest": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "__tests__" / "SandboxViews.test.tsx",
+            "Frontend Lab & QA Sandbox Views Interactive Vitest Suite",
+            [
+                ("suite:frontend_sandbox_views_vitest", "frontend:sandbox_mock_data_view", "verifies_mock_data_ui_and_actions"),
+                ("suite:frontend_sandbox_views_vitest", "frontend:sandbox_playwright_runner_view", "verifies_playwright_runner_ui"),
+                ("suite:frontend_sandbox_views_vitest", "frontend:sandbox_fefo_dates_view", "verifies_fefo_dates_ui"),
+            ],
+        ),
+        "suite:frontend_sandbox_telemetry_vitest": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "__tests__" / "SandboxApiAndTelemetry.test.ts",
+            "Frontend Lab & QA Sandbox API Client & Telemetry Vitest Suite",
+            [
+                ("suite:frontend_sandbox_telemetry_vitest", "router:platform_admin_sandbox", "verifies_headers_and_traceparent"),
+            ],
+        ),
+        "suite:frontend_sandbox_i18n_vitest": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "__tests__" / "SandboxI18nAndFx.test.tsx",
+            "Frontend Lab & QA Sandbox i18n & Multi-Currency Vitest Suite",
+            [
+                ("suite:frontend_sandbox_i18n_vitest", "frontend:sandbox_fefo_dates_view", "verifies_currency_and_translations"),
+            ],
+        ),
+        "suite:frontend_sandbox_playwright_runner_vitest": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "__tests__" / "PlaywrightRunnerSandboxView.test.tsx",
+            "Frontend Lab & QA Sandbox Playwright Dynamic Runner & SSE Streaming Vitest Suite",
+            [
+                ("suite:frontend_sandbox_playwright_runner_vitest", "frontend:sandbox_playwright_runner_view", "verifies_playwright_catalog_and_streaming_ui"),
+                ("suite:frontend_sandbox_playwright_runner_vitest", "router:platform_admin_sandbox", "verifies_playwright_catalog_and_stream_api"),
+            ],
+        ),
+        "suite:frontend_sandbox_fefo_math_vitest": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "__tests__" / "fefoMath.test.ts",
+            "Frontend Lab & QA Sandbox FEFO Pure Math Deterministic Vitest Suite",
+            [
+                ("suite:frontend_sandbox_fefo_math_vitest", "frontend:sandbox_fefo_math", "verifies_pure_math_and_loss_rates"),
+                ("suite:frontend_sandbox_fefo_math_vitest", "frontend:sandbox_fefo_dates_view", "verifies_canonical_scenarios_and_sync"),
+            ],
+        ),
+        "suite:frontend_sandbox_fefo_dates_view_vitest": (
+            ROOT_DIR / "oppytec-frontend" / "src" / "features" / "platform-admin" / "sandbox" / "__tests__" / "FefoDatesSandboxView.test.tsx",
+            "Frontend Lab & QA Sandbox FEFO Dates & Time-Travel UI Vitest Suite",
+            [
+                ("suite:frontend_sandbox_fefo_dates_view_vitest", "frontend:sandbox_fefo_dates_view", "verifies_time_travel_slider_and_modals"),
+                ("suite:frontend_sandbox_fefo_dates_view_vitest", "router:platform_admin_sandbox", "verifies_fefo_simulate_and_shift_api"),
             ],
         ),
     }

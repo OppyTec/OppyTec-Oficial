@@ -1,64 +1,71 @@
-# Reporte de Traspaso (`Handover`) — Agente 12: Technical Writer, OpenSpec Bipartito, Graphify y Archify
+# Reporte de Traspaso Consolidado (`Handover`) — Agente 12: Tech Writer, OpenSpec & Archify
 
-- **Fecha UTC:** 2026-11-05T16:05:00Z
+- **Fecha UTC:** 2026-11-07T01:35:00Z
 - **Agente:** Agente 12 (`12-tech-writer-openspec-archify`)
-- **Fase / Módulo:** Etapa 4 — **Holding Hub Enterprise de OppyTec v2.0** (OpenSpec Bipartito, Graphify AST Sync y Bitácora Humana del Escuadrón).
-- **Estado de Certificación:** `HOLDING_HUB_STAGE_4_DOCUMENTATION_AND_GRAPHIFY_CERTIFIED` (Especificaciones OpenSpec creadas en `openspec/specs/` y `specs/`, Grafo AST sincronizado con 132 nodos, 15 routers, 20 migraciones y 31 suites, bitácora humana completada, y `verify-evals` 100% verde).
+- **Fase / Hito:** Etapa 4 — Clean Slate 100%, Desacoplamiento Total de Mock Data en Todas las Vistas y Bóveda de Respaldo JSON Maestro (ADR-022)
+- **Estado de Certificación:** `SYNC_APPROVED` (10/10 — Bóvedas OpenSpec bipartitas en paridad 1:1, test de arquitectura verde, grafo AST sincronizado, memoria actualizada y bitácora de escuadrón publicada).
+- **Destinatarios:**
+  - Orquestador General (`parent` / `01-orchestrator-pm`)
+  - Escuadrón Multi-Agente OppyTec v2.0
 
 ---
 
-## 1. Completed (Qué se ejecutó, validó y sincronizó)
+## 1. Completed (Qué se realizó y certificó)
 
-### 1.1 Consulta Previa a Graphify (Regla de Oro)
-- Ejecutado `python scripts/harness.py nav "holding"` antes de iniciar cualquier modificación, analizando las dependencias y aristas previas.
+1. **Gobernanza Pre-ejecución Obligatoria (Graphify AST):**
+   - Ejecutado `python3 scripts/harness.py nav "sandbox"`: Mapeados 21 nodos y 10 aristas clave (`frontend:sandbox_mock_data_view`, `frontend:mock_mode_storage`, `router:platform_admin_sandbox`, `service:sandbox_manager`, `suite:frontend_sandbox_master_switch_presets_vitest`).
+   - Ejecutado `python3 scripts/harness.py nav "openspec"`: Mapeadas las dos bóvedas `openspec:business_domain_vault` y `openspec:engineering_code_vault` y sus contratos 1:1.
 
-### 1.2 Especificaciones OpenSpec Bipartitas 1:1
-- Creada especificación de negocio:
-  * [`openspec/specs/business/holding-hub-enterprise.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/openspec/specs/business/holding-hub-enterprise.md) y su espejo en [`specs/business-domain/holding-hub-enterprise.business.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/business-domain/holding-hub-enterprise.business.spec.md):
-    - Redacción en lenguaje ejecutivo para directores de holding, gerentes de operaciones y dueños gastronómicos (0% SQL, 0% código interno).
-    - Desglose exhaustivo de las 3 pestañas: Vista Central (torre de control y sucursales), Planes Corporativos (catálogo y escalabilidad SaaS), Créditos de IA (bolsa compartida vs asignada, sliders y compra prepagada).
-    - Explicación del **Oppy Daily Holding Briefing** en exactamente dos párrafos (Ventas/Merma y Saldo IA/Safety Cap predictivo).
-    - Conmutación rápida de sucursales con paleta de comandos `Cmd+K`.
-    - Regla de oro "Pollo King": invarianza inmutable de nombres de consorcios, razones sociales y esquemas físicos.
-- Creada especificación técnica de ingeniería:
-  * [`openspec/specs/engineering/holding-hub-architecture.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/openspec/specs/engineering/holding-hub-architecture.md) y su espejo en [`specs/engineering-code/holding-hub-architecture.code.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/engineering-code/holding-hub-architecture.code.spec.md):
-    - Frontmatter obligatorio: `spec_id: ENG-HOLDING-HUB-ENTERPRISE`, `domain_module: tenancy`, `jev_system1_evaluation: "No (Jev.choice, umbral 0.90)"`, `last_verified_phase: "Etapa 4 Holding Hub"`.
-    - Diagrama Mermaid de flujo y arquitectura integral (Frontend React 19, Router FastAPI, Servicios de Aplicación y Persistencia PostgreSQL).
-    - Modelos SQLAlchemy 2.0 Async: `Holding` (con `credit_distribution_mode`), `HoldingCreditDistribution` y `HoldingCreditPurchase` vinculados a la migración Alembic 0018 (`0018_public_holding_hub_credit_distribution_and_purchases.py`).
-    - Matriz de los 8 endpoints REST en `/api/v1/holding-hub` protegidos por la guardia `RequireHoldingPermission` con RBAC 3-niveles y blindaje anti-IDOR.
-    - Contratos Pydantic v2 con `extra="forbid"` y cero floats (100% `Decimal` e `int`).
-    - Instrumentación OpenTelemetry (`oppytec.tenancy.holding_hub`) y contexto Sentry (`holding_id`, `tenant_id`, `user_role`) con SLA $p95 < 200\text{ ms}$.
-    - Frontend React 19, componentes modulares, gráficos Recharts, paleta `Cmd+K`, temas y 174 claves bilingües con paridad 100%.
+2. **Sincronización de Bóveda Funcional de Negocio (`specs/business-domain/`):**
+   - Creado [`specs/business-domain/clean-slate-and-mock-data-sandbox.business.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/business-domain/clean-slate-and-mock-data-sandbox.business.spec.md).
+   - Contenido: 0% código técnico, 0% SQL, 0% rutas de archivos (`.py`, `.tsx`) y 100% valor de negocio para la industria gastronómica.
+   - Detalla el paradigma del lienzo virgen (*Clean Slate*), los Estados Vacíos Legítimos (*Empty States*) con guía de incorporación para bodegas, recetas, alertas y finanzas, la gobernanza del Superusuario Génesis Inicial y la operación de la Bóveda de Respaldo Maestro JSON con los 4 presets gastronómicos (Alta Cocina, Buffet de Hotel, Dark Kitchen y Comida Rápida).
 
-### 1.3 Registro en la Bitácora del Escuadrón
-- Creada la entrada de bitácora en lenguaje humano claro:
-  * [`docs/bitacora/diario-escuadron/2026-11-05-holding-hub-enterprise.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/docs/bitacora/diario-escuadron/2026-11-05-holding-hub-enterprise.md):
-    - Explicación del problema de negocio para cadenas gastronómicas y cómo el Holding Hub lo soluciona.
-    - Resumen detallado de qué construyó cada agente del escuadrón (Agentes 01 al 12).
-    - Diagrama Mermaid de la cadena de montaje agéntica.
-    - Recorrido práctico del usuario (Director de Operaciones de "Holding Gastronómico Pollo King").
-    - Estándares de excelencia alcanzados (cero floats, paridad bilingüe, regla Pollo King, SLA de latencia y anti-IDOR).
+3. **Sincronización de Bóveda Técnica de Ingeniería (`specs/engineering-code/`):**
+   - Creado [`specs/engineering-code/clean-slate-and-mock-data-sandbox.code.spec.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/specs/engineering-code/clean-slate-and-mock-data-sandbox.code.spec.md).
+   - Incluye frontmatter estricto conforme a `specs/openspec.config.yaml` (`spec_id: ENG-CLEAN-SLATE-AND-MOCK-DATA-SANDBOX`, `domain_module: tenancy`, `paired_spec`, `jev_system1_evaluation`).
+   - Arquitectura técnica del [`ADR-022`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/docs/adr/ADR-022-clean-slate-and-mock-data-backup-architecture.md), diagramas Mermaid de flujo y desacoplamiento full-stack, contrato de la Bóveda JSON de 353 KB (`mock_data_backup.json`), primitivas de `mock_data_manager.py` (`purge_all_runtime_mock_stores`, `restore_runtime_mock_stores`), lifespan de `main.py`, script `clean_and_seed_genesis_db.py`, helpers de frontend en `mockModeStorage.ts` (`ensureBrowserDefaultCleanMode`, `selectByMockMode`), guardrails de entorno y telemetría OpenTelemetry.
 
-### 1.4 Actualización del Harnés y Sincronización Graphify
-- Actualizado [`scripts/harness.py`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/scripts/harness.py) con indexación automática de:
-  * `router:holding_hub`
-  * `service:holding_hub`
-  * `service:holding_briefing`
-  * `frontend:feature_holding_hub`
-  * 5 nuevas suites de verificación backend y frontend.
-- Ejecutado `python scripts/harness.py sync-graph`:
-  * **Nodos totales:** 132 (Routers: 15, Migraciones: 20, Suites: 31).
-  * **Aristas totales:** 161.
-  * Sincronizado `docs/architecture/graphify/graph.json` y `visualizer.html`.
-- Verificado con `python scripts/harness.py nav "holding"`: 15 coincidencias indexadas y contextualizadas.
-- Verificado con `python scripts/harness.py verify-evals`: 100% integridad anti-trampa.
+4. **Ejecución y Verificación del Test de Arquitectura OpenSpec:**
+   - Ejecutado `oppytec-backend/.venv/bin/pytest oppytec-backend/tests/architecture/test_openspec_bipartition_and_sync.py`:
+     * Resultado: **1 passed in 0.27s (100% OK)**.
+     * Cero violaciones de patrones prohibidos (`CREATE TABLE`, `ALTER TABLE`, `SELECT `, `sqlalchemy`, `FastAPI`, `.tsx`, `.py`).
+     * Emparejamiento 1:1 riguroso verificado entre todas las especificaciones de ambas bóvedas.
+
+5. **Sincronización del Grafo Maestro AST (Graphify):**
+   - Ejecutado `python3 scripts/harness.py sync-graph`:
+     * Nodos totales: 151 (Routers: 16, Migraciones: 20, Suites: 40).
+     * Aristas totales: 196.
+     * Grafo maestro persistido en `docs/architecture/graphify/graph.json` y visualizador HTML en `docs/architecture/graphify/visualizer.html`.
+
+6. **Actualización de Memoria del Escuadrón (`.agent/memory/current_state.md`):**
+   - Registrado formalmente el hito "Hito Cerrado: Clean Slate 100%, Desacoplamiento Total de Mock Data en Todas las Vistas y Bóveda de Respaldo JSON Maestro (ADR-022)" con las métricas consolidadas de las 4 etapas del DAG Pipeline.
+
+7. **Publicación en Bitácora del Diario de Escuadrón:**
+   - Documentado el registro histórico completo en [`docs/bitacora/diario-escuadron/11-Fase-Clean-Slate-Desacoplamiento-Mock-Data-y-Respaldo-JSON.md`](file:///home/jcampillay/WorkArea/OppyTec/OppyTec-Code2/docs/bitacora/diario-escuadron/11-Fase-Clean-Slate-Desacoplamiento-Mock-Data-y-Respaldo-JSON.md).
 
 ---
 
-## 2. Friction & Failures
-- Cero fricciones. La arquitectura modular permitió una integración limpia y armónica en todas las capas.
+## 2. Friction & Failures (Fricciones y Desafíos Resueltos)
+
+- **Alineación de la Bipartición Estricta:** Al redactar la especificación de negocio `clean-slate-and-mock-data-sandbox.business.spec.md`, se omitieron deliberadamente todas las referencias a archivos técnicos (`mock_data_backup.json`, `.py`, `.tsx`), tablas SQL o endpoints REST, centrándose exclusivamente en conceptos gastronómicos (mermas, insumos, cartas, inventarios limpios, proveedores y auditoría fiscal), asegurando que el validador automático `test_openspec_bipartition_and_sync.py` pasara limpiamente en su primera ejecución.
 
 ---
 
-## 3. Next Exact Action
-- Remitir el informe de cierre al Agente Orquestador (`01-orchestrator-pm`) certificando la finalización exitosa de la Etapa 4 del Holding Hub Enterprise.
+## 3. Matriz de Certificación Final
+
+| Control de Calidad | Herramienta / Verificador | Resultado | Veredicto |
+|---|---|---|---|
+| **Bipartición OpenSpec** | `pytest test_openspec_bipartition_and_sync.py` | `1 passed in 0.27s` | **APROBADO** |
+| **Arquitectura Completa** | `pytest oppytec-backend/tests/architecture/` | `29 passed, 0 failed` | **APROBADO** |
+| **Sincronización Graphify** | `python3 scripts/harness.py sync-graph` | `151 nodos, 196 aristas` | **APROBADO** |
+| **Navegación AST** | `python3 scripts/harness.py nav "mock"` | `4 nodos, 10 aristas` | **APROBADO** |
+| **Bitácora Diario** | `docs/bitacora/diario-escuadron/11-*.md` | Publicada e indexada | **APROBADO** |
+| **Estado del Monorepo** | `.agent/memory/current_state.md` | Actualizado con hito ADR-022 | **APROBADO** |
+
+---
+
+## 4. Next Exact Action
+
+- **Dictamen Final:** **`SYNC_APPROVED`**.
+- Notificar formalmente al Orquestador General (`parent`) de la conclusión exitosa de la Etapa 4 y del cierre definitivo del hito **ADR-022: Clean Slate 100%, Desacoplamiento Total de Mock Data en Todas las Vistas y Bóveda de Respaldo JSON Maestro**.

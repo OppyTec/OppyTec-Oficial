@@ -57,6 +57,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { useAuth } from "@/shared/auth/usePermissions";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { ContextHealthMeter } from "./components/ContextHealthMeter";
 import { OppyfyRolloverModal } from "./components/OppyfyRolloverModal";
 import { OppyfyGovernancePanel } from "./components/governance/OppyfyGovernancePanel";
@@ -222,6 +223,50 @@ const DEFAULT_THREADS: WorkspaceThread[] = [
   },
 ];
 
+const INITIAL_DEMO_MESSAGES: WorkspaceChatMessage[] = [
+  {
+    id: "msg-init-1",
+    sender: "assistant",
+    agent_name: "Oppy Chef",
+    content:
+      "¡Hola! He cargado los datos del escandallo operativo de Pollo King. El costeo teórico bajo metodología PPP se encuentra optimizado en $3.850 CLP por ración. Puedes revisar el desglose en el panel Canvas lateral o consultar la vista de [Recetas & Escandallos](/recipes).",
+    created_at: new Date().toISOString(),
+    canvasArtifact: {
+      type: "table",
+      title: "Escandallo Pollo King Crujiente (PPP)",
+      data: [
+        { ingrediente: "Pechuga de Pollo Fresca", cantidad: "0.250 kg", costo_unit_clp: 1850, merma_pct: "4.5%" },
+        { ingrediente: "Harina Especial Apando", cantidad: "0.080 kg", costo_unit_clp: 420, merma_pct: "1.2%" },
+        { ingrediente: "Mix Especias Secretas", cantidad: "0.015 kg", costo_unit_clp: 380, merma_pct: "0.0%" },
+        { ingrediente: "Aceite Alto Rendimiento", cantidad: "0.050 L", costo_unit_clp: 650, merma_pct: "2.0%" },
+        { ingrediente: "Empaque Térmico Biodegradable", cantidad: "1 ud", costo_unit_clp: 550, merma_pct: "0.0%" },
+      ],
+      summary: "Cálculo en base a lotes FEFO ingresados en la última recepción de bodega.",
+    },
+    suggested_actions: [
+      "¿Cómo registro una merma de producción?",
+      "Ver cotizaciones de harina en proveedores",
+      "Calcular margen bruto con precio de venta",
+    ],
+    shopping_cards: [
+      {
+        title: "Harina Especial Apando 25kg",
+        price_clp: 28990,
+        vendor: "Molinos del Sur",
+        product_url: "https://ejemplo.cl/harina",
+        image_url: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300",
+      },
+      {
+        title: "Aceite Vegetal Frigofry 20L",
+        price_clp: 34500,
+        vendor: "Distribuidora Central",
+        product_url: "https://ejemplo.cl/aceite",
+        image_url: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300",
+      },
+    ],
+  },
+];
+
 export function OppyfyWorkspacePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -235,51 +280,15 @@ export function OppyfyWorkspacePage() {
   const [isRolloverModalOpen, setIsRolloverModalOpen] = useState(false);
 
   // Estados de Hilos y Mensajes
-  const [threads, setThreads] = useState<WorkspaceThread[]>(DEFAULT_THREADS);
-  const [activeThreadId, setActiveThreadId] = useState<string>("th-1");
-  const [messages, setMessages] = useState<WorkspaceChatMessage[]>([
-    {
-      id: "msg-init-1",
-      sender: "assistant",
-      agent_name: "Oppy Chef",
-      content:
-        "¡Hola! He cargado los datos del escandallo operativo de Pollo King. El costeo teórico bajo metodología PPP se encuentra optimizado en $3.850 CLP por ración. Puedes revisar el desglose en el panel Canvas lateral o consultar la vista de [Recetas & Escandallos](/recipes).",
-      created_at: new Date().toISOString(),
-      canvasArtifact: {
-        type: "table",
-        title: "Escandallo Pollo King Crujiente (PPP)",
-        data: [
-          { ingrediente: "Pechuga de Pollo Fresca", cantidad: "0.250 kg", costo_unit_clp: 1850, merma_pct: "4.5%" },
-          { ingrediente: "Harina Especial Apando", cantidad: "0.080 kg", costo_unit_clp: 420, merma_pct: "1.2%" },
-          { ingrediente: "Mix Especias Secretas", cantidad: "0.015 kg", costo_unit_clp: 380, merma_pct: "0.0%" },
-          { ingrediente: "Aceite Alto Rendimiento", cantidad: "0.050 L", costo_unit_clp: 650, merma_pct: "2.0%" },
-          { ingrediente: "Empaque Térmico Biodegradable", cantidad: "1 ud", costo_unit_clp: 550, merma_pct: "0.0%" },
-        ],
-        summary: "Cálculo en base a lotes FEFO ingresados en la última recepción de bodega.",
-      },
-      suggested_actions: [
-        "¿Cómo registro una merma de producción?",
-        "Ver cotizaciones de harina en proveedores",
-        "Calcular margen bruto con precio de venta",
-      ],
-      shopping_cards: [
-        {
-          title: "Harina Especial Apando 25kg",
-          price_clp: 28990,
-          vendor: "Molinos del Sur",
-          product_url: "https://ejemplo.cl/harina",
-          image_url: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=300",
-        },
-        {
-          title: "Aceite Vegetal Frigofry 20L",
-          price_clp: 34500,
-          vendor: "Distribuidora Central",
-          product_url: "https://ejemplo.cl/aceite",
-          image_url: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300",
-        },
-      ],
-    },
-  ]);
+  const [threads, setThreads] = useState<WorkspaceThread[]>(() =>
+    isMockDataEnabled() ? DEFAULT_THREADS : []
+  );
+  const [activeThreadId, setActiveThreadId] = useState<string>(() =>
+    isMockDataEnabled() ? "th-1" : ""
+  );
+  const [messages, setMessages] = useState<WorkspaceChatMessage[]>(() =>
+    isMockDataEnabled() ? INITIAL_DEMO_MESSAGES : []
+  );
 
   // Mensaje y entrada
   const [inputMessage, setInputMessage] = useState("");
@@ -292,16 +301,32 @@ export function OppyfyWorkspacePage() {
   const [currentQuote, setCurrentQuote] = useState<Quote>(() => getRandomQuote());
 
   // Estados de salud de contexto y créditos
-  const [contextPct, setContextPct] = useState<number>(38);
-  const [remainingCredits, setRemainingCredits] = useState<number>(10000);
+  const [contextPct, setContextPct] = useState<number>(() => (isMockDataEnabled() ? 38 : 0));
+  const [remainingCredits, setRemainingCredits] = useState<number>(() =>
+    isMockDataEnabled() ? 10000 : 0
+  );
 
   // Estados del Split-View Canvas
   const [isCanvasOpen, setIsCanvasOpen] = useState(true);
   const [activeArtifact, setActiveArtifact] = useState<CanvasArtifact | null>(
-    messages[0]?.canvasArtifact ?? null
+    () => (isMockDataEnabled() ? (INITIAL_DEMO_MESSAGES[0]?.canvasArtifact ?? null) : null)
   );
   const [canvasFilter, setCanvasFilter] = useState("");
   const [isCanvasFullscreen, setIsCanvasFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      const enabled = isMockDataEnabled();
+      setThreads(enabled ? DEFAULT_THREADS : []);
+      setActiveThreadId(enabled ? "th-1" : "");
+      setMessages(enabled ? INITIAL_DEMO_MESSAGES : []);
+      setContextPct(enabled ? 38 : 0);
+      setRemainingCredits(enabled ? 10000 : 0);
+      setActiveArtifact(enabled ? (INITIAL_DEMO_MESSAGES[0]?.canvasArtifact ?? null) : null);
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, []);
 
   const contextHealth = calculateContextHealth(contextPct);
 

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, type ChangeEvent } from "react";
 import { Store, Upload, Check, Eye, Code, Bold, Italic, List, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "@/shared/api/httpClient";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { getImageUrl } from "@/shared/lib";
 import { translateKey, useLanguage } from "@/shared/i18n";
 
@@ -43,15 +44,19 @@ export interface RestauranteConfigProps {
 
 export function RestauranteConfig({ initialSettings, onUpdate }: RestauranteConfigProps) {
   useLanguage();
-  const [nombre, setNombre] = useState(initialSettings?.nombre || DEFAULT_SETTINGS.nombre);
+  const [nombre, setNombre] = useState(
+    initialSettings?.nombre ?? (isMockDataEnabled() ? DEFAULT_SETTINGS.nombre : "")
+  );
   const [tipoNegocio, setTipoNegocio] = useState(
     initialSettings?.tipo_negocio || DEFAULT_SETTINGS.tipo_negocio || "Restaurante"
   );
   const [correoRespuestas, setCorreoRespuestas] = useState(
-    initialSettings?.correo_respuestas || DEFAULT_SETTINGS.correo_respuestas || ""
+    initialSettings?.correo_respuestas ??
+      (isMockDataEnabled() ? DEFAULT_SETTINGS.correo_respuestas || "" : "")
   );
   const [firmaEmail, setFirmaEmail] = useState(
-    initialSettings?.firma_email_html || DEFAULT_SETTINGS.firma_email_html || ""
+    initialSettings?.firma_email_html ??
+      (isMockDataEnabled() ? DEFAULT_SETTINGS.firma_email_html || "" : "")
   );
   const [diasAlerta, setDiasAlerta] = useState(
     initialSettings?.dias_alerta_vencimiento || DEFAULT_SETTINGS.dias_alerta_vencimiento || 5
@@ -62,6 +67,18 @@ export function RestauranteConfig({ initialSettings, onUpdate }: RestauranteConf
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const firmaTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      if (initialSettings) return;
+      const enabled = isMockDataEnabled();
+      setNombre(enabled ? DEFAULT_SETTINGS.nombre : "");
+      setCorreoRespuestas(enabled ? DEFAULT_SETTINGS.correo_respuestas || "" : "");
+      setFirmaEmail(enabled ? DEFAULT_SETTINGS.firma_email_html || "" : "");
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, [initialSettings]);
 
   useEffect(() => {
     if (initialSettings) {

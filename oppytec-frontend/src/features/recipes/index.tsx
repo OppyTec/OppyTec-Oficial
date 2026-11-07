@@ -6,11 +6,13 @@ import {
   parseScaledDecimal,
 } from "@/shared/currency";
 import { translateKey } from "@/shared/i18n";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 export function RecipesFeatureView() {
+  const { isDemo } = useMockDataMode();
   const [yieldPct, setYieldPct] = useState<string>("85.00");
   const [targetSalePriceClp, setTargetSalePriceClp] = useState<string>("12900");
-  const baseRecipeCostClp = "3870";
+  const baseRecipeCostClp = isDemo ? "3870" : "0";
 
   // Exact BigInt margin calculation
   const saleScaled = parseScaledDecimal(targetSalePriceClp || "12900");
@@ -48,22 +50,26 @@ export function RecipesFeatureView() {
           className="space-y-2 rounded-xl border border-border bg-secondary/20 p-3"
         >
           <h3 className="text-xs font-bold uppercase text-muted-foreground">
-            {translateKey("recipes", "bom.ingredients_header", { count: 4 })}
+            {translateKey("recipes", "bom.ingredients_header", { count: isDemo ? 4 : 0 })}
           </h3>
-          <ul className="space-y-1.5 text-xs">
-            <li className="flex items-center justify-between rounded-md bg-card p-2">
-              <span>L1: Pollo King Marinado (Receta Padre)</span>
-              <MoneyBadge amount="2150" baseCurrency="CLP" showSource={false} />
-            </li>
-            <li className="flex items-center justify-between rounded-md bg-card p-2">
-              <span>L2: Salsa Reducción Austral (Sub-Receta)</span>
-              <MoneyBadge amount="1120" baseCurrency="CLP" showSource={false} />
-            </li>
-            <li className="flex items-center justify-between rounded-md bg-card p-2">
-              <span>L3: Fondo Oscuro Concentrado (Base)</span>
-              <MoneyBadge amount="600" baseCurrency="CLP" showSource={false} />
-            </li>
-          </ul>
+          {isDemo ? (
+            <ul className="space-y-1.5 text-xs">
+              <li className="flex items-center justify-between rounded-md bg-card p-2">
+                <span>L1: Pollo King Marinado (Receta Padre)</span>
+                <MoneyBadge amount="2150" baseCurrency="CLP" showSource={false} />
+              </li>
+              <li className="flex items-center justify-between rounded-md bg-card p-2">
+                <span>L2: Salsa Reducción Austral (Sub-Receta)</span>
+                <MoneyBadge amount="1120" baseCurrency="CLP" showSource={false} />
+              </li>
+              <li className="flex items-center justify-between rounded-md bg-card p-2">
+                <span>L3: Fondo Oscuro Concentrado (Base)</span>
+                <MoneyBadge amount="600" baseCurrency="CLP" showSource={false} />
+              </li>
+            </ul>
+          ) : (
+            <p className="text-xs text-muted-foreground py-2">Sin ingredientes registrados.</p>
+          )}
         </div>
 
         <div

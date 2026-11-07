@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type { WorkerStation, VoiceOrderLog } from "../types";
 import { MOCK_VOICE_STATIONS, MOCK_VOICE_ORDERS } from "../mockData";
 
@@ -193,12 +194,34 @@ export function useManosLibres(options?: UseManosLibresOptions) {
   const queryClient = useQueryClient();
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
 
   const [isListening, setIsListening] = useState<boolean>(false);
   const [transcript, setTranscript] = useState<string>("");
   const [interimTranscript, setInterimTranscript] = useState<string>("");
   const [selectedStationId, setSelectedStationId] = useState<number | null>(null);
-  const [pendingOrders, setPendingOrders] = useState<VoiceOrderLog[]>(MOCK_VOICE_ORDERS);
+  const [pendingOrders, setPendingOrders] = useState<VoiceOrderLog[]>(() =>
+    isMockDataEnabled() ? MOCK_VOICE_ORDERS : []
+  );
+
+  useEffect(() => {
+    setPendingOrders(isDemo ? MOCK_VOICE_ORDERS : []);
+  }, [isDemo]);
+
+  useEffect(() => {
+    const handleModeChange = () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.operations.voice.stations(
+          tenantId,
+          options?.areaOperativaId
+        ),
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    return () => {
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    };
+  }, [queryClient, tenantId, options?.areaOperativaId]);
 
   const recognitionRef = useRef<any>(null);
 
@@ -223,7 +246,7 @@ export function useManosLibres(options?: UseManosLibresOptions) {
   }, [realtimeEvents, queryClient, tenantId]);
 
   // Cargar estaciones de voz
-  const { data: stations = MOCK_VOICE_STATIONS, isLoading: isLoadingStations } =
+  const { data: rawStations, isLoading: isLoadingStations } =
     useQuery<WorkerStation[]>({
       queryKey: queryKeys.operations.voice.stations(
         tenantId,
@@ -234,11 +257,12 @@ export function useManosLibres(options?: UseManosLibresOptions) {
           ? `/api/v1/operations/voice/stations?area_operativa_id=${options.areaOperativaId}`
           : "/api/v1/operations/voice/stations";
         const res = await apiRequest<WorkerStation[]>(url, {
-          fallbackData: MOCK_VOICE_STATIONS,
+          fallbackData: isMockDataEnabled() ? MOCK_VOICE_STATIONS : [],
         });
         return res.data;
       },
     });
+  const stations = rawStations ?? (isDemo ? MOCK_VOICE_STATIONS : []);
 
   // Mutación: Registrar orden de voz
   const registerOrderMutation = useMutation({

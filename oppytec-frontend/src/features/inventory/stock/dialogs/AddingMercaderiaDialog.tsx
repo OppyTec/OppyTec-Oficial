@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { ResponsiveDialog } from "@/shared/components/ui/ResponsiveDialog";
 import { cn } from "@/shared/lib";
 import { useCurrencyFormatter } from "@/shared/currency";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type { StockItem, MovementPayload } from "../../types";
 
 export interface AddingMercaderiaDialogProps {
@@ -74,6 +75,7 @@ export function AddingMercaderiaDialog({
 }: AddingMercaderiaDialogProps) {
   const { t } = useTranslation("inventory");
   const { convertAndFormat } = useCurrencyFormatter();
+  const { isDemo } = useMockDataMode();
   const [activeTab, setActiveTab] = useState<"pedidos" | "libre">("pedidos");
 
   // Estados de Ingreso Libre
@@ -99,15 +101,16 @@ export function AddingMercaderiaDialog({
   }, [availableInWarehouse, stockItems, productoId]);
 
   const filteredPurchases = useMemo(() => {
-    if (!searchPurchase.trim()) return MOCK_PURCHASES;
+    const source = isDemo ? MOCK_PURCHASES : [];
+    if (!searchPurchase.trim()) return source;
     const q = searchPurchase.toLowerCase().trim();
-    return MOCK_PURCHASES.filter(
+    return source.filter(
       (p) =>
         p.proveedor.toLowerCase().includes(q) ||
         p.numero_pedido.toLowerCase().includes(q) ||
         p.bodega_nombre.toLowerCase().includes(q)
     );
-  }, [searchPurchase]);
+  }, [searchPurchase, isDemo]);
 
   // Handler de ingreso libre directo
   const handleConfirmLibre = async () => {

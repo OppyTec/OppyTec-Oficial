@@ -8,8 +8,9 @@
  * - Persistencia local segura de borradores e historial de hilos
  */
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { apiRequest } from "@/shared/api/httpClient";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import type {
   ChatMessage,
   CanvasArtifact,
@@ -78,27 +79,54 @@ export function useOppyfyChat(options?: UseOppyfyChatOptions) {
 
   const [currentThreadId, setCurrentThreadId] = useState<string>(initialThreadId);
   const [remainingCredits, setRemainingCredits] = useState<number>(
-    options?.initialRemainingCredits ?? 100
+    options?.initialRemainingCredits ?? (isMockDataEnabled() ? 100 : 0)
   );
   const [contextHealth, setContextHealth] = useState<ContextHealthState>(() =>
     calculateContextHealth(options?.initialContextPct ?? 0)
   );
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
-    safeGetStorage<ChatMessage[]>(
-      `${STORAGE_PREFIX}_messages_${initialThreadId}`,
-      []
-    )
+    isMockDataEnabled()
+      ? safeGetStorage<ChatMessage[]>(
+          `${STORAGE_PREFIX}_messages_${initialThreadId}`,
+          []
+        )
+      : []
   );
   const [threads, setThreads] = useState<ThreadMetadata[]>(() =>
-    safeGetStorage<ThreadMetadata[]>(`${STORAGE_PREFIX}_threads`, [
-      {
-        threadId: initialThreadId,
-        title: "Nuevo Hilo OppyFy",
-        updatedAt: new Date().toISOString(),
-        lastContextPct: options?.initialContextPct ?? 0,
-      },
-    ])
+    isMockDataEnabled()
+      ? safeGetStorage<ThreadMetadata[]>(`${STORAGE_PREFIX}_threads`, [
+          {
+            threadId: initialThreadId,
+            title: "Nuevo Hilo OppyFy",
+            updatedAt: new Date().toISOString(),
+            lastContextPct: options?.initialContextPct ?? 0,
+          },
+        ])
+      : []
   );
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      const enabled = isMockDataEnabled();
+      if (!enabled) {
+        setMessages([]);
+        setThreads([]);
+        setRemainingCredits(options?.initialRemainingCredits ?? 0);
+      } else {
+        setThreads([
+          {
+            threadId: initialThreadId,
+            title: "Nuevo Hilo OppyFy",
+            updatedAt: new Date().toISOString(),
+            lastContextPct: options?.initialContextPct ?? 0,
+          },
+        ]);
+        setRemainingCredits(options?.initialRemainingCredits ?? 100);
+      }
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, [initialThreadId, options?.initialContextPct, options?.initialRemainingCredits]);
   const [draftPrompt, setDraftPromptState] = useState<string>(() =>
     safeGetStorage<string>(`${STORAGE_PREFIX}_draft_${initialThreadId}`, "")
   );

@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/shared/auth/usePermissions";
 import { Can } from "@/shared/auth/Can";
 import { apiRequest } from "@/shared/api/httpClient";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { cn, getImageUrl } from "@/shared/lib";
 import { SectionHeader } from "@/shared/components/ui/SectionHeader";
 import { CategoryIcon } from "@/shared/components/ui/CategoryIcon";
@@ -145,42 +146,52 @@ export function ProfilePage() {
 
   // Cargar plantillas desde localStorage con fallbacks seguros
   const loadPresets = () => {
+    const enabled = isMockDataEnabled();
+    const fallbackTable = enabled ? INITIAL_TABLE_PRESETS : [];
+    const fallbackConsumo = enabled ? INITIAL_CONSUMO_PRESETS : [];
     try {
       const savedTable = localStorage.getItem(TABLE_PRESETS_STORAGE_KEY);
-      if (savedTable) {
+      if (savedTable && enabled) {
         const parsed = JSON.parse(savedTable);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setSavedPresets(parsed);
         } else {
-          setSavedPresets(INITIAL_TABLE_PRESETS);
-          localStorage.setItem(TABLE_PRESETS_STORAGE_KEY, JSON.stringify(INITIAL_TABLE_PRESETS));
+          setSavedPresets(fallbackTable);
         }
       } else {
-        setSavedPresets(INITIAL_TABLE_PRESETS);
-        localStorage.setItem(TABLE_PRESETS_STORAGE_KEY, JSON.stringify(INITIAL_TABLE_PRESETS));
+        setSavedPresets(fallbackTable);
+        if (enabled) {
+          localStorage.setItem(TABLE_PRESETS_STORAGE_KEY, JSON.stringify(INITIAL_TABLE_PRESETS));
+        }
       }
 
       const savedConsumo = localStorage.getItem(CONSUMO_PRESETS_STORAGE_KEY);
-      if (savedConsumo) {
+      if (savedConsumo && enabled) {
         const parsed = JSON.parse(savedConsumo);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setSavedConsumoPresets(parsed);
         } else {
-          setSavedConsumoPresets(INITIAL_CONSUMO_PRESETS);
-          localStorage.setItem(CONSUMO_PRESETS_STORAGE_KEY, JSON.stringify(INITIAL_CONSUMO_PRESETS));
+          setSavedConsumoPresets(fallbackConsumo);
         }
       } else {
-        setSavedConsumoPresets(INITIAL_CONSUMO_PRESETS);
-        localStorage.setItem(CONSUMO_PRESETS_STORAGE_KEY, JSON.stringify(INITIAL_CONSUMO_PRESETS));
+        setSavedConsumoPresets(fallbackConsumo);
+        if (enabled) {
+          localStorage.setItem(CONSUMO_PRESETS_STORAGE_KEY, JSON.stringify(INITIAL_CONSUMO_PRESETS));
+        }
       }
     } catch {
-      setSavedPresets(INITIAL_TABLE_PRESETS);
-      setSavedConsumoPresets(INITIAL_CONSUMO_PRESETS);
+      setSavedPresets(fallbackTable);
+      setSavedConsumoPresets(fallbackConsumo);
     }
   };
 
   useEffect(() => {
     loadPresets();
+    const handleMockModeChange = () => {
+      loadPresets();
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
   }, []);
 
   // Sincronizar estado con datos de usuario

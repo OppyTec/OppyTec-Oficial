@@ -29,6 +29,7 @@ import { AreaSelector, OFFICIAL_AREAS } from "@/shared/components/layout/AreaSel
 import { useAuth } from "@/shared/auth/usePermissions";
 import { Can } from "@/shared/auth/Can";
 import { apiRequest } from "@/shared/api/httpClient";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { cn, getImageUrl } from "@/shared/lib";
 import { useIsMobile } from "@/shared/hooks/useIsMobile";
 
@@ -194,7 +195,9 @@ export function UsuariosPage() {
   const isMobile = useIsMobile();
 
   const [activeTab, setActiveTab] = useState<"usuarios" | "cargos" | "roles">("usuarios");
-  const [users, setUsers] = useState<UserListItem[]>(INITIAL_MOCK_USERS);
+  const [users, setUsers] = useState<UserListItem[]>(() =>
+    isMockDataEnabled() ? INITIAL_MOCK_USERS : []
+  );
   const [loading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAreaFilter, setSelectedAreaFilter] = useState("all");
@@ -235,20 +238,28 @@ export function UsuariosPage() {
   useEffect(() => {
     let isSubscribed = true;
     async function loadData() {
+      const fallback = isMockDataEnabled() ? INITIAL_MOCK_USERS : [];
       try {
         const response = await apiRequest<UserListItem[]>("/user/all", {
-          fallbackData: INITIAL_MOCK_USERS,
+          fallbackData: fallback,
         });
-        if (isSubscribed && response?.data && response.data.length > 0) {
+        if (isSubscribed && response?.data) {
           setUsers(response.data);
         }
       } catch {
-        // Safe fallback preserved
+        if (isSubscribed) {
+          setUsers(fallback);
+        }
       }
     }
     loadData();
+    const handleMockModeChange = () => {
+      void loadData();
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
     return () => {
       isSubscribed = false;
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
     };
   }, []);
 

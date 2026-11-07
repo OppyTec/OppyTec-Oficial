@@ -19,6 +19,7 @@ import { MessageSquare, Layout, Sparkles, ShieldCheck } from "lucide-react";
 import { translateKey } from "@/shared/i18n";
 import { Can } from "@/shared/auth/Can";
 import { usePermissions } from "@/shared/auth/usePermissions";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import type { CanvasArtifact, ChatMessage } from "./types";
 import {
   useOppyfyChat,
@@ -128,9 +129,17 @@ export function OppyFyFeatureView({
   // 3. Estados locales de UI
   const [isRolloverModalOpen, setIsRolloverModalOpen] = useState<boolean>(false);
   const [mobileView, setMobileView] = useState<"chat" | "canvas">("chat");
-  const [domains, setDomains] = useState<readonly OppyFyRbacDomainConfig[]>(
-    DEFAULT_RBAC_DOMAINS
+  const [domains, setDomains] = useState<readonly OppyFyRbacDomainConfig[]>(() =>
+    isMockDataEnabled() ? DEFAULT_RBAC_DOMAINS : []
   );
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      setDomains(isMockDataEnabled() ? DEFAULT_RBAC_DOMAINS : []);
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, []);
 
   // Inicializar artefacto si se recibe por props
   useEffect(() => {

@@ -24,7 +24,7 @@ import uuid
 from decimal import Decimal
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Response, status
 
 from src.adapters.ai.gemini_adapter import MeteredGeminiAdapter
 from src.adapters.ai.jev_adapter import InMemoryTelemetrySink, MeteredJevAdapter
@@ -433,8 +433,19 @@ async def list_oppyfy_rbac_domains_endpoint(
         AuthenticatedPrincipal,
         Depends(RequireTenantPermission("oppyfy.rbac_domains.read")),
     ],
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> list[OppyfyDomainTreeResponse]:
     """Devuelve el árbol jerárquico de dominios y sub-dominios editables de `OppyFy`."""
+    from src.core.mock_data_manager import is_clean_slate_active
+
+    is_clean = is_clean_slate_active() or (
+        x_oppytec_mock_mode is not None
+        and x_oppytec_mock_mode.strip().lower() == "clean"
+    )
+    if is_clean:
+        return []
     return list(_domain_tree_store)
 
 
@@ -545,17 +556,34 @@ async def get_my_oppyfy_wallet_endpoint(
         AuthenticatedPrincipal,
         Depends(RequireTenantPermission("oppyfy.credits.read")),
     ],
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> OppyfyWalletResponse:
     """Consulta la billetera de créditos sin caducidad del trabajador autenticado."""
-    wallet = _worker_wallets_store.get(
-        principal.user_id,
+    from src.core.mock_data_manager import is_clean_slate_active
+
+    is_clean = is_clean_slate_active() or (
+        x_oppytec_mock_mode is not None
+        and x_oppytec_mock_mode.strip().lower() == "clean"
+    )
+
+    fallback_wallet = (
         WorkerCreditWalletState(
+            user_id=principal.user_id,
+            allocated_credits=Decimal("0.00"),
+            consumed_credits=Decimal("0.00"),
+            is_oppyfy_enabled=False,
+        )
+        if is_clean
+        else WorkerCreditWalletState(
             user_id=principal.user_id,
             allocated_credits=Decimal("100.00"),
             consumed_credits=Decimal("12.50"),
             is_oppyfy_enabled=True,
-        ),
+        )
     )
+    wallet = _worker_wallets_store.get(principal.user_id, fallback_wallet)
     return OppyfyWalletResponse(
         user_id=wallet.user_id,
         is_oppyfy_enabled=wallet.is_oppyfy_enabled,
@@ -575,9 +603,14 @@ async def get_oppyfy_credit_wallet_endpoint(
         AuthenticatedPrincipal,
         Depends(RequireTenantPermission("oppyfy.credits.read")),
     ],
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> OppyfyWalletResponse:
     """Alias retrocompatible para consultar la billetera de créditos."""
-    return await get_my_oppyfy_wallet_endpoint(principal)
+    return await get_my_oppyfy_wallet_endpoint(
+        principal, x_oppytec_mock_mode=x_oppytec_mock_mode
+    )
 
 
 @router.patch(
@@ -646,8 +679,19 @@ async def list_ai_credit_packs_endpoint(
         Depends(RequireGlobalPermission("platform_admin.ai_packs.read")),
     ],
     is_active_only: bool = Query(default=False),
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> list[AiCreditPackResponse]:
     """Lista todos los paquetes de créditos IA independientes para Add-On."""
+    from src.core.mock_data_manager import is_clean_slate_active
+
+    is_clean = is_clean_slate_active() or (
+        x_oppytec_mock_mode is not None
+        and x_oppytec_mock_mode.strip().lower() == "clean"
+    )
+    if is_clean:
+        return []
     packs = _ai_credit_packs_service.list_packs(is_active_only=is_active_only)
     return [
         AiCreditPackResponse(
@@ -744,8 +788,19 @@ async def list_oppyfy_telemetry_logs_endpoint(
         AuthenticatedPrincipal,
         Depends(RequireGlobalPermission("oppyfy.telemetry.read")),
     ],
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> list[OppyfyTelemetryLogItemResponse]:
     """Lista la bitácora global de consumo de tokens y costos (`public.llm_request_logs`)."""
+    from src.core.mock_data_manager import is_clean_slate_active
+
+    is_clean = is_clean_slate_active() or (
+        x_oppytec_mock_mode is not None
+        and x_oppytec_mock_mode.strip().lower() == "clean"
+    )
+    if is_clean:
+        return []
     logs = _metered_ai_service.emitted_usage_records
     return [
         OppyfyTelemetryLogItemResponse(

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Plus,
   Pencil,
@@ -68,6 +68,7 @@ import {
 import { toast } from "sonner";
 import { BodegaBadge } from "@/shared/components/layout/BodegaBadge";
 import { ResponsiveDialog } from "@/shared/components/ui/ResponsiveDialog";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { cn } from "@/shared/lib";
 import { translateKey, useLanguage } from "@/shared/i18n";
 
@@ -213,8 +214,18 @@ const INITIAL_BODEGAS: BodegaItem[] = [
 
 export function BodegasConfig() {
   useLanguage();
-  const [bodegas, setBodegas] = useState<BodegaItem[]>(INITIAL_BODEGAS);
+  const [bodegas, setBodegas] = useState<BodegaItem[]>(() =>
+    isMockDataEnabled() ? INITIAL_BODEGAS : []
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      setBodegas(isMockDataEnabled() ? INITIAL_BODEGAS : []);
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, []);
   const [editingBodega, setEditingBodega] = useState<BodegaItem | null>(null);
   const [deleteBodegaId, setDeleteBodegaId] = useState<string | null>(null);
 

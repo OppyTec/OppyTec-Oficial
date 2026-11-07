@@ -4,8 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type { AlertBadge } from "../types";
-import { MOCK_ALERTS_BADGE } from "../mockData";
+import { MOCK_ALERTS_BADGE, MOCK_ALERTS_BADGE_EMPTY } from "../mockData";
 
 export interface UseAlertBadgeOptions {
   readonly bodegaIds?: readonly number[] | number | string | "all";
@@ -29,6 +30,7 @@ export function useAlertBadge(options?: UseAlertBadgeOptions): UseAlertBadgeRetu
   const context = getHttpRequestContext();
   const holdingId = context.holdingId || "holding-gastro-sur";
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
 
   // Normalize bodega IDs filter
   const effectiveBodegaIds = useMemo<readonly number[]>(() => {
@@ -100,13 +102,34 @@ export function useAlertBadge(options?: UseAlertBadgeOptions): UseAlertBadgeRetu
 
       const res = await apiRequest<AlertBadge>(endpoint, {
         method: "GET",
-        fallbackData: MOCK_ALERTS_BADGE,
+        fallbackData: isMockDataEnabled() ? MOCK_ALERTS_BADGE : MOCK_ALERTS_BADGE_EMPTY,
       });
 
       return res.data;
     },
     staleTime: 60_000,
   });
+
+  useEffect(() => {
+    const handleModeChange = () => {
+      if (!isMockDataEnabled() && typeof window !== "undefined" && window.localStorage) {
+        try {
+          window.localStorage.setItem("notif_total_count", "0");
+          window.localStorage.setItem("notif_has_critical", "false");
+          setLocalCounts({ totalCount: 0, hasCritical: false });
+        } catch {
+          // safe
+        }
+      }
+      void queryClient.invalidateQueries({
+        queryKey: ["oppytec", "inventory", "alerts", "badge"],
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    return () => {
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    };
+  }, [queryClient]);
 
   // Local storage state fallback for zero latency and cross-tab/Sidebar synchronization
   const [localCounts, setLocalCounts] = useState<{
@@ -190,8 +213,8 @@ export function useAlertBadge(options?: UseAlertBadgeOptions): UseAlertBadgeRetu
     }
   }, [realtimeEvents, queryClient]);
 
-  const totalCount = badgeData?.total_count ?? localCounts.totalCount;
-  const hasCritical = badgeData?.has_critical ?? localCounts.hasCritical;
+  const totalCount = isDemo ? (badgeData?.total_count ?? localCounts.totalCount) : (badgeData?.total_count ?? 0);
+  const hasCritical = isDemo ? (badgeData?.has_critical ?? localCounts.hasCritical) : (badgeData?.has_critical ?? false);
   const criticalCount = badgeData?.critical_stock_count ?? 0;
   const expiredCount = badgeData?.expired_count ?? 0;
   const upcomingCount = badgeData?.upcoming_count ?? 0;

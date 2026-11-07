@@ -11,6 +11,7 @@ import {
   resolveDynamicFieldI18n,
   translateKey,
 } from "@/shared/i18n";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { convertThreeLayerQuantity } from "@/shared/lib";
 
 interface CatalogItemRecord {
@@ -66,6 +67,8 @@ export function CatalogFeatureView() {
   const [wizardStep, setWizardStep] = useState<number>(0);
   const [importerStage, setImporterStage] = useState<number>(0);
   const lang = getActiveLanguage();
+  const { isDemo } = useMockDataMode();
+  const visibleProducts = isDemo ? CATALOG_PRODUCTS : [];
 
   const convertedRecipeGrams = convertThreeLayerQuantity("2", "purchase", "recipe", {
     code: "CAJA-KG-GR",
@@ -111,22 +114,22 @@ export function CatalogFeatureView() {
         <QuotaProgressIndicator
           resourceKey="products"
           label="Cupo de Productos (Plan Básico)"
-          activeCount={CATALOG_PRODUCTS.length}
+          activeCount={visibleProducts.length}
           maxLimit={500}
-          softDeletedCount={1}
+          softDeletedCount={isDemo ? 1 : 0}
           testId="catalog-quota-products"
         />
         <QuotaProgressIndicator
           resourceKey="suppliers"
           label="Cupo de Proveedores"
-          activeCount={17}
+          activeCount={isDemo ? 17 : 0}
           maxLimit={20}
           testId="catalog-quota-suppliers"
         />
         <QuotaProgressIndicator
           resourceKey="storage_mb"
           label="Almacenamiento R2 (Fotos WebP & Facturas PDF)"
-          activeCount={342}
+          activeCount={isDemo ? 342 : 0}
           maxLimit={512}
           unitSuffix="MB"
           testId="catalog-quota-storage"
@@ -192,7 +195,7 @@ export function CatalogFeatureView() {
 
       {/* Lista de Productos con Preservación de Nombre Propio ("Pollo King") */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {CATALOG_PRODUCTS.map((item) => {
+        {visibleProducts.map((item) => {
           const displayName = resolveDynamicFieldI18n(item, lang);
           return (
             <div

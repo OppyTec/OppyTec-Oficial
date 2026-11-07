@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { apiRequest } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import {
   MOCK_AI_CREDIT_PACKS,
@@ -27,6 +28,8 @@ export interface UseAiCreditPacksReturn {
 export function useAiCreditPacks(options?: UseAiCreditPacksOptions): UseAiCreditPacksReturn {
   const queryClient = useQueryClient();
   const isActiveOnly = options?.isActiveOnly ?? false;
+  const { isDemo } = useMockDataMode();
+  const defaultPacks = isDemo ? MOCK_AI_CREDIT_PACKS : [];
 
   // Realtime Sync vía WebSocket Push (Zero-Polling)
   let realtimeEvents: ReturnType<typeof useRealtimeSync>["authorizedEvents"] = [];
@@ -64,27 +67,30 @@ export function useAiCreditPacks(options?: UseAiCreditPacksOptions): UseAiCredit
       });
     };
     window.addEventListener("admin_ai_packs_changed", handleSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     return () => {
       window.removeEventListener("admin_ai_packs_changed", handleSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     };
   }, [queryClient]);
 
   // Query de paquetes de créditos IA
   const {
-    data: packs = MOCK_AI_CREDIT_PACKS,
+    data: packs = defaultPacks,
     isLoading,
     isError,
     error,
     refetch,
   } = useQuery<readonly AiCreditPackItem[]>({
-    queryKey: queryKeys.platformAdmin.aiPacks(isActiveOnly),
+    queryKey: [...queryKeys.platformAdmin.aiPacks(isActiveOnly), isDemo ? "demo" : "clean"],
     queryFn: async () => {
       const url = isActiveOnly
         ? "/api/v1/platform-admin/ai-packs?is_active_only=true"
         : "/api/v1/platform-admin/ai-packs";
+      const fallback = isMockDataEnabled() ? MOCK_AI_CREDIT_PACKS : [];
       const res = await apiRequest<readonly AiCreditPackItem[]>(url, {
         method: "GET",
-        fallbackData: MOCK_AI_CREDIT_PACKS,
+        fallbackData: fallback,
       });
       return res.data;
     },

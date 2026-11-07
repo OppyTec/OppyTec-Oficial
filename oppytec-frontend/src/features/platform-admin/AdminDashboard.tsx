@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest, setHttpRequestContext } from "@/shared/api/httpClient";
 import { translateKey } from "@/shared/i18n";
+import { isMockDataEnabled, useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 export interface DashboardCounts {
   readonly holdings: number;
@@ -69,25 +70,37 @@ function useSafeNavigate(): (path: string) => void {
 
 export function AdminDashboard() {
   const navigate = useSafeNavigate();
-  const [counts, setCounts] = useState<DashboardCounts>({
-    holdings: 1,
-    legalEntities: 1,
-    tenants: 2,
+  const { isDemo } = useMockDataMode();
+  const [counts, setCounts] = useState<DashboardCounts>(() => ({
+    holdings: isMockDataEnabled() ? 1 : 0,
+    legalEntities: isMockDataEnabled() ? 1 : 0,
+    tenants: isMockDataEnabled() ? 2 : 0,
     users: 1, // SuperUser Génesis inicial
-  });
-  const [tenants, setTenants] = useState<readonly QuickTenantItem[]>(FALLBACK_DASHBOARD_TENANTS);
+  }));
+  const [tenants, setTenants] = useState<readonly QuickTenantItem[]>(() =>
+    isMockDataEnabled() ? FALLBACK_DASHBOARD_TENANTS : []
+  );
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [impersonatedNotice, setImpersonatedNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
+    const demoActive = isMockDataEnabled();
+    setCounts({
+      holdings: demoActive ? 1 : 0,
+      legalEntities: demoActive ? 1 : 0,
+      tenants: demoActive ? 2 : 0,
+      users: 1,
+    });
+    setTenants(demoActive ? FALLBACK_DASHBOARD_TENANTS : []);
+
     apiRequest<SummaryApiResponse>("/tenancy/dashboard/summary")
       .then((res) => {
         if (isMounted && res.data) {
           setCounts({
-            holdings: Number(res.data.holdings ?? 1),
-            legalEntities: Number(res.data.legal_entities ?? 1),
-            tenants: Number(res.data.tenants ?? 2),
+            holdings: Number(res.data.holdings ?? (demoActive ? 1 : 0)),
+            legalEntities: Number(res.data.legal_entities ?? (demoActive ? 1 : 0)),
+            tenants: Number(res.data.tenants ?? (demoActive ? 2 : 0)),
             users: Number(res.data.users ?? 1),
           });
         }
@@ -95,10 +108,10 @@ export function AdminDashboard() {
       .catch(() => undefined);
 
     apiRequest<QuickTenantItem[]>("/tenancy/tenants", {
-      fallbackData: [...FALLBACK_DASHBOARD_TENANTS],
+      fallbackData: demoActive ? [...FALLBACK_DASHBOARD_TENANTS] : [],
     })
       .then((res) => {
-        if (isMounted && Array.isArray(res.data) && res.data.length > 0) {
+        if (isMounted && Array.isArray(res.data)) {
           setTenants(res.data);
         }
       })
@@ -107,7 +120,7 @@ export function AdminDashboard() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isDemo]);
 
   const handleImpersonate = async (tenant: QuickTenantItem) => {
     const res = await apiRequest<{

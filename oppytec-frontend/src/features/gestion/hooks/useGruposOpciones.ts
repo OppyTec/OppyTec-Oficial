@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type {
   GrupoOpciones,
   OptionGroupCreateInput,
@@ -179,6 +180,7 @@ export function useGruposOpciones(options?: UseGruposOpcionesOptions) {
   const queryClient = useQueryClient();
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
 
   const [search, setSearch] = useState<string>(options?.searchQuery ?? "");
 
@@ -207,7 +209,7 @@ export function useGruposOpciones(options?: UseGruposOpcionesOptions) {
     queryFn: async () => {
       const response = await apiRequest<GrupoOpciones[]>("/api/v1/recipes/option-groups", {
         method: "GET",
-        fallbackData: INITIAL_GRUPOS_OPCIONES_MOCK,
+        fallbackData: isMockDataEnabled() ? INITIAL_GRUPOS_OPCIONES_MOCK : [],
       });
       return response.data;
     },
@@ -237,14 +239,21 @@ export function useGruposOpciones(options?: UseGruposOpcionesOptions) {
       });
     };
     window.addEventListener("recipes_options_updated", handleLocalSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     return () => {
       window.removeEventListener("recipes_options_updated", handleLocalSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     };
   }, [queryClient, tenantId]);
 
   const gruposOpciones = useMemo(
-    () => (Array.isArray(rawGrupos) ? rawGrupos : INITIAL_GRUPOS_OPCIONES_MOCK),
-    [rawGrupos]
+    () =>
+      Array.isArray(rawGrupos)
+        ? rawGrupos
+        : isDemo
+        ? INITIAL_GRUPOS_OPCIONES_MOCK
+        : [],
+    [rawGrupos, isDemo]
   );
 
   // Filtrado reactivo en memoria para autocompletado y buscadores

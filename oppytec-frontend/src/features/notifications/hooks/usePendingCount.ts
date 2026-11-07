@@ -2,8 +2,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import { MOCK_PENDING_COUNTS, type PendingCounts } from "../types";
+
+const CLEAN_PENDING_COUNTS: PendingCounts = {
+  total: 0,
+  operaciones: 0,
+  inventario: 0,
+  compras: 0,
+  equipo: 0,
+  by_area: {},
+};
 
 export interface UsePendingCountOptions {
   readonly areaId?: string | number | null;
@@ -40,6 +50,7 @@ export function usePendingCount(
   const queryClient = useQueryClient();
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "default";
+  const { isDemo } = useMockDataMode();
 
   const { areaId = "all", enabled = true } = options;
 
@@ -82,8 +93,10 @@ export function usePendingCount(
       });
     };
     window.addEventListener("approvals_changed", handleSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     return () => {
       window.removeEventListener("approvals_changed", handleSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     };
   }, [queryClient]);
 
@@ -107,13 +120,17 @@ export function usePendingCount(
         const qs = params.toString();
         const endpoint = `/api/v1/operations/solicitudes/pending-count${qs ? `?${qs}` : ""}`;
 
+        const activeMockCounts = isMockDataEnabled()
+          ? MOCK_PENDING_COUNTS
+          : CLEAN_PENDING_COUNTS;
+
         const fallbackPayload: RawPendingCountResponse = {
-          total_pending: MOCK_PENDING_COUNTS.total,
+          total_pending: activeMockCounts.total,
           by_category: {
-            operaciones: MOCK_PENDING_COUNTS.operaciones,
-            inventario: MOCK_PENDING_COUNTS.inventario,
-            compras: MOCK_PENDING_COUNTS.compras,
-            equipo: MOCK_PENDING_COUNTS.equipo,
+            operaciones: activeMockCounts.operaciones,
+            inventario: activeMockCounts.inventario,
+            compras: activeMockCounts.compras,
+            equipo: activeMockCounts.equipo,
           },
           area_id: areaIdParam ?? null,
         };
@@ -130,14 +147,14 @@ export function usePendingCount(
           inventario: raw.by_category?.inventario ?? 0,
           compras: raw.by_category?.compras ?? 0,
           equipo: raw.by_category?.equipo ?? 0,
-          by_area: MOCK_PENDING_COUNTS.by_area,
+          by_area: activeMockCounts.by_area,
         };
       },
       staleTime: 15_000,
       enabled,
     });
 
-  const counts = data ?? MOCK_PENDING_COUNTS;
+  const counts = data ?? (isDemo ? MOCK_PENDING_COUNTS : CLEAN_PENDING_COUNTS);
 
   return {
     counts,

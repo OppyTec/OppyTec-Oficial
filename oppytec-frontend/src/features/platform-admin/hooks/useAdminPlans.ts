@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { apiRequest } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import {
   MOCK_SYSTEM_PLANS,
@@ -28,8 +29,15 @@ export interface UseAdminPlansReturn {
   readonly moduleCatalog: readonly SystemModuleCatalogItem[];
 }
 
+const CLEAN_SYSTEM_PLANS: readonly SystemPlan[] = MOCK_SYSTEM_PLANS.map((plan) => ({
+  ...plan,
+  active_clients_count: 0,
+}));
+
 export function useAdminPlans(): UseAdminPlansReturn {
   const queryClient = useQueryClient();
+  const { isDemo } = useMockDataMode();
+  const defaultPlans = isDemo ? MOCK_SYSTEM_PLANS : CLEAN_SYSTEM_PLANS;
 
   // Suscripción Realtime Zero-Polling vía WebSocket
   let realtimeEvents: ReturnType<typeof useRealtimeSync>["authorizedEvents"] = [];
@@ -61,24 +69,28 @@ export function useAdminPlans(): UseAdminPlansReturn {
       });
     };
     window.addEventListener("admin_plans_changed", handleSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     return () => {
       window.removeEventListener("admin_plans_changed", handleSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     };
   }, [queryClient]);
 
   // Query de planes
   const {
-    data: plans = MOCK_SYSTEM_PLANS,
+    data: plans = defaultPlans,
     isLoading,
     isError,
     error,
     refetch,
   } = useQuery<readonly SystemPlan[]>({
-    queryKey: queryKeys.platformAdmin.plans(),
+    queryKey: [...queryKeys.platformAdmin.plans(), isDemo ? "demo" : "clean"],
     queryFn: async () => {
+      const fallback = isMockDataEnabled() ? MOCK_SYSTEM_PLANS : CLEAN_SYSTEM_PLANS;
       const res = await apiRequest<readonly SystemPlan[]>("/api/v1/platform-admin/plans", {
         method: "GET",
-        fallbackData: MOCK_SYSTEM_PLANS,
+        fallbackData: fallback,
+        forceFallback: true,
       });
       return res.data;
     },

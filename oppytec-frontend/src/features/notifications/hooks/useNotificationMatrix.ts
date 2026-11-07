@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import {
   type CargoMatrixItem,
   MOCK_NOTIFICATION_MATRIX,
@@ -10,6 +11,13 @@ import {
   type NotificationMatrixData,
   type NotificationMatrixRule,
 } from "../types";
+
+const CLEAN_NOTIFICATION_MATRIX: NotificationMatrixData = {
+  catalog: MOCK_NOTIFICATION_MATRIX.catalog,
+  cargos: [],
+  rules: [],
+  is_admin: true,
+};
 
 export interface UseNotificationMatrixReturn {
   readonly data: NotificationMatrixData;
@@ -35,11 +43,20 @@ export function useNotificationMatrix(): UseNotificationMatrixReturn {
   const queryClient = useQueryClient();
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "default";
+  const { isDemo } = useMockDataMode();
 
   const queryKey = useMemo(
     () => queryKeys.approvals.matrix(tenantId),
     [tenantId]
   );
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      void queryClient.invalidateQueries({ queryKey });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, [queryClient, queryKey]);
 
   const {
     data: rawData,
@@ -53,14 +70,17 @@ export function useNotificationMatrix(): UseNotificationMatrixReturn {
       const endpoint = "/api/v1/operations/solicitudes/matrix";
       const res = await apiRequest<NotificationMatrixData>(endpoint, {
         method: "GET",
-        fallbackData: MOCK_NOTIFICATION_MATRIX,
+        fallbackData: isMockDataEnabled()
+          ? MOCK_NOTIFICATION_MATRIX
+          : CLEAN_NOTIFICATION_MATRIX,
       });
       return res.data;
     },
     staleTime: 60_000,
   });
 
-  const matrixData = rawData ?? MOCK_NOTIFICATION_MATRIX;
+  const matrixData =
+    rawData ?? (isDemo ? MOCK_NOTIFICATION_MATRIX : CLEAN_NOTIFICATION_MATRIX);
 
   // Mutación para actualizar la matriz masivamente
   const updateMatrixMutation = useMutation({

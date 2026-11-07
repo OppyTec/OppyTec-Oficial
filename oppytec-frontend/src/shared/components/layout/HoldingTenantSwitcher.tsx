@@ -1,6 +1,7 @@
 import { Building2 } from "lucide-react";
 import { setHttpRequestContext } from "@/shared/api/httpClient";
 import { translateKey } from "@/shared/i18n";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 export interface TenantOption {
   readonly holdingId: string;
@@ -43,12 +44,14 @@ export function HoldingTenantSwitcher({
   activeTenantId,
   onSelectTenant,
 }: HoldingTenantSwitcherProps) {
+  const { isDemo } = useMockDataMode();
+  const tenantOptions = isDemo ? OFFICIAL_TENANT_OPTIONS : [];
   const current =
-    OFFICIAL_TENANT_OPTIONS.find((t) => t.tenantId === activeTenantId) ??
-    OFFICIAL_TENANT_OPTIONS[0];
+    tenantOptions.find((t) => t.tenantId === activeTenantId) ??
+    tenantOptions[0];
 
   const handleChange = (nextTenantId: string): void => {
-    const found = OFFICIAL_TENANT_OPTIONS.find(
+    const found = tenantOptions.find(
       (item) => item.tenantId === nextTenantId
     );
     if (!found) {
@@ -76,11 +79,15 @@ export function HoldingTenantSwitcher({
         onChange={(e) => handleChange(e.target.value)}
         className="touch-target min-h-[44px] rounded-md bg-transparent font-mono text-xs font-semibold text-foreground focus:outline-none"
       >
-        {OFFICIAL_TENANT_OPTIONS.map((opt) => (
-          <option key={opt.tenantId} value={opt.tenantId}>
-            {`${opt.holdingName} — ${opt.tenantName} (${opt.rut})`}
-          </option>
-        ))}
+        {tenantOptions.length === 0 ? (
+          <option value={activeTenantId}>Sin locales registrados (Clean Slate)</option>
+        ) : (
+          tenantOptions.map((opt) => (
+            <option key={opt.tenantId} value={opt.tenantId}>
+              {`${opt.holdingName} — ${opt.tenantName} (${opt.rut})`}
+            </option>
+          ))
+        )}
       </select>
     </div>
   );

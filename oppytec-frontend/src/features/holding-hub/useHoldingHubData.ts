@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest, setHttpRequestContext } from "@/shared/api/httpClient";
 import { scrollToTopInstant } from "@/shared/components/layout";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { INITIAL_HOLDING_DATA } from "./constants";
 import type {
   CreditDistributionMode,
@@ -9,6 +10,42 @@ import type {
   HoldingTabId,
   HoldingTenantCard,
 } from "./types";
+
+const CLEAN_HOLDING_DATA: HoldingHubSummary = {
+  holding_id: "holding-clean",
+  name: "Sin Holding Configurado",
+  rut: "—",
+  active_plan_slug: "starter",
+  credit_balance: 0,
+  total_credits: 0,
+  used_credits: 0,
+  distribution_mode: "shared",
+  safety_status: "NORMAL",
+  usage_pct: 0,
+  metrics: {
+    total_sales: 0,
+    inventory_value: 0,
+    waste_pct: 0,
+  },
+  tenants: [],
+  daily_usage: [],
+  ai_briefing: {
+    holding_id: "holding-clean",
+    generated_at: new Date().toISOString(),
+    summary_paragraphs: [],
+    key_achievements: [],
+    cost_alerts: [],
+    safety_cap_prediction: {
+      status: "NORMAL",
+      burn_rate_daily: 0,
+      estimated_days_remaining: 0,
+      recommendation: "Sin consumo registrado.",
+    },
+    tokens_used: 0,
+    credits_deducted: 0,
+    model_name: "gemini-1.5-flash",
+  },
+};
 
 export interface UseHoldingHubDataReturn {
   readonly data: HoldingHubSummary;
@@ -33,21 +70,32 @@ export interface UseHoldingHubDataReturn {
 
 export function useHoldingHubData(initialHoldingId?: string): UseHoldingHubDataReturn {
   const navigate = useNavigate();
-  const [data, setData] = useState<HoldingHubSummary>(() => INITIAL_HOLDING_DATA);
+  const [data, setData] = useState<HoldingHubSummary>(() =>
+    isMockDataEnabled() ? INITIAL_HOLDING_DATA : CLEAN_HOLDING_DATA
+  );
   const [loading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<HoldingTabId>("central");
   const [activeScope, setActiveScope] = useState<string>("all");
   const [searchFilter, setSearchFilter] = useState<string>("");
 
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      setData(isMockDataEnabled() ? INITIAL_HOLDING_DATA : CLEAN_HOLDING_DATA);
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, []);
+
   const refreshData = useCallback(async () => {
     setRefreshing(true);
     try {
       const holdingId = initialHoldingId || data.holding_id;
+      const fallback = isMockDataEnabled() ? INITIAL_HOLDING_DATA : CLEAN_HOLDING_DATA;
       const resp = await apiRequest<HoldingHubSummary>(
         `/api/v1/holding-hub/summary?holding_id=${encodeURIComponent(holdingId)}`,
         {
-          fallbackData: data,
+          fallbackData: fallback,
         }
       );
       if (resp?.data) {

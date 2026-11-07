@@ -24,14 +24,37 @@ import { SectionHeader } from "@/shared/components/ui/SectionHeader";
 import { CategoryIcon } from "@/shared/components/ui/CategoryIcon";
 import { AreaSelector } from "@/shared/components/layout/AreaSelector";
 import { apiRequest } from "@/shared/api/httpClient";
+import { isMockDataEnabled, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { useContarInventario } from "../hooks/useContarInventario";
 import { InventarioTable, type CatalogProduct } from "./InventarioTable";
 import { MOCK_BODEGAS, MOCK_STOCK_ITEMS } from "../mockData";
 import type { ConteoItemDraft } from "../types";
 
+function buildDemoCatalogProducts(): CatalogProduct[] {
+  const map = new Map<number, CatalogProduct>();
+  for (const it of MOCK_STOCK_ITEMS) {
+    if (!map.has(it.producto_id)) {
+      map.set(it.producto_id, {
+        id: it.producto_id,
+        nombre: it.nombre,
+        sku: it.sku,
+        categoria: it.categoria,
+        categoria_color: it.categoria_color,
+        categoria_icono: it.categoria_icono,
+        unidad_medida: it.unidad_medida,
+        costo_unitario_ppp: it.costo_unitario_ppp,
+        no_perecible: it.no_perecible,
+      });
+    }
+  }
+  return Array.from(map.values());
+}
+
 export function ContarInventarioPage() {
   const { t } = useTranslation("inventory");
   const navigate = useNavigate();
+  const { isDemo } = useMockDataMode();
+  const availableBodegas = useMemo(() => (isDemo ? MOCK_BODEGAS : []), [isDemo]);
   const {
     step,
     setStep,
@@ -52,31 +75,22 @@ export function ContarInventarioPage() {
 
   // Estados locales para la selección en Idle
   const [selectedAreaId, setSelectedAreaId] = useState<string>("all");
-  const [selectedBodegaId, setSelectedBodegaNum] = useState<number>(1);
+  const [selectedBodegaId, setSelectedBodegaNum] = useState<number>(() =>
+    isMockDataEnabled() ? 1 : 0
+  );
   const [productSearch, setProductSearch] = useState<string>("");
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Catálogo unificado de productos disponibles para auditar
-  const [productos, setProductos] = useState<CatalogProduct[]>(() => {
-    const map = new Map<number, CatalogProduct>();
-    for (const it of MOCK_STOCK_ITEMS) {
-      if (!map.has(it.producto_id)) {
-        map.set(it.producto_id, {
-          id: it.producto_id,
-          nombre: it.nombre,
-          sku: it.sku,
-          categoria: it.categoria,
-          categoria_color: it.categoria_color,
-          categoria_icono: it.categoria_icono,
-          unidad_medida: it.unidad_medida,
-          costo_unitario_ppp: it.costo_unitario_ppp,
-          no_perecible: it.no_perecible,
-        });
-      }
-    }
-    return Array.from(map.values());
-  });
+  const [productos, setProductos] = useState<CatalogProduct[]>(() =>
+    isMockDataEnabled() ? buildDemoCatalogProducts() : []
+  );
+
+  useEffect(() => {
+    setProductos(isDemo ? buildDemoCatalogProducts() : []);
+    setSelectedBodegaNum(isDemo ? 1 : 0);
+  }, [isDemo]);
 
   // Intentar cargar productos desde backend si estuvieran disponibles
   useEffect(() => {
@@ -127,8 +141,8 @@ export function ContarInventarioPage() {
   // Bodega activa
   const activeBodega = useMemo(() => {
     const idToFind = step === "idle" ? selectedBodegaId : bodegaId;
-    return MOCK_BODEGAS.find((b) => b.id === idToFind) ?? MOCK_BODEGAS[0];
-  }, [step, selectedBodegaId, bodegaId]);
+    return availableBodegas.find((b) => b.id === idToFind) ?? availableBodegas[0];
+  }, [step, selectedBodegaId, bodegaId, availableBodegas]);
 
   // Filtrado de productos en el buscador interactivo
   const filteredProducts = useMemo(() => {
@@ -338,7 +352,7 @@ export function ContarInventarioPage() {
                 onChange={(e) => setSelectedBodegaNum(Number(e.target.value))}
                 className="touch-target w-full sm:w-[220px] h-10 px-3 rounded-xl border border-border bg-background text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
               >
-                {MOCK_BODEGAS.map((b) => (
+                {availableBodegas.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.nombre}
                   </option>

@@ -1,8 +1,9 @@
 // oppytec-frontend/src/features/inventory/hooks/useRecuentos.ts
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type {
   PhysicalCountSession,
   PhysicalCountState,
@@ -18,6 +19,7 @@ export function useRecuentos(options?: UseRecuentosOptions) {
   const queryClient = useQueryClient();
   const context = getHttpRequestContext();
   const tenantId = context.tenantId || "tenant_rest_central";
+  const { isDemo } = useMockDataMode();
 
   const [bodegaFilter, setBodegaFilter] = useState<number | "all">(
     options?.initialBodegaId ?? "all"
@@ -64,7 +66,7 @@ export function useRecuentos(options?: UseRecuentosOptions) {
 
       const res = await apiRequest<PhysicalCountSession[]>(endpoint, {
         method: "GET",
-        fallbackData: MOCK_PHYSICAL_COUNT_SESSIONS,
+        fallbackData: isMockDataEnabled() ? MOCK_PHYSICAL_COUNT_SESSIONS : [],
       });
 
       if (Array.isArray(res.data) && res.data.length > 0) {
@@ -89,14 +91,24 @@ export function useRecuentos(options?: UseRecuentosOptions) {
         });
       }
 
-      return MOCK_PHYSICAL_COUNT_SESSIONS;
+      return isMockDataEnabled() ? MOCK_PHYSICAL_COUNT_SESSIONS : [];
     },
     staleTime: 60_000,
   });
 
+  useEffect(() => {
+    const handleModeChange = () => {
+      void queryClient.invalidateQueries({ queryKey: ["oppytec", "inventory", "counts"] });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    return () => {
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleModeChange);
+    };
+  }, [queryClient]);
+
   const rawSessions = useMemo(
-    () => sessionsData ?? MOCK_PHYSICAL_COUNT_SESSIONS,
-    [sessionsData]
+    () => sessionsData ?? (isDemo ? MOCK_PHYSICAL_COUNT_SESSIONS : []),
+    [sessionsData, isDemo]
   );
 
   // Filtrado de sesiones

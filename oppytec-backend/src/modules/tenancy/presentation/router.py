@@ -17,7 +17,7 @@ import uuid
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Header, status
 
 from src.core.bootstrap import DEFAULT_SYSTEM_PLANS, PLAN_BASICO_10_MODULES, TENANT_BASE_ROLES
 from src.core.database import validate_tenant_schema_name
@@ -34,6 +34,13 @@ from src.core.guards.rbac_dependencies import (
     RequireTenantPermission,
     restore_revoked_user_session,
     revoke_session_token,
+)
+from src.core.mock_data_manager import (
+    DEMO_CLIENT_USER_EMAILS,
+    DEMO_CLIENT_USER_IDS,
+    DEMO_HOLDING_IDS,
+    DEMO_LEGAL_ENTITY_IDS,
+    DEMO_TENANT_IDS,
 )
 from src.core.observability import (
     emit_plan_audit_log,
@@ -286,8 +293,21 @@ async def list_holdings_endpoint(
         AuthenticatedPrincipal,
         Depends(RequireGlobalPermission("tenancy.holdings.read")),
     ],
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> list[HoldingResponse]:
     """Lista los Holdings registrados en el Plano Global."""
+    is_clean_mode = (
+        x_oppytec_mock_mode is not None
+        and x_oppytec_mock_mode.strip().lower() == "clean"
+    )
+    if is_clean_mode:
+        return [
+            h
+            for hid, h in _holdings_store.items()
+            if hid not in DEMO_HOLDING_IDS
+        ]
     return list(_holdings_store.values())
 
 
@@ -400,8 +420,21 @@ async def list_tenants_endpoint(
         AuthenticatedPrincipal,
         Depends(RequireGlobalPermission("tenancy.tenants.read")),
     ],
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> list[TenantResponse]:
     """Lista las sucursales / tenants registrados en el Plano Global."""
+    is_clean_mode = (
+        x_oppytec_mock_mode is not None
+        and x_oppytec_mock_mode.strip().lower() == "clean"
+    )
+    if is_clean_mode:
+        return [
+            t
+            for tid, t in _tenants_store.items()
+            if tid not in DEMO_TENANT_IDS
+        ]
     return list(_tenants_store.values())
 
 
@@ -480,8 +513,21 @@ async def list_legal_entities_endpoint(
         AuthenticatedPrincipal,
         Depends(RequireGlobalPermission("tenancy.legal_entities.read")),
     ],
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> list[LegalEntityResponse]:
     """Lista las Entidades Legales registradas."""
+    is_clean_mode = (
+        x_oppytec_mock_mode is not None
+        and x_oppytec_mock_mode.strip().lower() == "clean"
+    )
+    if is_clean_mode:
+        return [
+            le
+            for leid, le in _legal_entities_store.items()
+            if leid not in DEMO_LEGAL_ENTITY_IDS
+        ]
     return list(_legal_entities_store.values())
 
 
@@ -495,17 +541,31 @@ async def list_client_users_admin_endpoint(
         AuthenticatedPrincipal,
         Depends(RequireGlobalPermission("tenancy.client_users.read")),
     ],
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> list[ClientUserAdminResponse]:
     """Lista los usuarios clientes creados en `public.client_users`."""
+    is_clean_mode = (
+        x_oppytec_mock_mode is not None
+        and x_oppytec_mock_mode.strip().lower() == "clean"
+    )
     results: list[ClientUserAdminResponse] = []
     for uid, entry in _CLIENT_USERS_STORE.items():
+        email_str = str(entry.get("email", f"user_{uid}@cliente.cl"))
+        if (
+            is_clean_mode
+            and uid in DEMO_CLIENT_USER_IDS
+            and email_str.lower() in DEMO_CLIENT_USER_EMAILS
+        ):
+            continue
         results.append(
             ClientUserAdminResponse(
                 user_id=uid,
                 holding_id=str(entry.get("holding_id", "holding_default")),
                 tenant_id=str(entry.get("tenant_id", "tenant_default")),
                 username=str(entry.get("username", f"user_{uid}")),
-                email=str(entry.get("email", f"user_{uid}@cliente.cl")),
+                email=email_str,
                 first_name=str(entry.get("first_name", "Operador")),
                 last_name=str(entry.get("last_name", "Cliente")),
                 role_slug=str(entry.get("role", "admin")),
@@ -856,8 +916,43 @@ async def get_tenancy_dashboard_summary_endpoint(
         AuthenticatedPrincipal,
         Depends(RequireGlobalPermission("tenancy.dashboard.read")),
     ],
+    x_oppytec_mock_mode: Annotated[
+        str | None, Header(alias="X-OppyTec-Mock-Mode")
+    ] = None,
 ) -> TenancyDashboardSummaryResponse:
     """Devuelve los conteos agregados reales para el Panel de Control Global."""
+    is_clean_mode = (
+        x_oppytec_mock_mode is not None
+        and x_oppytec_mock_mode.strip().lower() == "clean"
+    )
+    if is_clean_mode:
+        holdings_cnt = sum(
+            1 for hid in _holdings_store if hid not in DEMO_HOLDING_IDS
+        )
+        legal_entities_cnt = sum(
+            1 for leid in _legal_entities_store if leid not in DEMO_LEGAL_ENTITY_IDS
+        )
+        tenants_cnt = sum(
+            1 for tid in _tenants_store if tid not in DEMO_TENANT_IDS
+        )
+        active_client_users = sum(
+            1
+            for uid, u in _CLIENT_USERS_STORE.items()
+            if not bool(u.get("is_deleted", False))
+            and not (
+                uid in DEMO_CLIENT_USER_IDS
+                and str(u.get("email", "")).lower() in DEMO_CLIENT_USER_EMAILS
+            )
+        )
+        return TenancyDashboardSummaryResponse(
+            holdings=holdings_cnt,
+            legal_entities=legal_entities_cnt,
+            tenants=tenants_cnt,
+            users=len(_GLOBAL_USERS_STORE),
+            plans=len(_plans_store),
+            client_users=active_client_users,
+        )
+
     active_client_users = sum(
         1 for u in _CLIENT_USERS_STORE.values() if not bool(u.get("is_deleted", False))
     )

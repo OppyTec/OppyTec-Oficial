@@ -10,9 +10,10 @@ Enforces:
 from __future__ import annotations
 
 import importlib
+import os
 import uuid
-from collections.abc import Awaitable, Callable
-from contextlib import suppress
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager, suppress
 from typing import Protocol
 
 from fastapi import FastAPI, Request, Response
@@ -24,13 +25,17 @@ from src.core.realtime.router import router as realtime_router
 from src.modules.analytics.presentation.router import router as analytics_router
 from src.modules.audit.presentation.router import router as audit_router
 from src.modules.catalog.presentation.router import router as catalog_router
+from src.modules.events.presentation.router import router as events_router
 from src.modules.identity.presentation.router import router as identity_router
 from src.modules.inventory.presentation.router import router as inventory_router
-from src.modules.events.presentation.router import router as events_router
 from src.modules.invoices.presentation.router import router as invoices_router
 from src.modules.operations.presentation.router import router as operations_router
-from src.modules.operations.presentation.router_actividades import router as operations_actividades_router
-from src.modules.operations.presentation.router_approvals import router as operations_approvals_router
+from src.modules.operations.presentation.router_actividades import (
+    router as operations_actividades_router,
+)
+from src.modules.operations.presentation.router_approvals import (
+    router as operations_approvals_router,
+)
 from src.modules.oppy_ai.presentation.router import router as oppy_ai_router
 from src.modules.procurement.presentation.router import router as procurement_router
 from src.modules.projection.presentation.router import router as projection_router
@@ -38,6 +43,7 @@ from src.modules.recipes.presentation.router import router as recipes_router
 from src.modules.tenancy.presentation.holding_hub_router import router as holding_hub_router
 from src.modules.tenancy.presentation.platform_admin_router import router as platform_admin_router
 from src.modules.tenancy.presentation.router import router as tenancy_router
+from src.modules.tenancy.presentation.sandbox_router import router as sandbox_router
 
 try:
     import orjson as _orjson  # noqa: F401
@@ -125,6 +131,19 @@ def _resolve_openapi_enabled(
     return True
 
 
+@asynccontextmanager
+async def _app_lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """Lifespan de inicio: aplica Clean Slate 100% limpio fuera de pytest salvo modo demo explícito."""
+    if (
+        "PYTEST_CURRENT_TEST" not in os.environ
+        and os.environ.get("OPPYTEC_DEMO_MODE") != "1"
+    ):
+        from src.core.mock_data_manager import purge_all_runtime_mock_stores
+
+        purge_all_runtime_mock_stores()
+    yield
+
+
 def create_app() -> FastAPI:
     """FastAPI Application Factory for OppyTec SaaS v2.0."""
     fallback = _FallbackBootstrapSettings()
@@ -140,6 +159,7 @@ def create_app() -> FastAPI:
         docs_url="/docs" if openapi_enabled else None,
         redoc_url="/redoc" if openapi_enabled else None,
         openapi_url="/openapi.json" if openapi_enabled else None,
+        lifespan=_app_lifespan,
     )
 
     from fastapi.middleware.cors import CORSMiddleware
@@ -178,12 +198,22 @@ def create_app() -> FastAPI:
             request.headers.get("X-Trace-ID", "").strip()
             or getattr(request.state, "trace_id", "")
         )
+        incoming_tp = request.headers.get("traceparent", "").strip()
+        if not incoming_trace_id and incoming_tp.startswith("00-"):
+            parts = incoming_tp.split("-")
+            if len(parts) >= 2 and len(parts[1]) == 32:
+                incoming_trace_id = parts[1]
+
         if not incoming_trace_id:
             with suppress(Exception):
                 core_obs = importlib.import_module("src.core.observability")
                 incoming_trace_id = core_obs.get_current_trace_id()
         trace_id = incoming_trace_id if incoming_trace_id else uuid.uuid4().hex
         request.state.trace_id = trace_id
+
+        incoming_mock_mode = request.headers.get("X-OppyTec-Mock-Mode", "").strip().lower()
+        if incoming_mock_mode in ("demo", "clean"):
+            request.state.mock_mode = incoming_mock_mode
 
         tokens = None
         with suppress(Exception):
@@ -201,6 +231,10 @@ def create_app() -> FastAPI:
             response = await call_next(request)
             if "X-Trace-ID" not in response.headers:
                 response.headers["X-Trace-ID"] = trace_id
+            if incoming_tp and "traceparent" not in response.headers:
+                response.headers["traceparent"] = incoming_tp
+            if incoming_mock_mode and "X-OppyTec-Mock-Mode" not in response.headers:
+                response.headers["X-OppyTec-Mock-Mode"] = incoming_mock_mode
             response.headers.setdefault("X-Content-Type-Options", "nosniff")
             response.headers.setdefault("X-Frame-Options", "DENY")
             return response
@@ -223,6 +257,12 @@ def create_app() -> FastAPI:
         )
         problem = exc.to_rfc7807(trace_id=trace_id, instance=str(request.url.path))
         headers: dict[str, str] = {"X-Trace-ID": trace_id}
+        incoming_tp = request.headers.get("traceparent", "").strip()
+        if incoming_tp:
+            headers["traceparent"] = incoming_tp
+        incoming_mock_mode = request.headers.get("X-OppyTec-Mock-Mode", "").strip().lower()
+        if incoming_mock_mode in ("demo", "clean"):
+            headers["X-OppyTec-Mock-Mode"] = incoming_mock_mode
         if isinstance(exc, RateLimitExceededError):
             headers["Retry-After"] = str(exc.retry_after_seconds)
         return DefaultJSONResponse(
@@ -250,6 +290,7 @@ def create_app() -> FastAPI:
     app.include_router(tenancy_router)
     app.include_router(holding_hub_router)
     app.include_router(platform_admin_router)
+    app.include_router(sandbox_router)
     app.include_router(audit_router)
     app.include_router(catalog_router)
     app.include_router(inventory_router)

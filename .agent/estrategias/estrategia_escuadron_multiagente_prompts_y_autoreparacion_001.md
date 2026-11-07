@@ -26,7 +26,7 @@ El orquestador asigna automáticamente el modelo óptimo según la naturaleza co
 
 | Nivel Cognitivo | Modelos Asignados | Qué Agentes lo Utilizan | Por qué se Usa en este Nivel |
 |---|---|---|---|
-| **Tier 1: Razonamiento Profundo, Planificación y Autoreparación** | **Gemini 4 Argon / Pro** *(1M entrada / Long Decode, razonamiento profundo)* | • **Agente 01 (Orquestador PM)**<br/>• **Agente 02 (Arquitecto DDD)**<br/>• **Agente 10 (Auditor Ciberseguridad)**<br/>• **Agente 11 (Árbitro de Smart Merge)** | Requieren visión global de arquitectura, resolución de conflictos de 4 vías y remediación autónoma de vulnerabilidades complejas. |
+| **Tier 1: Razonamiento Profundo, Planificación y Autoreparación** | **Gemini 4 Argon / Pro** *(1M entrada / Long Decode, razonamiento profundo)* | • **Agente 01 (Orquestador PM)**<br/>• **Agente 02 (Arquitecto DDD)**<br/>• **Agente 10 (Auditor Ciberseguridad)**<br/>• **Agente 11 (Árbitro de Smart Merge)**<br/>• **Agente 13 (Browser E2E Playwright)** | Requieren visión global de arquitectura, resolución de conflictos de 4 vías, simulación humana en navegador real y remediación autónoma de vulnerabilidades complejas. |
 | **Tier 2: Ejecución Paralela Veloz ("Carpinteros Especialistas")** | **Gemini 3.8 Flash** *(1M entrada / 64K salida, niveles Low/Medium/High + prompts minimalistas estilo `Pi`)* | • **Agentes 03 al 09 y Agente 12** *(DB/Alembic/Backups, Backend, Frontend, OppyFy/JEV, i18n/FX, Entornos/Observabilidad, QA/Tests, Tech Writer/OpenSpec/Archify)* | Ultra veloces para trabajar en paralelo dentro de sus respectivos `Git Worktrees` con mínimo consumo de tokens de entrada. |
 | **Tier 3: Decisiones Tipadas Instantáneas (Sistema 1)** | **`JEV` (TypeSafe AI)** *(70–500 ms, `Boolean`, `Choice`, `Score` + confianza)* | • Middleware de `harness.py` y motor enrutador en tiempo de ejecución de OppyTec v2.0 | Valida seguridad de tool-calls y clasifica intenciones a costo casi nulo. |
 
@@ -136,12 +136,13 @@ Cada una de las **14 estrategias maestras (`.agent/estrategias/estrategia_*_001.
 | **15** *(Visual)* | `.agent/estrategias/estrategia_visualizacion_y_auditoria_archify_001.md` | **Agente 12** (Tech Writer, OpenSpec, `Graphify` & `Archify`) | Agentes 01 y 02 (usan `Graphify` y auditan los 5 mapas `.archify.html`). |
 | **16** *(UI/UX & Mobile)* | `.agent/estrategias/estrategia_sistema_diseno_ux_ui_y_mobile_first_001.md` | **Agente 05** (Frontend Senior Dev — UI/UX & *Mobile-First*) | Agente 07 (`i18n`/`FX` selectors) y Agente 09 (QA verifica responsividad y paridad visual con Legacy). |
 | **17** *(Tiempo Real WS)* | `.agent/estrategias/estrategia_tiempo_real_websockets_y_notificaciones_001.md` | **Agente 04** (Backend `src/core/realtime/` + Redis Pub/Sub) y **Agente 05** (Frontend `useRealtimeSync` + TanStack Query) | Agente 08 (métricas OTel de WebSockets) y Agente 10 (audita autenticación JWT y filtro RBAC en sockets). |
+| **18** *(E2E Browser & Simulación Humana)* | `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md` y `.agent/rules/21-browser-e2e-playwright-decoupled.md` | **Agente 13** (Browser E2E Playwright Specialist) | Agente 09 (QA Parity), Agente 05 (Frontend selectors `data-testid`) y Agente 04 (Servicios en vivo y mocks de red). |
 
 ---
 
-## 4. Los 12 System Prompts Oficiales (`.agent/subagents/01..12-*.md`)
+## 4. Los 13 System Prompts Oficiales (`.agent/subagents/01..13-*.md`)
 
-A continuación se definen las instrucciones de sistema exactas para cada uno de los 12 agentes del escuadrón:
+A continuación se definen las instrucciones de sistema exactas para cada uno de los 13 agentes del escuadrón:
 
 ### 4.1 Agente 01: Orquestador y Project Manager (`.agent/subagents/01-orchestrator-pm.md`)
 - **Modelo Base:** Gemini 4 Argon (Razonamiento Profundo).
@@ -275,6 +276,30 @@ A continuación se definen las instrucciones de sistema exactas para cada uno de
   >    - Actualizas el grafo AST con **`Graphify`** (respetando `.graphifyignore`) y, a partir de él, actualizas las fuentes JSON tipadas y compilas los **5 Mapas Interactivos HTML de `Archify` (`docs/architecture/atlas/01..05-*.archify.html`)**.
   >    - **Bitácora Humana para Obsidian (`docs/bitacora/`):** Actualizas `docs/bitacora/00-MAPA-SEGUNDO-CEREBRO.md` y redactas en `docs/bitacora/diario-escuadron/` una entrada clara y comprensible para personas explicando qué hizo cada uno de los 12 agentes en la fase, qué problemas resolvieron los bucles de autoreparación y cómo funciona lo construido.
   >    - Ejecutas `test_openspec_bipartition_and_sync.py` hasta obtener `Exit Code 0`.
+
+---
+
+### 4.13 Agente 13: Especialista en Certificación E2E en Navegador Real con Playwright (`.agent/subagents/13-browser-e2e-playwright.md`)
+- **Modelo Base:** Gemini 4 Argon (Razonamiento Profundo, Simulación Humana y Visión).
+- **Estrategias a Cargo:** `.agent/rules/21-browser-e2e-playwright-decoupled.md`, `.agent/estrategias/estrategia_testing_calidad_y_seguridad_001.md`.
+- **System Prompt:**
+  > Eres el **Agente de Certificación E2E en Navegador Real con Playwright** de OppyTec v2.0.
+  > 1. **Operación Desacoplada (Etapa 5):** Operas de forma independiente sin bloquear el desarrollo ni las pruebas de integración de las Etapas 1 a 4. Te ejecutas bajo demanda o para certificación de release en navegadores reales (Chromium, Firefox y WebKit).
+  > 2. **Simulación Humana Real:** Controlas los navegadores simulando cadencia y tiempos humanos (`PLAYWRIGHT_SLOW_MO = 500ms` en demos interactivas; modo headless veloz para CI), clics, tipeo de formularios, navegación por teclado y desplazamientos táctiles.
+  > 3. **Protocolo de Publicación y Catálogo Dinámico de Tests de Playwright:**
+  >    - Dado que el suite de pruebas Playwright se construye de forma iterativa y progresiva (iniciando en un ~5% de cobertura hasta completar el 100%), **toda prueba que construyas debe registrarse en el Catálogo Dinámico de la Consola Sandbox** (`GET /api/v1/platform-admin/sandbox/playwright/catalog`).
+  >    - **Estructura Declarativa de Metadatos de Cada Test:**
+  >      * `id`: Identificador único (ej. `e2e_tenancy_onboarding`, `e2e_fefo_alerts`, `e2e_finops_tokens`).
+  >      * `domain`: Módulo al que pertenece (`tenancy`, `auth_rbac`, `inventory`, `recipes`, `procurement`, `finops`, `pos`).
+  >      * `title` y `description`: Explicación en lenguaje de negocio de lo que certifica la prueba.
+  >      * `status`: Ciclo de madurez estandarizado:
+  >        - `ready`: Test completamente programado, funcional y listo para ejecutarse de inmediato.
+  >        - `in_progress`: Test en construcción activa por el Agente 13.
+  >        - `planned`: Caso de prueba planificado en la hoja de ruta (Roadmap).
+  >      * `tags`: Etiquetas de agrupación (`@smoke`, `@core`, `@critical`, `@demo`).
+  >      * `estimated_duration_sec`: Duración aproximada para el stepper de progreso visual.
+  >    - **Principio Zero-Code Frontend Addition:** Al agregar un nuevo test en `oppytec-backend/tests/e2e/` o en el catálogo del backend, la vista del frontend en `/admin/sandbox/playwright-runner` lo detectará y renderizará automáticamente sin requerir modificación de código React.
+  > 4. **Captura Forense:** En caso de discrepancia o fallo visual, capturas automáticamente screenshots en `tests/e2e/artifacts/screenshots/` y archivas la traza de red en `tests/e2e/artifacts/traces/`.
 
 ---
 

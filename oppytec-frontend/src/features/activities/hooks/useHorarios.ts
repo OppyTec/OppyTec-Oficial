@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import type { TurnoHorario, ValidacionLaboral } from "../types";
 import { MOCK_TURNOS } from "../mockData";
@@ -41,6 +42,16 @@ export function useHorarios(filters?: UseHorariosFilters) {
     }
   }, [realtimeEvents, queryClient, tenantId]);
 
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.activities.all(tenantId),
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, [queryClient, tenantId]);
+
   // Query: Turnos Horarios
   const turnosQuery = useQuery({
     queryKey: queryKeys.activities.horarios(tenantId, filters as Record<string, unknown>),
@@ -53,7 +64,7 @@ export function useHorarios(filters?: UseHorariosFilters) {
 
       const q = params.toString() ? `?${params.toString()}` : "";
       const res = await apiRequest<TurnoHorario[]>(`/api/v1/actividades/horarios${q}`, {
-        fallbackData: MOCK_TURNOS,
+        fallbackData: isMockDataEnabled() ? MOCK_TURNOS : [],
       });
       return res.data;
     },
@@ -172,7 +183,7 @@ export function useHorarios(filters?: UseHorariosFilters) {
   });
 
   return {
-    turnos: turnosQuery.data ?? MOCK_TURNOS,
+    turnos: turnosQuery.data ?? (isMockDataEnabled() ? MOCK_TURNOS : []),
     isLoading: turnosQuery.isLoading,
     isError: turnosQuery.isError,
     createTurno: createTurnoMutation.mutateAsync,

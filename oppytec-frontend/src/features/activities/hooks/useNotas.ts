@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import type { NotaCategoria, NotaEquipo, NotaPersonal } from "../types";
 import { MOCK_NOTAS_EQUIPO, MOCK_NOTAS_PERSONALES } from "../mockData";
@@ -40,6 +41,16 @@ export function useNotas(filters?: UseNotasFilters) {
     }
   }, [realtimeEvents, queryClient, tenantId]);
 
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.activities.all(tenantId),
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, [queryClient, tenantId]);
+
   // Query: Notas de Equipo
   const equipoQuery = useQuery({
     queryKey: queryKeys.activities.notasEquipo(tenantId, {
@@ -56,7 +67,7 @@ export function useNotas(filters?: UseNotasFilters) {
       }
       const q = params.toString() ? `?${params.toString()}` : "";
       const res = await apiRequest<NotaEquipo[]>(`/api/v1/actividades/notas/equipo${q}`, {
-        fallbackData: MOCK_NOTAS_EQUIPO,
+        fallbackData: isMockDataEnabled() ? MOCK_NOTAS_EQUIPO : [],
       });
       return res.data;
     },
@@ -75,7 +86,7 @@ export function useNotas(filters?: UseNotasFilters) {
       }
       const q = params.toString() ? `?${params.toString()}` : "";
       const res = await apiRequest<NotaPersonal[]>(`/api/v1/actividades/notas/personales${q}`, {
-        fallbackData: MOCK_NOTAS_PERSONALES,
+        fallbackData: isMockDataEnabled() ? MOCK_NOTAS_PERSONALES : [],
       });
       return res.data;
     },
@@ -220,8 +231,8 @@ export function useNotas(filters?: UseNotasFilters) {
   });
 
   return {
-    notasEquipo: equipoQuery.data ?? MOCK_NOTAS_EQUIPO,
-    notasPersonales: personalesQuery.data ?? MOCK_NOTAS_PERSONALES,
+    notasEquipo: equipoQuery.data ?? (isMockDataEnabled() ? MOCK_NOTAS_EQUIPO : []),
+    notasPersonales: personalesQuery.data ?? (isMockDataEnabled() ? MOCK_NOTAS_PERSONALES : []),
     isLoading: equipoQuery.isLoading || personalesQuery.isLoading,
     isError: equipoQuery.isError || personalesQuery.isError,
     createEquipo: createEquipoMutation.mutateAsync,

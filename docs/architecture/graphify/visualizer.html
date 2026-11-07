@@ -1150,6 +1150,12 @@
       "path": "oppytec-frontend/src/app/"
     },
     {
+      "id": "frontend:canonical_gastronomic_presets",
+      "label": "Canonical Gastronomic Presets Multi-Tenant (Pollo King, Angus Cava, Buffet, Clean Slate)",
+      "type": "frontend_feature_submodule",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/presets/index.ts"
+    },
+    {
       "id": "frontend:currency_selector",
       "label": "CurrencySelector Component & MoneyBadge (CLP/USD/EUR/BRL BigInt 10^8 Formatter)",
       "type": "frontend_shared_component",
@@ -1264,10 +1270,46 @@
       "path": "oppytec-frontend/src/shared/i18n/LanguageFlagSelector.tsx"
     },
     {
+      "id": "frontend:mock_mode_storage",
+      "label": "Master Switch Reactive Storage & CustomEvent Broadcaster (demo vs clean)",
+      "type": "frontend_shared_util",
+      "path": "oppytec-frontend/src/shared/mock/mockModeStorage.ts"
+    },
+    {
       "id": "frontend:quota_progress_indicator",
       "label": "Frontend UI Quota Progress Indicator (4-State Semaphore 80/95/100%)",
       "type": "frontend_ui_token",
       "path": "oppytec-frontend/src/shared/components/ui/QuotaProgressIndicator.tsx"
+    },
+    {
+      "id": "frontend:sandbox_fefo_dates_view",
+      "label": "Platform Admin Lab & QA Sandbox FEFO Time-Warp Simulator View (Batch Expiry & Waste)",
+      "type": "frontend_feature_submodule",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/FefoDatesSandboxView.tsx"
+    },
+    {
+      "id": "frontend:sandbox_fefo_math",
+      "label": "Platform Admin Lab & QA Sandbox FEFO Pure Math & Time-Travel Engine (Zero-Lag Projections)",
+      "type": "frontend_shared_util",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/fefoMath.ts"
+    },
+    {
+      "id": "frontend:sandbox_layout",
+      "label": "Platform Admin Lab & QA Sandbox Layout Component (Navigation & Context)",
+      "type": "frontend_feature_submodule",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/SandboxLayout.tsx"
+    },
+    {
+      "id": "frontend:sandbox_mock_data_view",
+      "label": "Platform Admin Lab & QA Sandbox Mock Data Generator View (Synthetic Entities & Dry-Run)",
+      "type": "frontend_feature_submodule",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/MockDataSandboxView.tsx"
+    },
+    {
+      "id": "frontend:sandbox_playwright_runner_view",
+      "label": "Platform Admin Lab & QA Sandbox Playwright Runner View (E2E Suites & Streaming)",
+      "type": "frontend_feature_submodule",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/PlaywrightRunnerSandboxView.tsx"
     },
     {
       "id": "frontend:shared_fx_currency",
@@ -1588,6 +1630,12 @@
       "path": "oppytec-backend/src/modules/oppy_ai/presentation/router.py"
     },
     {
+      "id": "router:platform_admin_sandbox",
+      "label": "Backend Platform Admin Lab & QA Sandbox REST Router /api/v1/platform-admin/sandbox",
+      "type": "backend_router",
+      "path": "oppytec-backend/src/modules/tenancy/presentation/sandbox_router.py"
+    },
+    {
       "id": "router:procurement",
       "label": "Backend Presentation Router (procurement) /api/v1/procurement",
       "type": "backend_router",
@@ -1612,6 +1660,12 @@
       "path": "oppytec-backend/src/modules/tenancy/presentation/router.py"
     },
     {
+      "id": "schema:platform_admin_sandbox",
+      "label": "Platform Admin Lab & QA Sandbox Pydantic v2 Schemas (Presets, Factory Reset & FEFO)",
+      "type": "backend_schema",
+      "path": "oppytec-backend/src/modules/tenancy/presentation/schemas_sandbox.py"
+    },
+    {
       "id": "service:ai_model_catalog",
       "label": "AI Model & JEV Catalog Application Service (CRUD, Hot-Reload & RBAC Guard)",
       "type": "backend_service",
@@ -1634,6 +1688,12 @@
       "label": "OppyFy Code Mode Application Service (Multi-Tenant & FinOps Telemetry)",
       "type": "backend_service",
       "path": "oppytec-backend/src/modules/oppy_ai/application/code_mode_service.py"
+    },
+    {
+      "id": "service:sandbox_manager",
+      "label": "Platform Admin Lab & QA Sandbox Application Service (Mock Data, Playwright & FEFO)",
+      "type": "backend_service",
+      "path": "oppytec-backend/src/modules/tenancy/application/sandbox_service.py"
     },
     {
       "id": "suite:ai_evals_bilingual_parity",
@@ -1702,6 +1762,18 @@
       "path": "oppytec-backend/tests/unit/test_holding_hub_observability.py"
     },
     {
+      "id": "suite:backend_sandbox_api",
+      "label": "Backend Platform Admin Lab & QA Sandbox API & RBAC Unit Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/test_platform_admin_sandbox.py"
+    },
+    {
+      "id": "suite:backend_sandbox_observability",
+      "label": "Backend Lab & QA Sandbox Environment Isolation & OTel Observability Suite",
+      "type": "verification_suite",
+      "path": "oppytec-backend/tests/unit/test_sandbox_observability_and_environments.py"
+    },
+    {
       "id": "suite:code_mode_sandbox_security_test",
       "label": "Code Mode Sandbox Security & Red Team Offensive Suite (10 Vectors)",
       "type": "verification_suite",
@@ -1760,6 +1832,48 @@
       "label": "RecuentosPage Vitest Integration Suite (9 Tests — KPIs, Filtros, Acordeón, RBAC & Kardex Impact)",
       "type": "verification_suite",
       "path": "oppytec-frontend/src/features/inventory/__tests__/RecuentosPage.test.tsx"
+    },
+    {
+      "id": "suite:frontend_sandbox_fefo_dates_view_vitest",
+      "label": "Frontend Lab & QA Sandbox FEFO Dates & Time-Travel UI Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/__tests__/FefoDatesSandboxView.test.tsx"
+    },
+    {
+      "id": "suite:frontend_sandbox_fefo_math_vitest",
+      "label": "Frontend Lab & QA Sandbox FEFO Pure Math Deterministic Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/__tests__/fefoMath.test.ts"
+    },
+    {
+      "id": "suite:frontend_sandbox_i18n_vitest",
+      "label": "Frontend Lab & QA Sandbox i18n & Multi-Currency Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/__tests__/SandboxI18nAndFx.test.tsx"
+    },
+    {
+      "id": "suite:frontend_sandbox_master_switch_presets_vitest",
+      "label": "Frontend Lab & QA Sandbox Master Switch & Presets Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/__tests__/MockDataMasterSwitchAndPresets.test.tsx"
+    },
+    {
+      "id": "suite:frontend_sandbox_playwright_runner_vitest",
+      "label": "Frontend Lab & QA Sandbox Playwright Dynamic Runner & SSE Streaming Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/__tests__/PlaywrightRunnerSandboxView.test.tsx"
+    },
+    {
+      "id": "suite:frontend_sandbox_telemetry_vitest",
+      "label": "Frontend Lab & QA Sandbox API Client & Telemetry Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/__tests__/SandboxApiAndTelemetry.test.ts"
+    },
+    {
+      "id": "suite:frontend_sandbox_views_vitest",
+      "label": "Frontend Lab & QA Sandbox Views Interactive Vitest Suite",
+      "type": "verification_suite",
+      "path": "oppytec-frontend/src/features/platform-admin/sandbox/__tests__/SandboxViews.test.tsx"
     },
     {
       "id": "suite:frontend_telemetry_test",
@@ -1932,6 +2046,11 @@
       "source": "app:backend_main",
       "target": "router:oppy_ai",
       "relation": "mounts_api_router"
+    },
+    {
+      "source": "app:backend_main",
+      "target": "router:platform_admin_sandbox",
+      "relation": "mounts_sandbox_router"
     },
     {
       "source": "app:backend_main",
@@ -2144,6 +2263,11 @@
       "relation": "renders_admin_flag_selector"
     },
     {
+      "source": "frontend:feature_platform_admin",
+      "target": "frontend:sandbox_layout",
+      "relation": "mounts_sandbox_layout"
+    },
+    {
       "source": "frontend:feature_recipes",
       "target": "frontend:shared_fx_currency",
       "relation": "formats_multi_currency_escandallo_costs"
@@ -2207,6 +2331,56 @@
       "source": "frontend:quota_progress_indicator",
       "target": "migration:0003_public_plans_quotas",
       "relation": "displays_plan_quotas_usage"
+    },
+    {
+      "source": "frontend:sandbox_fefo_dates_view",
+      "target": "frontend:currency_selector",
+      "relation": "formats_simulated_loss_currency"
+    },
+    {
+      "source": "frontend:sandbox_fefo_dates_view",
+      "target": "frontend:sandbox_fefo_math",
+      "relation": "evaluates_fefo_projections_pure_math"
+    },
+    {
+      "source": "frontend:sandbox_fefo_dates_view",
+      "target": "router:platform_admin_sandbox",
+      "relation": "consumes_fefo_dates_api"
+    },
+    {
+      "source": "frontend:sandbox_layout",
+      "target": "frontend:sandbox_fefo_dates_view",
+      "relation": "renders_fefo_dates_tab"
+    },
+    {
+      "source": "frontend:sandbox_layout",
+      "target": "frontend:sandbox_mock_data_view",
+      "relation": "renders_mock_data_tab"
+    },
+    {
+      "source": "frontend:sandbox_layout",
+      "target": "frontend:sandbox_playwright_runner_view",
+      "relation": "renders_playwright_runner_tab"
+    },
+    {
+      "source": "frontend:sandbox_mock_data_view",
+      "target": "frontend:canonical_gastronomic_presets",
+      "relation": "loads_canonical_presets"
+    },
+    {
+      "source": "frontend:sandbox_mock_data_view",
+      "target": "frontend:mock_mode_storage",
+      "relation": "controls_mock_data_mode"
+    },
+    {
+      "source": "frontend:sandbox_mock_data_view",
+      "target": "router:platform_admin_sandbox",
+      "relation": "consumes_mock_data_api"
+    },
+    {
+      "source": "frontend:sandbox_playwright_runner_view",
+      "target": "router:platform_admin_sandbox",
+      "relation": "consumes_playwright_runner_api"
     },
     {
       "source": "frontend:shared_realtime_ws",
@@ -2344,6 +2518,11 @@
       "relation": "orchestrates_holding_hub_service"
     },
     {
+      "source": "module:tenancy",
+      "target": "service:sandbox_manager",
+      "relation": "orchestrates_sandbox_service"
+    },
+    {
       "source": "openspec:business_domain_vault",
       "target": "openspec:engineering_code_vault",
       "relation": "pairs_1_to_1_bipartite_contracts"
@@ -2409,6 +2588,21 @@
       "relation": "dispatches_catalog_crud_requests"
     },
     {
+      "source": "router:platform_admin_sandbox",
+      "target": "module:tenancy",
+      "relation": "routes_to_tenancy_sandbox"
+    },
+    {
+      "source": "router:platform_admin_sandbox",
+      "target": "schema:platform_admin_sandbox",
+      "relation": "validates_request_and_response_schemas"
+    },
+    {
+      "source": "router:platform_admin_sandbox",
+      "target": "service:sandbox_manager",
+      "relation": "invokes_sandbox_service"
+    },
+    {
       "source": "router:procurement",
       "target": "module:procurement",
       "relation": "routes_to_domain_module"
@@ -2452,6 +2646,11 @@
       "source": "service:oppyfy_code_mode",
       "target": "module:oppy_ai",
       "relation": "orchestrates_code_mode"
+    },
+    {
+      "source": "service:sandbox_manager",
+      "target": "schema:platform_admin_sandbox",
+      "relation": "populates_pydantic_models"
     },
     {
       "source": "suite:ai_evals_bilingual_parity",
@@ -2519,6 +2718,26 @@
       "relation": "verifies_otel_spans_and_latency_sla"
     },
     {
+      "source": "suite:backend_sandbox_api",
+      "target": "router:platform_admin_sandbox",
+      "relation": "tests_sandbox_endpoints_and_rbac"
+    },
+    {
+      "source": "suite:backend_sandbox_api",
+      "target": "schema:platform_admin_sandbox",
+      "relation": "verifies_presets_and_reset_schemas"
+    },
+    {
+      "source": "suite:backend_sandbox_api",
+      "target": "service:sandbox_manager",
+      "relation": "tests_mock_data_and_simulation_logic"
+    },
+    {
+      "source": "suite:backend_sandbox_observability",
+      "target": "router:platform_admin_sandbox",
+      "relation": "verifies_environment_isolation_and_otel"
+    },
+    {
       "source": "suite:code_mode_sandbox_security_test",
       "target": "core:code_mode_sandbox",
       "relation": "audits_sandbox_escapes_and_watchdog"
@@ -2584,6 +2803,76 @@
       "relation": "verifies_view_and_rbac"
     },
     {
+      "source": "suite:frontend_sandbox_fefo_dates_view_vitest",
+      "target": "frontend:sandbox_fefo_dates_view",
+      "relation": "verifies_time_travel_slider_and_modals"
+    },
+    {
+      "source": "suite:frontend_sandbox_fefo_dates_view_vitest",
+      "target": "router:platform_admin_sandbox",
+      "relation": "verifies_fefo_simulate_and_shift_api"
+    },
+    {
+      "source": "suite:frontend_sandbox_fefo_math_vitest",
+      "target": "frontend:sandbox_fefo_dates_view",
+      "relation": "verifies_canonical_scenarios_and_sync"
+    },
+    {
+      "source": "suite:frontend_sandbox_fefo_math_vitest",
+      "target": "frontend:sandbox_fefo_math",
+      "relation": "verifies_pure_math_and_loss_rates"
+    },
+    {
+      "source": "suite:frontend_sandbox_i18n_vitest",
+      "target": "frontend:sandbox_fefo_dates_view",
+      "relation": "verifies_currency_and_translations"
+    },
+    {
+      "source": "suite:frontend_sandbox_master_switch_presets_vitest",
+      "target": "frontend:canonical_gastronomic_presets",
+      "relation": "verifies_presets_loading"
+    },
+    {
+      "source": "suite:frontend_sandbox_master_switch_presets_vitest",
+      "target": "frontend:mock_mode_storage",
+      "relation": "verifies_mode_storage_reactivity"
+    },
+    {
+      "source": "suite:frontend_sandbox_master_switch_presets_vitest",
+      "target": "frontend:sandbox_mock_data_view",
+      "relation": "verifies_master_switch_and_presets"
+    },
+    {
+      "source": "suite:frontend_sandbox_playwright_runner_vitest",
+      "target": "frontend:sandbox_playwright_runner_view",
+      "relation": "verifies_playwright_catalog_and_streaming_ui"
+    },
+    {
+      "source": "suite:frontend_sandbox_playwright_runner_vitest",
+      "target": "router:platform_admin_sandbox",
+      "relation": "verifies_playwright_catalog_and_stream_api"
+    },
+    {
+      "source": "suite:frontend_sandbox_telemetry_vitest",
+      "target": "router:platform_admin_sandbox",
+      "relation": "verifies_headers_and_traceparent"
+    },
+    {
+      "source": "suite:frontend_sandbox_views_vitest",
+      "target": "frontend:sandbox_fefo_dates_view",
+      "relation": "verifies_fefo_dates_ui"
+    },
+    {
+      "source": "suite:frontend_sandbox_views_vitest",
+      "target": "frontend:sandbox_mock_data_view",
+      "relation": "verifies_mock_data_ui_and_actions"
+    },
+    {
+      "source": "suite:frontend_sandbox_views_vitest",
+      "target": "frontend:sandbox_playwright_runner_view",
+      "relation": "verifies_playwright_runner_ui"
+    },
+    {
       "source": "suite:frontend_telemetry_test",
       "target": "frontend:app_shell",
       "relation": "verifies_telemetry_and_spans"
@@ -2635,7 +2924,7 @@
     "frontend_features": 11,
     "frontend_shared_kernels": 5,
     "cross_feature_imports": 0,
-    "verification_suites": 31,
+    "verification_suites": 40,
     "redteam_vectors": 11,
     "e2e_flows": 5,
     "archify_atlas_maps": 5,
@@ -2644,12 +2933,12 @@
     "load_test_target_rps": 500,
     "load_test_p95_budget_ms": 120,
     "rubric_score": "10/10",
-    "nodes_count": 132,
-    "edges_count": 161,
+    "nodes_count": 151,
+    "edges_count": 196,
     "frontend_admin_views": 4,
-    "backend_routers": 15,
+    "backend_routers": 16,
     "alembic_migrations": 20,
-    "updated_at": "2026-11-05T17:40:44.089510+00:00"
+    "updated_at": "2026-11-07T01:38:11.344388+00:00"
   }
 }
   </script>

@@ -1,5 +1,6 @@
 // oppytec-frontend/src/features/events/api/eventsApi.ts
 import { apiRequest } from "@/shared/api/httpClient";
+import { isMockDataEnabled } from "@/shared/mock/mockModeStorage";
 import type {
   Salon,
   SalonCreatePayload,
@@ -38,7 +39,7 @@ export const eventsApi = {
     const query = areaId !== undefined && areaId !== "all" ? `?area_operativa_id=${areaId}` : "";
     const response = await apiRequest<Salon[]>(`${BASE_PATH}/salones${query}`, {
       method: "GET",
-      fallbackData: MOCK_SALONES,
+      fallbackData: isMockDataEnabled() ? MOCK_SALONES : [],
     });
     return response.data;
   },
@@ -126,7 +127,7 @@ export const eventsApi = {
     const queryString = params.toString() ? `?${params.toString()}` : "";
     const response = await apiRequest<EventoListItem[]>(`${BASE_PATH}${queryString}`, {
       method: "GET",
-      fallbackData: MOCK_EVENTOS_LIST,
+      fallbackData: isMockDataEnabled() ? MOCK_EVENTOS_LIST : [],
     });
     return response.data;
   },
@@ -324,17 +325,31 @@ export const eventsApi = {
 
   async getFaltantesAnalytics(areaId?: number | string): Promise<EventFaltantesResponse> {
     const query = areaId !== undefined && areaId !== "all" ? `?area_operativa_id=${areaId}` : "";
+    const fallback: EventFaltantesResponse = isMockDataEnabled()
+      ? MOCK_FALTANTES_RESPONSE
+      : {
+          total_faltantes: 0,
+          eventos_afectados_count: 0,
+          generado_at: new Date().toISOString(),
+          items: [],
+        };
     const response = await apiRequest<EventFaltantesResponse>(`${BASE_PATH}/faltantes${query}`, {
       method: "GET",
-      fallbackData: MOCK_FALTANTES_RESPONSE,
+      fallbackData: fallback,
     });
     return response.data;
   },
 
   async getCommittedStock(bodegaId?: string | number): Promise<CommittedStockSummaryResponse> {
     const query = bodegaId !== undefined && bodegaId !== "all" ? `?bodega_id=${bodegaId}` : "";
-    let fallback = MOCK_COMMITTED_STOCK_RESPONSE;
-    if (bodegaId !== undefined && bodegaId !== "all") {
+    let fallback: CommittedStockSummaryResponse = isMockDataEnabled()
+      ? MOCK_COMMITTED_STOCK_RESPONSE
+      : {
+          total_items: 0,
+          items: [],
+          generado_at: new Date().toISOString(),
+        };
+    if (isMockDataEnabled() && bodegaId !== undefined && bodegaId !== "all") {
       const bId = Number(bodegaId);
       const filtered = MOCK_COMMITTED_STOCK_RESPONSE.items.filter((it) => it.bodega_id === bId);
       fallback = {
@@ -358,7 +373,7 @@ export const eventsApi = {
       `${BASE_PATH}/alerts`,
       {
         method: "GET",
-        fallbackData: MOCK_EVENT_ALERTS,
+        fallbackData: isMockDataEnabled() ? MOCK_EVENT_ALERTS : [],
       }
     );
     if (Array.isArray(response.data)) {

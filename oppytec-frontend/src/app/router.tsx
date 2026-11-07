@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -31,6 +31,10 @@ import {
   TokenConsumptionPage,
   JevConsumptionPage,
   AiModelsPage,
+  SandboxLayout,
+  MockDataSandboxView,
+  PlaywrightRunnerSandboxView,
+  FefoDatesSandboxView,
 } from "@/features/platform-admin";
 
 import { ProcurementFeatureView, ProveedoresPage } from "@/features/procurement";
@@ -62,6 +66,7 @@ import {
 import { getRuntimeEnv } from "@/shared/config/env";
 import { useTheme } from "@/shared/hooks";
 import { getActiveLanguage, type SupportedLanguage, translateKey } from "@/shared/i18n";
+import { isMockDataEnabled, useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 export interface PrivateRouteProps {
   readonly children: ReactNode;
@@ -148,21 +153,39 @@ export function CleanAdminDashboard() {
 export function ClientAppShell() {
   const runtimeEnv = getRuntimeEnv();
   const { theme, setTheme } = useTheme("ocean-blue");
-  const [activeTenant, setActiveTenant] = useState<TenantOption>(
-    () =>
-      OFFICIAL_TENANT_OPTIONS[0] ?? {
-        holdingId: "holding-genesis",
-        holdingName: "Holding Principal",
-        tenantId: "tenant_genesis",
-        tenantName: "Local Principal",
-        rut: "76.000.000-1",
-      }
+  const { isDemo } = useMockDataMode();
+  const [activeTenant, setActiveTenant] = useState<TenantOption>(() =>
+    isMockDataEnabled() && OFFICIAL_TENANT_OPTIONS[0]
+      ? OFFICIAL_TENANT_OPTIONS[0]
+      : {
+          holdingId: "",
+          holdingName: "",
+          tenantId: "tenant_genesis",
+          tenantName: "Sin local asignado",
+          rut: "",
+        }
   );
-  const [activeWarehouseId, setActiveWarehouseId] = useState<string>(
-    OFFICIAL_WAREHOUSES[0]?.id ?? "bod-cocina-central"
+  const [activeWarehouseId, setActiveWarehouseId] = useState<string>(() =>
+    isMockDataEnabled() ? (OFFICIAL_WAREHOUSES[0]?.id ?? "bod-cocina-central") : ""
   );
   const [activeFeature, setActiveFeature] = useState<FeatureRouteId>("analytics");
   const [language, setLanguage] = useState<SupportedLanguage>(() => getActiveLanguage());
+
+  useEffect(() => {
+    if (isDemo && OFFICIAL_TENANT_OPTIONS[0]) {
+      setActiveTenant(OFFICIAL_TENANT_OPTIONS[0]);
+      setActiveWarehouseId(OFFICIAL_WAREHOUSES[0]?.id ?? "bod-cocina-central");
+    } else if (!isDemo) {
+      setActiveTenant({
+        holdingId: "",
+        holdingName: "",
+        tenantId: "tenant_genesis",
+        tenantName: "Sin local asignado",
+        rut: "",
+      });
+      setActiveWarehouseId("");
+    }
+  }, [isDemo]);
 
   return (
     <AppLayout
@@ -304,6 +327,32 @@ export function AppRouter() {
                 title="Bóveda de Respaldos"
                 description="Respaldos cifrados en 4 capas (.sql.zst.age)"
               />
+            }
+          />
+          {/* Lab & QA Sandbox Routes */}
+          <Route path="sandbox" element={<Navigate to="/admin/sandbox/mock-data" replace />} />
+          <Route
+            path="sandbox/mock-data"
+            element={
+              <SandboxLayout activeTab="mock-data">
+                <MockDataSandboxView />
+              </SandboxLayout>
+            }
+          />
+          <Route
+            path="sandbox/playwright-runner"
+            element={
+              <SandboxLayout activeTab="playwright-runner">
+                <PlaywrightRunnerSandboxView />
+              </SandboxLayout>
+            }
+          />
+          <Route
+            path="sandbox/fefo-dates"
+            element={
+              <SandboxLayout activeTab="fefo-dates">
+                <FefoDatesSandboxView />
+              </SandboxLayout>
             }
           />
           <Route path="*" element={<Navigate to="/admin" replace />} />

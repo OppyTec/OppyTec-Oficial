@@ -2,6 +2,7 @@ import { Warehouse } from "lucide-react";
 import { setHttpRequestContext } from "@/shared/api/httpClient";
 import { translateKey } from "@/shared/i18n";
 import { cn } from "@/shared/lib";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 export interface WarehouseOption {
   readonly id: string;
@@ -27,6 +28,9 @@ export function BodegaSelector({
   className,
   allowAll = false,
 }: BodegaSelectorProps) {
+  const { isDemo } = useMockDataMode();
+  const warehouses = isDemo ? OFFICIAL_WAREHOUSES : [];
+
   const handleSelect = (warehouseId: string): void => {
     setHttpRequestContext({ warehouseId });
     onSelectWarehouse(warehouseId);
@@ -53,7 +57,10 @@ export function BodegaSelector({
         {allowAll && (
           <option value="all">Todas las Bodegas</option>
         )}
-        {OFFICIAL_WAREHOUSES.map((wh) => (
+        {warehouses.length === 0 && !allowAll && (
+          <option value="">Sin bodegas registradas</option>
+        )}
+        {warehouses.map((wh) => (
           <option key={wh.id} value={wh.id}>
             {wh.label}
           </option>

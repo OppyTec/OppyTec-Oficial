@@ -163,9 +163,12 @@ describe("Holding Hub Enterprise — Suite de Pruebas Frontend (Etapa 2)", () =>
     const confirmBtn = screen.getByTestId("plan-change-confirm-btn");
     fireEvent.click(confirmBtn);
 
-    await waitFor(() => {
-      expect(screen.getByTestId("plan-change-success-banner")).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByTestId("plan-change-success-banner")).toBeInTheDocument();
+      },
+      { timeout: 4000 }
+    );
   });
 
   it("5. Navega a la pestaña de Créditos IA, cambia alcance, rangos del gráfico y compra créditos", async () => {

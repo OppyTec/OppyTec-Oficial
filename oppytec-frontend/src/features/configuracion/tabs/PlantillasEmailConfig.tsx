@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Mail,
   Plus,
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ResponsiveDialog } from "@/shared/components/ui/ResponsiveDialog";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { cn } from "@/shared/lib";
 import { translateKey, useLanguage } from "@/shared/i18n";
 
@@ -82,8 +83,18 @@ const INITIAL_PLANTILLAS: PlantillaEmailItem[] = [
 
 export function PlantillasEmailConfig() {
   useLanguage();
-  const [plantillas, setPlantillas] = useState<PlantillaEmailItem[]>(INITIAL_PLANTILLAS);
+  const [plantillas, setPlantillas] = useState<PlantillaEmailItem[]>(() =>
+    isMockDataEnabled() ? INITIAL_PLANTILLAS : []
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      setPlantillas(isMockDataEnabled() ? INITIAL_PLANTILLAS : []);
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, []);
   const [editingPlantilla, setEditingPlantilla] = useState<PlantillaEmailItem | null>(null);
   const [deletePlantillaId, setDeletePlantillaId] = useState<string | null>(null);
 

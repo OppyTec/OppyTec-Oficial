@@ -1,71 +1,52 @@
-# Reporte de Traspaso (`Handover`) — Agente 08: Especialista en Observabilidad y Entornos
+# Reporte de Traspaso (`Handover`) — Agente 08: Especialista en Observabilidad, Docker y Entornos
 
-- **Fecha UTC:** 2026-11-05T15:50:00Z
-- **Fase / Tarea:** Etapa 3 — Holding Hub Enterprise: Observabilidad 4-Pilares, OpenTelemetry Spans, Contexto Sentry y SLA p95
-- **Estado de Certificación:** `HOLDING_HUB_ENTERPRISE_STAGE3_OBSERVABILITY_CERTIFIED`
+- **Fecha UTC:** 2026-11-07T01:13:30Z
+- **Fase / Tarea:** Etapa 3 (ADR-022) — Auditoría de Telemetría OpenTelemetry, Guardrails de 5 Entornos, Reconstrucción Docker y Certificación Clean Slate en Vivo
+- **Estado de Certificación:** `ADR022_CLEAN_SLATE_DOCKER_AND_OBSERVABILITY_CERTIFIED`
 
 ---
 
-## 1. Completed (Acciones de Observabilidad, Spans OTel, Sentry y Rendimiento)
+## 1. Completed (Auditoría OTel, Guardrails de 5 Entornos y Despliegue en Vivo)
 
-1. **Pre-ejecución Graphify (Regla de Oro):**
-   - Ejecutado `python scripts/harness.py nav "holding_hub_router"` y `python scripts/harness.py nav "holding"`.
+1. **Gobernanza Pre-ejecución Obligatoria (Graphify):**
+   - Ejecutado `python3 scripts/harness.py nav "observability"` (5 nodos / 9 aristas mapeadas).
+   - Ejecutado `python3 scripts/harness.py nav "sandbox"` (21 nodos / 10 aristas mapeadas).
+   - Reserva atómica AST registrada (`claim-ast`) para `oppytec-backend/Dockerfile` y `oppytec-backend/tests/unit/test_sandbox_observability_and_environments.py`.
 
-2. **Instrumentación OpenTelemetry con Spans Distribuidos:**
-   - **Capa de Aplicación (`oppytec-backend/src/modules/tenancy/application/holding_hub_service.py`):**
-     * Spans explícitos generados bajo tracer `oppytec.tenancy.holding_hub`:
-       - `holding_hub.get_summary`
-       - `holding_hub.get_tenants`
-       - `holding_hub.daily_credit_usage`
-       - `holding_hub.update_distribution`
-       - `holding_hub.purchase_credits`
-     * Inyección dinámica de atributos OTel:
-       - `holding.id` (UUID del holding corporativo)
-       - `tenants.count` (cantidad de sucursales activas asociadas)
-       - `credits.total` (balance consolidado o créditos mensuales del plan)
-       - `credits.used` (créditos consumidos o asignados)
-       - `plan.tier` (slug del plan contratado: basic, standard, enterprise)
-   - **Capa de Presentación / Router (`oppytec-backend/src/modules/tenancy/presentation/holding_hub_router.py`):**
-     * Spans enriquecidos en endpoints FastAPI correlacionados con `X-Trace-ID` y W3C `traceparent`:
-       - `GET /summary` -> `holding_hub.get_summary`
-       - `GET /tenants` -> `holding_hub.get_tenants`
-       - `GET /daily-credit-usage` -> `holding_hub.daily_credit_usage`
-       - `PUT /credit-distribution` -> `holding_hub.update_distribution`
-       - `POST /purchase-credits` -> `holding_hub.purchase_credits`
-       - `POST /change-plan` -> `holding_hub.change_plan`
-       - `GET /benchmarking` -> `holding_hub.benchmarking`
-       - `GET /ai-briefing` -> `holding_hub.ai_briefing`
+2. **Auditoría e Instrumentación OpenTelemetry y Guardrails de 5 Entornos (`sandbox_router.py`):**
+   - Verificado que `GET /api/v1/platform-admin/sandbox/mock-data/backup` emite su `trace_span("platform_admin_sandbox.mock_data.backup", tracer_name="oppytec.sandbox")` registrando `environment` y `mock_mode` (`X-OppyTec-Mock-Mode`).
+   - Verificado que `POST /api/v1/platform-admin/sandbox/mock-data/reset` ejecuta en primera instancia `_enforce_sandbox_environment_guard(action_name="mock_data_reset", dry_run=False)` (bloqueo 403 en `production`, confirmación 400 en `staging`, aislamiento de esquema 400 en todos los entornos) y emite su `trace_span("platform_admin_sandbox.mock_data.reset")` propagando `X-Trace-ID`, `traceparent` y `X-OppyTec-Mock-Mode`.
+   - Añadido test unitario `test_opentelemetry_and_mock_mode_propagation_on_mock_data_backup` en `oppytec-backend/tests/unit/test_sandbox_observability_and_environments.py` (26 passed / 0 failed).
 
-3. **Enriquecimiento de Contexto y Tags en Sentry / GlitchTip:**
-   - Implementado `enrich_sentry_telemetry_context` en `oppytec-backend/src/core/observability.py`.
-   - Etiquetas obligatorias inyectadas en todas las transacciones y errores del Hub:
-     * `holding_id`: UUID del Holding.
-     * `tenant_id`: UUID de la sucursal activa.
-     * `user_role`: Rol normalizado (`holding_owner`, `superuser`, `global_staff` o `rank_<N>`).
-   - Actualizado `scrub_sentry_event` para garantizar redacción determinista de PII (RUT, contraseñas, secretos, tarjetas) inyectando y preservando los tags obligatorios sin alterar la razón social inmutable.
-   - En `trace_span`: captura de excepciones no controladas mediante `sentry_sdk.push_scope()` con tags `holding_id`, `tenant_id` y `user_role`.
+3. **Actualización de Imagen Docker y Reconstrucción en Vivo (`docker compose up -d --build backend frontend`):**
+   - Actualizado `oppytec-backend/Dockerfile` para incluir `COPY --chown=oppytec:oppytec fixtures ./fixtures` y `COPY --chown=oppytec:oppytec scripts ./scripts` dentro del contenedor runtime (`/app/fixtures/mock_data_backup.json` y `/app/scripts/clean_and_seed_genesis_db.py`).
+   - Reconstruidos y recreados los contenedores `oppytec-backend` (`http://localhost:8000`, `healthy`) y `oppytec-frontend` (`http://localhost:5173`, `running`).
 
-4. **Métricas Operativas en Memoria (`HoldingHubOperationMetric`):**
-   - Dataclass inmutable con retención acotada (`MAX_IN_MEMORY_METRICS_CAPACITY = 1000`) para pruebas CI y telemetría de Grafana LGTM.
-   - Funciones de acceso y reseteo: `get_in_memory_holding_hub_metrics()` y `clear_in_memory_holding_hub_metrics()`.
+4. **Ejecución de `clean_and_seed_genesis_db.py` y Evidencias de Verificación en Vivo:**
+   - Ejecutado `oppytec-backend/scripts/clean_and_seed_genesis_db.py` contra `oppytec-postgres`:
+     * `purged_tables_count`: `21`
+     * `holdings`: `0`, `legal_entities`: `0`, `tenants`: `0`, `client_users`: `0`
+     * `global_users`: `1` (`OppyTec.Admin@gmail.com` / `oppytec.admin`)
+     * `app_modules`: `7`, `global_roles`: `4`, `global_permissions`: `1`, `system_plans`: `3`, `ai_model_configs`: `6`, `saas_ai_policy_config`: `1`
+   - **Verificación HTTP en Vivo contra `http://localhost:8000` y `http://localhost:5173`:**
+     1) `POST http://localhost:8000/api/v1/auth/login` (`OppyTec.Admin@gmail.com` / `oppytec2026`) -> `200 OK` (JWT emitido).
+     2) `GET http://localhost:8000/api/v1/tenancy/holdings` -> `200 OK` (`[]`).
+     3) `GET http://localhost:8000/api/v1/tenancy/tenants` -> `200 OK` (`[]`).
+     4) `GET http://localhost:8000/api/v1/tenancy/client-users` -> `200 OK` (`[]`).
+     5) `GET http://localhost:8000/api/v1/tenancy/plans` -> `200 OK` (`['basic', 'starter', 'enterprise']`).
+     6) `GET http://localhost:8000/api/v1/platform-admin/sandbox/mock-data/backup` -> `200 OK` (`X-Trace-ID` y `X-OppyTec-Mock-Mode: clean` preservados).
+     7) `POST http://localhost:8000/api/v1/platform-admin/sandbox/mock-data/reset` (`targetPresetId: "clean-slate"`) -> `200 OK` (`X-Trace-ID` preservado, `presetRestored: "clean-slate"`).
+     8) `GET http://localhost:5173/admin/sandbox/mock-data` -> `200 OK`.
 
-5. **Auditoría de Latencia y Rendimiento (SLA p95 < 200ms):**
-   - Auditadas 60 iteraciones continuas de agregación en `test_holding_hub_latency_sla_p95_under_200ms`:
-     * Latencia promedio: ~0.08 ms (simulada) / < 25 ms (DB).
-     * Percentil 95 (p95): < 200 ms (ampliamente superado con margen holgado).
-   - Frontend optimizado: 8/8 tests vitest pasando en 657 ms en `oppytec-frontend/src/features/holding-hub/HoldingHub.test.tsx`.
-
-6. **Suite de Tests de Observabilidad y Cero Regresiones:**
-   - Implementada suite completa en `oppytec-backend/tests/unit/test_holding_hub_observability.py` (13/13 tests pasando en 0.38s).
-   - Verificados los 17 tests de integración en `oppytec-backend/tests/integration/test_holding_hub_api.py` (17/17 passing).
-   - Ejecutado `python scripts/harness.py test-fast`: **100% test pass (696+ tests) con 0 regresiones**.
+5. **Post-ejecución Graphify (`sync-graph`):**
+   - Ejecutado `python3 scripts/harness.py sync-graph` (151 nodos, 196 aristas sincronizadas).
 
 ---
 
 ## 2. Friction & Failures
-- Se detectó y resolvió una importación circular entre `src.adapters.ai.jev_adapter` y `src.modules.oppy_ai.application.holding_briefing_service`. Se desacopló realizando la inicialización diferida de `InMemoryTelemetrySink` dentro de `__init__`.
+- Se detectó preventivamente que `oppytec-backend/Dockerfile` solo copiaba `alembic`, `alembic.ini` y `src`, omitiendo `fixtures/` y `scripts/`. Se incorporó `COPY --chown=oppytec:oppytec fixtures ./fixtures` y `COPY --chown=oppytec:oppytec scripts ./scripts` antes de reconstruir la imagen para garantizar que `/api/v1/platform-admin/sandbox/mock-data/backup` y `restore_runtime_mock_stores` dispongan de `/app/fixtures/mock_data_backup.json` dentro del contenedor en vivo.
 
 ---
 
 ## 3. Next Exact Action
-- Despacho y entrega al Orquestador (Prime Agent) para el cierre y traspaso de la Etapa 3 del Holding Hub Enterprise.
+- Despachar reporte de certificación al Orquestador (`e2a1390c-b5aa-4770-893e-4f3d652ff3c0`) para habilitar la Etapa 4 (QA Parity, Red Team Security, Git Merge Arbiter y Tech Writer).

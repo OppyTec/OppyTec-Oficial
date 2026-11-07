@@ -23,6 +23,7 @@ import {
 import { MoneyBadge } from "@/shared/currency";
 import { toast } from "@/shared/components/ui/sonner";
 import { translateKey } from "@/shared/i18n";
+import { isMockDataEnabled, useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 function useSafeNavigate(): (path: string) => void {
   try {
@@ -360,56 +361,46 @@ const INITIAL_PLANS_FALLBACK: readonly PlanCatalogItem[] = [
   },
 ];
 
+const DEMO_HOLDINGS_FALLBACK: readonly HoldingRecordItem[] = [
+  {
+    holding_id: "holding_genesis",
+    name: "Holding Principal Génesis",
+    plan_slug: "basic",
+    max_active_users: 5,
+    max_storage_mb: 512,
+    is_active: true,
+  },
+  {
+    holding_id: "holding_pacifico",
+    name: "Grupo Gastronómico Pacífico SpA",
+    plan_slug: "starter",
+    max_active_users: 10,
+    max_storage_mb: 2048,
+    is_active: true,
+  },
+];
+
 /* =========================================================================
  * 1. VISTA: GRUPOS (HOLDINGS) — DynamicAdminTable + DynamicAdminForm Modal
  * ========================================================================= */
 export function AdminHoldingsView() {
   const navigate = useSafeNavigate();
-  const [holdings, setHoldings] = useState<readonly HoldingRecordItem[]>(() => [
-    {
-      holding_id: "holding_genesis",
-      name: "Holding Principal Génesis",
-      plan_slug: "basic",
-      max_active_users: 5,
-      max_storage_mb: 512,
-      is_active: true,
-    },
-    {
-      holding_id: "holding_pacifico",
-      name: "Grupo Gastronómico Pacífico SpA",
-      plan_slug: "starter",
-      max_active_users: 10,
-      max_storage_mb: 2048,
-      is_active: true,
-    },
-  ]);
+  const { isDemo } = useMockDataMode();
+  const [holdings, setHoldings] = useState<readonly HoldingRecordItem[]>(() =>
+    isMockDataEnabled() ? DEMO_HOLDINGS_FALLBACK : []
+  );
   const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingHolding, setEditingHolding] = useState<HoldingRecordItem | null>(null);
 
   const fetchHoldings = () => {
+    const fallback = isMockDataEnabled() ? [...DEMO_HOLDINGS_FALLBACK] : [];
+    setHoldings(fallback);
     apiRequest<HoldingRecordItem[]>("/tenancy/holdings", {
-      fallbackData: [
-        {
-          holding_id: "holding_genesis",
-          name: "Holding Principal Génesis",
-          plan_slug: "basic",
-          max_active_users: 5,
-          max_storage_mb: 512,
-          is_active: true,
-        },
-        {
-          holding_id: "holding_pacifico",
-          name: "Grupo Gastronómico Pacífico SpA",
-          plan_slug: "starter",
-          max_active_users: 10,
-          max_storage_mb: 2048,
-          is_active: true,
-        },
-      ],
+      fallbackData: fallback,
     })
       .then((res) => {
-        if (Array.isArray(res.data) && res.data.length > 0) {
+        if (Array.isArray(res.data)) {
           setHoldings(res.data);
         }
       })
@@ -419,7 +410,7 @@ export function AdminHoldingsView() {
 
   useEffect(() => {
     fetchHoldings();
-  }, []);
+  }, [isDemo]);
 
   const handleCreate = () => {
     setEditingHolding(null);
@@ -676,59 +667,47 @@ export function AdminHoldingsView() {
   );
 }
 
+const DEMO_LEGAL_ENTITIES_FALLBACK: readonly LegalEntityRecordItem[] = [
+  {
+    entity_id: "le_genesis",
+    holding_id: "holding_genesis",
+    tax_id: "76.000.000-1",
+    legal_name: "OppyTec SaaS SpA",
+    legal_address: "Av. Providencia 1200, Santiago",
+    is_active: true,
+    tenants_count: 1,
+  },
+  {
+    entity_id: "le_pacifico",
+    holding_id: "holding_pacifico",
+    tax_id: "77.123.456-K",
+    legal_name: "Inversiones Gastronómicas Pacífico SpA",
+    legal_address: "Costanera Center 2400, Santiago",
+    is_active: true,
+    tenants_count: 1,
+  },
+];
+
 /* =========================================================================
  * 2. VISTA: ENTIDADES LEGALES (RUT 1:1) — DynamicAdminTable + DynamicAdminForm
  * ========================================================================= */
 export function AdminLegalEntitiesView() {
-  const [entities, setEntities] = useState<readonly LegalEntityRecordItem[]>(() => [
-    {
-      entity_id: "le_genesis",
-      holding_id: "holding_genesis",
-      tax_id: "76.000.000-1",
-      legal_name: "OppyTec SaaS SpA",
-      legal_address: "Av. Providencia 1200, Santiago",
-      is_active: true,
-      tenants_count: 1,
-    },
-    {
-      entity_id: "le_pacifico",
-      holding_id: "holding_pacifico",
-      tax_id: "77.123.456-K",
-      legal_name: "Inversiones Gastronómicas Pacífico SpA",
-      legal_address: "Costanera Center 2400, Santiago",
-      is_active: true,
-      tenants_count: 1,
-    },
-  ]);
+  const { isDemo } = useMockDataMode();
+  const [entities, setEntities] = useState<readonly LegalEntityRecordItem[]>(() =>
+    isMockDataEnabled() ? DEMO_LEGAL_ENTITIES_FALLBACK : []
+  );
   const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingEntity, setEditingEntity] = useState<LegalEntityRecordItem | null>(null);
 
   const fetchEntities = () => {
+    const fallback = isMockDataEnabled() ? [...DEMO_LEGAL_ENTITIES_FALLBACK] : [];
+    setEntities(fallback);
     apiRequest<LegalEntityRecordItem[]>("/tenancy/legal-entities", {
-      fallbackData: [
-        {
-          entity_id: "le_genesis",
-          holding_id: "holding_genesis",
-          tax_id: "76.000.000-1",
-          legal_name: "OppyTec SaaS SpA",
-          legal_address: "Av. Providencia 1200, Santiago",
-          is_active: true,
-          tenants_count: 1,
-        },
-        {
-          entity_id: "le_pacifico",
-          holding_id: "holding_pacifico",
-          tax_id: "77.123.456-K",
-          legal_name: "Inversiones Gastronómicas Pacífico SpA",
-          legal_address: "Costanera Center 2400, Santiago",
-          is_active: true,
-          tenants_count: 1,
-        },
-      ],
+      fallbackData: fallback,
     })
       .then((res) => {
-        if (Array.isArray(res.data) && res.data.length > 0) {
+        if (Array.isArray(res.data)) {
           setEntities(res.data);
         }
       })
@@ -738,7 +717,7 @@ export function AdminLegalEntitiesView() {
 
   useEffect(() => {
     fetchEntities();
-  }, []);
+  }, [isDemo]);
 
   const handleCreate = () => {
     setEditingEntity(null);
@@ -974,6 +953,31 @@ export function AdminLegalEntitiesView() {
   );
 }
 
+const DEMO_TENANTS_FALLBACK: readonly TenantRecordItem[] = [
+  {
+    tenant_id: "tenant_genesis",
+    holding_id: "holding_genesis",
+    legal_entity_id: "le_genesis",
+    schema_name: "tenant_genesis",
+    display_name: "Local Central Génesis",
+    base_currency: "CLP",
+    enabled_modules: [...PLAN_BASICO_10_MODULE_SLUGS],
+    business_type: "Restaurante a la Carta",
+    is_active: true,
+  },
+  {
+    tenant_id: "tenant_pacifico_centro",
+    holding_id: "holding_pacifico",
+    legal_entity_id: "le_pacifico",
+    schema_name: "tenant_pacifico_centro",
+    display_name: "Sucursal Pacífico Centro",
+    base_currency: "CLP",
+    enabled_modules: [...PLAN_BASICO_10_MODULE_SLUGS],
+    business_type: "Restaurante a la Carta",
+    is_active: true,
+  },
+];
+
 /* =========================================================================
  * 3. VISTA: INQUILINOS (TENANTS) — DynamicAdminTable + Árbol Modal Legacy
  * ========================================================================= */
@@ -981,31 +985,11 @@ export function AdminTenantsView() {
   const navigate = useSafeNavigate();
   const [searchParams] = useSafeSearchParams();
   const holdingFilter = searchParams.get("holding_id");
+  const { isDemo } = useMockDataMode();
 
-  const [tenants, setTenants] = useState<readonly TenantRecordItem[]>(() => [
-    {
-      tenant_id: "tenant_genesis",
-      holding_id: "holding_genesis",
-      legal_entity_id: "le_genesis",
-      schema_name: "tenant_genesis",
-      display_name: "Local Central Génesis",
-      base_currency: "CLP",
-      enabled_modules: [...PLAN_BASICO_10_MODULE_SLUGS],
-      business_type: "Restaurante a la Carta",
-      is_active: true,
-    },
-    {
-      tenant_id: "tenant_pacifico_centro",
-      holding_id: "holding_pacifico",
-      legal_entity_id: "le_pacifico",
-      schema_name: "tenant_pacifico_centro",
-      display_name: "Sucursal Pacífico Centro",
-      base_currency: "CLP",
-      enabled_modules: [...PLAN_BASICO_10_MODULE_SLUGS],
-      business_type: "Restaurante a la Carta",
-      is_active: true,
-    },
-  ]);
+  const [tenants, setTenants] = useState<readonly TenantRecordItem[]>(() =>
+    isMockDataEnabled() ? DEMO_TENANTS_FALLBACK : []
+  );
   const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingTenant, setEditingTenant] = useState<TenantRecordItem | null>(null);
@@ -1025,34 +1009,13 @@ export function AdminTenantsView() {
   const [impersonateNotice, setImpersonateNotice] = useState<string | null>(null);
 
   const fetchTenants = () => {
+    const fallback = isMockDataEnabled() ? [...DEMO_TENANTS_FALLBACK] : [];
+    setTenants(fallback);
     apiRequest<TenantRecordItem[]>("/tenancy/tenants", {
-      fallbackData: [
-        {
-          tenant_id: "tenant_genesis",
-          holding_id: "holding_genesis",
-          legal_entity_id: "le_genesis",
-          schema_name: "tenant_genesis",
-          display_name: "Local Central Génesis",
-          base_currency: "CLP",
-          enabled_modules: [...PLAN_BASICO_10_MODULE_SLUGS],
-          business_type: "Restaurante a la Carta",
-          is_active: true,
-        },
-        {
-          tenant_id: "tenant_pacifico_centro",
-          holding_id: "holding_pacifico",
-          legal_entity_id: "le_pacifico",
-          schema_name: "tenant_pacifico_centro",
-          display_name: "Sucursal Pacífico Centro",
-          base_currency: "CLP",
-          enabled_modules: [...PLAN_BASICO_10_MODULE_SLUGS],
-          business_type: "Restaurante a la Carta",
-          is_active: true,
-        },
-      ],
+      fallbackData: fallback,
     })
       .then((res) => {
-        if (Array.isArray(res.data) && res.data.length > 0) {
+        if (Array.isArray(res.data)) {
           setTenants(res.data);
         }
       })
@@ -1062,7 +1025,7 @@ export function AdminTenantsView() {
 
   useEffect(() => {
     fetchTenants();
-  }, []);
+  }, [isDemo]);
 
   const displayTenants = useMemo(() => {
     if (!holdingFilter) return tenants;
@@ -1574,75 +1537,55 @@ export function AdminTenantsView() {
   );
 }
 
+const DEMO_CLIENT_USERS_FALLBACK: readonly ClientUserRecordItem[] = [
+  {
+    user_id: 101,
+    holding_id: "holding_genesis",
+    tenant_id: "tenant_genesis",
+    username: "admin.local",
+    email: "admin.local@restaurant.cl",
+    first_name: "Administrador",
+    last_name: "Sucursal",
+    role_slug: "admin",
+    hierarchy_rank: 10,
+    is_holding_owner: false,
+    is_deleted: false,
+  },
+  {
+    user_id: 102,
+    holding_id: "holding_pacifico",
+    tenant_id: "tenant_pacifico_centro",
+    username: "cocinero.jefe",
+    email: "chef@pacifico.cl",
+    first_name: "Mario",
+    last_name: "Gómez",
+    role_slug: "supervisor",
+    hierarchy_rank: 20,
+    is_holding_owner: false,
+    is_deleted: false,
+  },
+];
+
 /* =========================================================================
  * 4. VISTA: USUARIOS CLIENTES — DynamicAdminTable + DynamicAdminForm Modal
  * ========================================================================= */
 export function AdminClientUsersView() {
-  const [users, setUsers] = useState<readonly ClientUserRecordItem[]>(() => [
-    {
-      user_id: 101,
-      holding_id: "holding_genesis",
-      tenant_id: "tenant_genesis",
-      username: "admin.local",
-      email: "admin.local@restaurant.cl",
-      first_name: "Administrador",
-      last_name: "Sucursal",
-      role_slug: "admin",
-      hierarchy_rank: 10,
-      is_holding_owner: false,
-      is_deleted: false,
-    },
-    {
-      user_id: 102,
-      holding_id: "holding_pacifico",
-      tenant_id: "tenant_pacifico_centro",
-      username: "cocinero.jefe",
-      email: "chef@pacifico.cl",
-      first_name: "Mario",
-      last_name: "Gómez",
-      role_slug: "supervisor",
-      hierarchy_rank: 20,
-      is_holding_owner: false,
-      is_deleted: false,
-    },
-  ]);
+  const { isDemo } = useMockDataMode();
+  const [users, setUsers] = useState<readonly ClientUserRecordItem[]>(() =>
+    isMockDataEnabled() ? DEMO_CLIENT_USERS_FALLBACK : []
+  );
   const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingUser, setEditingUser] = useState<ClientUserRecordItem | null>(null);
 
   const fetchUsers = () => {
+    const fallback = isMockDataEnabled() ? [...DEMO_CLIENT_USERS_FALLBACK] : [];
+    setUsers(fallback);
     apiRequest<ClientUserRecordItem[]>("/tenancy/client-users", {
-      fallbackData: [
-        {
-          user_id: 101,
-          holding_id: "holding_genesis",
-          tenant_id: "tenant_genesis",
-          username: "admin.local",
-          email: "admin.local@restaurant.cl",
-          first_name: "Administrador",
-          last_name: "Sucursal",
-          role_slug: "admin",
-          hierarchy_rank: 10,
-          is_holding_owner: false,
-          is_deleted: false,
-        },
-        {
-          user_id: 102,
-          holding_id: "holding_pacifico",
-          tenant_id: "tenant_pacifico_centro",
-          username: "cocinero.jefe",
-          email: "chef@pacifico.cl",
-          first_name: "Mario",
-          last_name: "Gómez",
-          role_slug: "supervisor",
-          hierarchy_rank: 20,
-          is_holding_owner: false,
-          is_deleted: false,
-        },
-      ],
+      fallbackData: fallback,
     })
       .then((res) => {
-        if (Array.isArray(res.data) && res.data.length > 0) {
+        if (Array.isArray(res.data)) {
           setUsers(res.data);
         }
       })
@@ -1652,7 +1595,7 @@ export function AdminClientUsersView() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [isDemo]);
 
   const handleCreate = () => {
     setEditingUser(null);
@@ -1931,37 +1874,52 @@ export function AdminClientUsersView() {
   );
 }
 
+const GENESIS_SUPERUSER: GlobalUserRecordItem = {
+  id: 1,
+  username: "oppytec.admin",
+  first_name: "SuperUser",
+  last_name: "OppyTec",
+  email: "OppyTec.Admin@gmail.com",
+  phone: "+56 9 9999 8888",
+  role: "superuser",
+  is_superuser: true,
+  is_active: true,
+};
+
+const DEMO_GLOBAL_USERS: readonly GlobalUserRecordItem[] = [
+  {
+    ...GENESIS_SUPERUSER,
+    email: "oppytec.admin@gmail.com",
+    role: "propietario",
+  },
+  {
+    id: 2,
+    username: "soporte.staff",
+    first_name: "Agente",
+    last_name: "Soporte",
+    email: "soporte@oppytec.com",
+    phone: "+56 9 8888 7777",
+    role: "admin",
+    is_superuser: false,
+    is_active: true,
+  },
+];
+
 /* =========================================================================
  * 5. VISTA: USUARIOS GLOBALES (STAFF / SUPERADMIN) — DynamicAdminTable + Form
  * ========================================================================= */
 export function AdminGlobalUsersView() {
-  const [users, setUsers] = useState<readonly GlobalUserRecordItem[]>([
-    {
-      id: 1,
-      username: "oppytec.admin",
-      first_name: "SuperUser",
-      last_name: "OppyTec",
-      email: "oppytec.admin@gmail.com",
-      phone: "+56 9 9999 8888",
-      role: "propietario",
-      is_superuser: true,
-      is_active: true,
-    },
-    {
-      id: 2,
-      username: "soporte.staff",
-      first_name: "Agente",
-      last_name: "Soporte",
-      email: "soporte@oppytec.com",
-      phone: "+56 9 8888 7777",
-      role: "admin",
-      is_superuser: false,
-      is_active: true,
-    },
-  ]);
+  const { isDemo } = useMockDataMode();
+  const [users, setUsers] = useState<readonly GlobalUserRecordItem[]>(() =>
+    isMockDataEnabled() ? DEMO_GLOBAL_USERS : [GENESIS_SUPERUSER]
+  );
   const [loading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingUser, setEditingUser] = useState<GlobalUserRecordItem | null>(null);
+
+  useEffect(() => {
+    setUsers(isDemo ? DEMO_GLOBAL_USERS : [GENESIS_SUPERUSER]);
+  }, [isDemo]);
 
   const handleCreate = () => {
     setEditingUser(null);
@@ -2251,9 +2209,16 @@ const DEFAULT_BUSINESS_TYPES: readonly BusinessTypeItem[] = [
 ];
 
 export function AdminBusinessTypesView() {
-  const [types, setTypes] = useState<readonly BusinessTypeItem[]>(DEFAULT_BUSINESS_TYPES);
+  const { isDemo } = useMockDataMode();
+  const [types, setTypes] = useState<readonly BusinessTypeItem[]>(() =>
+    isMockDataEnabled() ? DEFAULT_BUSINESS_TYPES : []
+  );
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingType, setEditingType] = useState<BusinessTypeItem | null>(null);
+
+  useEffect(() => {
+    setTypes(isDemo ? DEFAULT_BUSINESS_TYPES : []);
+  }, [isDemo]);
 
   const handleCreate = () => {
     setEditingType(null);
@@ -2597,12 +2562,23 @@ const DEFAULT_PLAN_CLIENT_COUNTS: Record<string, number> = {
 };
 
 export function AdminPlansView() {
+  const { isDemo } = useMockDataMode();
   const [plans, setPlans] = useState<readonly PlanCatalogItem[]>(
     INITIAL_PLANS_FALLBACK
   );
-  const [planClientCounts] = useState<Record<string, number>>(
-    DEFAULT_PLAN_CLIENT_COUNTS
+  const [planClientCounts, setPlanClientCounts] = useState<Record<string, number>>(() =>
+    isMockDataEnabled()
+      ? DEFAULT_PLAN_CLIENT_COUNTS
+      : { basic: 0, starter: 0, pro: 0, enterprise: 0 }
   );
+
+  useEffect(() => {
+    setPlanClientCounts(
+      isDemo
+        ? DEFAULT_PLAN_CLIENT_COUNTS
+        : { basic: 0, starter: 0, pro: 0, enterprise: 0 }
+    );
+  }, [isDemo]);
 
   // Estados de modales y pestañas
   const [isEditorModalOpen, setIsEditorModalOpen] = useState<boolean>(false);

@@ -193,6 +193,15 @@ class ProperNounImmutabilityError(OppyTecError):
     default_title = "Proper Noun Immutability Violation"
 
 
+class EnvironmentGuardViolationError(OppyTecError):
+    """Violación de salvaguardas de aislamiento de entorno canónico (fail-fast en staging/production)."""
+
+    default_status_code = 403
+    default_error_code = "ENVIRONMENT_GUARD_VIOLATION"
+    default_i18n_key = "security:errors.environment_guard_violation"
+    default_title = "Canonical Environment Guard Violation"
+
+
 class CrossTenantAccessError(OppyTecError):
     """Intento de acceso transversal prohibido entre Holdings distintos o Tenant no autorizado."""
 

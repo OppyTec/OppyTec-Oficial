@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 import { ResponsiveDialog } from "@/shared/components/ui/ResponsiveDialog";
 import { cn } from "@/shared/lib";
+import { isMockDataEnabled, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import type { StockItem } from "../../types";
 
 export interface SolicitudesDialogProps {
@@ -132,9 +133,16 @@ export function SolicitudesDialog({
   onRequestCreated,
 }: SolicitudesDialogProps) {
   const { t } = useTranslation("inventory");
+  const { isDemo } = useMockDataMode();
   const [activeTab, setActiveTab] = useState<SolicitudState>("pendientes");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [solicitudes, setSolicitudes] = useState<SolicitudItem[]>(INITIAL_MOCK_SOLICITUDES);
+  const [solicitudes, setSolicitudes] = useState<SolicitudItem[]>(() =>
+    isMockDataEnabled() ? INITIAL_MOCK_SOLICITUDES : []
+  );
+
+  useEffect(() => {
+    setSolicitudes(isDemo ? INITIAL_MOCK_SOLICITUDES : []);
+  }, [isDemo]);
 
   // Estados del Formulario de Nueva Solicitud
   const [newProductoId, setNewProductoId] = useState<number>(() => {

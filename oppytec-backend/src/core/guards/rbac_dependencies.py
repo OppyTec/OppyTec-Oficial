@@ -115,11 +115,20 @@ class RequireGlobalPermission:
     en el Plano Global (`public.*`).
     """
 
-    def __init__(self, permission_code: str, fallback_permission: str | None = None) -> None:
-        cleaned = permission_code.strip()
+    def __init__(
+        self,
+        permission_code: str | None = None,
+        fallback_permission: str | None = None,
+        *,
+        permission: str | None = None,
+    ) -> None:
+        raw_perm = permission if permission is not None else permission_code
+        if not raw_perm:
+            raise ValueError("Permission code is required.")
+        cleaned = raw_perm.strip()
         if not THREE_LEVEL_PERMISSION_REGEX.match(cleaned):
             raise ValueError(
-                f"Invalid 3-level RBAC permission '{permission_code}'. "
+                f"Invalid 3-level RBAC permission '{cleaned}'. "
                 "Expected '<modulo>.<submodulo>.<funcion>'."
             )
         self.permission_code: str = cleaned

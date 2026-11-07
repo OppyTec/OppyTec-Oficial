@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { apiRequest } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import {
   type AiModelCreatePayload,
@@ -33,11 +34,12 @@ export interface UseAiModelsReturn {
 }
 
 export async function fetchAiModels(): Promise<readonly AiModelItem[]> {
+  const fallback = isMockDataEnabled() ? MOCK_AI_MODELS : [];
   const res = await apiRequest<readonly AiModelItem[]>("/api/v1/platform-admin/ai-models", {
     method: "GET",
-    fallbackData: MOCK_AI_MODELS,
+    fallbackData: fallback,
   });
-  return Array.isArray(res.data) ? res.data : MOCK_AI_MODELS;
+  return Array.isArray(res.data) ? res.data : fallback;
 }
 
 export async function postAiModel(payload: AiModelCreatePayload): Promise<AiModelItem> {
@@ -96,14 +98,16 @@ export function useAiModels(filters?: UseAiModelsFilters): UseAiModelsReturn {
       });
     };
     window.addEventListener("admin_ai_models_changed", handleSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     return () => {
       window.removeEventListener("admin_ai_models_changed", handleSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     };
   }, [queryClient]);
 
   // Query principal
   const {
-    data: allModels = MOCK_AI_MODELS,
+    data: allModels = isMockDataEnabled() ? MOCK_AI_MODELS : [],
     isLoading,
     isError,
     error,

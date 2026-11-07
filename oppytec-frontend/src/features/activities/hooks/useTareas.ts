@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import type { PlantillaRutina, Tarea, TareaEstado, TareaUrgencia } from "../types";
 import { MOCK_PLANTILLAS, MOCK_TAREAS } from "../mockData";
@@ -41,6 +42,16 @@ export function useTareas(filters?: UseTareasFilters) {
     }
   }, [realtimeEvents, queryClient, tenantId]);
 
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.activities.all(tenantId),
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, [queryClient, tenantId]);
+
   // Query: Tareas
   const tareasQuery = useQuery({
     queryKey: queryKeys.activities.tareas(tenantId, filters as Record<string, unknown>),
@@ -60,7 +71,7 @@ export function useTareas(filters?: UseTareasFilters) {
       }
       const q = params.toString() ? `?${params.toString()}` : "";
       const res = await apiRequest<Tarea[]>(`/api/v1/actividades/tareas${q}`, {
-        fallbackData: MOCK_TAREAS,
+        fallbackData: isMockDataEnabled() ? MOCK_TAREAS : [],
       });
       return res.data;
     },
@@ -72,7 +83,7 @@ export function useTareas(filters?: UseTareasFilters) {
     queryKey: queryKeys.activities.plantillas(tenantId),
     queryFn: async (): Promise<PlantillaRutina[]> => {
       const res = await apiRequest<PlantillaRutina[]>("/api/v1/actividades/rutinas/plantillas", {
-        fallbackData: MOCK_PLANTILLAS,
+        fallbackData: isMockDataEnabled() ? MOCK_PLANTILLAS : [],
       });
       return res.data;
     },
@@ -209,8 +220,8 @@ export function useTareas(filters?: UseTareasFilters) {
   });
 
   return {
-    tareas: tareasQuery.data ?? MOCK_TAREAS,
-    plantillas: plantillasQuery.data ?? MOCK_PLANTILLAS,
+    tareas: tareasQuery.data ?? (isMockDataEnabled() ? MOCK_TAREAS : []),
+    plantillas: plantillasQuery.data ?? (isMockDataEnabled() ? MOCK_PLANTILLAS : []),
     isLoading: tareasQuery.isLoading,
     isError: tareasQuery.isError,
     createTarea: createTareaMutation.mutateAsync,

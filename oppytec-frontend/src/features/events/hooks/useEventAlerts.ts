@@ -3,6 +3,7 @@ import { useMemo, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getHttpRequestContext } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import { eventsApi } from "../api/eventsApi";
 import type {
@@ -59,6 +60,22 @@ export function useEventAlerts(options?: UseEventAlertsOptions) {
       });
     }
   }, [realtimeEvents, queryClient, tenantId]);
+
+  useEffect(() => {
+    const handleMockModeChange = () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.events.faltantes(tenantId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.events.committedStock(tenantId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.events.alerts(tenantId),
+      });
+    };
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+    return () => window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleMockModeChange);
+  }, [queryClient, tenantId]);
 
   // 1. Consulta de Faltantes Consolidados (legacy y analítica agregada)
   const faltantesQuery = useQuery({

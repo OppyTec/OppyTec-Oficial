@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronDown, Layers } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { cn } from "@/shared/lib";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 export interface AreaOperativa {
   readonly id: string;
@@ -33,6 +34,10 @@ export function AreaSelector({
   selectedAreaId: propSelectedAreaId,
   onSelectArea,
 }: AreaSelectorProps) {
+  const { isDemo } = useMockDataMode();
+  const activeAreas: readonly AreaOperativa[] = isDemo
+    ? OFFICIAL_AREAS
+    : [{ id: "all", nombre: "Todas las Áreas", icono: "Layers" }];
   const [internalSelectedId, setInternalSelectedId] = useState<string>("all");
   const [open, setOpen] = useState(false);
 
@@ -52,7 +57,7 @@ export function AreaSelector({
   };
 
   const isAllSelected = allowAll && (selectedAreaId === "all" || !selectedAreaId);
-  const currentArea = OFFICIAL_AREAS.find((a) => a.id === selectedAreaId);
+  const currentArea = activeAreas.find((a) => a.id === selectedAreaId);
   const SelectedIcon = isAllSelected ? Layers : getAreaIcon(currentArea?.icono);
   const selectedLabel = isAllSelected ? "Todas las Áreas" : (currentArea?.nombre ?? "Área Operativa");
 
@@ -97,7 +102,7 @@ export function AreaSelector({
             )}
 
             <div className="max-h-52 overflow-y-auto space-y-0.5 custom-scrollbar">
-              {OFFICIAL_AREAS.filter((a) => a.id !== "all").map((area) => {
+              {activeAreas.filter((a) => a.id !== "all").map((area) => {
                 const AreaIcon = getAreaIcon(area.icono);
                 const isSelected = selectedAreaId === area.id;
                 return (

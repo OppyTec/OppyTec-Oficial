@@ -49,6 +49,7 @@ import {
   resolveApiEndpointUrl,
   setHttpRequestContext,
 } from "@/shared/api/httpClient";
+import { isMockDataEnabled, useMockDataMode } from "@/shared/mock/mockModeStorage";
 
 export interface NavbarProps {
   readonly brandName?: string;
@@ -450,8 +451,15 @@ export function Navbar({
       Boolean(user?.isGlobalAdmin));
 
   // Holdings & Roles
-  const [myHoldings, setMyHoldings] = useState<readonly HoldingWithTenants[]>(DEFAULT_HOLDINGS);
+  const { isDemo } = useMockDataMode();
+  const [myHoldings, setMyHoldings] = useState<readonly HoldingWithTenants[]>(() =>
+    isMockDataEnabled() ? DEFAULT_HOLDINGS : []
+  );
   const [dbRoles] = useState(DEFAULT_DB_ROLES);
+
+  useEffect(() => {
+    setMyHoldings(isDemo ? DEFAULT_HOLDINGS : []);
+  }, [isDemo]);
 
   useEffect(() => {
     setIsMac(typeof navigator !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0);

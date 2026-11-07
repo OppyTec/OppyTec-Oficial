@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
 import { usePersistentSearch } from "@/shared/hooks/usePersistentSearch";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import type {
   RegistroMovimiento,
@@ -63,32 +64,35 @@ export function useHistorial(
   const [hasInitialized, setHasInitialized] = useState<boolean>(false);
 
   // 1. Carga de catálogo de productos para selectores y resolución de nombres
-  const { data: productos = MOCK_HISTORIAL_PRODUCTS, isLoading: isProductsLoading } =
-    useQuery<HistorialCatalogProduct[]>({
-      queryKey: ["oppytec", "catalog", "products", "historial"],
-      queryFn: async () => {
-        try {
-          const res = await apiRequest<
-            Array<{ id: string | number; nombre: string; unidad_medida?: string; unidad?: string }>
-          >("/api/v1/catalog/products", {
-            method: "GET",
-            fallbackData: MOCK_HISTORIAL_PRODUCTS,
-          });
+  const {
+    data: productos = isMockDataEnabled() ? MOCK_HISTORIAL_PRODUCTS : [],
+    isLoading: isProductsLoading,
+  } = useQuery<HistorialCatalogProduct[]>({
+    queryKey: ["oppytec", "catalog", "products", "historial"],
+    queryFn: async () => {
+      const fallbackProducts = isMockDataEnabled() ? MOCK_HISTORIAL_PRODUCTS : [];
+      try {
+        const res = await apiRequest<
+          Array<{ id: string | number; nombre: string; unidad_medida?: string; unidad?: string }>
+        >("/api/v1/catalog/products", {
+          method: "GET",
+          fallbackData: fallbackProducts,
+        });
 
-          if (Array.isArray(res.data) && res.data.length > 0) {
-            return res.data.map((p) => ({
-              id: p.id,
-              nombre: p.nombre,
-              unidad: p.unidad_medida || p.unidad || "",
-            }));
-          }
-          return MOCK_HISTORIAL_PRODUCTS;
-        } catch {
-          return MOCK_HISTORIAL_PRODUCTS;
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          return res.data.map((p) => ({
+            id: p.id,
+            nombre: p.nombre,
+            unidad: p.unidad_medida || p.unidad || "",
+          }));
         }
-      },
-      staleTime: 5 * 60_000,
-    });
+        return fallbackProducts;
+      } catch {
+        return fallbackProducts;
+      }
+    },
+    staleTime: 5 * 60_000,
+  });
 
   // 2. Soporte para Deep Linking por URL (?search=<nombre> o ?producto_id=<id>)
   useEffect(() => {
@@ -221,17 +225,20 @@ export function useHistorial(
       params.append("skip", String(skip));
       params.append("limit", String(limit));
 
+      const fallbackHistory: PaginatedKardexHistoryResponse = isMockDataEnabled()
+        ? MOCK_PAGINATED_RESPONSE
+        : { items: [], total: 0, skip: 0, limit, page: 1, total_pages: 0 };
       try {
         const res = await apiRequest<PaginatedKardexHistoryResponse>(
           `/api/v1/inventory/history/paginated?${params.toString()}`,
           {
             method: "GET",
-            fallbackData: MOCK_PAGINATED_RESPONSE,
+            fallbackData: fallbackHistory,
           }
         );
         return res.data;
       } catch {
-        return MOCK_PAGINATED_RESPONSE;
+        return fallbackHistory;
       }
     },
     staleTime: 30_000,
@@ -257,10 +264,15 @@ export function useHistorial(
       void queryClient.invalidateQueries({
         queryKey: ["inventory", "history"],
       });
+      void queryClient.invalidateQueries({
+        queryKey: ["oppytec", "catalog", "products", "historial"],
+      });
     };
     window.addEventListener("inventory_stock_updated", handleLocalSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     return () => {
       window.removeEventListener("inventory_stock_updated", handleLocalSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleLocalSync);
     };
   }, [queryClient]);
 
@@ -275,7 +287,7 @@ export function useHistorial(
           0,
       }));
     }
-    return MOCK_HISTORIAL_REGISTROS;
+    return isMockDataEnabled() ? MOCK_HISTORIAL_REGISTROS : [];
   }, [historyData?.items]);
 
   // Filtrado resiliente de registros (garantiza consistencia en modo offline y datos cacheados)

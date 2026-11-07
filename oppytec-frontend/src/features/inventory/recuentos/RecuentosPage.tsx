@@ -17,6 +17,7 @@ import {
 import { SectionHeader } from "@/shared/components/ui/SectionHeader";
 import { useAuth } from "@/shared/auth/usePermissions";
 import { useCurrencyFormatter } from "@/shared/currency";
+import { useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { useRecuentos } from "../hooks/useRecuentos";
 import { MOCK_BODEGAS } from "../mockData";
 import { RecuentoCard } from "./RecuentoCard";
@@ -36,6 +37,8 @@ export function RecuentosPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { convertAndFormat } = useCurrencyFormatter();
+  const { isDemo } = useMockDataMode();
+  const availableBodegas = useMemo(() => (isDemo ? MOCK_BODEGAS : []), [isDemo]);
   const isPropietario =
     user?.role?.toLowerCase() === "propietario" ||
     user?.role?.toLowerCase() === "admin" ||
@@ -232,7 +235,7 @@ export function RecuentosPage() {
               className="touch-target min-h-[38px] bg-transparent text-xs font-semibold text-foreground focus:outline-none"
             >
               <option value="all">{t("recuentos.all_warehouses", "Todas las Bodegas")}</option>
-              {MOCK_BODEGAS.map((b) => (
+              {availableBodegas.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.nombre}
                 </option>

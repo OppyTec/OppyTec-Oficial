@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { apiRequest } from "@/shared/api/httpClient";
 import { queryKeys } from "@/shared/api/queryKeys";
+import { isMockDataEnabled, MOCK_DATA_MODE_EVENT_NAME, useMockDataMode } from "@/shared/mock/mockModeStorage";
 import { useRealtimeSync } from "@/shared/realtime/useRealtimeSync";
 import {
   MOCK_TOKEN_CONSUMPTION,
@@ -89,10 +90,25 @@ export interface UseTokenConsumptionReturn {
   readonly isUpdatingQuota: boolean;
 }
 
+const CLEAN_TOKEN_CONSUMPTION: TokenConsumptionResponse = {
+  holdings: [],
+  logs: [],
+  total_records: 0,
+  total_tokens_all: 0,
+  total_cost_usd_all: 0,
+  total_cost_clp_all: 0,
+  total_credits_used_all: 0,
+  tokens_per_credit: MOCK_TOKEN_CONSUMPTION.tokens_per_credit,
+  page: 1,
+  page_size: 50,
+};
+
 export function useTokenConsumption(
   options: UseTokenConsumptionOptions = {}
 ): UseTokenConsumptionReturn {
   const queryClient = useQueryClient();
+  const { isDemo } = useMockDataMode();
+  const defaultConsumption = isDemo ? MOCK_TOKEN_CONSUMPTION : CLEAN_TOKEN_CONSUMPTION;
 
   const [page, setPage] = useState<number>(options.initialPage ?? 1);
   const [pageSize, setPageSize] = useState<number>(options.initialPageSize ?? 50);
@@ -151,8 +167,10 @@ export function useTokenConsumption(
       });
     };
     window.addEventListener("token_consumption_changed", handleSync);
+    window.addEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     return () => {
       window.removeEventListener("token_consumption_changed", handleSync);
+      window.removeEventListener(MOCK_DATA_MODE_EVENT_NAME, handleSync);
     };
   }, [queryClient]);
 
@@ -172,12 +190,12 @@ export function useTokenConsumption(
   );
 
   const queryKey = useMemo(
-    () => queryKeys.platformAdmin.tokenConsumption(queryFilters),
-    [queryFilters]
+    () => [...queryKeys.platformAdmin.tokenConsumption(queryFilters), isDemo ? "demo" : "clean"],
+    [queryFilters, isDemo]
   );
 
   const {
-    data = MOCK_TOKEN_CONSUMPTION,
+    data = defaultConsumption,
     isLoading,
     isError,
     error,
@@ -198,10 +216,12 @@ export function useTokenConsumption(
 
       const qs = params.toString();
       const endpoint = `/api/v1/platform-admin/token-consumption${qs ? `?${qs}` : ""}`;
+      const fallback = isMockDataEnabled() ? MOCK_TOKEN_CONSUMPTION : CLEAN_TOKEN_CONSUMPTION;
 
       const res = await apiRequest<TokenConsumptionResponse>(endpoint, {
         method: "GET",
-        fallbackData: MOCK_TOKEN_CONSUMPTION,
+        fallbackData: fallback,
+        forceFallback: true,
       });
       return res.data;
     },
